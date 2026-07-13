@@ -1,0 +1,66 @@
+```yaml
+name: armorhub2
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: armorhub2-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: armorhub
+      MYSQL_USER: armorhub
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - armorhub
+
+  redis:
+    image: redis:7-alpine
+    container_name: armorhub2-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - armorhub
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: armorhub2-search
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: armorhub_master_key
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - armorhub
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: armorhub2-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - armorhub
+
+
+networks:
+  armorhub:
+    driver: bridge
+
+
+volumes:
+  mysql_data:
+  redis_data:
+  meili_data:
+```

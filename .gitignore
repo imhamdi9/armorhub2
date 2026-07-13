@@ -1,0 +1,42 @@
+```gitignore
+# Environment
+.env
+.env.*
+!.env.example
+
+# Laravel
+/vendor/
+/node_modules/
+/public/storage
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Next.js
+.next/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+.phpunit.result.cache
+
+# Coverage
+coverage/
+```
