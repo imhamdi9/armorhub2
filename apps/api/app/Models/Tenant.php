@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
@@ -19,7 +20,10 @@ class Tenant extends Model
         'settings',
     ];
 
-
+public function companies(): HasMany
+{
+    return $this->hasMany(Company::class);
+}
     protected $casts = [
         'settings' => 'array',
     ];
