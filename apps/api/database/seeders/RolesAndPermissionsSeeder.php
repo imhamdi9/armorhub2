@@ -12,18 +12,44 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
 
-        $permissions = [
+         $permissions = [
 
-            'manage platform',
-            'manage companies',
-            'manage branches',
-            'manage vehicles',
-            'manage products',
-            'manage orders',
-            'manage bookings',
-            'view reports',
+    // Companies
+    'companies.view',
+    'companies.create',
+    'companies.update',
+    'companies.delete',
 
-        ];
+    // Vehicle Makes
+    'vehicle-makes.view',
+    'vehicle-makes.create',
+    'vehicle-makes.update',
+    'vehicle-makes.delete',
+
+    // Installation Centers
+    'installation-centers.view',
+    'installation-centers.create',
+    'installation-centers.update',
+    'installation-centers.delete',
+
+    // Orders
+    'orders.view',
+    'orders.create',
+    'orders.update',
+    'orders.delete',
+
+    // Pricing
+    'pricing.calculate',
+
+    // Payments
+    'payments.create',
+
+    // Commissions
+    'commissions.view',
+
+    // Dashboard
+    'dashboard.view',
+];
 
 
         foreach ($permissions as $permission) {
@@ -40,26 +66,43 @@ class RolesAndPermissionsSeeder extends Seeder
             'platform-admin' => $permissions,
 
             'company-owner' => [
-                'manage branches',
-                'manage vehicles',
-                'manage orders',
-                'manage bookings',
-                'view reports',
-            ],
+    'companies.view',
+    'companies.create',
+    'companies.update',
 
-            'installer-manager' => [
-                'manage bookings',
-                'manage orders',
-            ],
+    'vehicle-makes.view',
 
-            'technician' => [
-                'manage bookings',
-            ],
+    'orders.view',
 
-            'customer' => [],
+    'dashboard.view',
+],
 
-        ];
+'installer-manager' => [
+    'installation-centers.view',
+    'installation-centers.create',
+    'installation-centers.update',
 
+    'orders.view',
+
+    'pricing.calculate',
+
+    'dashboard.view',
+],
+
+'technician' => [
+    'installation-centers.view',
+
+    'orders.view',
+],
+
+'customer' => [
+    'orders.create',
+
+    'vehicle-makes.view',
+
+    'pricing.calculate',
+],
+]; // 
 
         foreach ($roles as $role => $abilities) {
 

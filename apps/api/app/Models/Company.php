@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-
+use App\Models\User;
+use App\Scopes\CompanyScope;
+use App\Models\Concerns\BelongsToCompany;
 
 class Company extends Model
 {
     use SoftDeletes;
+    use BelongsToCompany;
 
 
     protected $fillable = [
@@ -27,21 +30,26 @@ class Company extends Model
         'settings',
     ];
 
+    public function users()
+    {
+    return $this->hasMany(User::class);
+    }
+
 
     protected $casts = [
         'settings' => 'array',
     ];
 
-
     protected static function booted(): void
     {
-        static::creating(function ($company) {
 
-            if (!$company->uuid) {
-                $company->uuid = (string) Str::uuid();
-            }
+      static::creating(function ($company) {
 
-        });
+        if (!$company->uuid) {
+            $company->uuid = (string) Str::uuid();
+        }
+
+     });
     }
 
 

@@ -7,7 +7,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-
+use App\Models\Company;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\InstallationCenter;
 
 class User extends Authenticatable
 {
@@ -18,10 +20,27 @@ class User extends Authenticatable
 
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+      'name',
+      'email',
+      'password',
+      'company_id',
+      'installation_center_id',
+      'latitude',
+      'longitude',
+      'city',
+      'country',
+      'location_enabled',
     ];
+    
+    public function company(): BelongsTo
+    {
+    return $this->belongsTo(Company::class);
+    }
+
+    public function installationCenter()
+    {
+    return $this->belongsTo(InstallationCenter::class);
+    }
 
 
     protected $hidden = [

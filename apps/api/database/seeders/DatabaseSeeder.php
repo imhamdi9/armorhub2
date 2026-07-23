@@ -13,6 +13,10 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
         ]);
 
+            $this->call([
+        RolesSeeder::class,
+    ]);
+
         $this->call([
     VehicleCatalogSeeder::class,
 ]);
