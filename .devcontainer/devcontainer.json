@@ -5,7 +5,7 @@
     "docker-compose.devcontainer.yml"
   ],
   "service": "api",
-  "workspaceFolder": "/var/www/html",
+  "workspaceFolder": "/workspaces/armorhub2",
   "shutdownAction": "stopCompose",
   "overrideCommand": true,
   "remoteUser": "armorhub",
