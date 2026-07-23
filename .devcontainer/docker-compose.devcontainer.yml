@@ -1,0 +1,9 @@
+services:
+  api:
+    command: sleep infinity
+
+    volumes:
+      - ../apps/api:/var/www/html
+
+    environment:
+      APP_ENV: local
