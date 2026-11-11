@@ -33,4 +33,9 @@ if [ "$1" = "apache2-foreground" ]; then
     php artisan event:cache
 fi
 
+# Setup above runs as root and creates cache files; the web server runs as www-data and must be able to write
+# to them. Without this, the first request that touches the cache fails with a 500.
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
+
 exec "$@"
