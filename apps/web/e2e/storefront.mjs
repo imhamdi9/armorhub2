@@ -162,6 +162,40 @@ try {
   await eventually("/s/armor-store", (x) => x.status === 200, "the reopened store");
   ok("closing a storefront removes it (404) and drops it from the directory; reopening restores it");
 
+  // ---- Two countries on one platform: each store trades in its own currency, with its own phone rules.
+  const sa = await asCrawler("/s/armor-store");
+  const eg = await asCrawler("/s/nile-shield");
+  if (!/SAR\s*250/.test(sa.text) || /EGP/.test(sa.text)) fail(`Saudi store should price in SAR (${sa.text.match(/[A-Z]{3}\s*[\d,.]+/g)})`);
+  if (!/EGP\s*3,250/.test(eg.text) || /SAR/.test(eg.text)) fail(`Egyptian store should price in EGP (${eg.text.match(/[A-Z]{3}\s*[\d,.]+/g)})`);
+  const home = await asCrawler("/");
+  if (!/Saudi Arabia/.test(home.text) || !/Egypt/.test(home.text)) fail("the directory should show each store's country");
+  ok("each store shows prices in its own country's currency (SAR / EGP) and the directory shows the country");
+
+  const arCtx = await browser.newContext();
+  const ar = await arCtx.newPage();
+  await ar.goto(`${base}/s/nile-shield`);
+  await ar.click("text=العربية");
+  await ar.waitForSelector("text=ج.م");
+  ok("Arabic shows the Egyptian pound symbol");
+
+  const eCtx = await browser.newContext();
+  const e = await eCtx.newPage();
+  await e.goto(`${base}/register?store=nile-shield`);
+  await e.waitForSelector("text=You are signing up with Nile Shield.");
+  const hint = await e.getAttribute("#phone", "placeholder");
+  if (!/\+20/.test(hint ?? "")) fail(`phone hint should show Egypt's format (${hint})`);
+  await e.fill("#name", "Mona");
+  await e.fill("#email", `mona${Date.now()}@example.org`);
+  await e.fill("#phone", "0501234567"); // a Saudi number is not valid for an Egyptian store
+  await e.fill("#password", "password123");
+  await e.fill("#password_confirmation", "password123");
+  await sleep(4000);
+  await e.click("button[type=submit]");
+  await e.waitForSelector("text=valid Egypt mobile number");
+  ok("a Saudi number is refused at an Egyptian store, with a clear message");
+  await arCtx.close();
+  await eCtx.close();
+
   console.log("\nStorefront passed.");
 } catch (e) {
   console.error("\nStorefront FAILED:", e.message.split("\n")[0]);

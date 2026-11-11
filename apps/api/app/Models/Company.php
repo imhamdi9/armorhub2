@@ -23,6 +23,7 @@ class Company extends Model
         'uuid',
         'name',
         'slug',
+        'tax_number',
         'legal_name',
         'email',
         'phone',

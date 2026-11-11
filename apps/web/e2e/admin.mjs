@@ -129,7 +129,7 @@ try {
   await customer.click('button:has-text("Pay")');
   await customer.waitForURL(/127\.0\.0\.1:12112\/pay\//);
   await customer.waitForSelector("text=Fake Gateway");
-  await customer.waitForSelector("text=150000 USD");
+  await customer.waitForSelector("text=150000 SAR");
   await customer.click('button:has-text("Confirm payment")');
   await customer.waitForURL(/checkout=success/);
   await customer.waitForSelector("text=Confirming your payment");

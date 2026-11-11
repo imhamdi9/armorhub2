@@ -446,5 +446,11 @@ export const AR: Record<string, string> = {
   "Featured products (up to 8)": "المنتجات المميزة (حتى 8)",
   "Leave empty to show your first products automatically.": "اتركه فارغًا لعرض أول منتجاتك تلقائيًا.",
   "Save storefront": "حفظ واجهة المتجر",
-  "Some selected products are not available in this store.": "بعض المنتجات المحددة غير متاحة في هذا المتجر."
+  "Some selected products are not available in this store.": "بعض المنتجات المحددة غير متاحة في هذا المتجر.",
+  "Includes VAT ({rate}%)": "تشمل ضريبة القيمة المضافة ({rate}٪)",
+  "Mobile number (optional)": "رقم الجوال (اختياري)",
+  "Country": "الدولة",
+  "Default country": "الدولة الافتراضية",
+  "Saudi Arabia": "المملكة العربية السعودية",
+  "Egypt": "مصر",
 };

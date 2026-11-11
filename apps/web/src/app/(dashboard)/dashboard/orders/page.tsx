@@ -11,7 +11,7 @@ import { hasRole } from "@/lib/navigation";
 import { STATUS_LABELS, statusLabel } from "@/lib/orders";
 import { getOrders } from "@/services/platform.service";
 import type { Order, Paginated } from "@/types/platform";
-import { tr } from "@/lib/i18n";
+import { formatMoney, tr } from "@/lib/i18n";
 
 export default function OrdersPage() {
   const user = useCurrentUser();
@@ -67,7 +67,7 @@ export default function OrdersPage() {
               >
                 <div>
                   <h2 className="font-semibold">{tr("Order #{id}", { id: o.id })}{o.product ? ` · ${o.product.name}` : ""}</h2>
-                  <p className="text-sm text-muted-foreground">{o.total_amount} {o.currency}</p>
+                  <p className="text-sm text-muted-foreground">{formatMoney(o.total_amount, o.currency)}</p>
                 </div>
                 <Badge variant="secondary">{statusLabel(o.status)}</Badge>
               </Link>

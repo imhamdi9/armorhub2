@@ -102,7 +102,9 @@ class OrderController extends Controller
 
         // Customers can only order what their own industry offers, and only what is on sale.
         $product = \App\Models\Product::find($data['product_id']);
-        if (! $product->is_active || ($product->industry_id !== null && $product->industry_id !== $user->industryId())) {
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        if (! $product->is_active || ($product->industry_id !== null && $product->industry_id !== $user->industryId())
+            || ($product->market !== null && $product->market !== $market)) {
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
@@ -111,7 +113,8 @@ class OrderController extends Controller
         $price = $pricing->calculate(
             $data['product_id'],
             $data['targets'],
-            $data['target_type'] ?? null
+            $data['target_type'] ?? null,
+            $user->company
         );
 
         if ($price['parts_count'] === 0) {
@@ -145,7 +148,7 @@ class OrderController extends Controller
                 'commission_amount' => 0,
                 'total_amount' => $price['total'],
                 'currency' => $price['currency'],
-            ]);
+            ] + app(\App\Support\Markets\Markets::class)->taxFor($user->company, (float) $price['total']));
 
             foreach ($partners as $partner) {
                 PartnerQuote::create([

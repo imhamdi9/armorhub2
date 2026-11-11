@@ -73,8 +73,11 @@ class ProductController extends Controller
         }
 
         $industry = $user->industryId();
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
 
         $query->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
+        // A product limited to one country is only shown in that country.
+        $query->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)));
 
         if (! $user->can('products.update')) {
             $query->where('is_active', true);
@@ -89,6 +92,7 @@ class ProductController extends Controller
 
         return $request->validate([
             'industry_id' => 'nullable|exists:industries,id',
+            'market' => ['nullable', 'string', Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
             'category' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
             'name' => $sometimes.'required|string|max:255',

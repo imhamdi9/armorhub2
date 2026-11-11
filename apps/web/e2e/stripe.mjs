@@ -52,7 +52,7 @@ try {
   await page.click('button:has-text("Pay")');
   await page.waitForURL(/localhost:12111\/pay\//);
   await page.waitForSelector("text=Fake Stripe Checkout");
-  await page.waitForSelector("text=150000 usd");
+  await page.waitForSelector("text=150000 sar");
   ok("redirected to the payment page with the right amount (150000 minor units)");
 
   // Cancelling returns to the order, unpaid, with a message.

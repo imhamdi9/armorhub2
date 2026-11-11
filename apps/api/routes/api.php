@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Route;
 // Public
 // Public storefront: browse a store and its catalog without an account (read-only, cacheable)
 Route::prefix('public')->middleware('throttle:public')->group(function () {
+    Route::get('/markets', [PublicStorefrontController::class, 'markets']);
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);

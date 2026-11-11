@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { getPartnerRequests, submitQuote } from "@/services/platform.service";
 import type { PartnerQuote } from "@/types/platform";
-import { tr } from "@/lib/i18n";
+import { formatMoney, tr } from "@/lib/i18n";
 
 /** Service requests sent to the signed-in partner, to be priced. */
 export default function RequestsPage() {
@@ -56,7 +56,7 @@ export default function RequestsPage() {
                   {q.order?.product?.name ?? tr("Order #{id}", { id: q.order_id })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {tr("Order #{id}", { id: q.order_id })} · {tr("Product")} {q.order?.product_amount} {q.order?.currency}
+                  {tr("Order #{id}", { id: q.order_id })} · {tr("Product")} {q.order ? formatMoney(q.order.product_amount, q.order.currency) : ""}
                 </p>
               </div>
               <div className="flex items-center gap-2">

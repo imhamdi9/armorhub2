@@ -17,7 +17,7 @@ import {
   updateLocation,
 } from "@/services/platform.service";
 import type { CatalogItem, PriceQuote, Product } from "@/types/platform";
-import { tr } from "@/lib/i18n";
+import { formatMoney, tr } from "@/lib/i18n";
 
 interface Option {
   id: number;
@@ -180,7 +180,7 @@ function NewOrder() {
       <div className="rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{tr("Estimated price")}</p>
         <p className="text-2xl font-bold">
-          {canPrice && price ? `${price.total} ${price.currency}` : "—"}
+          {canPrice && price ? formatMoney(price.total, price.currency) : "—"}
         </p>
         <p className="text-xs text-muted-foreground">{tr("Partner service quotes are added after you order.")}</p>
       </div>

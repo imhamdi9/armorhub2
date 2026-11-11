@@ -33,6 +33,17 @@ export const formatDateTime = (value: string | number | Date) =>
 export const formatNumber = (n: number, options?: Intl.NumberFormatOptions) =>
   n.toLocaleString(LOCALE_TAGS[current], options);
 
+/** Money in the viewer's language with the right symbol, e.g. "SAR 250.00" or "٢٥٠٫٠٠ ر.س.‏". */
+export function formatMoney(amount: number | string, currency: string, whole = false): string {
+  const n = Number(amount);
+  const digits = whole ? { minimumFractionDigits: 0, maximumFractionDigits: 2 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  try {
+    return n.toLocaleString(LOCALE_TAGS[current], { style: "currency", currency, ...digits });
+  } catch {
+    return `${formatNumber(n, digits)} ${currency}`; // unknown currency code
+  }
+}
+
 // Also records the locale for tr(). It runs as the external-store snapshot reader (never on the
 // server and not during hydration, which uses the English server snapshot), so text matches SSR.
 export function applyLocale(locale: Locale): Locale {

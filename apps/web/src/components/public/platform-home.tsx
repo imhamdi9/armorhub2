@@ -21,6 +21,8 @@ const STEPS = [
 ];
 
 /** The platform's front door: what it is, who it serves, and every open store. */
+const COUNTRY_NAMES: Record<string, string> = { SA: "Saudi Arabia", EG: "Egypt" };
+
 export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
   return (
     <PublicShell>
@@ -66,7 +68,7 @@ export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
                   )}
                   <h3 className="text-lg font-semibold">{s.name}</h3>
                 </div>
-                {s.industry && <p className="text-xs uppercase tracking-wide text-gray-500">{tr(s.industry.name)}</p>}
+                {s.industry && <p className="text-xs uppercase tracking-wide text-gray-500">{tr(s.industry.name)}{s.market ? ` · ${tr(COUNTRY_NAMES[s.market] ?? s.market)}` : ""}</p>}
                 {s.headline && <p className="mt-2 text-sm text-gray-600">{s.headline}</p>}
               </Link>
             ))}

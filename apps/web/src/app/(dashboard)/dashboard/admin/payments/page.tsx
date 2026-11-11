@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
-import { formatDateTime, tr } from "@/lib/i18n";
+import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import {
   activateProvider,
   getAdminPayments,
@@ -149,7 +149,7 @@ export default function AdminPaymentsPage() {
         <div className="divide-y rounded-lg border text-sm">
           {payments.map((x) => (
             <div key={x.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-              <span>{tr("Order #{id}", { id: x.order_id })} · {x.amount} {x.currency}</span>
+              <span>{tr("Order #{id}", { id: x.order_id })} · {formatMoney(x.amount, x.currency)}</span>
               <span className="flex items-center gap-2 text-muted-foreground">
                 {x.provider ?? "—"} · {formatDateTime(x.created_at)}
                 <Badge variant={x.status === "completed" ? "default" : "outline"}>{x.status}</Badge>

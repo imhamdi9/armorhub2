@@ -59,7 +59,7 @@ export const getTenants = async () =>
 
 export const updateTenant = async (
   id: number,
-  data: Partial<Pick<Tenant, "name" | "industry_id">>,
+  data: Partial<Pick<Tenant, "name" | "industry_id" | "market">>,
 ) => (await api.put<Tenant>(`/tenants/${id}`, data)).data;
 
 export const getOrder = async (id: number | string) =>
@@ -139,7 +139,7 @@ export const updateLocation = async (data: {
   country?: string;
 }) => (await api.put("/me/location", data)).data;
 
-export const createTenant = async (data: { name: string; industry_id: number }) =>
+export const createTenant = async (data: { name: string; industry_id: number; market?: string | null }) =>
   (await api.post<Tenant>("/tenants", data)).data;
 
 export interface Company {

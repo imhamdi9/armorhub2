@@ -17,6 +17,7 @@ export async function register(data: {
   email: string;
   password: string;
   password_confirmation: string;
+  phone?: string;
   /** Either the store the visitor came from (its address) or a company id. */
   store?: string;
   company_id?: number;
@@ -62,7 +63,9 @@ export async function resendVerification() {
 }
 
 export async function getPublicStoreName(slug: string) {
-  const { data } = await api.get<{ store: { name: string; slug: string } }>(`/public/storefronts/${encodeURIComponent(slug)}`);
+  const { data } = await api.get<{ store: { name: string; slug: string }; market: { code: string; phone: { dial: string; example: string } } | null }>(
+    `/public/storefronts/${encodeURIComponent(slug)}`,
+  );
 
-  return data.store;
+  return { ...data.store, market: data.market };
 }

@@ -31,9 +31,16 @@ class PublicStorefrontController extends Controller
                 'primary_color' => $this->stores->settingsOf($c)['primary_color'],
                 'logo_url' => $this->stores->settingsOf($c)['logo_url'],
                 'industry' => $this->stores->industry($c),
+                'market' => $this->stores->market($c)['code'] ?? null,
             ])->values();
 
         return $this->cached(['stores' => $stores]);
+    }
+
+    /** The countries the platform operates in, with their currency, VAT and phone rules. */
+    public function markets(\App\Support\Markets\Markets $markets)
+    {
+        return $this->cached(['markets' => collect($markets->all())->map->toArray()->values()]);
     }
 
     public function show(string $slug)
@@ -48,7 +55,8 @@ class PublicStorefrontController extends Controller
         return $this->cached([
             'store' => $this->stores->branding($company),
             'industry' => $this->stores->industry($company),
-            'featured' => $featured->map(fn ($p) => $this->stores->card($p))->values(),
+            'market' => $this->stores->market($company),
+            'featured' => $featured->map(fn ($p) => $this->stores->card($p, $company))->values(),
             'categories' => $this->stores->products($company)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
             'partners' => $this->stores->partnerSummary($company),
         ]);
@@ -66,7 +74,7 @@ class PublicStorefrontController extends Controller
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             ->orderBy('name')
             ->paginate(12)
-            ->through(fn ($p) => $this->stores->card($p));
+            ->through(fn ($p) => $this->stores->card($p, $company));
 
         return $this->cached($page);
     }
@@ -77,7 +85,7 @@ class PublicStorefrontController extends Controller
         $product = $this->stores->products($company)->findOrFail($id);
 
         return $this->cached([
-            'product' => $this->stores->card($product) + ['prices' => $this->stores->priceList($product)],
+            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product)],
             'store' => ['name' => $company->name, 'slug' => $company->slug],
         ]);
     }

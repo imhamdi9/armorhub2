@@ -18,6 +18,7 @@ class Tenant extends Model
         'uuid',
         'name',
         'industry_id',
+        'market',
         'domain',
         'status',
         'settings',

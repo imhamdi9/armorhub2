@@ -58,7 +58,7 @@ try {
   await c.click("text=Ultimate Plus");
   await c.selectOption("select", { label: "M4" });
   await c.click('label:has-text("Hood") input');
-  await c.waitForSelector("text=1200");
+  await c.waitForSelector("text=1,200.00");
   ok("live price shown");
 
   await c.click('button:has-text("Place order")');
@@ -88,7 +88,7 @@ try {
   await c.waitForURL(/orders\/\d+$/);
   ok("customer was notified of the quote and the link opens the order");
   await c.click('button:has-text("Accept")');
-  await c.waitForSelector("text=Total: 1500");
+  await c.waitForSelector("text=Total: SAR 1,500.00");
   ok("quote accepted");
 
   await c.click('button:has-text("Pay")');
@@ -121,7 +121,7 @@ try {
   await c.click("text=Ultimate Plus");
   await c.selectOption("select", { label: "M4" });
   await c.click('label:has-text("Hood") input');
-  await c.waitForSelector("text=1200");
+  await c.waitForSelector("text=1,200.00");
   await c.click('button:has-text("Place order")');
   await c.waitForURL(/orders\/\d+$/);
   await c.click('button:has-text("Cancel order")');

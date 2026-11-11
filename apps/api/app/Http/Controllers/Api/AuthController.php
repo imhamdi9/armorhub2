@@ -45,6 +45,7 @@ class AuthController extends Controller
             // Either the store the visitor came from (its public address) or a company id.
             'store' => 'nullable|string|max:60',
             'company_id' => 'required_without:store|nullable|integer|exists:companies,id',
+            'phone' => 'nullable|string|max:30',
             'city' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -72,11 +73,24 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => ['The email has already been taken.']]);
         }
 
+        // A phone number is checked against the store's country (and stored as +966…/+20…).
+        $phone = null;
+        if (! empty($data['phone'])) {
+            $company = \App\Models\Company::withoutGlobalScopes()->with('tenant')->find($data['company_id']);
+            $market = app(\App\Support\Markets\Markets::class)->forCompany($company);
+            $phone = $market ? $market->normalizePhone($data['phone']) : preg_replace('/[^\d+]/', '', $data['phone']);
+
+            if (! $phone) {
+                throw ValidationException::withMessages(['phone' => ['Please enter a valid '.($market?->name() ?? '').' mobile number.']]);
+            }
+        }
+
         $hasLocation = isset($data['latitude'], $data['longitude']);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'phone' => $phone,
             'password' => $data['password'],
             'company_id' => $data['company_id'],
             'city' => $data['city'] ?? null,
@@ -164,7 +178,10 @@ class AuthController extends Controller
 
         $emails = app(EmailPolicy::class);
 
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company);
+
         return response()->json(array_merge($user->toArray(), [
+            'market' => $market?->toArray(),
             'email_verified' => $user->hasVerifiedEmail(),
             'email_verification_required' => $emails->verificationRequired() && $user->hasRole('customer') && ! $user->hasVerifiedEmail(),
             'industry' => $industry ? [

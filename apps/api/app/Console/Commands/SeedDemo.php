@@ -34,6 +34,7 @@ class SeedDemo extends Command
         $tenant = Tenant::create([
             'name' => 'Armor',
             'industry_id' => Industry::where('key', 'automotive')->value('id'),
+            'market' => 'SA',
         ]);
         $store = Company::create([
             'tenant_id' => $tenant->id, 'name' => 'Armor Store', 'status' => 'active',
@@ -62,9 +63,49 @@ class SeedDemo extends Command
         ]);
         $manager->assignRole('partner-manager');
 
+        $this->seedEgypt($password);
+
         $this->info("Demo ready. Storefront: /s/{$store->slug} (company id {$store->id})");
         $this->line("admin@test.com / shop@test.com — password: {$password}");
 
         return self::SUCCESS;
+    }
+
+    /** A second country: the same catalog, priced in Egyptian pounds, with its own storefront and partner. */
+    private function seedEgypt(string $password): void
+    {
+        $industry = Industry::where('key', 'automotive')->value('id');
+        $saProduct = \App\Models\Product::where('slug', 'xpel-ultimate-plus')->first();
+        $saProduct?->update(['market' => 'SA']);
+
+        $egProduct = \App\Models\Product::create([
+            'industry_id' => $industry, 'market' => 'EG', 'category' => 'paint-protection-film', 'brand' => 'XPEL',
+            'name' => 'Ultimate Plus', 'slug' => 'xpel-ultimate-plus-eg', 'base_price' => 6000, 'warranty_years' => 10, 'is_active' => true,
+        ]);
+        foreach (\App\Models\ProductPriceRule::where('product_id', $saProduct?->id)->get() as $rule) {
+            \App\Models\ProductPriceRule::create([
+                'product_id' => $egProduct->id, 'target_type' => $rule->target_type, 'target_id' => $rule->target_id,
+                'price' => round($rule->price * 13), 'duration_minutes' => $rule->duration_minutes, 'is_active' => true,
+            ]);
+        }
+
+        $tenant = Tenant::create(['name' => 'Nile', 'industry_id' => $industry, 'market' => 'EG']);
+        Company::create([
+            'tenant_id' => $tenant->id, 'name' => 'Nile Shield', 'status' => 'active',
+            'settings' => ['storefront' => [
+                'enabled' => true,
+                'headline' => 'احمِ سيارتك بأفضل الخبراء في مصر',
+                'subheadline' => 'أفلام حماية الطلاء والسيراميك والتظليل، يركّبها فنيون معتمدون بالقرب منك.',
+                'about' => "نايل شيلد تربط أصحاب السيارات بأفضل مراكز التركيب المعتمدة في القاهرة والإسكندرية.",
+                'primary_color' => '#b45309',
+                'contact_email' => 'hello@nile-shield.example',
+                'featured_product_ids' => [],
+            ]],
+        ]);
+        $partnerCompany = Company::create(['tenant_id' => $tenant->id, 'name' => 'Cairo Garage', 'type' => 'partner']);
+        Partner::create([
+            'company_id' => $partnerCompany->id, 'name' => 'Cairo Garage', 'city' => 'Cairo', 'country' => 'EG',
+            'latitude' => 30.04, 'longitude' => 31.23, 'location_enabled' => true,
+        ]);
     }
 }

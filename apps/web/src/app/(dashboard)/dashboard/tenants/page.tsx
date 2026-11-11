@@ -16,12 +16,29 @@ import type { Industry } from "@/types/auth";
 import type { Tenant } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 
+const MARKETS = [
+  { code: "SA", label: "Saudi Arabia" },
+  { code: "EG", label: "Egypt" },
+];
+
+function MarketSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select className="rounded-lg border px-3 py-2" value={value} onChange={(e) => onChange(e.target.value)} aria-label={tr("Country")}>
+      <option value="">{tr("Default country")}</option>
+      {MARKETS.map((m) => (
+        <option key={m.code} value={m.code}>{tr(m.label)}</option>
+      ))}
+    </select>
+  );
+}
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[] | null>(null);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [forbidden, setForbidden] = useState(false);
   const [name, setName] = useState("");
   const [industryId, setIndustryId] = useState("");
+  const [market, setMarket] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,10 +55,11 @@ export default function TenantsPage() {
     e.preventDefault();
     setError(null);
     try {
-      const created = await createTenant({ name, industry_id: Number(industryId) });
+      const created = await createTenant({ name, industry_id: Number(industryId), market: market || null });
       setTenants((prev) => [...(prev ?? []), created]);
       setName("");
       setIndustryId("");
+      setMarket("");
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -65,6 +83,7 @@ export default function TenantsPage() {
               <option key={i.id} value={i.id}>{tr(i.name)}</option>
             ))}
           </select>
+          <MarketSelect value={market} onChange={setMarket} />
           <Button type="submit">{tr("Add")}</Button>
         </form>
       )}
@@ -81,6 +100,13 @@ export default function TenantsPage() {
           {tenants.map((t) => (
             <div key={t.id} className="flex items-center justify-between rounded-lg border p-4">
               <h2 className="font-semibold">{t.name}</h2>
+              <MarketSelect
+                value={t.market ?? ""}
+                onChange={async (m) => {
+                  const updated = await updateTenant(t.id, { market: m || null });
+                  setTenants((prev) => prev?.map((x) => (x.id === t.id ? updated : x)) ?? null);
+                }}
+              />
               <select
                 className="rounded-lg border px-3 py-2"
                 value={t.industry_id ?? ""}

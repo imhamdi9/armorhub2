@@ -19,6 +19,7 @@ class Product extends Model
 
     protected $fillable = [
         'industry_id',
+        'market',
         'category',
         'brand',
         'name',

@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(\App\Support\Settings\SettingsRegistry::class);
         $this->app->singleton(\App\Support\Settings\Settings::class);
+        $this->app->singleton(\App\Support\Markets\Markets::class);
 
         // Payment providers are drivers; which one is active and its credentials are admin settings.
         $this->app->singleton(\App\Services\Payment\PaymentProviders::class, function ($app) {

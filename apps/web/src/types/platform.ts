@@ -37,6 +37,9 @@ export interface Order {
   service_amount: string;
   total_amount: string;
   currency: string;
+  market?: string | null;
+  tax_rate?: string;
+  tax_amount?: string;
   scheduled_at?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
@@ -77,6 +80,7 @@ export interface Tenant {
   id: number;
   name: string;
   industry_id: number | null;
+  market?: string | null;
   industry?: { id: number; key: string; name: string } | null;
 }
 

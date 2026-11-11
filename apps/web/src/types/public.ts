@@ -4,7 +4,18 @@ export interface PublicIndustry {
   description?: string | null;
 }
 
+export interface PublicMarket {
+  code: string;
+  name: { en: string; ar: string };
+  currency: string;
+  locale: string;
+  vat_rate: number;
+  prices_include_vat: boolean;
+  phone: { dial: string; example: string };
+}
+
 export interface PublicStoreCard {
+  market?: string | null;
   name: string;
   slug: string;
   headline: string | null;
@@ -43,6 +54,7 @@ export interface PublicProduct {
 export interface PublicStore {
   store: PublicBranding;
   industry: PublicIndustry | null;
+  market: PublicMarket | null;
   featured: PublicProduct[];
   categories: string[];
   partners: { count: number; cities: string[] };

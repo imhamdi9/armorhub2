@@ -19,7 +19,7 @@ class StorefrontService
 {
     private const HIDDEN_STATUSES = ['inactive', 'suspended'];
 
-    public function __construct(private IndustryRegistry $registry, private Settings $settings)
+    public function __construct(private IndustryRegistry $registry, private Settings $settings, private \App\Support\Markets\Markets $markets)
     {
     }
 
@@ -51,12 +51,25 @@ class StorefrontService
         return $company;
     }
 
+    /** The country a store trades in: what the public site needs to show money and VAT correctly. */
+    public function market(Company $company): ?array
+    {
+        $m = $this->markets->forCompany($company);
+
+        $a = $m?->toArray();
+
+        return $m ? ['code' => $m->code, 'name' => $a['name'], 'currency' => $m->currency(), 'locale' => $a['locale'], 'vat_rate' => $m->vatRate(),
+            'prices_include_vat' => $m->pricesIncludeVat(), 'phone' => $a['phone']] : null;
+    }
+
     /** @return Builder<Product> products a visitor may see: on sale, and in this store's industry */
     public function products(Company $company): Builder
     {
         $industry = $company->tenant?->industry_id;
+        $market = $this->markets->forCompany($company)?->code;
 
         return Product::query()->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)))
             ->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
     }
 
@@ -87,7 +100,7 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    public function card(Product $product, ?float $from = null): array
+    public function card(Product $product, ?Company $company = null, ?float $from = null): array
     {
         return [
             'id' => $product->id,
@@ -97,7 +110,7 @@ class StorefrontService
             'description' => $product->description,
             'warranty_years' => $product->warranty_years,
             'from_price' => $from ?? $this->fromPrice($product),
-            'currency' => strtoupper((string) $this->settings->get('platform.currency')),
+            'currency' => $this->markets->currencyFor($company),
         ];
     }
 

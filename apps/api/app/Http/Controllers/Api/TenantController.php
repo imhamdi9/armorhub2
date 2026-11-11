@@ -18,6 +18,7 @@ class TenantController extends Controller
         $tenant = Tenant::create($request->validate([
             'name' => 'required|string|max:255',
             'industry_id' => 'required|exists:industries,id',
+            'market' => ['nullable', 'string', \Illuminate\Validation\Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
         ]));
 
         return response()->json($tenant->load('industry'), 201);
@@ -28,6 +29,7 @@ class TenantController extends Controller
         $tenant->update($request->validate([
             'name' => 'sometimes|required|string|max:255',
             'industry_id' => 'sometimes|required|exists:industries,id',
+            'market' => ['sometimes', 'nullable', 'string', \Illuminate\Validation\Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
         ]));
 
         return $tenant->load('industry');

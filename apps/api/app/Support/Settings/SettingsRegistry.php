@@ -44,6 +44,9 @@ class SettingsRegistry
     {
         return [
             // ---- Platform -------------------------------------------------
+            new Definition('platform.default_market', 'platform', 'Default market (country)', 'select', fn () => config('markets.default'),
+                'Sets currency, VAT and phone rules for tenants that have not chosen a country. Leave empty to use the single currency below.',
+                options: collect(config('markets.markets'))->mapWithKeys(fn ($m, $code) => [$code => $m['name']['en']])->all()),
             new Definition('platform.currency', 'platform', 'Currency (ISO code)', 'string', fn () => config('platform.currency'),
                 'Three-letter code such as USD or SAR. Applies to new orders.', rules: ['size:3', 'alpha']),
             new Definition('platform.commission_percentage', 'platform', 'Commission (% of each order)', 'float',

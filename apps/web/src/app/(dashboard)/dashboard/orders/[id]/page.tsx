@@ -16,7 +16,7 @@ import {
   payOrder,
 } from "@/services/platform.service";
 import type { Order, PartnerQuote } from "@/types/platform";
-import { formatDate, formatDateTime, tr } from "@/lib/i18n";
+import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
 
 export default function OrderDetailPage() {
   return (
@@ -95,9 +95,14 @@ function OrderDetail() {
 
       <div className="mb-6 rounded-lg border p-4 text-sm">
         <p className="font-semibold">{order.product?.name}</p>
-        <p>{tr("Product")}: {order.product_amount} {order.currency}</p>
-        <p>{tr("Service")}: {order.service_amount} {order.currency}</p>
-        <p className="mt-1 text-base font-bold">{tr("Total")}: {order.total_amount} {order.currency}</p>
+        <p>{tr("Product")}: {formatMoney(order.product_amount, order.currency)}</p>
+        <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>
+        <p className="mt-1 text-base font-bold">{tr("Total")}: {formatMoney(order.total_amount, order.currency)}</p>
+        {Number(order.tax_rate) > 0 && (
+          <p className="text-muted-foreground">
+            {tr("Includes VAT ({rate}%)", { rate: Number(order.tax_rate) })}: {formatMoney(order.tax_amount ?? 0, order.currency)}
+          </p>
+        )}
         {order.scheduled_at && order.status !== "cancelled" && (
           <p className="mt-2">{tr("Appointment")}: {formatDateTime(order.scheduled_at)}</p>
         )}
@@ -163,7 +168,7 @@ function OrderDetail() {
       <div className="mt-6 flex gap-3">
         {canPay && (
           <Button disabled={confirming} onClick={pay}>
-            {tr("Pay {amount}", { amount: `${order.total_amount} ${order.currency}` })}
+            {tr("Pay {amount}", { amount: formatMoney(order.total_amount, order.currency) })}
           </Button>
         )}
         {canCancel && (

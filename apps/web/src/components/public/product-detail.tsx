@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { price } from "@/components/public/product-card";
 import { PublicShell, type ShellStore } from "@/components/public/shell";
-import { formatNumber, tr } from "@/lib/i18n";
+import { formatMoney, tr } from "@/lib/i18n";
 import { me } from "@/services/auth.service";
 import type { PublicProductPage } from "@/types/public";
 
@@ -47,7 +47,7 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
                     {p.prices.map((row) => (
                       <tr key={`${row.target_type}-${row.target}`} className="border-b">
                         <td className="py-2">{row.target}</td>
-                        <td className="py-2 text-end font-medium">{formatNumber(row.price, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {p.currency}</td>
+                        <td className="py-2 text-end font-medium">{formatMoney(row.price, p.currency, true)}</td>
                       </tr>
                     ))}
                   </tbody>

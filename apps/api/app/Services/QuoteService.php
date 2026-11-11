@@ -39,11 +39,13 @@ class QuoteService
 
             $quote->update(['status' => QuoteStatus::Accepted]);
 
+            $total = $order->product_amount + $quote->price + $order->commission_amount;
+
             $order->update([
                 'service_amount' => $quote->price,
-                'total_amount' => $order->product_amount + $quote->price + $order->commission_amount,
+                'total_amount' => $total,
                 'status' => OrderStatus::PartnerSelected,
-            ]);
+            ] + app(\App\Support\Markets\Markets::class)->taxFor(\App\Models\Company::withoutGlobalScopes()->find($order->company_id), (float) $total));
 
             OrderEvent::record($order, 'quote_accepted', $by, ['partner_id' => $quote->partner_id, 'price' => (string) $quote->price]);
 

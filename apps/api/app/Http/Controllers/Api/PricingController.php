@@ -28,7 +28,8 @@ class PricingController extends Controller
             $service->calculate(
                 $validated['product_id'],
                 $validated['targets'],
-                $validated['target_type'] ?? null
+                $validated['target_type'] ?? null,
+                $request->user()?->company
             )
         );
 

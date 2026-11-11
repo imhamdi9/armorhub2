@@ -29,14 +29,16 @@ function RegisterForm() {
   const productId = params.get("product");
   const [storeName, setStoreName] = useState<string | null>(null);
   const [storeMissing, setStoreMissing] = useState(false);
+  const [phoneHint, setPhoneHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (!storeSlug) return;
-    getPublicStoreName(storeSlug).then((s) => setStoreName(s.name)).catch(() => setStoreMissing(true));
+    getPublicStoreName(storeSlug).then((s) => { setStoreName(s.name); if (s.market) setPhoneHint(`+${s.market.phone.dial} ${s.market.phone.example}`); }).catch(() => setStoreMissing(true));
   }, [storeSlug]);
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     password_confirmation: "",
     company_id: "",
@@ -57,6 +59,7 @@ function RegisterForm() {
       const { company_id, ...fields } = form;
       await register({
         ...fields,
+        phone: fields.phone || undefined,
         ...(storeSlug ? { store: storeSlug } : { company_id: Number(company_id) }),
         signup_token: human.token,
         website,
@@ -89,6 +92,10 @@ function RegisterForm() {
             <div>
               <Label htmlFor="email">{tr("Email")}</Label>
               <Input id="email" type="email" required value={form.email} onChange={set("email")} />
+            </div>
+            <div>
+              <Label htmlFor="phone">{tr("Mobile number (optional)")}</Label>
+              <Input id="phone" type="tel" inputMode="tel" dir="ltr" autoComplete="tel" placeholder={phoneHint ?? ""} value={form.phone} onChange={set("phone")} />
             </div>
             <div>
               <Label htmlFor="password">{tr("Password")}</Label>

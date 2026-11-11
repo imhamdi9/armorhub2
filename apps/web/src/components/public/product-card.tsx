@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 
-import { formatNumber, tr } from "@/lib/i18n";
+import { formatMoney, tr } from "@/lib/i18n";
 import type { PublicProduct } from "@/types/public";
 
 export const price = (p: { from_price: number; currency: string }) =>
-  `${formatNumber(p.from_price, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${p.currency}`;
+  formatMoney(p.from_price, p.currency, true);
 
 export function ProductCard({ product, slug }: { product: PublicProduct; slug: string }) {
   return (

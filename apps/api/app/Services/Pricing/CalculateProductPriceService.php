@@ -11,7 +11,7 @@ class CalculateProductPriceService
     public function __construct(
         private IndustryRegistry $industries,
         private SumOfRulesStrategy $default,
-        private \App\Support\Settings\Settings $settings,
+        private \App\Support\Markets\Markets $markets,
     ) {
     }
 
@@ -22,7 +22,8 @@ class CalculateProductPriceService
     public function calculate(
         int $productId,
         array $targetIds,
-        ?string $targetType = null
+        ?string $targetType = null,
+        ?\App\Models\Company $company = null
     ): array {
 
         $product = Product::with('industry')->findOrFail($productId);
@@ -43,7 +44,7 @@ class CalculateProductPriceService
             'product_id' => $product->id,
             'parts_count' => $result['parts_count'],
             'total' => $result['total'],
-            'currency' => strtoupper((string) $this->settings->get('platform.currency')),
+            'currency' => $this->markets->currencyFor($company),
         ];
     }
 }
