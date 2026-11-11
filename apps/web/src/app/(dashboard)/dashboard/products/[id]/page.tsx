@@ -1,23 +1,28 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { aliasLabel } from "@/lib/navigation";
+import { aliasLabel, hasRole } from "@/lib/navigation";
+import { errorMessage } from "@/lib/errors";
 import {
+  deleteProduct,
   getCatalog,
   getProduct,
   savePriceRules,
+  updateProduct,
 } from "@/services/platform.service";
 import type { CatalogItem, PriceRule, Product } from "@/types/platform";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const user = useCurrentUser();
+  const canEdit = hasRole(user, "platform-admin", "company-owner");
   const targets = user?.industry?.targets ?? [];
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -26,10 +31,23 @@ export default function ProductDetailPage() {
   // price by "type:id"
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
+  const [details, setDetails] = useState({
+    name: "", brand: "", category: "", base_price: "", warranty_years: "", description: "", is_active: true,
+  });
+  const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
 
   useEffect(() => {
     getProduct(id).then((p) => {
       setProduct(p);
+      setDetails({
+        name: p.name,
+        brand: p.brand ?? "",
+        category: p.category ?? "",
+        base_price: String(p.base_price),
+        warranty_years: p.warranty_years == null ? "" : String(p.warranty_years),
+        description: p.description ?? "",
+        is_active: p.is_active,
+      });
       setPrices(
         Object.fromEntries(
           (p.price_rules ?? []).map((r: PriceRule) => [
@@ -56,12 +74,68 @@ export default function ProductDetailPage() {
     setSaved(true);
   }
 
+  async function saveDetails(e: React.FormEvent) {
+    e.preventDefault();
+    setDetailsMsg(null);
+    try {
+      const updated = await updateProduct(Number(id), {
+        name: details.name,
+        brand: details.brand || null,
+        category: details.category || null,
+        base_price: details.base_price,
+        warranty_years: details.warranty_years === "" ? null : Number(details.warranty_years),
+        description: details.description || null,
+        is_active: details.is_active,
+      });
+      setProduct(updated);
+      setDetailsMsg("Saved");
+    } catch (err) {
+      setDetailsMsg(errorMessage(err));
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm("Delete this product? This cannot be undone. Products with orders cannot be deleted; hide them instead.")) return;
+    try {
+      await deleteProduct(Number(id));
+      router.push("/dashboard/products");
+    } catch (err) {
+      setDetailsMsg(errorMessage(err));
+    }
+  }
+
   if (!product) return <p className="text-muted-foreground">Loading...</p>;
 
   return (
     <div>
       <PageHeader title={product.name} />
       <p className="mb-6 text-muted-foreground">Base price: {product.base_price}</p>
+
+      {canEdit && (
+        <form onSubmit={saveDetails} className="mb-8 grid grid-cols-2 gap-3 rounded-lg border p-4">
+          <Input aria-label="Name" required value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
+          <Input aria-label="Brand" placeholder="Brand" value={details.brand} onChange={(e) => setDetails({ ...details, brand: e.target.value })} />
+          <Input aria-label="Category" placeholder="Category" value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
+          <Input aria-label="Base price" type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
+          <Input aria-label="Warranty years" type="number" min="0" placeholder="Warranty (years)" value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
+            Visible to customers
+          </label>
+          <textarea
+            aria-label="Description"
+            placeholder="Description"
+            className="col-span-2 rounded-lg border px-3 py-2"
+            value={details.description}
+            onChange={(e) => setDetails({ ...details, description: e.target.value })}
+          />
+          <div className="col-span-2 flex items-center gap-3">
+            <Button type="submit">Save details</Button>
+            <Button type="button" variant="outline" onClick={remove}>Delete product</Button>
+            {detailsMsg && <span className="text-sm">{detailsMsg}</span>}
+          </div>
+        </form>
+      )}
 
       <h2 className="mb-3 text-xl font-semibold">Price rules</h2>
 

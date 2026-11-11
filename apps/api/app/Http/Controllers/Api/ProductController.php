@@ -13,6 +13,9 @@ class ProductController extends Controller
     {
         return Product::query()
             ->when($request->filled('industry_id'), fn ($q) => $q->where('industry_id', $request->industry_id))
+            ->when($request->filled('search'), fn ($q) => $q->where(
+                fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('brand', 'like', "%{$request->search}%")
+            ))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             // Only product managers may see inactive products.
             ->when(
@@ -44,6 +47,13 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        // Orders are financial records; never delete them by deleting a product.
+        if (\App\Models\Order::withoutGlobalScopes()->where('product_id', $product->id)->exists()) {
+            return response()->json([
+                'message' => 'This product has orders and cannot be deleted. Hide it from customers instead.',
+            ], 422);
+        }
+
         $product->delete();
 
         return response()->json(['message' => 'Deleted']);

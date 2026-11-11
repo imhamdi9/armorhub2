@@ -11,11 +11,18 @@ class PartnerController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Partner::class);
 
-        return Partner::where('is_active', true)->orderBy('name')->get();
+        return Partner::query()
+            // Managers also need to see (and re-enable) deactivated partners.
+            ->when(! $request->boolean('include_inactive'), fn ($q) => $q->where('is_active', true))
+            ->when($request->filled('search'), fn ($q) => $q->where(
+                fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('city', 'like', "%{$request->search}%")
+            ))
+            ->orderBy('name')
+            ->get();
     }
 
     public function store(Request $request)
@@ -51,6 +58,12 @@ class PartnerController extends Controller
     public function destroy(Partner $partner)
     {
         $this->authorize('delete', $partner);
+
+        if (\App\Models\PartnerQuote::withoutGlobalScopes()->where('partner_id', $partner->id)->exists()) {
+            return response()->json([
+                'message' => 'This partner has quotes or jobs on record and cannot be deleted. Deactivate it instead.',
+            ], 422);
+        }
 
         $partner->delete();
 

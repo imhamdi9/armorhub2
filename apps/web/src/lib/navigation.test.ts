@@ -78,14 +78,16 @@ describe("buildNavigation", () => {
 
   it("gives platform admins catalogs and tenant management", () => {
     const nav = titles(user(["platform-admin"]));
-    expect(nav).toContain("Room Types");
+    expect(nav).toContain("Catalogs");
+    expect(nav).not.toContain("Room Types"); // listed on the Catalogs page instead
     expect(nav).toContain("Tenants");
     expect(nav).toContain("Companies");
   });
 
-  it("follows the industry's targets", () => {
-    const auto = user(["platform-admin"]);
-    auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"] };
+  it("lists a company owner's industry catalogs directly", () => {
+    const auto = user(["company-owner"]);
+    auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"], catalogs: ["vehicle_part", "vehicle_make"] };
+    expect(titles(auto)).toContain("Vehicle Makes");
     expect(titles(auto)).toContain("Vehicle Parts");
     expect(titles(auto)).not.toContain("Room Types");
   });

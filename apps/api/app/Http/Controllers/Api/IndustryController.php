@@ -17,7 +17,7 @@ class IndustryController extends Controller
         return Industry::where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(function (Industry $industry) {
+            ->map(function (Industry $industry) use ($registry) {
                 $module = $industry->module();
 
                 return [
@@ -27,6 +27,7 @@ class IndustryController extends Controller
                     'description' => $industry->description,
                     'subjects' => array_keys($module?->subjectModels() ?? []),
                     'targets' => array_keys($module?->targetModels() ?? []),
+                    'catalogs' => $module ? $registry->manageableAliases($module) : [],
                 ];
             })
             ->values();

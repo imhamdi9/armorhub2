@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { hasRole } from "@/lib/navigation";
 import { createProduct, getProducts } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
 
@@ -18,17 +19,21 @@ function slugify(value: string) {
 export default function ProductsPage() {
   const user = useCurrentUser();
   const [products, setProducts] = useState<Product[] | null>(null);
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const canCreate = user?.roles?.some((r) => r === "platform-admin" || r === "company-owner");
+  const canManage = hasRole(user, "platform-admin", "company-owner");
 
   useEffect(() => {
-    getProducts().then(setProducts);
-  }, []);
+    getProducts({
+      ...(search ? { search } : {}),
+      ...(canManage ? { include_inactive: 1 } : {}),
+    }).then(setProducts);
+  }, [search, canManage]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,11 +60,7 @@ export default function ProductsPage() {
     <div>
       <PageHeader
         title="Products"
-        action={
-          canCreate && (
-            <Button onClick={() => setShowForm((v) => !v)}>Add product</Button>
-          )
-        }
+        action={canManage && <Button onClick={() => setShowForm((v) => !v)}>Add product</Button>}
       />
 
       {showForm && (
@@ -81,10 +82,17 @@ export default function ProductsPage() {
         </form>
       )}
 
+      <Input
+        className="mb-4 max-w-sm"
+        placeholder="Search products"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       {products === null ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : products.length === 0 ? (
-        <EmptyState>No products yet.</EmptyState>
+        <EmptyState>No products found.</EmptyState>
       ) : (
         <div className="space-y-3">
           {products.map((p) => (
@@ -94,7 +102,9 @@ export default function ProductsPage() {
               className="block rounded-lg border p-4 hover:bg-muted"
             >
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold">{p.name}</h2>
+                <h2 className="font-semibold">
+                  {p.name} {!p.is_active && <span className="text-xs text-muted-foreground">(hidden)</span>}
+                </h2>
                 <span className="text-sm">{p.base_price}</span>
               </div>
               <p className="text-sm text-muted-foreground">

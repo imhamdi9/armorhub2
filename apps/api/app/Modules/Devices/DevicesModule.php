@@ -30,4 +30,9 @@ class DevicesModule extends BaseIndustryModule
     {
         return ['device_component' => Models\DeviceComponent::class];
     }
+
+    public function catalogModels(): array
+    {
+        return ['device_brand' => Models\DeviceBrand::class];
+    }
 }

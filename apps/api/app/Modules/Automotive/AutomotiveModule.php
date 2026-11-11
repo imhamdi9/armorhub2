@@ -39,6 +39,11 @@ class AutomotiveModule extends BaseIndustryModule
         return ['vehicle_part' => VehiclePart::class];
     }
 
+    public function catalogModels(): array
+    {
+        return ['vehicle_make' => VehicleMake::class];
+    }
+
     public function policies(): array
     {
         return [VehicleMake::class => VehicleMakePolicy::class];

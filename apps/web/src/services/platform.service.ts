@@ -48,10 +48,11 @@ export const savePriceRules = async (
 export const getCatalog = async (alias: string) =>
   (await api.get<CatalogItem[]>(`/catalog/${alias}`)).data;
 
-export const getOrders = async () => (await api.get<Order[]>("/orders")).data;
+export const getOrders = async (params?: { status?: string; page?: number; per_page?: number }) =>
+  (await api.get<Paginated<Order>>("/orders", { params })).data;
 
-export const getPartners = async () =>
-  (await api.get<Partner[]>("/partners")).data;
+export const getPartners = async (params?: { search?: string; include_inactive?: number }) =>
+  (await api.get<Partner[]>("/partners", { params })).data;
 
 export const getTenants = async () =>
   (await api.get<Tenant[]>("/tenants")).data;
@@ -200,3 +201,23 @@ export const markNotificationRead = async (id: string) =>
 
 export const markAllNotificationsRead = async () =>
   (await api.post("/notifications/read-all")).data;
+
+export const updatePartner = async (id: number, data: Partial<Partner> & { is_active?: boolean }) =>
+  (await api.put<Partner>(`/partners/${id}`, data)).data;
+
+export const updateCompany = async (id: number, data: Partial<Company>) =>
+  (await api.put<Company>(`/companies/${id}`, data)).data;
+
+export const deleteCompany = async (id: number) => (await api.delete(`/companies/${id}`)).data;
+
+export const getCatalogSchema = async (alias: string) =>
+  (await api.get<{ alias: string; parents: { field: string; alias: string }[] }>(`/catalog/${alias}/schema`)).data;
+
+export interface DashboardStats {
+  role: string;
+  cards: { key: string; label: string; value: number; format: "number" | "money" }[];
+  orders_by_status: Record<string, number>;
+}
+
+export const getDashboardStats = async () =>
+  (await api.get<DashboardStats>("/dashboard/stats")).data;

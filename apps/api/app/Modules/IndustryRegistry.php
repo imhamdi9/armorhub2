@@ -47,6 +47,29 @@ class IndustryRegistry
         return $this->collect('targetModels');
     }
 
+    /** @return array<string, class-string> */
+    public function catalogModels(): array
+    {
+        return $this->collect('catalogModels');
+    }
+
+    /** Every alias CatalogController can serve (shared lists with an is_active flag). */
+    public function sharedCatalogs(): array
+    {
+        return array_filter(
+            $this->targetModels() + $this->catalogModels() + $this->subjectModels(),
+            fn (string $class) => \Illuminate\Support\Facades\Schema::hasColumn((new $class)->getTable(), 'is_active')
+        );
+    }
+
+    /** Aliases of the shared lists one module's admins manage. @return list<string> */
+    public function manageableAliases(IndustryModule $module): array
+    {
+        $own = $module->targetModels() + $module->catalogModels() + $module->subjectModels();
+
+        return array_values(array_intersect(array_keys($own), array_keys($this->sharedCatalogs())));
+    }
+
     /** @return list<string> */
     public function permissions(): array
     {
@@ -61,7 +84,7 @@ class IndustryRegistry
     /** Register morph aliases and policies. Call once from a service provider. */
     public function boot(): void
     {
-        Relation::morphMap($this->subjectModels() + $this->targetModels());
+        Relation::morphMap($this->subjectModels() + $this->targetModels() + $this->catalogModels());
 
         foreach ($this->modules as $module) {
             foreach ($module->policies() as $model => $policy) {

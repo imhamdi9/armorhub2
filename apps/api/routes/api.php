@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CommissionController;
 use App\Http\Controllers\Api\CommissionDashboardController;
 use App\Http\Controllers\Api\CommissionDistributionController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\IndustryController;
 use App\Http\Controllers\Api\MyItemsController;
 use App\Http\Controllers\Api\NotificationController;
@@ -39,6 +40,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unread']);
@@ -48,6 +51,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Industries and shared catalogs
     Route::get('/industries', [IndustryController::class, 'index']);
     Route::get('/catalog/{alias}', [CatalogController::class, 'index']);
+    Route::get('/catalog/{alias}/schema', [CatalogController::class, 'schema']);
     Route::middleware('permission:catalog.manage')->group(function () {
         Route::post('/catalog/{alias}', [CatalogController::class, 'store']);
         Route::put('/catalog/{alias}/{id}', [CatalogController::class, 'update']);

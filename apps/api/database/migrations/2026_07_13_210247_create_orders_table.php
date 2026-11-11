@@ -18,9 +18,10 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
+            // Financial records must outlive catalog changes: a product with orders cannot be deleted.
             $table->foreignId('product_id')
                 ->constrained()
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
 
             // The thing being serviced (vehicle, property, device...), if any
             $table->nullableMorphs('subject');

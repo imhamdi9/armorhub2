@@ -35,6 +35,14 @@ interface IndustryModule
     public function targetModels(): array;
 
     /**
+     * Extra shared lists admins manage that are neither subjects nor targets
+     * (vehicle makes, device brands...). Keyed by alias.
+     *
+     * @return array<string, class-string>
+     */
+    public function catalogModels(): array;
+
+    /**
      * Gate policies, model class => policy class.
      *
      * @return array<class-string, class-string>

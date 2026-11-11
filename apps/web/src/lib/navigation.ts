@@ -16,7 +16,8 @@ export interface NavItem {
     | "companies"
     | "users"
     | "jobs"
-    | "warranties";
+    | "warranties"
+    | "catalogs";
 }
 
 function pluralize(word: string): string {
@@ -89,9 +90,14 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Warranties", href: "/dashboard/warranties", icon: "warranties" });
   }
 
-  // Shared catalogs are managed by admins and company owners.
-  if (hasRole(user, "platform-admin", "company-owner")) {
-    for (const alias of user?.industry?.targets ?? []) {
+  // Platform admins manage every industry's lists from one index page.
+  if (hasRole(user, "platform-admin")) {
+    items.push({ title: "Catalogs", href: "/dashboard/catalogs", icon: "catalogs" });
+  }
+
+  // Company owners manage their own industry's shared lists.
+  if (hasRole(user, "company-owner") && !hasRole(user, "platform-admin")) {
+    for (const alias of user?.industry?.catalogs ?? user?.industry?.targets ?? []) {
       items.push({
         title: aliasLabel(alias),
         href: `/dashboard/catalog/${alias}`,

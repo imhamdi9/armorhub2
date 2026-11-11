@@ -27,23 +27,25 @@ class OrderController extends Controller
         return response()->json($order->load(['product', 'subject', 'events.user:id,name', 'warranty']));
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Order::class);
 
-        $user = auth()->user();
+        $request->validate(['status' => 'nullable|string', 'per_page' => 'nullable|integer|min:1|max:100']);
 
-        $query = Order::with('product')->latest()->limit(200);
+        $user = $request->user();
 
-        if ($user->hasRole('platform-admin')) {
-            return $query->get();
-        }
+        $query = Order::with('product')
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->latest('id');
 
         if ($user->hasRole('customer')) {
-            return $query->where('customer_id', $user->id)->get();
+            $query->where('customer_id', $user->id);
+        } elseif (! $user->hasRole('platform-admin')) {
+            $query->where('company_id', $user->company_id);
         }
 
-        return $query->where('company_id', $user->company_id)->get();
+        return $query->paginate($request->integer('per_page', 15));
     }
 
     public function store(

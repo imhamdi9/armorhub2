@@ -89,6 +89,7 @@ class AuthController extends Controller
                 'name' => $industry->name,
                 'subjects' => array_keys($industry->module()?->subjectModels() ?? []),
                 'targets' => array_keys($industry->module()?->targetModels() ?? []),
+                'catalogs' => $industry->module() ? app(\App\Modules\IndustryRegistry::class)->manageableAliases($industry->module()) : [],
             ] : null,
             'roles' => $user->getRoleNames(),
         ]));

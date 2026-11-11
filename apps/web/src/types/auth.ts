@@ -7,6 +7,8 @@ export interface Industry {
   subjects: string[];
   /** Morph aliases price rules can target. */
   targets: string[];
+  /** Shared lists admins manage (targets, makes/brands, catalog-style subjects). */
+  catalogs?: string[];
 }
 
 export interface User {

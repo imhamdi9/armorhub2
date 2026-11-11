@@ -7,6 +7,7 @@ import {
   BookOpen,
   Building,
   Building2,
+  Library,
   Hammer,
   Inbox,
   LayoutDashboard,
@@ -46,6 +47,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   users: UserCog,
   jobs: Hammer,
   warranties: ShieldCheck,
+  catalogs: Library,
 };
 
 export function AppSidebar() {

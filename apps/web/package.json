@@ -10,7 +10,8 @@
     "test": "vitest run",
     "e2e": "node e2e/journey.mjs",
     "e2e:setup": "node e2e/setup.mjs",
-    "e2e:staff": "node e2e/staff.mjs"
+    "e2e:staff": "node e2e/staff.mjs",
+    "e2e:manage": "node e2e/manage.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

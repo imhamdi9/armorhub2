@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Modules\IndustryRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
@@ -21,6 +20,20 @@ class CatalogController extends Controller
         $class = $this->resolve($alias, $registry);
 
         return $class::query()->where('is_active', true)->orderBy('name')->get();
+    }
+
+    /** Parent lists a record needs (e.g. a vehicle model needs a vehicle make). */
+    public function schema(string $alias, IndustryRegistry $registry)
+    {
+        $class = $this->resolve($alias, $registry);
+        $known = array_keys($registry->sharedCatalogs());
+
+        $parents = collect((new $class)->getFillable())
+            ->filter(fn (string $f) => str_ends_with($f, '_id') && in_array(substr($f, 0, -3), $known, true))
+            ->map(fn (string $f) => ['field' => $f, 'alias' => substr($f, 0, -3)])
+            ->values();
+
+        return ['alias' => $alias, 'parents' => $parents];
     }
 
     public function store(Request $request, string $alias, IndustryRegistry $registry)
@@ -45,7 +58,19 @@ class CatalogController extends Controller
 
     public function destroy(string $alias, int $id, IndustryRegistry $registry)
     {
-        $this->resolve($alias, $registry)::findOrFail($id)->delete();
+        $record = $this->resolve($alias, $registry)::findOrFail($id);
+
+        // A subject (vehicle model, device model...) that orders point at is part of their history.
+        if (isset($registry->subjectModels()[$alias])
+            && \App\Models\Order::withoutGlobalScopes()->where('subject_type', $alias)->where('subject_id', $id)->exists()) {
+            return response()->json(['message' => 'This item is used by existing orders and cannot be deleted.'], 422);
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($record, $alias, $id) {
+            // Price rules pointing at a deleted target would be orphans.
+            \App\Models\ProductPriceRule::where('target_type', $alias)->where('target_id', $id)->delete();
+            $record->delete();
+        });
 
         return response()->json(['message' => 'Deleted']);
     }
@@ -53,12 +78,9 @@ class CatalogController extends Controller
     /** @return class-string<Model> */
     private function resolve(string $alias, IndustryRegistry $registry): string
     {
-        $class = ($registry->targetModels() + $registry->subjectModels())[$alias] ?? null;
+        $class = $registry->sharedCatalogs()[$alias] ?? null;
 
         abort_if($class === null, 404, 'Unknown catalog.');
-
-        // Customer-owned subjects (e.g. properties) are not shared catalogs.
-        abort_unless(Schema::hasColumn((new $class)->getTable(), 'is_active'), 404, 'Not a catalog.');
 
         return $class;
     }

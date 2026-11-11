@@ -22,6 +22,11 @@ abstract class BaseIndustryModule implements IndustryModule
         return [];
     }
 
+    public function catalogModels(): array
+    {
+        return [];
+    }
+
     public function policies(): array
     {
         return [];
