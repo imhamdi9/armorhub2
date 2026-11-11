@@ -2,6 +2,5 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// The API has no public front page: say what this is and nothing about the framework or its version.
+Route::get('/', fn () => response()->json(['service' => 'ArmorHub API']));
