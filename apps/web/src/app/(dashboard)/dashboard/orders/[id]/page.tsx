@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +18,55 @@ import {
 import type { Order, PartnerQuote } from "@/types/platform";
 
 export default function OrderDetailPage() {
+  return (
+    <Suspense>
+      <OrderDetail />
+    </Suspense>
+  );
+}
+
+const MAX_CONFIRM_POLLS = 20;
+
+function OrderDetail() {
   const { id } = useParams<{ id: string }>();
+  const checkout = useSearchParams().get("checkout");
   const [order, setOrder] = useState<Order | null>(null);
   const [quotes, setQuotes] = useState<PartnerQuote[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [polls, setPolls] = useState(0);
 
   useEffect(() => {
     getOrder(id).then(setOrder);
     getOrderQuotes(id).then(setQuotes).catch(() => setQuotes([]));
   }, [id, tick]);
+
+  // Back from the payment page: the webhook, not the browser, marks the order paid, so wait for it.
+  const confirming = checkout === "success" && !!order && order.status !== "paid" && polls < MAX_CONFIRM_POLLS && order.status === "partner_selected";
+
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => {
+      setPolls((n) => n + 1);
+      setTick((t) => t + 1);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [confirming, polls]);
+
+  async function pay() {
+    if (!order) return;
+    setError(null);
+    try {
+      const res = await payOrder(order.id, order.total_amount);
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -74,6 +113,20 @@ export default function OrderDetailPage() {
 
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
+      {confirming && (
+        <p className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm">
+          Confirming your payment… this usually takes a few seconds.
+        </p>
+      )}
+      {checkout === "success" && order.status === "partner_selected" && polls >= MAX_CONFIRM_POLLS && (
+        <p className="mb-4 rounded-lg border p-3 text-sm">
+          We have not received the confirmation yet. If you were charged, it will appear here shortly; no need to pay again.
+        </p>
+      )}
+      {checkout === "cancelled" && order.status === "partner_selected" && (
+        <p className="mb-4 rounded-lg border p-3 text-sm">Payment was cancelled. You can try again below.</p>
+      )}
+
       {order.status !== "cancelled" && (
         <>
           <h2 className="mb-3 text-xl font-semibold">Partner quotes</h2>
@@ -108,7 +161,7 @@ export default function OrderDetailPage() {
 
       <div className="mt-6 flex gap-3">
         {canPay && (
-          <Button onClick={() => run(() => payOrder(order.id, order.total_amount))}>
+          <Button disabled={confirming} onClick={pay}>
             Pay {order.total_amount} {order.currency}
           </Button>
         )}

@@ -39,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(PaymentGateway::class, fn () => match (config('platform.payment_gateway')) {
             'simulated' => new SimulatedGateway(),
+            'stripe' => new \App\Services\Payment\StripeGateway(),
             default => throw new \InvalidArgumentException(
                 'Unknown payment gateway ['.config('platform.payment_gateway').'].'
             ),

@@ -3,21 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
-use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Commission;
-use App\Models\CommissionDistribution;
 use App\Models\Order;
-use App\Models\OrderEvent;
-use App\Models\Partner;
 use App\Models\Payment;
-use App\Models\PartnerQuote;
-use App\Services\Commission\CalculateCommissionService;
+use App\Services\Payment\PaymentFinalizer;
 use App\Services\Payment\PaymentGateway;
 use App\Services\Payment\PaymentUnavailable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
@@ -27,7 +20,7 @@ class PaymentController extends Controller
     public function store(
         Request $request,
         Order $order,
-        CalculateCommissionService $commissions,
+        PaymentFinalizer $finalizer,
         PaymentGateway $gateway
     )
     {
@@ -60,79 +53,30 @@ class PaymentController extends Controller
             return response()->json(['message' => $e->getMessage()], 503);
         }
 
-        if ($charge['status'] !== 'completed') {
+        if ($charge['status'] === 'failed') {
             return response()->json(['message' => $charge['message'] ?? 'The payment was declined.'], 402);
         }
 
-        $result = DB::transaction(function () use ($order, $data, $commissions, $charge, $request) {
-
-            // Re-check under a row lock so two simultaneous requests cannot both pay.
-            $locked = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->id);
-
-            if ($locked->status === OrderStatus::Paid) {
-                throw ValidationException::withMessages(['order' => ['Order already paid']]);
-            }
-
-            $payment = Payment::create([
+        // Hosted checkout: remember the attempt; the webhook completes it.
+        if ($charge['status'] === 'redirect') {
+            Payment::create([
                 'company_id' => $order->company_id,
                 'order_id' => $order->id,
                 'amount' => $order->total_amount,
                 'currency' => $order->currency,
                 'payment_method' => $data['payment_method'] ?? null,
-                'status' => 'completed',
+                'status' => 'pending',
                 'transaction_id' => $charge['transaction_id'],
             ]);
 
-            $calc = $commissions->calculate($order->total_amount);
+            return response()->json(['message' => 'Continue to the payment page.', 'checkout_url' => $charge['url']], 202);
+        }
 
-            $commission = Commission::create([
-                'order_id' => $order->id,
-                'amount' => $calc['amount'],
-                'percentage' => $calc['percentage'],
-                'status' => 'pending',
-            ]);
+        $result = $finalizer->complete($order, $charge, $data['payment_method'] ?? null, $request->user());
 
-            $quote = PartnerQuote::withoutGlobalScopes()
-                ->where('order_id', $order->id)
-                ->where('status', QuoteStatus::Accepted)
-                ->first();
-
-            $partner = $quote ? Partner::withoutGlobalScopes()->find($quote->partner_id) : null;
-
-            if ($partner) {
-                $split = config('platform.commission_split');
-
-                CommissionDistribution::create([
-                    'commission_id' => $commission->id,
-                    'type' => 'platform',
-                    'amount' => round($commission->amount * $split['platform'], 2),
-                    'status' => 'pending',
-                ]);
-
-                if ($partner->company_id) {
-                    CommissionDistribution::create([
-                        'commission_id' => $commission->id,
-                        'type' => 'company',
-                        'company_id' => $partner->company_id,
-                        'amount' => round($commission->amount * $split['company'], 2),
-                        'status' => 'pending',
-                    ]);
-                }
-
-                CommissionDistribution::create([
-                    'commission_id' => $commission->id,
-                    'type' => 'partner',
-                    'partner_id' => $partner->id,
-                    'amount' => round($commission->amount * $split['partner'], 2),
-                    'status' => 'pending',
-                ]);
-            }
-
-            $order->update(['status' => OrderStatus::Paid]);
-            OrderEvent::record($order, 'paid', $request->user(), ['amount' => (string) $order->total_amount]);
-
-            return [$payment, $commission];
-        });
+        if ($result === null) {
+            return response()->json(['message' => 'Order already paid'], 422);
+        }
 
         return response()->json([
             'message' => 'Payment completed',

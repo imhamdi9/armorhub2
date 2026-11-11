@@ -88,9 +88,12 @@ export const getOrderQuotes = async (orderId: number | string) =>
 export const acceptQuote = async (quoteId: number) =>
   (await api.patch<{ order: Order }>(`/partner-quotes/${quoteId}/accept`)).data;
 
+/** Instant gateways answer "Payment completed"; hosted ones return a `checkout_url` to send the customer to. */
 export const payOrder = async (orderId: number, amount: number | string) =>
-  (await api.post(`/orders/${orderId}/payments`, { amount, payment_method: "card" }))
-    .data;
+  (await api.post<{ message: string; checkout_url?: string }>(`/orders/${orderId}/payments`, {
+    amount,
+    payment_method: "card",
+  })).data;
 
 export const getPartnerRequests = async () =>
   (await api.get<PartnerQuote[]>("/partner/orders")).data;

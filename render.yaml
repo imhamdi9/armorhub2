@@ -53,6 +53,17 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      # Same value as CORS_ALLOWED_ORIGINS: used in emailed links.
+      - key: WEB_URL
+        sync: false
+      # Optional: SMTP so password-reset and notification emails are delivered.
+      - key: MAIL_MAILER
+        value: log
+      # Optional: real payments. Set PLATFORM_PAYMENT_GATEWAY=stripe plus the two keys below.
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       # DEMO ONLY: no card is charged. Remove once a real payment gateway is integrated.
       - key: PLATFORM_ALLOW_SIMULATED_PAYMENTS
         value: "true"

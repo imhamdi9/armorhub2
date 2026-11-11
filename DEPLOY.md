@@ -31,12 +31,16 @@ Update later with `git pull` then the same `up -d --build` command.
 
 ## 2. Before real customers use it
 
-- **Payments are simulated.** The app records a payment and splits the
-  commission but charges no card, and in production it **refuses** to take
-  payments (HTTP 503) until a real gateway exists. Implement
-  `App\Services\Payment\PaymentGateway` (Stripe, Moyasar, ...) and set
-  `PLATFORM_PAYMENT_GATEWAY`. For a staging demo only, set
-  `PLATFORM_ALLOW_SIMULATED_PAYMENTS=true`.
+- **Payments (Stripe Checkout).** Set `PLATFORM_PAYMENT_GATEWAY=stripe`, `STRIPE_SECRET` and
+  `STRIPE_WEBHOOK_SECRET`. In the Stripe dashboard add a webhook endpoint
+  `https://api.<your-domain>/api/webhooks/stripe` for `checkout.session.completed` and
+  `checkout.session.expired`. Orders are marked paid **only by that signed webhook**, never by
+  the browser, and the amount is verified against the order. Without Stripe configured the app
+  refuses to take payments in production (the simulated gateway needs
+  `PLATFORM_ALLOW_SIMULATED_PAYMENTS=true`, for demos only). Refunds are done in the Stripe
+  dashboard and are not reflected in the app yet.
+- **Email.** Password resets and order notifications use Laravel mail. Configure SMTP
+  (`MAIL_*`) and `WEB_URL`; the default `log` mailer only writes emails to the log.
 - **Customer signup** needs the storefront company's ID; share it with
   customers (e.g. in a signup link or on your site).
 - **Ordering needs location.** Customers share it on the New order screen;

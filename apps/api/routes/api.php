@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductPriceRuleController;
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\TenantController;
 use App\Modules\IndustryRegistry;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,9 @@ use Illuminate\Support\Facades\Route;
 // Public
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+// Called by Stripe, authenticated by its signature
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle']);
+
 Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:auth');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:auth');
 

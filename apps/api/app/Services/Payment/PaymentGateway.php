@@ -7,9 +7,13 @@ use App\Models\Order;
 interface PaymentGateway
 {
     /**
-     * Charge the customer for an order.
+     * Start charging the customer for an order.
      *
-     * @return array{status: 'completed'|'failed', transaction_id: ?string, message?: string}
+     * - "completed": money was taken immediately (e.g. the simulated gateway)
+     * - "redirect":  send the customer to `url` to pay; a webhook confirms it later
+     * - "failed":    declined or could not start; `message` says why
+     *
+     * @return array{status: 'completed'|'redirect'|'failed', transaction_id: ?string, url?: string, message?: string}
      *
      * @throws PaymentUnavailable when the gateway cannot be used right now
      */
