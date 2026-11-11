@@ -17,7 +17,8 @@
     "e2e:security": "node e2e/security.mjs",
     "e2e:admin": "node e2e/admin.mjs",
     "e2e:storefront": "node e2e/storefront.mjs",
-    "e2e:shipping": "node e2e/shipping.mjs"
+    "e2e:shipping": "node e2e/shipping.mjs",
+    "e2e:partners": "node e2e/partners.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

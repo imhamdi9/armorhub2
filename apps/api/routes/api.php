@@ -49,6 +49,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
 
 Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
@@ -144,6 +145,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/products/{product}/price-rules', [ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
     Route::put('/products/{product}/price-rules', [ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
     Route::post('/pricing/calculate', [PricingController::class, 'calculate'])->middleware('permission:pricing.calculate');
+
+    // Partner applications: reviewed by platform admins and the store's owners
+    Route::get('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'index']);
+    Route::post('/partner-applications/{id}/approve', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'approve'])->whereNumber('id');
+    Route::post('/partner-applications/{id}/reject', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'reject'])->whereNumber('id');
 
     // Partners
     Route::get('/partners', [PartnerController::class, 'index'])->middleware('permission:partners.view');

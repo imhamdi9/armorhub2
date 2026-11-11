@@ -171,6 +171,7 @@ function Footer({ store }: { store?: ShellStore }) {
           <div className="mt-3">
             <Link className={link} href="/login">{tr("Sign in")}</Link>
             <Link className={link} href={store ? `/register?store=${encodeURIComponent(store.slug)}` : "/register"}>{tr("Create an account")}</Link>
+            <Link className={link} href={store ? `/partner-signup?store=${encodeURIComponent(store.slug)}` : "/partner-signup"}>{tr("Become a partner")}</Link>
             {!store && <Link className={link} href="/login">{tr("For businesses: sign in")}</Link>}
           </div>
         </div>

@@ -69,3 +69,9 @@ covered by an automated test (`apps/api/tests/Feature/SecurityTest.php`, `Paymen
 
 ## Reporting a vulnerability
 Email the maintainers privately; please don't open a public issue.
+
+### Partner applications
+- A business applies publicly (same bot checks and per-address limit as customer signup). Nothing is created until a reviewer approves: no account, no role, no partner profile.
+- The password chosen at application time is stored hashed and becomes the account password on approval; it is never returned by any endpoint.
+- Only platform admins and the owners of the store applied to can see or decide an application; anyone else gets 404. A decision is final and a mailbox that registered in the meantime is refused.
+- Until approval, signing in only explains the application status, and only to someone who knows the password.

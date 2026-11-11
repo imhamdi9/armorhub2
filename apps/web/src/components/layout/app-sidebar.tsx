@@ -24,6 +24,7 @@ import {
   ShoppingCart,
   Users,
   Truck,
+  UserCheck,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -61,6 +62,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   settings: Settings2,
   payments: CreditCard,
   shipping: Truck,
+  applications: UserCheck,
   security: ShieldAlert,
   audit: ScrollText,
 };

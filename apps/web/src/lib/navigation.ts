@@ -22,6 +22,7 @@ export interface NavItem {
     | "settings"
     | "payments"
     | "shipping"
+    | "applications"
     | "security"
     | "audit"
     | "jobs"
@@ -117,6 +118,11 @@ export function buildNavigation(user: User | null): NavItem[] {
 
   if (hasRole(user, "platform-admin", "partner-manager")) {
     items.push({ title: "Partners", href: "/dashboard/partners", icon: "partners" });
+  }
+
+  // Businesses that applied to become partners: decided by admins and the store's owners.
+  if (hasRole(user, "platform-admin", "company-owner")) {
+    items.push({ title: "Partner applications", href: "/dashboard/partner-applications", icon: "applications" });
   }
 
   // Owners shape what the public sees of their store (admins reach it from the Companies page).

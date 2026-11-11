@@ -123,6 +123,17 @@ class AuthController extends Controller
         // cannot be used to discover which emails have accounts.
         $valid = Hash::check($data['password'], $user?->password ?? $this->dummyHash()) && $user !== null;
 
+        // A partner who has applied but is not approved yet gets a clear answer (only after proving they know the password).
+        if (! $valid && ! $user) {
+            $application = \App\Models\PartnerApplication::where('email_canonical', EmailPolicy::canonical($data['email']))->latest('id')->first();
+
+            if ($application && Hash::check($data['password'], $application->password)) {
+                throw ValidationException::withMessages(['email' => [$application->status === 'rejected'
+                    ? 'Your partner application was not approved.'
+                    : 'Your partner application is still being reviewed. You can sign in as soon as it is approved.']]);
+            }
+        }
+
         if (! $valid) {
             Audit::record('auth.login_failed', null, ['email' => mb_strtolower($data['email'])]);
 

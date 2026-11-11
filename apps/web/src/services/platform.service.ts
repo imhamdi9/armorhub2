@@ -14,6 +14,7 @@ import type {
   PriceRule,
   Product,
   Tenant,
+  PartnerApplication,
   OrderShipping,
   Shipment,
   ShippingAddress,
@@ -272,3 +273,13 @@ export const refreshShipment = async (id: number) =>
 
 export const setShipmentStatus = async (id: number, status: string) =>
   (await api.post<Shipment>(`/shipments/${id}/status`, { status })).data;
+
+// ---- Partner applications (reviewers)
+export const getPartnerApplications = async (status: string = "pending") =>
+  (await api.get<Paginated<PartnerApplication>>("/partner-applications", { params: { status } })).data;
+
+export const approvePartnerApplication = async (id: number) =>
+  (await api.post<PartnerApplication>(`/partner-applications/${id}/approve`)).data;
+
+export const rejectPartnerApplication = async (id: number, reason: string) =>
+  (await api.post<PartnerApplication>(`/partner-applications/${id}/reject`, { reason: reason || null })).data;

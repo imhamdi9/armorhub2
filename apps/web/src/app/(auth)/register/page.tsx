@@ -127,6 +127,9 @@ function RegisterForm() {
             <p className="text-center text-sm">
               {tr("Already have an account?")}<Link href="/login" className="underline">{tr("Sign in")}</Link>
             </p>
+            <p className="text-center text-sm text-muted-foreground">
+              {tr("Do you run a service business?")} <Link href={storeSlug ? `/partner-signup?store=${encodeURIComponent(storeSlug)}` : "/partner-signup"} className="underline">{tr("Become a partner")}</Link>
+            </p>
           </form>
         </CardContent>
       </Card>

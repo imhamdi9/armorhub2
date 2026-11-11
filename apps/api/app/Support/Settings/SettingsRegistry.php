@@ -59,6 +59,8 @@ class SettingsRegistry
                 fn () => config('platform.commission_split.partner'), rules: ['min:0', 'max:1']),
             new Definition('platform.registration_open', 'platform', 'Customer signup is open', 'bool', true,
                 'Turn off to stop new accounts being created (e.g. during an attack).'),
+            new Definition('platform.partner_signup_open', 'platform', 'Partner applications are open', 'bool', true,
+                'Turn off to stop new partner applications (e.g. during an attack).'),
             new Definition('platform.orders_enabled', 'platform', 'New orders are accepted', 'bool', true,
                 'Turn off to pause ordering; existing orders continue normally.'),
 

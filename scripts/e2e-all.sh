@@ -2,7 +2,7 @@
 # Runs every browser end-to-end check against a real API + production web build.
 # Needs: PHP 8.3+/composer deps installed in apps/api, node deps in apps/web, Chromium.
 #   CHROMIUM_PATH=/path/to/chromium scripts/e2e-all.sh      (omit if Playwright's own browser is installed)
-#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | storefront | shipping | security | admin | stripe  (default: all)
+#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | storefront | shipping | partners | security | admin | stripe  (default: all)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -68,6 +68,14 @@ fresh_db
 (cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
 start_api
 (cd "$ROOT/apps/web" && npm run -s e2e:shipping)
+fi
+
+if want partners; then
+echo; echo "== Partner signup: apply, wait for approval, role granted on approval, rejection"
+fresh_db
+(cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
+start_api
+(cd "$ROOT/apps/web" && npm run -s e2e:partners)
 fi
 
 if want security; then

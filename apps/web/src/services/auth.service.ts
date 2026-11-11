@@ -69,3 +69,32 @@ export async function getPublicStoreName(slug: string) {
 
   return { ...data.store, market: data.market };
 }
+
+export interface PartnerApplicationForm {
+  store: string;
+  business_name: string;
+  contact_name: string;
+  email: string;
+  phone: string;
+  city: string;
+  country: string;
+  description?: string;
+  latitude?: number;
+  longitude?: number;
+  password: string;
+  password_confirmation: string;
+  signup_token: string;
+  website?: string;
+  captcha_token?: string;
+}
+
+export async function applyAsPartner(data: PartnerApplicationForm) {
+  return (await api.post<{ message: string }>("/partner-applications", data)).data;
+}
+
+/** The open stores a business can apply to (public). */
+export async function getOpenStores() {
+  const { data } = await api.get<{ stores: { name: string; slug: string; market: string | null }[] }>("/public/storefronts");
+
+  return data.stores;
+}

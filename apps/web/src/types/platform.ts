@@ -198,3 +198,19 @@ export interface AppNotification {
   read: boolean;
   created_at: string;
 }
+
+export interface PartnerApplication {
+  id: number;
+  business_name: string;
+  contact_name: string;
+  email: string;
+  phone: string;
+  city: string;
+  country: string;
+  description: string | null;
+  status: "pending" | "approved" | "rejected";
+  rejection_reason: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  store?: { id: number; name: string; slug: string };
+}
