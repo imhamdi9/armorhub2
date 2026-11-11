@@ -57,7 +57,19 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user()->load('company.tenant.industry');
+        $industry = $user->company?->tenant?->industry;
+
+        return response()->json(array_merge($user->toArray(), [
+            'industry' => $industry ? [
+                'id' => $industry->id,
+                'key' => $industry->key,
+                'name' => $industry->name,
+                'subjects' => array_keys($industry->module()?->subjectModels() ?? []),
+                'targets' => array_keys($industry->module()?->targetModels() ?? []),
+            ] : null,
+            'roles' => $user->getRoleNames(),
+        ]));
     }
 
     public function logout(Request $request)
@@ -69,7 +81,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function destroy(Order $order)
+    public function destroy(\App\Models\Order $order)
     {
     abort_unless(
         auth()->user()->hasRole('platform-admin'),

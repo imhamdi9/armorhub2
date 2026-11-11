@@ -24,8 +24,11 @@ class CompanyScope implements Scope
 
         // باقي المستخدمين يرون شركتهم فقط
         if ($user->company_id) {
+            // A company is scoped by its own id; everything else by company_id.
+            $column = $model instanceof \App\Models\Company ? 'id' : 'company_id';
+
             $builder->where(
-               $model->getTable().'.company_id',
+               $model->getTable().'.'.$column,
                $user->company_id
             );
         }

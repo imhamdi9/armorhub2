@@ -47,14 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 });
 
-Route::middleware('auth:sanctum')->get('/me', function (Illuminate\Http\Request $request) {
-    return response()->json($request->user());
-});
-
-Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
-    return $request->user();
-});
-
 
 Route::middleware([
     'auth:sanctum',
@@ -197,6 +189,19 @@ Route::patch(
     '/commission-distributions/{commissionDistribution}/pay',
     [CommissionDistributionController::class, 'pay']
 );
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/catalog/{alias}', [\App\Http\Controllers\Api\CatalogController::class, 'index']);
+
+    Route::get('/products/{product}/price-rules', [\App\Http\Controllers\Api\ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
+    Route::put('/products/{product}/price-rules', [\App\Http\Controllers\Api\ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
+
+    Route::middleware('permission:tenants.manage')->group(function () {
+        Route::get('/tenants', [\App\Http\Controllers\Api\TenantController::class, 'index']);
+        Route::post('/tenants', [\App\Http\Controllers\Api\TenantController::class, 'store']);
+        Route::put('/tenants/{tenant}', [\App\Http\Controllers\Api\TenantController::class, 'update']);
+    });
+});
 
 Route::get('/industries', [\App\Http\Controllers\Api\IndustryController::class, 'index'])
     ->middleware('auth:sanctum');

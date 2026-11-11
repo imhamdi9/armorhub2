@@ -32,6 +32,15 @@ class RolesAndPermissionsSeeder extends Seeder
     'partners.update',
     'partners.delete',
 
+    // Products
+    'products.view',
+    'products.create',
+    'products.update',
+    'products.delete',
+
+    // Tenants / industries
+    'tenants.manage',
+
     // Orders
     'orders.view',
     'orders.create',
@@ -72,6 +81,10 @@ class RolesAndPermissionsSeeder extends Seeder
 
     'vehicle-makes.view',
 
+    'products.view',
+    'products.create',
+    'products.update',
+
     'orders.view',
 
     'dashboard.view',
@@ -81,6 +94,8 @@ class RolesAndPermissionsSeeder extends Seeder
     'partners.view',
     'partners.create',
     'partners.update',
+
+    'products.view',
 
     'orders.view',
 
@@ -97,6 +112,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
 'customer' => [
     'orders.create',
+
+    'products.view',
 
     'vehicle-makes.view',
 
