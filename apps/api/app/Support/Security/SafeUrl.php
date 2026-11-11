@@ -9,6 +9,28 @@ namespace App\Support\Security;
  */
 class SafeUrl
 {
+    /**
+     * Curl options that connect to the very address that was validated. Without this the HTTP
+     * client would resolve the name again, and a hostile DNS server could answer with a public
+     * address for the check and an internal one for the connection (DNS rebinding).
+     *
+     * @return array<int, mixed>
+     */
+    public static function curlOptions(string $url): array
+    {
+        $parts = parse_url($url);
+        $host = trim($parts['host'] ?? '', '[]');
+
+        if ($host === '' || filter_var($host, FILTER_VALIDATE_IP) || config('platform.allow_insecure_provider_urls')) {
+            return [];
+        }
+
+        $ip = (gethostbynamel($host) ?: [])[0] ?? null;
+        $port = $parts['port'] ?? (($parts['scheme'] ?? 'https') === 'http' ? 80 : 443);
+
+        return $ip ? [CURLOPT_RESOLVE => ["{$host}:{$port}:{$ip}"]] : [];
+    }
+
     /** Why the URL may not be called, or null when it is fine. */
     public static function problem(string $url): ?string
     {

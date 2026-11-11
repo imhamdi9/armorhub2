@@ -28,7 +28,11 @@ class SecurityChecks
             $this->check('cors', in_array('*', $cors, true) ? 'fail' : 'ok',
                 in_array('*', $cors, true) ? 'CORS allows every website.' : 'CORS only allows: '.implode(', ', $cors)),
             $this->check('proxies', env('TRUSTED_PROXIES') ? 'ok' : ($production ? 'warn' : 'ok'),
-                env('TRUSTED_PROXIES') ? 'Trusted proxies are configured, so per-IP limits see real visitor addresses.' : 'TRUSTED_PROXIES is not set. Behind a reverse proxy every visitor looks like the same IP and rate limits misbehave.'),
+                env('TRUSTED_PROXIES')
+                    ? 'Trusted proxies are configured, so per-IP limits see real visitor addresses.'
+                    : ($production
+                        ? 'TRUSTED_PROXIES is not set. Behind a reverse proxy every visitor looks like the same IP and rate limits misbehave.'
+                        : 'TRUSTED_PROXIES is not set (fine for local use; set it when running behind a reverse proxy).')),
             $this->check('mail', in_array(config('mail.default'), ['log', 'array'], true) ? 'warn' : 'ok',
                 in_array(config('mail.default'), ['log', 'array'], true) ? 'Email is not delivered (log driver): password resets, notifications and email verification do not work.' : 'Email delivery is configured.'),
             $this->check('token_expiry', (int) config('sanctum.expiration') > 0 ? 'ok' : 'warn',

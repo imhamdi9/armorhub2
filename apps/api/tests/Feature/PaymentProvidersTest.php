@@ -376,4 +376,16 @@ class PaymentProvidersTest extends TestCase
             $this->actingAs($user, 'sanctum')->getJson('/api/admin/overview')->assertForbidden();
         }
     }
+
+    public function test_connections_are_pinned_to_the_validated_address(): void
+    {
+        // An IP literal needs no pinning; a name that cannot be resolved yields no option rather than a bad one.
+        $this->assertSame([], \App\Support\Security\SafeUrl::curlOptions('https://93.184.216.34/pay'));
+        $this->assertSame([], \App\Support\Security\SafeUrl::curlOptions('https://does-not-resolve.invalid/pay'));
+        $this->assertSame([], \App\Support\Security\SafeUrl::curlOptions('nonsense'));
+
+        // When the name resolves (here: localhost, in a sandbox where it always does) the option pins host:port:ip.
+        $options = \App\Support\Security\SafeUrl::curlOptions('https://localhost:8443/pay');
+        $this->assertStringStartsWith('localhost:8443:127.', $options[CURLOPT_RESOLVE][0] ?? '');
+    }
 }

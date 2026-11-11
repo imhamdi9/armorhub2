@@ -191,4 +191,36 @@ class SettingsAndAuditTest extends TestCase
         $this->assertSame(0, AuditLog::where('action', 'old.thing')->count());
         $this->assertSame(1, AuditLog::where('action', 'new.thing')->count());
     }
+
+    public function test_the_shared_cache_never_holds_a_decrypted_secret(): void
+    {
+        $settings = app(Settings::class);
+        $settings->set('security.captcha_secret', 'plaintext-must-not-be-cached', $this->admin);
+        $settings->set('platform.currency', 'EUR', $this->admin);
+
+        // A fresh read fills the cache; the secret is still readable through the service...
+        $fresh = new Settings($settings->registry());
+        $this->assertSame('plaintext-must-not-be-cached', $fresh->get('security.captcha_secret'));
+        $this->assertSame('EUR', $fresh->get('platform.currency'));
+
+        // ...but what sits in the cache store is only the encrypted form.
+        $cached = \Illuminate\Support\Facades\Cache::get('platform.settings.v1');
+        $this->assertNotNull($cached);
+        $this->assertStringNotContainsString('plaintext-must-not-be-cached', json_encode($cached));
+        $this->assertTrue($cached['security.captcha_secret']['secret']);
+    }
+
+    public function test_settings_fall_back_to_defaults_when_the_database_is_not_ready(): void
+    {
+        \Illuminate\Support\Facades\Schema::drop('settings');
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $settings = new Settings(app(\App\Support\Settings\SettingsRegistry::class));
+
+        $this->assertSame('USD', $settings->get('platform.currency'));
+        $this->assertTrue($settings->bool('platform.registration_open'));
+
+        // ...and the security checklist (used by a CLI command) still runs.
+        $this->artisan('platform:security-check')->assertSuccessful();
+    }
 }

@@ -99,7 +99,8 @@ class HttpProvider implements PaymentProvider
 
         try {
             $request = Http::withHeaders([(string) ($config['auth_header'] ?: 'Authorization') => (string) $config['auth_value']])
-                ->timeout(15)->withoutRedirecting()->acceptJson();
+                ->timeout(15)->withoutRedirecting()->acceptJson()
+                ->withOptions(['curl' => SafeUrl::curlOptions((string) $config['create_url'])]);
 
             $response = ($config['content_type'] ?? 'json') === 'form'
                 ? $request->asForm()->post($config['create_url'], $this->flatten($body))

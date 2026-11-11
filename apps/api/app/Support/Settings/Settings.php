@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
@@ -124,23 +125,40 @@ class Settings
         Cache::forget(self::CACHE_KEY);
     }
 
-    /** @return array<string, mixed> key => decoded value */
+    /**
+     * key => decoded value. Only the raw rows (secrets still encrypted) go in the shared cache;
+     * decryption happens in memory, so a cache or database dump never exposes a secret.
+     *
+     * @return array<string, mixed>
+     */
     private function stored(): array
     {
-        return $this->memo ??= Cache::remember(self::CACHE_KEY, 300, function () {
-            $values = [];
+        if ($this->memo !== null) {
+            return $this->memo;
+        }
 
-            foreach (Setting::all() as $row) {
-                try {
-                    $json = $row->is_secret ? Crypt::decryptString((string) $row->value) : $row->value;
-                    $values[$row->key] = json_decode((string) $json, true);
-                } catch (DecryptException $e) {
-                    // The key changed since this was saved: treat the secret as unset rather than crash.
-                    report($e);
-                }
+        try {
+            $rows = Cache::remember(self::CACHE_KEY, 300, fn () => Setting::all()
+                ->mapWithKeys(fn (Setting $r) => [$r->key => ['value' => $r->value, 'secret' => (bool) $r->is_secret]])
+                ->all());
+        } catch (QueryException) {
+            // No database (or no settings table) yet, e.g. a CLI command run before `migrate`:
+            // every setting simply has its default. Nothing is cached, so it recovers on its own.
+            return $this->memo = [];
+        }
+
+        $values = [];
+
+        foreach ($rows as $key => $row) {
+            try {
+                $json = $row['secret'] ? Crypt::decryptString((string) $row['value']) : $row['value'];
+                $values[$key] = json_decode((string) $json, true);
+            } catch (DecryptException $e) {
+                // The key changed since this was saved: treat the secret as unset rather than crash.
+                report($e);
             }
+        }
 
-            return $values;
-        });
+        return $this->memo = $values;
     }
 }
