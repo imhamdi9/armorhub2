@@ -1,4 +1,5 @@
 import { isAxiosError } from "axios";
+import { tr } from "@/lib/i18n";
 
 /** Best human-readable message from an API error (validation or plain). */
 export function errorMessage(error: unknown, fallback = "Something went wrong."): string {
@@ -7,7 +8,7 @@ export function errorMessage(error: unknown, fallback = "Something went wrong.")
       | { message?: string; errors?: Record<string, string[]> }
       | undefined;
     const first = data?.errors && Object.values(data.errors)[0]?.[0];
-    return first ?? data?.message ?? fallback;
+    return tr(first ?? data?.message ?? fallback);
   }
-  return fallback;
+  return tr(fallback);
 }

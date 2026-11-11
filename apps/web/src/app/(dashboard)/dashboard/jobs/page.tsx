@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { statusLabel } from "@/lib/orders";
 import { completeJob, getJobs, scheduleJob, startJob } from "@/services/platform.service";
 import type { Order } from "@/types/platform";
+import { formatDateTime, tr } from "@/lib/i18n";
 
 /** Paid work assigned to the signed-in user's partner: schedule, start, complete. */
 export default function JobsPage() {
@@ -39,13 +40,13 @@ export default function JobsPage() {
 
   return (
     <div>
-      <PageHeader title="Jobs" />
+      <PageHeader title={tr("Jobs")} />
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {jobs === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : jobs.length === 0 ? (
-        <EmptyState>No jobs yet. Jobs appear here once a customer accepts your quote and pays.</EmptyState>
+        <EmptyState>{tr("No jobs yet. Jobs appear here once a customer accepts your quote and pays.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
@@ -53,7 +54,7 @@ export default function JobsPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-semibold">
-                    {job.product?.name} · Order #{job.id}
+                    {job.product?.name} · {tr("Order #{id}", { id: job.id })}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {job.customer?.name}
@@ -61,7 +62,7 @@ export default function JobsPage() {
                     {job.subject && "name" in job.subject ? ` · ${String(job.subject.name)}` : ""}
                   </p>
                   {job.scheduled_at && (
-                    <p className="mt-1 text-sm">Appointment: {new Date(job.scheduled_at).toLocaleString()}</p>
+                    <p className="mt-1 text-sm">{tr("Appointment")}: {formatDateTime(job.scheduled_at)}</p>
                   )}
                 </div>
                 <Badge variant="secondary">{statusLabel(job.status)}</Badge>
@@ -84,7 +85,7 @@ export default function JobsPage() {
                   </Button>
                   {job.status === "appointment_scheduled" && (
                     <Button size="sm" variant="outline" onClick={() => run(() => startJob(job.id))}>
-                      Start work
+                      {tr("Start work")}
                     </Button>
                   )}
                 </div>
@@ -92,7 +93,7 @@ export default function JobsPage() {
 
               {job.status === "service_in_progress" && (
                 <Button className="mt-3" size="sm" onClick={() => run(() => completeJob(job.id))}>
-                  Mark completed
+                  {tr("Mark completed")}
                 </Button>
               )}
             </div>

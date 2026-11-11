@@ -12,7 +12,8 @@
     "e2e:setup": "node e2e/setup.mjs",
     "e2e:staff": "node e2e/staff.mjs",
     "e2e:manage": "node e2e/manage.mjs",
-    "e2e:stripe": "node e2e/stripe.mjs"
+    "e2e:stripe": "node e2e/stripe.mjs",
+    "e2e:responsive": "node e2e/responsive.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

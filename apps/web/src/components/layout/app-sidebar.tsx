@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { tr, useLocale } from "@/lib/i18n";
 
 const icons: Record<NavItem["icon"], LucideIcon> = {
   dashboard: LayoutDashboard,
@@ -53,14 +54,15 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
 export function AppSidebar() {
   const user = useCurrentUser();
   const pathname = usePathname();
+  const locale = useLocale();
   const items = buildNavigation(user);
 
   return (
-    <Sidebar>
+    <Sidebar side={locale === "ar" ? "right" : "left"}>
       <SidebarHeader className="p-6">
-        <h1 className="text-xl font-bold">ArmorHub</h1>
+        <h1 className="text-xl font-bold">{tr("ArmorHub")}</h1>
         <p className="text-sm text-muted-foreground">
-          {user?.industry?.name ?? "Service Marketplace Platform"}
+          {user?.industry ? tr(user.industry.name) : tr("Service Marketplace Platform")}
         </p>
       </SidebarHeader>
 
@@ -80,7 +82,7 @@ export function AppSidebar() {
                   render={<Link href={item.href} />}
                 >
                   <Icon className="h-4 w-4" />
-                  <span>{item.title}</span>
+                  <span>{tr(item.title)}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );

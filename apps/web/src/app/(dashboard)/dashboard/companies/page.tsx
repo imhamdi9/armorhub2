@@ -17,6 +17,7 @@ import {
   updateCompany,
 } from "@/services/platform.service";
 import type { Tenant } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 /** Companies are the businesses on the platform. Customers sign up under a company's ID. */
 export default function CompaniesPage() {
@@ -60,7 +61,7 @@ export default function CompaniesPage() {
   }
 
   async function remove(c: Company) {
-    if (!window.confirm(`Delete ${c.name}?`)) return;
+    if (!window.confirm(tr("Delete {name}?", { name: c.name }))) return;
     try {
       await deleteCompany(c.id);
       setCompanies((prev) => prev?.filter((x) => x.id !== c.id) ?? null);
@@ -71,65 +72,65 @@ export default function CompaniesPage() {
 
   return (
     <div>
-      <PageHeader title="Companies" />
+      <PageHeader title={tr("Companies")} />
 
       {isAdmin && (
         <form onSubmit={add} className="mb-6 flex flex-wrap gap-2">
-          <Input className="max-w-xs" placeholder="Company name" required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input className="max-w-xs" placeholder={tr("Company name")} required value={name} onChange={(e) => setName(e.target.value)} />
           <select required className="rounded-lg border px-3 py-2" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
-            <option value="" disabled>Tenant</option>
+            <option value="" disabled>{tr("Tenant")}</option>
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
           <select className="rounded-lg border px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="partner">Partner / service provider</option>
-            <option value="supplier">Supplier</option>
-            <option value="platform">Storefront / platform</option>
+            <option value="partner">{tr("Partner / service provider")}</option>
+            <option value="supplier">{tr("Supplier")}</option>
+            <option value="platform">{tr("Storefront / platform")}</option>
           </select>
-          <Button type="submit">Add company</Button>
+          <Button type="submit">{tr("Add company")}</Button>
         </form>
       )}
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {companies === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : companies.length === 0 ? (
-        <EmptyState>No companies yet. Create a tenant first, then add a company.</EmptyState>
+        <EmptyState>{tr("No companies yet. Create a tenant first, then add a company.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {companies.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
               {editing === c.id ? (
                 <div className="flex flex-wrap gap-2">
-                  <Input aria-label="Company name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+                  <Input aria-label={tr("Company name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
                   {isAdmin && (
-                    <select aria-label="Status" className="rounded-lg border px-3 py-2" value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })}>
+                    <select aria-label={tr("Status")} className="rounded-lg border px-3 py-2" value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })}>
                       {["pending", "active", "inactive", "suspended"].map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>{tr(s)}</option>
                       ))}
                     </select>
                   )}
-                  <Button size="sm" onClick={() => save(c)}>Save</Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+                  <Button size="sm" onClick={() => save(c)}>{tr("Save")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditing(null)}>{tr("Cancel")}</Button>
                 </div>
               ) : (
                 <div>
                   <h2 className="font-semibold">{c.name}</h2>
-                  <p className="text-sm text-muted-foreground">{c.type} · {c.status}</p>
+                  <p className="text-sm text-muted-foreground">{tr(c.type)} · {tr(c.status)}</p>
                 </div>
               )}
               <div className="flex items-center gap-2">
                 <span className="rounded bg-muted px-2 py-1 text-sm">
-                  Company ID: <strong>{c.id}</strong>
+                  {tr("Company ID")}: <strong>{c.id}</strong>
                 </span>
                 {editing !== c.id && (
                   <Button size="sm" variant="outline" onClick={() => { setEditing(c.id); setDraft({ name: c.name, status: c.status }); }}>
-                    Edit
+                    {tr("Edit")}
                   </Button>
                 )}
                 {isAdmin && editing !== c.id && (
-                  <Button size="sm" variant="outline" onClick={() => remove(c)}>Delete</Button>
+                  <Button size="sm" variant="outline" onClick={() => remove(c)}>{tr("Delete")}</Button>
                 )}
               </div>
             </div>

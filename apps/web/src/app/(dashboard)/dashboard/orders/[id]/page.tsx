@@ -16,6 +16,7 @@ import {
   payOrder,
 } from "@/services/platform.service";
 import type { Order, PartnerQuote } from "@/types/platform";
+import { formatDate, formatDateTime, tr } from "@/lib/i18n";
 
 export default function OrderDetailPage() {
   return (
@@ -78,7 +79,7 @@ function OrderDetail() {
     }
   }
 
-  if (!order) return <p className="text-muted-foreground">Loading...</p>;
+  if (!order) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
 
   const submitted = quotes.filter((q) => q.status !== "pending");
   const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
@@ -88,25 +89,25 @@ function OrderDetail() {
   return (
     <div className="max-w-2xl">
       <PageHeader
-        title={`Order #${order.id}`}
+        title={tr("Order #{id}", { id: order.id })}
         action={<Badge variant="secondary">{statusLabel(order.status)}</Badge>}
       />
 
       <div className="mb-6 rounded-lg border p-4 text-sm">
         <p className="font-semibold">{order.product?.name}</p>
-        <p>Product: {order.product_amount} {order.currency}</p>
-        <p>Service: {order.service_amount} {order.currency}</p>
-        <p className="mt-1 text-base font-bold">Total: {order.total_amount} {order.currency}</p>
+        <p>{tr("Product")}: {order.product_amount} {order.currency}</p>
+        <p>{tr("Service")}: {order.service_amount} {order.currency}</p>
+        <p className="mt-1 text-base font-bold">{tr("Total")}: {order.total_amount} {order.currency}</p>
         {order.scheduled_at && order.status !== "cancelled" && (
-          <p className="mt-2">Appointment: {new Date(order.scheduled_at).toLocaleString()}</p>
+          <p className="mt-2">{tr("Appointment")}: {formatDateTime(order.scheduled_at)}</p>
         )}
       </div>
 
       {order.warranty && (
         <div className="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-sm">
-          <p className="font-semibold">Warranty</p>
+          <p className="font-semibold">{tr("Warranty")}</p>
           <p>
-            Valid until {new Date(order.warranty.ends_at).toLocaleDateString()}
+            {tr("Valid until {date}", { date: formatDate(order.warranty.ends_at) })}
           </p>
         </div>
       )}
@@ -115,7 +116,7 @@ function OrderDetail() {
 
       {confirming && (
         <p className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm">
-          Confirming your payment… this usually takes a few seconds.
+          {tr("Confirming your payment… this usually takes a few seconds.")}
         </p>
       )}
       {checkout === "success" && order.status === "partner_selected" && polls >= MAX_CONFIRM_POLLS && (
@@ -124,14 +125,14 @@ function OrderDetail() {
         </p>
       )}
       {checkout === "cancelled" && order.status === "partner_selected" && (
-        <p className="mb-4 rounded-lg border p-3 text-sm">Payment was cancelled. You can try again below.</p>
+        <p className="mb-4 rounded-lg border p-3 text-sm">{tr("Payment was cancelled. You can try again below.")}</p>
       )}
 
       {order.status !== "cancelled" && (
         <>
-          <h2 className="mb-3 text-xl font-semibold">Partner quotes</h2>
+          <h2 className="mb-3 text-xl font-semibold">{tr("Partner quotes")}</h2>
           {submitted.length === 0 ? (
-            <EmptyState>Waiting for partners to respond ({quotes.length} asked).</EmptyState>
+            <EmptyState>{tr("Waiting for partners to respond ({n} asked).", { n: quotes.length })}</EmptyState>
           ) : (
             <div className="space-y-3">
               {submitted.map((q) => (
@@ -145,11 +146,11 @@ function OrderDetail() {
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">{q.price}</span>
                     {q.status === "accepted" ? (
-                      <Badge>Selected</Badge>
+                      <Badge>{tr("Selected")}</Badge>
                     ) : q.status === "rejected" ? (
-                      <Badge variant="outline">Declined</Badge>
+                      <Badge variant="outline">{tr("Declined")}</Badge>
                     ) : (
-                      canChoose && <Button size="sm" onClick={() => run(() => acceptQuote(q.id))}>Accept</Button>
+                      canChoose && <Button size="sm" onClick={() => run(() => acceptQuote(q.id))}>{tr("Accept")}</Button>
                     )}
                   </div>
                 </div>
@@ -162,25 +163,25 @@ function OrderDetail() {
       <div className="mt-6 flex gap-3">
         {canPay && (
           <Button disabled={confirming} onClick={pay}>
-            Pay {order.total_amount} {order.currency}
+            {tr("Pay {amount}", { amount: `${order.total_amount} ${order.currency}` })}
           </Button>
         )}
         {canCancel && (
           <Button variant="outline" onClick={() => run(() => cancelOrder(order.id))}>
-            Cancel order
+            {tr("Cancel order")}
           </Button>
         )}
       </div>
 
       {order.events && order.events.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-xl font-semibold">Timeline</h2>
-          <ol className="space-y-3 border-l pl-4">
+          <h2 className="mb-3 mt-8 text-xl font-semibold">{tr("Timeline")}</h2>
+          <ol className="space-y-3 border-s ps-4">
             {order.events.map((ev) => (
               <li key={ev.id}>
                 <p className="font-medium">{eventLabel(ev)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(ev.created_at).toLocaleString()}
+                  {formatDateTime(ev.created_at)}
                   {ev.user ? ` · ${ev.user.name}` : ""}
                 </p>
               </li>

@@ -11,6 +11,7 @@ import { hasRole } from "@/lib/navigation";
 import { STATUS_LABELS, statusLabel } from "@/lib/orders";
 import { getOrders } from "@/services/platform.service";
 import type { Order, Paginated } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 export default function OrdersPage() {
   const user = useCurrentUser();
@@ -27,11 +28,11 @@ export default function OrdersPage() {
   return (
     <div>
       <PageHeader
-        title="Orders"
+        title={tr("Orders")}
         action={
           hasRole(user, "customer") && (
             <Link href="/dashboard/orders/new" className="rounded-lg bg-black px-4 py-2 text-white hover:opacity-90">
-              New order
+              {tr("New order")}
             </Link>
           )
         }
@@ -45,16 +46,16 @@ export default function OrdersPage() {
           setPage(1);
         }}
       >
-        <option value="">All statuses</option>
+        <option value="">{tr("All statuses")}</option>
         {Object.entries(STATUS_LABELS).map(([value, label]) => (
-          <option key={value} value={value}>{label}</option>
+          <option key={value} value={value}>{tr(label)}</option>
         ))}
       </select>
 
       {result === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : result.data.length === 0 ? (
-        <EmptyState>No orders found.</EmptyState>
+        <EmptyState>{tr("No orders found.")}</EmptyState>
       ) : (
         <>
           <div className="space-y-3">
@@ -65,7 +66,7 @@ export default function OrdersPage() {
                 className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted"
               >
                 <div>
-                  <h2 className="font-semibold">Order #{o.id}{o.product ? ` · ${o.product.name}` : ""}</h2>
+                  <h2 className="font-semibold">{tr("Order #{id}", { id: o.id })}{o.product ? ` · ${o.product.name}` : ""}</h2>
                   <p className="text-sm text-muted-foreground">{o.total_amount} {o.currency}</p>
                 </div>
                 <Badge variant="secondary">{statusLabel(o.status)}</Badge>
@@ -76,11 +77,11 @@ export default function OrdersPage() {
           {result.last_page > 1 && (
             <div className="mt-4 flex items-center justify-center gap-3">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                Previous
+                {tr("Previous")}
               </Button>
               <span className="text-sm">Page {result.current_page} of {result.last_page}</span>
               <Button variant="outline" size="sm" disabled={page >= result.last_page} onClick={() => setPage((p) => p + 1)}>
-                Next
+                {tr("Next")}
               </Button>
             </div>
           )}

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { resetPassword } from "@/services/auth.service";
+import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 /** Opened from the emailed link: /reset-password?token=...&email=... */
 export default function ResetPasswordPage() {
@@ -41,30 +42,34 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="absolute end-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">Choose a new password</CardTitle>
+          <CardTitle className="text-center text-2xl">{tr("Choose a new password")}</CardTitle>
         </CardHeader>
         <CardContent>
           {done ? (
             <div className="space-y-4 text-center">
-              <p className="text-green-600">Password updated.</p>
-              <Link href="/login" className="underline">Sign in</Link>
+              <p className="text-green-600">{tr("Password updated.")}</p>
+              <Link href="/login" className="underline">{tr("Sign in")}</Link>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-4">
               <p className="text-sm text-muted-foreground">{email}</p>
               <div>
-                <Label htmlFor="password">New password</Label>
+                <Label htmlFor="password">{tr("New password")}</Label>
                 <Input id="password" type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="confirmation">Confirm password</Label>
+                <Label htmlFor="confirmation">{tr("Confirm password")}</Label>
                 <Input id="confirmation" type="password" required value={confirmation} onChange={(e) => setConfirmation(e.target.value)} />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={!token}>Update password</Button>
+              <Button type="submit" className="w-full" disabled={!token}>{tr("Update password")}</Button>
             </form>
           )}
         </CardContent>

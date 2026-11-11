@@ -17,6 +17,7 @@ import {
   updatePartner,
 } from "@/services/platform.service";
 import type { Partner } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 const FIELDS = ["name", "city", "country", "phone", "latitude", "longitude"] as const;
 type Draft = Record<(typeof FIELDS)[number], string>;
@@ -87,8 +88,8 @@ export default function PartnersPage() {
   return (
     <div>
       <PageHeader
-        title="Partners"
-        action={canManage && <Button onClick={() => { setEditing("new"); setForm(EMPTY); }}>Add partner</Button>}
+        title={tr("Partners")}
+        action={canManage && <Button onClick={() => { setEditing("new"); setForm(EMPTY); }}>{tr("Add partner")}</Button>}
       />
 
       {editing !== null && (
@@ -107,25 +108,25 @@ export default function PartnersPage() {
             </div>
           ))}
           <p className="text-xs text-muted-foreground">
-            Latitude and longitude let customers be matched with this partner when they are nearby.
+            {tr("Latitude and longitude let customers be matched with this partner when they are nearby.")}
           </p>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="flex gap-2">
-            <Button type="submit">Save</Button>
-            <Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button type="submit">{tr("Save")}</Button>
+            <Button type="button" variant="outline" onClick={() => setEditing(null)}>{tr("Cancel")}</Button>
           </div>
         </form>
       )}
 
-      <Input className="mb-4 max-w-sm" placeholder="Search partners" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <Input className="mb-4 max-w-sm" placeholder={tr("Search partners")} value={search} onChange={(e) => setSearch(e.target.value)} />
       {editing === null && error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {forbidden ? (
-        <EmptyState>You do not have access to partners.</EmptyState>
+        <EmptyState>{tr("You do not have access to partners.")}</EmptyState>
       ) : partners === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : partners.length === 0 ? (
-        <EmptyState>No partners found.</EmptyState>
+        <EmptyState>{tr("No partners found.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {partners.map((p) => {
@@ -134,7 +135,7 @@ export default function PartnersPage() {
               <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
                 <div>
                   <h2 className="font-semibold">
-                    {p.name} {!active && <Badge variant="outline">Inactive</Badge>}
+                    {p.name} {!active && <Badge variant="outline">{tr("Inactive")}</Badge>}
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     {[p.city, p.country, p.phone].filter(Boolean).join(" · ")}
@@ -142,10 +143,10 @@ export default function PartnersPage() {
                 </div>
                 {canManage && (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => startEdit(p)}>Edit</Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(p)}>{tr("Edit")}</Button>
                     <Button size="sm" variant="outline" onClick={() => toggle(p)}>{active ? "Deactivate" : "Activate"}</Button>
                     {hasRole(user, "platform-admin") && (
-                      <Button size="sm" variant="outline" onClick={() => remove(p)}>Delete</Button>
+                      <Button size="sm" variant="outline" onClick={() => remove(p)}>{tr("Delete")}</Button>
                     )}
                   </div>
                 )}

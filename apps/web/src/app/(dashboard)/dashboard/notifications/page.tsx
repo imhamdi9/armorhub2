@@ -11,6 +11,7 @@ import {
   markNotificationRead,
 } from "@/services/platform.service";
 import type { AppNotification } from "@/types/platform";
+import { formatDateTime, tr } from "@/lib/i18n";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -31,18 +32,18 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-2xl">
       <PageHeader
-        title="Notifications"
+        title={tr("Notifications")}
         action={
           hasUnread && (
             <Button variant="outline" onClick={() => markAllNotificationsRead().then(() => setTick((t) => t + 1))}>
-              Mark all read
+              {tr("Mark all read")}
             </Button>
           )
         }
       />
 
       {items === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : items.length === 0 ? (
         <EmptyState>Nothing yet. You will be told here (and by email) when something needs you.</EmptyState>
       ) : (
@@ -51,11 +52,11 @@ export default function NotificationsPage() {
             <button
               key={n.id}
               onClick={() => open(n)}
-              className={`block w-full rounded-lg border p-4 text-left hover:bg-muted ${n.read ? "" : "border-blue-300 bg-blue-50"}`}
+              className={`block w-full rounded-lg border p-4 text-start hover:bg-muted ${n.read ? "" : "border-blue-300 bg-blue-50"}`}
             >
-              <p className="font-semibold">{n.title}</p>
+              <p className="font-semibold">{tr(n.title)}</p>
               <p className="text-sm">{n.body}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(n.created_at)}</p>
             </button>
           ))}
         </div>

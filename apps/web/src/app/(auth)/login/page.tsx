@@ -15,6 +15,7 @@ import {
   loginSchema,
   type LoginFormData,
 } from "@/lib/validators/login";
+import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function LoginPage() {
 
@@ -46,11 +47,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="absolute end-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-2xl">
-            Sign in to ArmorHub
+            {tr("Sign in to ArmorHub")}
           </CardTitle>
         </CardHeader>
 
@@ -60,10 +65,10 @@ export default function LoginPage() {
             className="space-y-4"
           >
           <div>
-            <Label>Email</Label>
+            <Label>{tr("Email")}</Label>
             <Input
              type="email"
-             placeholder="admin@armorhub.com"
+             placeholder={tr("admin@armorhub.com")}
              {...register("email")}
             />
             {errors.email && (
@@ -74,7 +79,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <Label>Password</Label>
+            <Label>{tr("Password")}</Label>
             <Input
               type="password"
               placeholder="••••••••"
@@ -94,13 +99,13 @@ export default function LoginPage() {
             type="submit"
             className="w-full"
           >
-            Login
+            {tr("Login")}
           </Button>
           <p className="text-center text-sm">
-            <Link href="/forgot-password" className="underline">Forgot your password?</Link>
+            <Link href="/forgot-password" className="underline">{tr("Forgot your password?")}</Link>
           </p>
           <p className="text-center text-sm">
-            New here? <Link href="/register" className="underline">Create an account</Link>
+            {tr("New here?")}<Link href="/register" className="underline">{tr("Create an account")}</Link>
           </p>
             </form>
         </CardContent>

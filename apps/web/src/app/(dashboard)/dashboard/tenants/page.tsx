@@ -14,6 +14,7 @@ import {
 } from "@/services/platform.service";
 import type { Industry } from "@/types/auth";
 import type { Tenant } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[] | null>(null);
@@ -48,33 +49,33 @@ export default function TenantsPage() {
 
   return (
     <div>
-      <PageHeader title="Tenants" />
+      <PageHeader title={tr("Tenants")} />
 
       {!forbidden && (
         <form onSubmit={add} className="mb-6 flex gap-2">
-          <Input placeholder="New tenant name" required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder={tr("New tenant name")} required value={name} onChange={(e) => setName(e.target.value)} />
           <select
             required
             className="rounded-lg border px-3 py-2"
             value={industryId}
             onChange={(e) => setIndustryId(e.target.value)}
           >
-            <option value="" disabled>Industry</option>
+            <option value="" disabled>{tr("Industry")}</option>
             {industries.map((i) => (
-              <option key={i.id} value={i.id}>{i.name}</option>
+              <option key={i.id} value={i.id}>{tr(i.name)}</option>
             ))}
           </select>
-          <Button type="submit">Add</Button>
+          <Button type="submit">{tr("Add")}</Button>
         </form>
       )}
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {forbidden ? (
-        <EmptyState>Only platform admins can manage tenants.</EmptyState>
+        <EmptyState>{tr("Only platform admins can manage tenants.")}</EmptyState>
       ) : tenants === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : tenants.length === 0 ? (
-        <EmptyState>No tenants yet. Add one above.</EmptyState>
+        <EmptyState>{tr("No tenants yet. Add one above.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {tenants.map((t) => (
@@ -85,9 +86,9 @@ export default function TenantsPage() {
                 value={t.industry_id ?? ""}
                 onChange={(e) => assign(t, Number(e.target.value))}
               >
-                <option value="" disabled>Choose industry</option>
+                <option value="" disabled>{tr("Choose industry")}</option>
                 {industries.map((i) => (
-                  <option key={i.id} value={i.id}>{i.name}</option>
+                  <option key={i.id} value={i.id}>{tr(i.name)}</option>
                 ))}
               </select>
             </div>

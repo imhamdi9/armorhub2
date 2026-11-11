@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { register } from "@/services/auth.service";
+import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -42,42 +43,46 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="absolute end-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">Create your account</CardTitle>
+          <CardTitle className="text-center text-2xl">{tr("Create your account")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{tr("Name")}</Label>
               <Input id="name" required value={form.name} onChange={set("name")} />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{tr("Email")}</Label>
               <Input id="email" type="email" required value={form.email} onChange={set("email")} />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{tr("Password")}</Label>
               <Input id="password" type="password" minLength={8} required value={form.password} onChange={set("password")} />
             </div>
             <div>
-              <Label htmlFor="password_confirmation">Confirm password</Label>
+              <Label htmlFor="password_confirmation">{tr("Confirm password")}</Label>
               <Input id="password_confirmation" type="password" required value={form.password_confirmation} onChange={set("password_confirmation")} />
             </div>
             <div>
-              <Label htmlFor="company_id">Company ID</Label>
+              <Label htmlFor="company_id">{tr("Company ID")}</Label>
               <Input id="company_id" type="number" min="1" required value={form.company_id} onChange={set("company_id")} />
               <p className="mt-1 text-xs text-muted-foreground">
-                Given to you by the business you are ordering from.
+                {tr("Given to you by the business you are ordering from.")}
               </p>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy}>
-              Sign up
+              {tr("Sign up")}
             </Button>
             <p className="text-center text-sm">
-              Already have an account? <Link href="/login" className="underline">Sign in</Link>
+              {tr("Already have an account?")}<Link href="/login" className="underline">{tr("Sign in")}</Link>
             </p>
           </form>
         </CardContent>

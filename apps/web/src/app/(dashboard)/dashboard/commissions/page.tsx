@@ -13,6 +13,7 @@ import {
   markDistributionPaid,
 } from "@/services/platform.service";
 import type { CommissionDistribution, Earnings } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 export default function CommissionsPage() {
   const user = useCurrentUser();
@@ -34,7 +35,7 @@ export default function CommissionsPage() {
 
   return (
     <div>
-      <PageHeader title="Commissions" />
+      <PageHeader title={tr("Commissions")} />
 
       {earnings && (
         <div className="mb-6 grid grid-cols-3 gap-3">
@@ -54,9 +55,9 @@ export default function CommissionsPage() {
       )}
 
       {rows === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : rows.length === 0 ? (
-        <EmptyState>No commission payouts yet.</EmptyState>
+        <EmptyState>{tr("No commission payouts yet.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {rows.map((d) => (
@@ -69,7 +70,7 @@ export default function CommissionsPage() {
                 <Badge variant={d.status === "paid" ? "default" : "secondary"}>{d.status}</Badge>
                 {isAdmin && d.status === "pending" && (
                   <Button size="sm" onClick={() => markDistributionPaid(d.id).then(reload)}>
-                    Mark paid
+                    {tr("Mark paid")}
                   </Button>
                 )}
               </div>

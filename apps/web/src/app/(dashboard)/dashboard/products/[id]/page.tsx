@@ -17,6 +17,7 @@ import {
   updateProduct,
 } from "@/services/platform.service";
 import type { CatalogItem, PriceRule, Product } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,14 +89,14 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
       });
       setProduct(updated);
-      setDetailsMsg("Saved");
+      setDetailsMsg(tr("Saved"));
     } catch (err) {
       setDetailsMsg(errorMessage(err));
     }
   }
 
   async function remove() {
-    if (!window.confirm("Delete this product? This cannot be undone. Products with orders cannot be deleted; hide them instead.")) return;
+    if (!window.confirm(tr("Delete this product? This cannot be undone. Products with orders cannot be deleted; hide them instead."))) return;
     try {
       await deleteProduct(Number(id));
       router.push("/dashboard/products");
@@ -104,44 +105,44 @@ export default function ProductDetailPage() {
     }
   }
 
-  if (!product) return <p className="text-muted-foreground">Loading...</p>;
+  if (!product) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
 
   return (
     <div>
       <PageHeader title={product.name} />
-      <p className="mb-6 text-muted-foreground">Base price: {product.base_price}</p>
+      <p className="mb-6 text-muted-foreground">{tr("Base price")}: {product.base_price}</p>
 
       {canEdit && (
         <form onSubmit={saveDetails} className="mb-8 grid grid-cols-2 gap-3 rounded-lg border p-4">
-          <Input aria-label="Name" required value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
-          <Input aria-label="Brand" placeholder="Brand" value={details.brand} onChange={(e) => setDetails({ ...details, brand: e.target.value })} />
-          <Input aria-label="Category" placeholder="Category" value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
-          <Input aria-label="Base price" type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
-          <Input aria-label="Warranty years" type="number" min="0" placeholder="Warranty (years)" value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
+          <Input aria-label={tr("Name")} required value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
+          <Input aria-label={tr("Brand")} placeholder={tr("Brand")} value={details.brand} onChange={(e) => setDetails({ ...details, brand: e.target.value })} />
+          <Input aria-label={tr("Category")} placeholder={tr("Category")} value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
+          <Input aria-label={tr("Base price")} type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
+          <Input aria-label={tr("Warranty years")} type="number" min="0" placeholder={tr("Warranty (years)")} value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
-            Visible to customers
+            {tr("Visible to customers")}
           </label>
           <textarea
-            aria-label="Description"
-            placeholder="Description"
+            aria-label={tr("Description")}
+            placeholder={tr("Description")}
             className="col-span-2 rounded-lg border px-3 py-2"
             value={details.description}
             onChange={(e) => setDetails({ ...details, description: e.target.value })}
           />
           <div className="col-span-2 flex items-center gap-3">
-            <Button type="submit">Save details</Button>
-            <Button type="button" variant="outline" onClick={remove}>Delete product</Button>
+            <Button type="submit">{tr("Save details")}</Button>
+            <Button type="button" variant="outline" onClick={remove}>{tr("Delete product")}</Button>
             {detailsMsg && <span className="text-sm">{detailsMsg}</span>}
           </div>
         </form>
       )}
 
-      <h2 className="mb-3 text-xl font-semibold">Price rules</h2>
+      <h2 className="mb-3 text-xl font-semibold">{tr("Price rules")}</h2>
 
       {targets.length === 0 ? (
         <EmptyState>
-          Your account has no industry assigned, so there is nothing to price yet.
+          {tr("Your account has no industry assigned, so there is nothing to price yet.")}
         </EmptyState>
       ) : (
         <>
@@ -152,7 +153,7 @@ export default function ProductDetailPage() {
                 variant={t === targetType ? "default" : "outline"}
                 onClick={() => setTargetType(t)}
               >
-                {aliasLabel(t)}
+                {tr(aliasLabel(t))}
               </Button>
             ))}
           </div>
@@ -168,7 +169,7 @@ export default function ProductDetailPage() {
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="Price"
+                    placeholder={tr("Price")}
                     value={prices[key] ?? ""}
                     onChange={(e) => {
                       setSaved(false);
@@ -181,8 +182,8 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="mt-4 flex items-center gap-3">
-            <Button onClick={onSave}>Save price rules</Button>
-            {saved && <span className="text-sm text-green-600">Saved</span>}
+            <Button onClick={onSave}>{tr("Save price rules")}</Button>
+            {saved && <span className="text-sm text-green-600">{tr("Saved")}</span>}
           </div>
         </>
       )}

@@ -15,6 +15,7 @@ import {
   getCatalogSchema,
 } from "@/services/platform.service";
 import type { CatalogItem } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -87,29 +88,29 @@ export default function CatalogPage() {
             <select
               key={p.field}
               required
-              aria-label={aliasLabel(p.alias)}
+              aria-label={tr(aliasLabel(p.alias))}
               className="rounded-lg border px-3 py-2"
               value={parentValues[p.field] ?? ""}
               onChange={(e) => setParentValues((v) => ({ ...v, [p.field]: e.target.value }))}
             >
-              <option value="" disabled>{aliasSingular(p.alias)}</option>
+              <option value="" disabled>{tr(aliasSingular(p.alias))}</option>
               {p.options.map((o) => (
                 <option key={o.id} value={o.id}>{o.name}</option>
               ))}
             </select>
           ))}
-          <Input className="max-w-xs" placeholder="Add new..." required value={name} onChange={(e) => setName(e.target.value)} />
-          <Button type="submit">Add</Button>
+          <Input className="max-w-xs" placeholder={tr("Add new...")} required value={name} onChange={(e) => setName(e.target.value)} />
+          <Button type="submit">{tr("Add")}</Button>
         </form>
       )}
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {failed ? (
-        <EmptyState>This catalog is not available.</EmptyState>
+        <EmptyState>{tr("This catalog is not available.")}</EmptyState>
       ) : items === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : items.length === 0 ? (
-        <EmptyState>Nothing here yet.</EmptyState>
+        <EmptyState>{tr("Nothing here yet.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
@@ -118,7 +119,7 @@ export default function CatalogPage() {
                 <h2 className="font-semibold">{item.name}</h2>
                 <p className="text-sm text-muted-foreground">{[parentName(item), item.slug].filter(Boolean).join(" · ")}</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => remove(item.id)}>Delete</Button>
+              <Button size="sm" variant="outline" onClick={() => remove(item.id)}>{tr("Delete")}</Button>
             </div>
           ))}
         </div>

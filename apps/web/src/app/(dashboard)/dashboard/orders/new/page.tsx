@@ -17,6 +17,7 @@ import {
   updateLocation,
 } from "@/services/platform.service";
 import type { CatalogItem, PriceQuote, Product } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 interface Option {
   id: number;
@@ -84,7 +85,7 @@ export default function NewOrderPage() {
         setNeedsLocation(false);
         setError(null);
       },
-      () => setError("Location permission was denied."),
+      () => setError(tr("Location permission was denied.")),
     );
   }
 
@@ -111,17 +112,17 @@ export default function NewOrderPage() {
   }
 
   if (!industry) {
-    return <p className="text-muted-foreground">Your account has no industry assigned yet.</p>;
+    return <p className="text-muted-foreground">{tr("Your account has no industry assigned yet.")}</p>;
   }
 
   const ready = productId && selected.length > 0 && (!subjectType || subjectId);
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader title="New order" />
+      <PageHeader title={tr("New order")} />
 
       <section>
-        <h2 className="mb-2 font-semibold">1. Choose a product</h2>
+        <h2 className="mb-2 font-semibold">{tr("1. Choose a product")}</h2>
         <div className="space-y-2">
           {products.map((p) => (
             <label key={p.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
@@ -135,13 +136,13 @@ export default function NewOrderPage() {
 
       {subjectType && (
         <section>
-          <h2 className="mb-2 font-semibold">2. {aliasSingular(subjectType)}</h2>
+          <h2 className="mb-2 font-semibold">2. {tr(aliasSingular(subjectType))}</h2>
           <select
             className="w-full rounded-lg border px-3 py-2"
             value={subjectId ?? ""}
             onChange={(e) => setSubjectId(Number(e.target.value) || null)}
           >
-            <option value="">Select...</option>
+            <option value="">{tr("Select...")}</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>{s.label}</option>
             ))}
@@ -155,7 +156,7 @@ export default function NewOrderPage() {
       )}
 
       <section>
-        <h2 className="mb-2 font-semibold">{subjectType ? "3" : "2"}. {aliasLabel(targetType)}</h2>
+        <h2 className="mb-2 font-semibold">{subjectType ? "3" : "2"}. {tr(aliasLabel(targetType))}</h2>
         <div className="grid grid-cols-2 gap-2">
           {targets.map((t) => (
             <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border p-3">
@@ -167,17 +168,17 @@ export default function NewOrderPage() {
       </section>
 
       <div className="rounded-lg border p-4">
-        <p className="text-sm text-muted-foreground">Estimated price</p>
+        <p className="text-sm text-muted-foreground">{tr("Estimated price")}</p>
         <p className="text-2xl font-bold">
           {canPrice && price ? `${price.total} ${price.currency}` : "—"}
         </p>
-        <p className="text-xs text-muted-foreground">Partner service quotes are added after you order.</p>
+        <p className="text-xs text-muted-foreground">{tr("Partner service quotes are added after you order.")}</p>
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
-      {needsLocation && <Button variant="outline" onClick={shareLocation}>Share my location</Button>}
+      {needsLocation && <Button variant="outline" onClick={shareLocation}>{tr("Share my location")}</Button>}
 
-      <Button disabled={!ready || busy} onClick={submit}>Place order</Button>
+      <Button disabled={!ready || busy} onClick={submit}>{tr("Place order")}</Button>
     </div>
   );
 }

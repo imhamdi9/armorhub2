@@ -1,4 +1,5 @@
 import type { OrderEvent } from "@/types/platform";
+import { formatDateTime, tr } from "@/lib/i18n";
 
 export const STATUS_LABELS: Record<string, string> = {
   pending_quotes: "Waiting for quotes",
@@ -13,7 +14,7 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const statusLabel = (status: string) =>
-  STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+  tr(STATUS_LABELS[status] ?? status.replace(/_/g, " "));
 
 const EVENT_LABELS: Record<string, string> = {
   created: "Order placed",
@@ -27,10 +28,11 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 export function eventLabel(event: OrderEvent): string {
-  const base = EVENT_LABELS[event.type] ?? event.type.replace(/_/g, " ");
   const when = event.data?.scheduled_at;
 
-  return event.type === "scheduled" && typeof when === "string"
-    ? `${base} for ${new Date(when).toLocaleString()}`
-    : base;
+  if (event.type === "scheduled" && typeof when === "string") {
+    return tr("Appointment scheduled for {when}", { when: formatDateTime(when) });
+  }
+
+  return tr(EVENT_LABELS[event.type] ?? event.type.replace(/_/g, " "));
 }

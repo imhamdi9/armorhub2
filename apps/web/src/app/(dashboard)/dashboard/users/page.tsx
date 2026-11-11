@@ -19,6 +19,7 @@ import {
   type Company,
 } from "@/services/platform.service";
 import type { Partner, StaffUser } from "@/types/platform";
+import { tr } from "@/lib/i18n";
 
 const ROLE_LABELS: Record<string, string> = {
   "platform-admin": "Platform admin",
@@ -92,21 +93,21 @@ export default function TeamPage() {
 
   return (
     <div>
-      <PageHeader title="Team" action={<Button onClick={() => setShowForm((v) => !v)}>Add member</Button>} />
+      <PageHeader title={tr("Team")} action={<Button onClick={() => setShowForm((v) => !v)}>{tr("Add member")}</Button>} />
 
       {showForm && (
         <form onSubmit={add} className="mb-6 grid grid-cols-2 gap-3 rounded-lg border p-4">
-          <Input placeholder="Full name" required value={form.name} onChange={set("name")} />
-          <Input placeholder="Email" type="email" required value={form.email} onChange={set("email")} />
-          <Input placeholder="Temporary password (min 8)" type="text" minLength={8} required value={form.password} onChange={set("password")} />
+          <Input placeholder={tr("Full name")} required value={form.name} onChange={set("name")} />
+          <Input placeholder={tr("Email")} type="email" required value={form.email} onChange={set("email")} />
+          <Input placeholder={tr("Temporary password (min 8)")} type="text" minLength={8} required value={form.password} onChange={set("password")} />
           <select className="rounded-lg border px-3 py-2" value={form.role} onChange={set("role")}>
             {roles.map((r) => (
-              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+              <option key={r} value={r}>{tr(ROLE_LABELS[r])}</option>
             ))}
           </select>
           {isAdmin && (
             <select className="rounded-lg border px-3 py-2" value={form.company_id} onChange={set("company_id")}>
-              <option value="">No company</option>
+              <option value="">{tr("No company")}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -114,34 +115,34 @@ export default function TeamPage() {
           )}
           {!hasRole(me, "partner-manager") && (
             <select className="rounded-lg border px-3 py-2" value={form.partner_id} onChange={set("partner_id")}>
-              <option value="">No partner</option>
+              <option value="">{tr("No partner")}</option>
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           )}
           {error && <p className="col-span-2 text-sm text-red-500">{error}</p>}
-          <Button type="submit" className="col-span-2">Create account</Button>
+          <Button type="submit" className="col-span-2">{tr("Create account")}</Button>
           <p className="col-span-2 text-xs text-muted-foreground">
             Share the temporary password securely; they can change it with &ldquo;Forgot your password?&rdquo;.
           </p>
         </form>
       )}
 
-      <Input className="mb-4 max-w-sm" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <Input className="mb-4 max-w-sm" placeholder={tr("Search by name or email")} value={search} onChange={(e) => setSearch(e.target.value)} />
       {!showForm && error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {users === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : users.length === 0 ? (
-        <EmptyState>No team members found.</EmptyState>
+        <EmptyState>{tr("No team members found.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {users.map((u) => (
             <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
               <div>
                 <p className="font-semibold">
-                  {u.name} {!u.is_active && <Badge variant="outline">Deactivated</Badge>}
+                  {u.name} {!u.is_active && <Badge variant="outline">{tr("Deactivated")}</Badge>}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {u.email} · {[u.company?.name, u.partner?.name].filter(Boolean).join(" / ") || "—"}
@@ -155,7 +156,7 @@ export default function TeamPage() {
                   onChange={(e) => act(() => updateUser(u.id, { role: e.target.value }))}
                 >
                   {[...new Set([...(u.role ? [u.role] : []), ...roles])].map((r) => (
-                    <option key={r} value={r} disabled={!roles.includes(r)}>{ROLE_LABELS[r] ?? r}</option>
+                    <option key={r} value={r} disabled={!roles.includes(r)}>{tr(ROLE_LABELS[r] ?? r)}</option>
                   ))}
                 </select>
                 {u.id !== me?.id && (
@@ -163,7 +164,7 @@ export default function TeamPage() {
                     <Button size="sm" variant="outline" onClick={() => act(() => updateUser(u.id, { is_active: !u.is_active }))}>
                       {u.is_active ? "Deactivate" : "Activate"}
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => act(() => deleteUser(u.id))}>Delete</Button>
+                    <Button size="sm" variant="outline" onClick={() => act(() => deleteUser(u.id))}>{tr("Delete")}</Button>
                   </>
                 )}
               </div>

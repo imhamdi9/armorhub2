@@ -23,11 +23,11 @@ export function NotificationBell() {
     <Link
       href="/dashboard/notifications"
       aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}
-      className="relative mr-4 rounded-md p-2 hover:bg-muted"
+      className="relative me-2 rounded-md p-2 hover:bg-muted"
     >
       <Bell className="h-5 w-5" />
       {unread > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs text-white">
+        <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs text-white">
           {unread > 99 ? "99+" : unread}
         </span>
       )}

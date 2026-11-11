@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { aliasLabel } from "@/lib/navigation";
 import { createMyItem, getCatalog, getMyItems } from "@/services/platform.service";
+import { tr } from "@/lib/i18n";
 
 type Row = Record<string, unknown>;
 
@@ -47,23 +48,23 @@ export default function MyItemsPage() {
 
   return (
     <div>
-      <PageHeader title={`My ${aliasLabel(alias)}`} />
+      <PageHeader title={tr("My {things}", { things: aliasLabel(alias) })} />
 
       {owned && (
         <form onSubmit={add} className="mb-6 grid grid-cols-2 gap-2 rounded-lg border p-4">
-          <Input placeholder="Type (e.g. villa)" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
-          <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-          <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          <Input placeholder="Area (sqm)" type="number" min="0" value={form.area_sqm} onChange={(e) => setForm({ ...form, area_sqm: e.target.value })} />
+          <Input placeholder={tr("Type (e.g. villa)")} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
+          <Input placeholder={tr("City")} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+          <Input placeholder={tr("Address")} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          <Input placeholder={tr("Area (sqm)")} type="number" min="0" value={form.area_sqm} onChange={(e) => setForm({ ...form, area_sqm: e.target.value })} />
           {error && <p className="col-span-2 text-sm text-red-500">{error}</p>}
-          <Button type="submit" className="col-span-2">Add</Button>
+          <Button type="submit" className="col-span-2">{tr("Add")}</Button>
         </form>
       )}
 
       {rows === null ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : rows.length === 0 ? (
-        <EmptyState>Nothing here yet.</EmptyState>
+        <EmptyState>{tr("Nothing here yet.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {rows.map((r) => (
@@ -72,7 +73,7 @@ export default function MyItemsPage() {
                 {String(r.name ?? r.type ?? `#${r.id}`)}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {[r.address, r.city, r.area_sqm ? `${r.area_sqm} sqm` : null].filter(Boolean).join(" · ")}
+                {[r.address, r.city, r.area_sqm ? tr("{n} sqm", { n: String(r.area_sqm) }) : null].filter(Boolean).join(" · ")}
               </p>
             </div>
           ))}
