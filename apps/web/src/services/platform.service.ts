@@ -1,6 +1,7 @@
 import { api } from "@/services/api";
 import type { Industry } from "@/types/auth";
 import type {
+  AppNotification,
   CatalogItem,
   CommissionDistribution,
   Earnings,
@@ -187,3 +188,15 @@ export const completeJob = async (id: number) =>
   (await api.post<Order>(`/orders/${id}/complete`)).data;
 
 export const getWarranties = async () => (await api.get<Warranty[]>("/warranties")).data;
+
+export const getNotifications = async () =>
+  (await api.get<{ unread: number; items: AppNotification[] }>("/notifications")).data;
+
+export const getUnreadCount = async () =>
+  (await api.get<{ unread: number }>("/notifications/unread-count")).data.unread;
+
+export const markNotificationRead = async (id: string) =>
+  (await api.post(`/notifications/${id}/read`)).data;
+
+export const markAllNotificationsRead = async () =>
+  (await api.post("/notifications/read-all")).data;

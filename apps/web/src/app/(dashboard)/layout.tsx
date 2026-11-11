@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { CurrentUserProvider } from "@/components/providers/current-user";
 import {
   SidebarInset,
@@ -27,6 +28,8 @@ export default function DashboardLayout({
                 <h1 className="ml-4 text-lg font-semibold">ArmorHub</h1>
               </div>
 
+              <div className="flex items-center">
+              <NotificationBell />
               <button
                 onClick={() => {
                   localStorage.removeItem("token");
@@ -36,6 +39,7 @@ export default function DashboardLayout({
               >
                 Logout
               </button>
+              </div>
             </header>
 
             <main className="p-6">{children}</main>

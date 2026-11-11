@@ -17,71 +17,18 @@ use App\Modules\Automotive\Models\VehiclePart;
 use Database\Seeders\IndustrySeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\BuildsMarketplace;
 use Tests\TestCase;
 
 class LifecycleTest extends TestCase
 {
+    use BuildsMarketplace;
     use RefreshDatabase;
-
-    private User $customer;
-    private User $manager;
-    private User $tech;
-    private User $rival;
-    private User $admin;
-    private Partner $shop;
-    private Product $product;
-    private VehiclePart $hood;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed([IndustrySeeder::class, RolesAndPermissionsSeeder::class]);
-
-        $tenant = Tenant::create(['name' => 'T', 'industry_id' => Industry::where('key', 'automotive')->value('id')]);
-        $store = Company::create(['tenant_id' => $tenant->id, 'name' => 'Store']);
-        $shopCo = Company::create(['tenant_id' => $tenant->id, 'name' => 'ShopCo']);
-
-        $this->shop = Partner::create([
-            'company_id' => $shopCo->id, 'name' => 'Shop', 'city' => 'Riyadh', 'country' => 'SA',
-            'latitude' => 24.7, 'longitude' => 46.7, 'location_enabled' => true,
-        ]);
-        $rivalShop = Partner::create(['name' => 'Rival', 'city' => 'Riyadh', 'country' => 'SA']);
-
-        $mk = fn (string $role, $company, $partner = null) => tap(User::factory()->create([
-            'company_id' => $company?->id, 'partner_id' => $partner?->id,
-            'city' => 'Riyadh', 'country' => 'SA', 'latitude' => 24.71, 'longitude' => 46.68, 'location_enabled' => true,
-        ]), fn ($u) => $u->assignRole($role));
-
-        $this->customer = $mk('customer', $store);
-        $this->manager = $mk('partner-manager', $shopCo, $this->shop);
-        $this->tech = $mk('technician', $shopCo, $this->shop);
-        $this->rival = $mk('partner-manager', null, $rivalShop);
-        $this->admin = $mk('platform-admin', null);
-
-        $this->product = Product::create([
-            'industry_id' => $tenant->industry_id, 'name' => 'Film', 'slug' => 'film', 'base_price' => 1, 'warranty_years' => 5,
-        ]);
-        $this->hood = VehiclePart::create(['name' => 'Hood', 'slug' => 'hood']);
-        ProductPriceRule::create([
-            'product_id' => $this->product->id, 'target_type' => 'vehicle_part', 'target_id' => $this->hood->id, 'price' => 1000,
-        ]);
-    }
-
-    /** Place an order and (optionally) take it all the way to paid. */
-    private function order(bool $paid = true): int
-    {
-        $id = $this->actingAs($this->customer, 'sanctum')->postJson('/api/orders', [
-            'product_id' => $this->product->id, 'target_type' => 'vehicle_part', 'targets' => [$this->hood->id],
-        ])->assertCreated()->json('order.id');
-
-        if ($paid) {
-            $quote = PartnerQuote::withoutGlobalScopes()->where('order_id', $id)->where('partner_id', $this->shop->id)->first();
-            $this->actingAs($this->manager, 'sanctum')->patchJson("/api/partner-quotes/{$quote->id}", ['price' => 200])->assertOk();
-            $this->actingAs($this->customer, 'sanctum')->patchJson("/api/partner-quotes/{$quote->id}/accept")->assertOk();
-            $this->postJson("/api/orders/{$id}/payments", ['amount' => 1200])->assertCreated();
-        }
-
-        return $id;
+        $this->buildMarketplace();
     }
 
     public function test_full_job_lifecycle_with_timeline_and_warranty(): void

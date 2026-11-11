@@ -10,6 +10,11 @@ class OrderEvent extends Model
 
     protected $casts = ['data' => 'array'];
 
+    protected static function booted(): void
+    {
+        static::created(fn (self $event) => app(\App\Services\OrderNotifier::class)->handle($event));
+    }
+
     public function order()
     {
         return $this->belongsTo(Order::class);

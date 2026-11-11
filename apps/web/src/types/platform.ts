@@ -127,3 +127,12 @@ export interface StaffUser {
   company: { id: number; name: string } | null;
   partner: { id: number; name: string } | null;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  path: string;
+  read: boolean;
+  created_at: string;
+}

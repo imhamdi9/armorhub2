@@ -70,6 +70,8 @@ try {
   ok("order placed");
 
   const p = await login(await browser.newContext(), "shop@test.com");
+  await p.waitForSelector('a[aria-label^="Notifications ("]');
+  ok("partner's bell shows the new request");
   await p.click('a:has-text("Requests")');
   await p.waitForSelector("text=Ultimate Plus");
   await p.fill("input[placeholder=Price]", "300");
@@ -78,6 +80,12 @@ try {
   ok("partner quoted");
 
   await c.reload();
+  await c.waitForSelector('a[aria-label^="Notifications ("]');
+  await c.click('a[aria-label^="Notifications"]');
+  await c.waitForSelector("text=You received a quote");
+  await c.click("text=You received a quote");
+  await c.waitForURL(/orders\/\d+$/);
+  ok("customer was notified of the quote and the link opens the order");
   await c.click('button:has-text("Accept")');
   await c.waitForSelector("text=Total: 1500");
   ok("quote accepted");

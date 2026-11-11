@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CommissionDistributionController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\IndustryController;
 use App\Http\Controllers\Api\MyItemsController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderLifecycleController;
 use App\Http\Controllers\Api\PartnerJobController;
@@ -37,6 +38,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unread']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
 
     // Industries and shared catalogs
     Route::get('/industries', [IndustryController::class, 'index']);
