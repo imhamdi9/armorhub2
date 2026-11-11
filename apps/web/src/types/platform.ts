@@ -53,3 +53,41 @@ export interface Tenant {
   industry_id: number | null;
   industry?: { id: number; key: string; name: string } | null;
 }
+
+export interface PartnerQuote {
+  id: number;
+  order_id: number;
+  partner_id: number;
+  price: string | number;
+  status: "pending" | "submitted" | "accepted" | "rejected";
+  partner?: Partner;
+  order?: Order & { product?: Product; subject?: Record<string, unknown> | null };
+}
+
+export interface CommissionDistribution {
+  id: number;
+  type: "platform" | "company" | "partner";
+  amount: string;
+  status: "pending" | "paid";
+  paid_at: string | null;
+  partner?: Partner | null;
+}
+
+export interface Earnings {
+  platform: number | string;
+  companies: number | string;
+  partners: number | string;
+}
+
+export interface Paginated<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+}
+
+export interface PriceQuote {
+  product_id: number;
+  parts_count: number;
+  total: number | string;
+  currency: string;
+}

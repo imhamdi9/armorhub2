@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import {
   loginSchema,
@@ -84,6 +85,9 @@ export default function LoginPage() {
           >
             Login
           </Button>
+          <p className="text-center text-sm">
+            New here? <Link href="/register" className="underline">Create an account</Link>
+          </p>
             </form>
         </CardContent>
       </Card>

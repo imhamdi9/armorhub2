@@ -12,3 +12,14 @@ export async function me() {
 
   return response.data;
 }
+export async function register(data: {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  company_id: number;
+}) {
+  const response = await api.post<LoginResponse>("/register", data);
+
+  return response.data;
+}

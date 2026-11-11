@@ -3,20 +3,70 @@
 import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
-import { getPartners } from "@/services/platform.service";
+import { useCurrentUser } from "@/components/providers/current-user";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errors";
+import { hasRole } from "@/lib/navigation";
+import { createPartner, deletePartner, getPartners } from "@/services/platform.service";
 import type { Partner } from "@/types/platform";
 
 export default function PartnersPage() {
+  const user = useCurrentUser();
+  const canManage = hasRole(user, "platform-admin", "partner-manager");
   const [partners, setPartners] = useState<Partner[] | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: "", city: "", country: "", phone: "" });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPartners().then(setPartners).catch(() => setForbidden(true));
   }, []);
 
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const created = await createPartner(form);
+      setPartners((prev) => [...(prev ?? []), created]);
+      setForm({ name: "", city: "", country: "", phone: "" });
+      setShowForm(false);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function remove(id: number) {
+    await deletePartner(id);
+    setPartners((prev) => prev?.filter((p) => p.id !== id) ?? null);
+  }
+
   return (
     <div>
-      <PageHeader title="Partners" />
+      <PageHeader
+        title="Partners"
+        action={canManage && <Button onClick={() => setShowForm((v) => !v)}>Add partner</Button>}
+      />
+
+      {showForm && (
+        <form onSubmit={onSubmit} className="mb-6 space-y-3 rounded-lg border p-4">
+          {(["name", "city", "country", "phone"] as const).map((key) => (
+            <div key={key}>
+              <Label htmlFor={key} className="capitalize">{key}</Label>
+              <Input
+                id={key}
+                required={key !== "phone"}
+                value={form[key]}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <Button type="submit">Save</Button>
+        </form>
+      )}
 
       {forbidden ? (
         <EmptyState>You do not have access to partners.</EmptyState>
@@ -27,11 +77,16 @@ export default function PartnersPage() {
       ) : (
         <div className="space-y-3">
           {partners.map((p) => (
-            <div key={p.id} className="rounded-lg border p-4">
-              <h2 className="font-semibold">{p.name}</h2>
-              <p className="text-sm text-muted-foreground">
-                {[p.city, p.country, p.phone].filter(Boolean).join(" · ")}
-              </p>
+            <div key={p.id} className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <h2 className="font-semibold">{p.name}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {[p.city, p.country, p.phone].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              {hasRole(user, "platform-admin") && (
+                <Button size="sm" variant="outline" onClick={() => remove(p.id)}>Delete</Button>
+              )}
             </div>
           ))}
         </div>

@@ -1,0 +1,183 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { PageHeader } from "@/components/layout/page-header";
+import { useCurrentUser } from "@/components/providers/current-user";
+import { Button } from "@/components/ui/button";
+import { aliasLabel } from "@/lib/navigation";
+import { errorMessage } from "@/lib/errors";
+import {
+  calculatePrice,
+  createOrder,
+  getCatalog,
+  getMyItems,
+  getProducts,
+  updateLocation,
+} from "@/services/platform.service";
+import type { CatalogItem, PriceQuote, Product } from "@/types/platform";
+
+interface Option {
+  id: number;
+  label: string;
+}
+
+/** Pick a product, what to service (if anything) and the options; see the price; order. */
+export default function NewOrderPage() {
+  const router = useRouter();
+  const user = useCurrentUser();
+  const industry = user?.industry;
+  const targetType = industry?.targets[0] ?? "";
+  const subjectType = industry?.subjects[0] ?? null;
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productId, setProductId] = useState<number | null>(null);
+  const [targets, setTargets] = useState<CatalogItem[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [subjects, setSubjects] = useState<Option[]>([]);
+  const [subjectId, setSubjectId] = useState<number | null>(null);
+  const [price, setPrice] = useState<PriceQuote | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [needsLocation, setNeedsLocation] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    getProducts().then(setProducts);
+    if (targetType) getCatalog(targetType).then(setTargets);
+  }, [targetType]);
+
+  useEffect(() => {
+    if (!subjectType) return;
+    // A subject is either a shared catalog (vehicle model) or the customer's own item (property).
+    getCatalog(subjectType)
+      .then((rows) => setSubjects(rows.map((r) => ({ id: r.id, label: r.name }))))
+      .catch(() =>
+        getMyItems(subjectType).then((rows) =>
+          setSubjects(
+            rows.map((r) => ({
+              id: Number(r.id),
+              label: [r.type, r.address, r.city].filter(Boolean).join(" · ") || `#${r.id}`,
+            })),
+          ),
+        ),
+      );
+  }, [subjectType]);
+
+  const canPrice = productId !== null && selected.length > 0;
+
+  useEffect(() => {
+    if (!canPrice) return;
+    calculatePrice({ product_id: productId, targets: selected, target_type: targetType })
+      .then(setPrice)
+      .catch(() => setPrice(null));
+  }, [canPrice, productId, selected, targetType]);
+
+  function toggle(id: number) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function shareLocation() {
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await updateLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setNeedsLocation(false);
+        setError(null);
+      },
+      () => setError("Location permission was denied."),
+    );
+  }
+
+  async function submit() {
+    if (!productId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await createOrder({
+        product_id: productId,
+        subject_type: subjectType,
+        subject_id: subjectType ? subjectId : null,
+        target_type: targetType,
+        targets: selected,
+      });
+      router.push(`/dashboard/orders/${res.order.id}`);
+    } catch (e) {
+      const msg = errorMessage(e);
+      setNeedsLocation(/location/i.test(msg));
+      setError(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!industry) {
+    return <p className="text-muted-foreground">Your account has no industry assigned yet.</p>;
+  }
+
+  const ready = productId && selected.length > 0 && (!subjectType || subjectId);
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <PageHeader title="New order" />
+
+      <section>
+        <h2 className="mb-2 font-semibold">1. Choose a product</h2>
+        <div className="space-y-2">
+          {products.map((p) => (
+            <label key={p.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
+              <input type="radio" name="product" checked={productId === p.id} onChange={() => setProductId(p.id)} />
+              <span className="flex-1">{p.name}</span>
+              <span className="text-sm text-muted-foreground">{p.category}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {subjectType && (
+        <section>
+          <h2 className="mb-2 font-semibold">2. {aliasLabel(subjectType).replace(/s$/, "")}</h2>
+          <select
+            className="w-full rounded-lg border px-3 py-2"
+            value={subjectId ?? ""}
+            onChange={(e) => setSubjectId(Number(e.target.value) || null)}
+          >
+            <option value="">Select...</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
+          {subjects.length === 0 && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Nothing to choose yet. Add one under &ldquo;My {aliasLabel(subjectType)}&rdquo;.
+            </p>
+          )}
+        </section>
+      )}
+
+      <section>
+        <h2 className="mb-2 font-semibold">{subjectType ? "3" : "2"}. {aliasLabel(targetType)}</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {targets.map((t) => (
+            <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border p-3">
+              <input type="checkbox" checked={selected.includes(t.id)} onChange={() => toggle(t.id)} />
+              {t.name}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <div className="rounded-lg border p-4">
+        <p className="text-sm text-muted-foreground">Estimated price</p>
+        <p className="text-2xl font-bold">
+          {canPrice && price ? `${price.total} ${price.currency}` : "—"}
+        </p>
+        <p className="text-xs text-muted-foreground">Partner service quotes are added after you order.</p>
+      </div>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {needsLocation && <Button variant="outline" onClick={shareLocation}>Share my location</Button>}
+
+      <Button disabled={!ready || busy} onClick={submit}>Place order</Button>
+    </div>
+  );
+}

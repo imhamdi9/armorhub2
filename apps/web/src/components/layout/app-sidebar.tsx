@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Banknote,
   BookOpen,
   Building2,
+  Inbox,
   LayoutDashboard,
   Package,
+  Package2,
   ShoppingCart,
   Users,
   Wrench,
@@ -32,6 +35,9 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   products: Package,
   partners: Wrench,
   tenants: Building2,
+  requests: Inbox,
+  commissions: Banknote,
+  items: Package2,
 };
 
 export function AppSidebar() {
