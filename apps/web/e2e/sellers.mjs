@@ -82,7 +82,7 @@ try {
   await p.waitForURL("**/dashboard");
   await p.waitForSelector('a:has-text("Sales")');
   await p.waitForSelector('a:has-text("Products")');
-  for (const hidden of ["Requests", "Jobs", "Partners", "Team", "Commissions", "Tenants"]) {
+  for (const hidden of ["Requests", "Jobs", "Partners", "Team", "Commissions", "Markets"]) {
     if (await p.locator(`a:has-text("${hidden}")`).count()) fail(`a seller can see "${hidden}"`);
   }
   await p.click('a:has-text("Products")');

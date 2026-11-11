@@ -16,12 +16,12 @@ try {
   await p.waitForSelector("text=Welcome");
   ok("admin signed in");
 
-  await p.click('a:has-text("Tenants")');
-  await p.fill('input[placeholder="New tenant name"]', "My Brand");
+  await p.click('a:has-text("Markets")');
+  await p.fill('input[placeholder="New market name"]', "My Brand");
   await p.selectOption("select >> nth=0", { label: "Automotive" });
   await p.click('button:has-text("Add")');
   await p.waitForSelector("h2:has-text('My Brand')");
-  ok("tenant created with an industry");
+  ok("market created with an industry");
 
   await p.click('a:has-text("Companies")');
   await p.fill('input[placeholder="Company name"]', "My Store");

@@ -59,7 +59,7 @@ describe("buildNavigation", () => {
     const nav = titles(user(["customer"]));
     expect(nav).toContain("My Properties");
     expect(nav).not.toContain("Room Types");
-    expect(nav).not.toContain("Tenants");
+    expect(nav).not.toContain("Markets");
     expect(nav).not.toContain("Commissions");
   });
 
@@ -84,7 +84,7 @@ describe("buildNavigation", () => {
     const nav = titles(user(["platform-admin"]));
     expect(nav).toContain("Catalogs");
     expect(nav).not.toContain("Room Types"); // listed on the Catalogs page instead
-    expect(nav).toContain("Tenants");
+    expect(nav).toContain("Markets");
     expect(nav).toContain("Companies");
   });
 

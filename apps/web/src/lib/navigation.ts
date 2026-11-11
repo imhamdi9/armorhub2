@@ -144,7 +144,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   }
 
   if (hasRole(user, "platform-admin")) {
-    items.push({ title: "Tenants", href: "/dashboard/tenants", icon: "tenants" });
+    items.push({ title: "Markets", href: "/dashboard/tenants", icon: "tenants" });
     items.push({ title: "Companies", href: "/dashboard/companies", icon: "companies" });
 
     // The control panel for everything that can be changed without a deploy.

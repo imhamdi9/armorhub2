@@ -77,7 +77,7 @@ function Header({ store }: { store?: ShellStore }) {
   const home = store ? `/s/${store.slug}` : "/";
   const links: [string, string][] = store
     ? [[`/s/${store.slug}/products`, "Products"], [`${home}#how`, "How it works"], [`${home}#faq`, "FAQ"]]
-    : [["/#stores", "Stores"], ["/#partners", "Partners"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
+    : [["/#stores", "ArmorHub Markets"], ["/#partners", "Partners"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
 
   return (
     <header className="sticky top-0 z-40 border-b border-fog bg-white/95 backdrop-blur">
@@ -145,7 +145,7 @@ function Footer({ store }: { store?: ShellStore }) {
         <div>
           <h3 className={col}>{tr("Explore")}</h3>
           <div className="mt-3">
-            {store ? <Link className={link} href={`${home}/products`}>{tr("Products")}</Link> : <><Link className={link} href="/#stores">{tr("Stores")}</Link><Link className={link} href="/#partners">{tr("Partners")}</Link></>}
+            {store ? <Link className={link} href={`${home}/products`}>{tr("Products")}</Link> : <><Link className={link} href="/#stores">{tr("ArmorHub Markets")}</Link><Link className={link} href="/#partners">{tr("Partners")}</Link></>}
             <Link className={link} href={`${home}#how`}>{tr("How it works")}</Link>
             <Link className={link} href={`${home}#faq`}>{tr("FAQ")}</Link>
           </div>

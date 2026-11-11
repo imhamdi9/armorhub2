@@ -89,7 +89,7 @@ try {
   await p.waitForSelector('a:has-text("Requests")');
   await p.waitForSelector('a:has-text("Jobs")');
   if (await p.locator('a:has-text("Partner applications")').count()) fail("a new partner can see partner applications");
-  if (await p.locator('a:has-text("Tenants")').count()) fail("a new partner can see admin screens");
+  if (await p.locator('a:has-text("Markets")').count()) fail("a new partner can see admin screens");
   ok("the approved partner signs in at once with partner access (Requests, Jobs) and no admin screens");
   await ctx.close();
 

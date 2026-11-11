@@ -70,7 +70,7 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
           {tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-          <a href="#stores" className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{tr("Browse stores")} <span aria-hidden="true">→</span></a>
+          <a href="#stores" className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{tr("Browse markets")} <span aria-hidden="true">→</span></a>
           <Link href="/login" className="text-base font-semibold text-forest underline underline-offset-4">{tr("For businesses: sign in")}</Link>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-2 border-t border-dashed border-fog pt-6">
@@ -81,7 +81,7 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
       {/* A layered collage of real numbers and a real store, rather than one flat screenshot. */}
       <div className="mx-auto mt-6 grid max-w-[1100px] items-end gap-4 px-4 pb-14 md:grid-cols-12">
         <div className="bg-dark rounded-[28px] p-7 md:col-span-4 md:-mb-4">
-          <p className="text-sm text-white/70">{tr("Open stores")}</p>
+          <p className="text-sm text-white/70">{tr("Open markets")}</p>
           <p className="display text-on-dark-accent mt-1 !text-7xl md:!text-8xl" style={{ color: "var(--on-dark-accent)" }}>{formatNumber(facts.stores)}</p>
           <p className="mt-2 text-sm text-white/80">{tr("{n} countries · {m} industries", { n: facts.countries, m: facts.industries })}</p>
         </div>
@@ -211,7 +211,7 @@ export function QuoteFeature() {
           <Eyebrow>{tr("Compare quotes")}</Eyebrow>
           <h2 className="display display-md mt-2">{tr("Describe the job once. Get prices from experts nearby.")}</h2>
           <p className="mt-4 max-w-lg text-charcoal">{tr("Choose a service and your options. Nearby, vetted professionals send you their price. You compare, accept the one you like and pay online.")}</p>
-          <a href="#stores" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{tr("Browse stores")} <span aria-hidden="true">→</span></a>
+          <a href="#stores" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{tr("Browse markets")} <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
@@ -352,7 +352,7 @@ export function Bento({ facts }: { facts: Facts }) {
           <p className="mt-3 font-semibold text-obsidian">{tr("Quotes come from professionals near you, matched by location.")}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 md:col-span-2">
-          {[[facts.stores, "Open stores"], [facts.partners, "Vetted professionals"]].map(([n, l]) => (
+          {[[facts.stores, "Open markets"], [facts.partners, "Vetted professionals"]].map(([n, l]) => (
             <div key={String(l)} className="bg-dark rounded-[28px] p-6">
               <p className="display text-6xl" style={{ color: "var(--on-dark-accent)" }}>{formatNumber(Number(n))}</p>
               <p className="mt-2 text-sm text-white/80">{tr(String(l))}</p>

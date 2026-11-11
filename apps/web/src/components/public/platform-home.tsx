@@ -27,9 +27,9 @@ export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; 
       <IndustryTabs showcase={showcase} />
 
       <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
-        <h2 className="display display-md">{tr("Stores")}</h2>
+        <h2 className="display display-md">{tr("ArmorHub Markets")}</h2>
         {stores.length === 0 ? (
-          <p className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate">{tr("No stores are open yet. Please check back soon.")}</p>
+          <p className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate">{tr("No markets are open yet. Please check back soon.")}</p>
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {stores.map((s) => (

@@ -67,11 +67,11 @@ export default function TenantsPage() {
 
   return (
     <div>
-      <PageHeader title={tr("Tenants")} />
+      <PageHeader title={tr("Markets")} />
 
       {!forbidden && (
         <form onSubmit={add} className="mb-6 flex gap-2">
-          <Input placeholder={tr("New tenant name")} required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder={tr("New market name")} required value={name} onChange={(e) => setName(e.target.value)} />
           <select
             required
             className="rounded-lg border px-3 py-2"
@@ -90,11 +90,11 @@ export default function TenantsPage() {
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {forbidden ? (
-        <EmptyState>{tr("Only platform admins can manage tenants.")}</EmptyState>
+        <EmptyState>{tr("Only platform admins can manage markets.")}</EmptyState>
       ) : tenants === null ? (
         <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : tenants.length === 0 ? (
-        <EmptyState>{tr("No tenants yet. Add one above.")}</EmptyState>
+        <EmptyState>{tr("No markets yet. Add one above.")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {tenants.map((t) => (
