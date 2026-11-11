@@ -25,10 +25,10 @@ import {
 const items = [
   { title: "Dashboard", icon: LayoutDashboard },
   { title: "Orders", icon: ShoppingCart },
-  { title: "Vehicles", icon: Car },
-  { title: "Films", icon: Shield },
+  { title: "Catalog", icon: Car },
+  { title: "Products", icon: Shield },
   { title: "Companies", icon: Building2 },
-  { title: "Installers", icon: Wrench },
+  { title: "Partners", icon: Wrench },
   { title: "Payments", icon: CreditCard },
   { title: "Reports", icon: BarChart3 },
   { title: "Settings", icon: Settings },
@@ -40,7 +40,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-6">
         <h1 className="text-xl font-bold">ArmorHub</h1>
         <p className="text-sm text-muted-foreground">
-          PPF Management Platform
+          Service Marketplace Platform
         </p>
       </SidebarHeader>
 

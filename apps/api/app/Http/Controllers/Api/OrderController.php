@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Order;
-use App\Models\InstallationQuote;
-use App\Models\InstallationCenter;
-use App\Services\Pricing\CalculateFilmPriceService;
+use App\Modules\IndustryRegistry;
+use App\Models\PartnerQuote;
+use App\Models\Partner;
+use App\Services\Pricing\CalculateProductPriceService;
 use Illuminate\Http\Request;
-use App\Services\Location\FindNearbyInstallationCentersService;
+use App\Services\Location\FindNearbyPartnersService;
 
 class OrderController extends Controller
 {
@@ -47,31 +48,37 @@ class OrderController extends Controller
 
     public function store(
         Request $request,
-        CalculateFilmPriceService $pricing,
-        FindNearbyInstallationCentersService $location
+        CalculateProductPriceService $pricing,
+        FindNearbyPartnersService $location,
+        IndustryRegistry $registry
     ) {
         $this->authorize('create', Order::class);
 
         $data = $request->validate([
-            'film_id' => 'required|integer',
-            'vehicle_model_id' => 'required|integer',
-            'parts' => 'required|array',
+            'product_id' => 'required|integer',
+            'subject_type' => ['nullable', 'string', 'in:'.implode(',', array_keys($registry->subjectModels()))],
+            'subject_id' => ['nullable', 'integer', 'required_with:subject_type'],
+            'target_type' => 'nullable|string',
+            'targets' => 'required|array',
+            'targets.*' => 'integer',
             'customer_id' => 'nullable|integer',
         ]);
 
         $price = $pricing->calculate(
-            $data['film_id'],
-            $data['parts']
+            $data['product_id'],
+            $data['targets'],
+            $data['target_type'] ?? null
         );
 
         $order = Order::create([
             'company_id' => auth()->user()->company_id,
             'customer_id' => auth()->id(),
-            'film_id' => $data['film_id'],
-            'vehicle_model_id' => $data['vehicle_model_id'],
+            'product_id' => $data['product_id'],
+            'subject_type' => $data['subject_type'] ?? null,
+            'subject_id' => $data['subject_id'] ?? null,
             'status' => 'pending',
-            'film_amount' => $price['total'],
-            'installation_amount' => 0,
+            'product_amount' => $price['total'],
+            'service_amount' => 0,
             'commission_amount' => 0,
             'total_amount' => $price['total'],
             'currency' => $price['currency'],
@@ -81,7 +88,7 @@ class OrderController extends Controller
 
         if (!$user->location_enabled || !$user->latitude || !$user->longitude) {
             return response()->json([
-             'message' => 'Please enable location to find nearby installation centers'
+             'message' => 'Please enable location to find nearby partners'
             ], 422);
         }
 
@@ -94,15 +101,15 @@ class OrderController extends Controller
 
         if ($centers->isEmpty()) {
           return response()->json([
-          'message' => 'No installation centers available'
+          'message' => 'No partners available'
           ], 422);
         }
 
         foreach ($centers as $center) {
-            InstallationQuote::create([
+            PartnerQuote::create([
                 'company_id' => auth()->user()->company_id,
                 'order_id' => $order->id,
-                'installation_center_id' => $center->id,
+                'partner_id' => $center->id,
                 'price' => 0,
                 'status' => 'pending',
             ]);
@@ -111,7 +118,7 @@ class OrderController extends Controller
         return response()->json([
             'message' => 'Order created successfully',
             'order' => $order,
-            'installation_quotes' => $centers->count(),
+            'partner_quotes' => $centers->count(),
         ], 201);
     }
 }

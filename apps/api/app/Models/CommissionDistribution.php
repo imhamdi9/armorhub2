@@ -10,7 +10,7 @@ class CommissionDistribution extends Model
     'commission_id',
     'type',
     'company_id',
-    'installation_center_id',
+    'partner_id',
     'amount',
     'status',
     'paid_at',
@@ -26,8 +26,8 @@ class CommissionDistribution extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function installationCenter()
+    public function partner()
     {
-        return $this->belongsTo(InstallationCenter::class);
+        return $this->belongsTo(Partner::class);
     }
 }

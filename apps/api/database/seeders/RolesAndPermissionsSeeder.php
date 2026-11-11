@@ -26,11 +26,11 @@ class RolesAndPermissionsSeeder extends Seeder
     'vehicle-makes.update',
     'vehicle-makes.delete',
 
-    // Installation Centers
-    'installation-centers.view',
-    'installation-centers.create',
-    'installation-centers.update',
-    'installation-centers.delete',
+    // Partners
+    'partners.view',
+    'partners.create',
+    'partners.update',
+    'partners.delete',
 
     // Orders
     'orders.view',
@@ -77,10 +77,10 @@ class RolesAndPermissionsSeeder extends Seeder
     'dashboard.view',
 ],
 
-'installer-manager' => [
-    'installation-centers.view',
-    'installation-centers.create',
-    'installation-centers.update',
+'partner-manager' => [
+    'partners.view',
+    'partners.create',
+    'partners.update',
 
     'orders.view',
 
@@ -90,7 +90,7 @@ class RolesAndPermissionsSeeder extends Seeder
 ],
 
 'technician' => [
-    'installation-centers.view',
+    'partners.view',
 
     'orders.view',
 ],

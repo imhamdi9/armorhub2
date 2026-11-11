@@ -10,7 +10,7 @@ enum OrderStatus: string
     case AwaitingPayment = 'awaiting_payment';
     case Paid = 'paid';
     case AppointmentScheduled = 'appointment_scheduled';
-    case InstallationInProgress = 'installation_in_progress';
+    case ServiceInProgress = 'service_in_progress';
     case Completed = 'completed';
     case Cancelled = 'cancelled';
 }

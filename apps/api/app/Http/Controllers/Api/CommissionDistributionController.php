@@ -13,7 +13,7 @@ class CommissionDistributionController extends Controller
     $query = CommissionDistribution::with([
         'commission',
         'company',
-        'installationCenter'
+        'partner'
     ]);
 
     if ($request->filled('status')) {
@@ -24,10 +24,10 @@ class CommissionDistributionController extends Controller
         $query->where('company_id', $request->company_id);
     }
 
-    if ($request->filled('installation_center_id')) {
+    if ($request->filled('partner_id')) {
         $query->where(
-            'installation_center_id',
-            $request->installation_center_id
+            'partner_id',
+            $request->partner_id
         );
     }
 

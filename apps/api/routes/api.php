@@ -4,28 +4,26 @@ use Illuminate\Http\Request;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
-use App\Http\Controllers\Api\FilmController;
-use App\Http\Controllers\Api\VehicleMakeController;
-use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\InstallationCenterController;
-use App\Http\Controllers\Api\InstallationQuoteController;
+use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PartnerQuoteController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\CommissionController;
 use App\Http\Controllers\Api\CommissionDistributionController;
 use App\Http\Controllers\Api\CommissionDashboardController;
-use App\Http\Controllers\Api\InstallerOrderController;
+use App\Http\Controllers\Api\PartnerOrderController;
 
 
 Route::middleware([
     'auth:sanctum',
-    'role:installer-manager'
+    'role:partner-manager'
 ])->group(function () {
 
     Route::get(
-        '/installer/orders',
-        [InstallerOrderController::class, 'index']
+        '/partner/orders',
+        [PartnerOrderController::class, 'index']
     );
 
 });
@@ -82,49 +80,34 @@ Route::middleware([
     'auth:sanctum',
     'permission:companies.delete'
 ])->delete('/companies/{company}', [CompanyController::class, 'destroy']);
-Route::get('/films', [FilmController::class, 'index'])
-    ->middleware(['auth:sanctum', 'permission:films.view']);
+Route::get('/products', [ProductController::class, 'index'])
+    ->middleware(['auth:sanctum', 'permission:products.view']);
 
-Route::post('/films', [FilmController::class, 'store'])
-    ->middleware(['auth:sanctum', 'permission:films.create']);
+Route::post('/products', [ProductController::class, 'store'])
+    ->middleware(['auth:sanctum', 'permission:products.create']);
 
-Route::get('/films/{film}', [FilmController::class, 'show'])
-    ->middleware(['auth:sanctum', 'permission:films.view']);
+Route::get('/products/{product}', [ProductController::class, 'show'])
+    ->middleware(['auth:sanctum', 'permission:products.view']);
 
-Route::put('/films/{film}', [FilmController::class, 'update'])
-    ->middleware(['auth:sanctum', 'permission:films.update']);
+Route::put('/products/{product}', [ProductController::class, 'update'])
+    ->middleware(['auth:sanctum', 'permission:products.update']);
 
-Route::delete('/films/{film}', [FilmController::class, 'destroy'])
-    ->middleware(['auth:sanctum', 'permission:films.delete']);
+Route::delete('/products/{product}', [ProductController::class, 'destroy'])
+    ->middleware(['auth:sanctum', 'permission:products.delete']);
 
-Route::get('/vehicle-makes', [VehicleMakeController::class, 'index'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.view']);
-
-Route::post('/vehicle-makes', [VehicleMakeController::class, 'store'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.create']);
-
-Route::get('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'show'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.view']);
-
-Route::put('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'update'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.update']);
-
-Route::delete('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'destroy'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.delete']);
-    
 Route::middleware([
     'auth:sanctum',
-    'role:installer-manager'
+    'role:partner-manager'
 ])->group(function () {
 
     Route::patch(
-    '/installation-quotes/{installationQuote}',
-    [InstallerOrderController::class, 'submitQuote']
+    '/partner-quotes/{partnerQuote}',
+    [PartnerOrderController::class, 'submitQuote']
 );
 
     Route::apiResource(
-        'installation-centers',
-        InstallationCenterController::class
+        'partners',
+        PartnerController::class
     );
 
 });
@@ -178,20 +161,20 @@ Route::get('/commissions/{id}', [CommissionController::class, 'show'])
     ]);
 
 Route::get(
-    '/orders/{order}/installation-quotes',
-    [InstallationQuoteController::class, 'index']
+    '/orders/{order}/partner-quotes',
+    [PartnerQuoteController::class, 'index']
 );
 
-Route::get('/installation-centers', [InstallationCenterController::class,'index'])
+Route::get('/partners', [PartnerController::class,'index'])
     ->middleware([
         'auth:sanctum',
-        'permission:installation-centers.view'
+        'permission:partners.view'
     ]);
 
-Route::post('/installation-centers', [InstallationCenterController::class,'store'])
+Route::post('/partners', [PartnerController::class,'store'])
     ->middleware([
         'auth:sanctum',
-        'permission:installation-centers.create'
+        'permission:partners.create'
     ]);
 
 Route::post('/pricing/calculate', [PricingController::class,'calculate'])
@@ -201,27 +184,19 @@ Route::post('/pricing/calculate', [PricingController::class,'calculate'])
     ]);
 
 Route::patch(
-    '/installation-quotes/{installationQuote}/accept',
-    [InstallationQuoteController::class, 'accept']
-);
-
-Route::get(
-    '/vehicles/makes',
-    [VehicleController::class,'makes']
-);
-
-
-Route::get(
-    '/vehicles/makes/{id}/models',
-    [VehicleController::class,'models']
+    '/partner-quotes/{partnerQuote}/accept',
+    [PartnerQuoteController::class, 'accept']
 );
 
 Route::patch(
-    '/installation-quotes/{installationQuote}',
-    [InstallationQuoteController::class, 'update']
+    '/partner-quotes/{partnerQuote}',
+    [PartnerQuoteController::class, 'update']
 );
 
 Route::patch(
     '/commission-distributions/{commissionDistribution}/pay',
     [CommissionDistributionController::class, 'pay']
 );
+
+// Industry-specific routes (automotive, ...)
+app(\App\Modules\IndustryRegistry::class)->loadRoutes();

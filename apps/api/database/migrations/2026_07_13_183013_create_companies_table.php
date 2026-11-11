@@ -35,10 +35,10 @@ return new class extends Migration
 
             $table->enum('type', [
                 'platform',
-                'installer',
+                'partner',
                 'supplier'
             ])
-            ->default('installer');
+            ->default('partner');
 
 
             $table->enum('status', [

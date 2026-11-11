@@ -15,7 +15,7 @@ return new class extends Migration
         });
 
 
-        Schema::table('installation_quotes', function (Blueprint $table) {
+        Schema::table('partner_quotes', function (Blueprint $table) {
             $table->foreignId('company_id')
                 ->nullable(false)
                 ->change();
@@ -39,7 +39,7 @@ return new class extends Migration
         });
 
 
-        Schema::table('installation_quotes', function (Blueprint $table) {
+        Schema::table('partner_quotes', function (Blueprint $table) {
             $table->foreignId('company_id')
                 ->nullable()
                 ->change();

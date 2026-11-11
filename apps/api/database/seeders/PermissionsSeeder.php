@@ -23,11 +23,11 @@ class PermissionsSeeder extends Seeder
             'vehicle-makes.update',
             'vehicle-makes.delete',
 
-            // Films
-            'films.view',
-            'films.create',
-            'films.update',
-            'films.delete',
+            // Products
+            'products.view',
+            'products.create',
+            'products.update',
+            'products.delete',
 
             // Orders
             'orders.view',
@@ -35,16 +35,16 @@ class PermissionsSeeder extends Seeder
             'orders.update',
             'orders.delete',
 
-            // Installation Centers
-            'installation-centers.view',
-            'installation-centers.create',
-            'installation-centers.update',
-            'installation-centers.delete',
+            // Partners
+            'partners.view',
+            'partners.create',
+            'partners.update',
+            'partners.delete',
 
-            // Installation Quotes
-            'installation-quotes.view',
-            'installation-quotes.update',
-            'installation-quotes.accept',
+            // Partner Quotes
+            'partner-quotes.view',
+            'partner-quotes.update',
+            'partner-quotes.accept',
 
             // Payments
             'payments.create',

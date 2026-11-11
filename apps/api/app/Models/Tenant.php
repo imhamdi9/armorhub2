@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
@@ -15,10 +16,16 @@ class Tenant extends Model
     protected $fillable = [
         'uuid',
         'name',
+        'industry_id',
         'domain',
         'status',
         'settings',
     ];
+
+public function industry(): BelongsTo
+{
+    return $this->belongsTo(Industry::class);
+}
 
 public function companies(): HasMany
 {

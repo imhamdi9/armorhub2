@@ -12,7 +12,7 @@ class CommissionController extends Controller
         $commissions = Commission::with([
             'order',
             'distributions.company',
-            'distributions.installationCenter',
+            'distributions.partner',
         ])->latest()->get();
 
         return response()->json($commissions);
@@ -23,7 +23,7 @@ class CommissionController extends Controller
         $commission = Commission::with([
             'order',
             'distributions.company',
-            'distributions.installationCenter',
+            'distributions.partner',
         ])->findOrFail($id);
 
         return response()->json($commission);

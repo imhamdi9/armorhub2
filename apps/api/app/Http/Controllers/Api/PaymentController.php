@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Commission;
 use App\Models\CommissionDistribution;
-use App\Models\InstallationQuote;
+use App\Models\PartnerQuote;
 
 class PaymentController extends Controller
 {
@@ -46,13 +46,13 @@ class PaymentController extends Controller
             'status' => 'pending',
         ]);
 
-        $quote = InstallationQuote::where('order_id', $order->id)
+        $quote = PartnerQuote::where('order_id', $order->id)
             ->where('status', 'accepted')
             ->first();
 
-        if ($quote && $quote->installationCenter) {
+        if ($quote && $quote->partner) {
 
-            $center = $quote->installationCenter;
+            $center = $quote->partner;
 
             // Platform 35%
             CommissionDistribution::create([
@@ -73,11 +73,11 @@ class PaymentController extends Controller
                 ]);
             }
 
-            // Installation Center 40%
+            // Partner 40%
             CommissionDistribution::create([
                 'commission_id' => $commission->id,
-                'type' => 'installation_center',
-                'installation_center_id' => $center->id,
+                'type' => 'partner',
+                'partner_id' => $center->id,
                 'amount' => $commission->amount * 0.40,
                 'status' => 'pending',
             ]);

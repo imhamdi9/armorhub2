@@ -21,24 +21,24 @@ class RolePermissionSeeder extends Seeder
 
             'orders.view',
 
-            'installation-centers.view',
-            'installation-centers.create',
-            'installation-centers.update',
+            'partners.view',
+            'partners.create',
+            'partners.update',
 
-            'installation-quotes.view',
+            'partner-quotes.view',
 
             'dashboard.view',
         ]);
 
-        // Installer Manager
-        Role::findByName('installer-manager')->syncPermissions([
-            'installation-centers.view',
-            'installation-centers.create',
-            'installation-centers.update',
+        // Partner Manager
+        Role::findByName('partner-manager')->syncPermissions([
+            'partners.view',
+            'partners.create',
+            'partners.update',
 
-            'installation-quotes.view',
-            'installation-quotes.update',
-            'installation-quotes.accept',
+            'partner-quotes.view',
+            'partner-quotes.update',
+            'partner-quotes.accept',
 
             'orders.view',
 
@@ -48,7 +48,7 @@ class RolePermissionSeeder extends Seeder
         // Technician
         Role::findByName('technician')->syncPermissions([
             'orders.view',
-            'installation-quotes.view',
+            'partner-quotes.view',
         ]);
 
         // Customer

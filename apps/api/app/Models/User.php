@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\InstallationCenter;
+use App\Models\Partner;
 
 class User extends Authenticatable
 {
@@ -24,7 +24,7 @@ class User extends Authenticatable
       'email',
       'password',
       'company_id',
-      'installation_center_id',
+      'partner_id',
       'latitude',
       'longitude',
       'city',
@@ -37,9 +37,9 @@ class User extends Authenticatable
     return $this->belongsTo(Company::class);
     }
 
-    public function installationCenter()
+    public function partner()
     {
-    return $this->belongsTo(InstallationCenter::class);
+    return $this->belongsTo(Partner::class);
     }
 
 

@@ -48,8 +48,8 @@ class CommissionDashboardController extends Controller
                 CommissionDistribution::where('type', 'company')
                     ->sum('amount'),
 
-            'installation_centers' =>
-                CommissionDistribution::where('type', 'installation_center')
+            'partners' =>
+                CommissionDistribution::where('type', 'partner')
                     ->sum('amount'),
 
         ]);

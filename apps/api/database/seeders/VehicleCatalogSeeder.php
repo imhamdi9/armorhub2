@@ -3,12 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\VehicleMake;
-use App\Models\VehicleModel;
-use App\Models\VehicleYear;
-use App\Models\VehiclePart;
-use App\Models\Film;
-use App\Models\FilmPriceRule;
+use App\Modules\Automotive\Models\VehicleMake;
+use App\Modules\Automotive\Models\VehicleModel;
+use App\Modules\Automotive\Models\VehicleYear;
+use App\Modules\Automotive\Models\VehiclePart;
+use App\Models\Industry;
+use App\Models\Product;
+use App\Models\ProductPriceRule;
 
 
 class VehicleCatalogSeeder extends Seeder
@@ -56,7 +57,9 @@ class VehicleCatalogSeeder extends Seeder
         ]);
 
 
-        $film = Film::create([
+        $product = Product::create([
+            'industry_id'=>Industry::where('key','automotive')->value('id'),
+            'category'=>'paint-protection-film',
             'brand'=>'XPEL',
             'name'=>'Ultimate Plus',
             'slug'=>'xpel-ultimate-plus',
@@ -65,29 +68,32 @@ class VehicleCatalogSeeder extends Seeder
         ]);
 
 
-        FilmPriceRule::insert([
+        ProductPriceRule::insert([
 
             [
-                'film_id'=>$film->id,
-                'vehicle_part_id'=>$hood->id,
+                'product_id'=>$product->id,
+                'target_type'=>'vehicle_part',
+                'target_id'=>$hood->id,
                 'price'=>1200,
-                'installation_minutes'=>180,
+                'duration_minutes'=>180,
                 'is_active'=>true,
             ],
 
             [
-                'film_id'=>$film->id,
-                'vehicle_part_id'=>$bumper->id,
+                'product_id'=>$product->id,
+                'target_type'=>'vehicle_part',
+                'target_id'=>$bumper->id,
                 'price'=>900,
-                'installation_minutes'=>120,
+                'duration_minutes'=>120,
                 'is_active'=>true,
             ],
 
             [
-                'film_id'=>$film->id,
-                'vehicle_part_id'=>$mirror->id,
+                'product_id'=>$product->id,
+                'target_type'=>'vehicle_part',
+                'target_id'=>$mirror->id,
                 'price'=>250,
-                'installation_minutes'=>30,
+                'duration_minutes'=>30,
                 'is_active'=>true,
             ],
 

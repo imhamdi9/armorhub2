@@ -19,7 +19,7 @@ return new class extends Migration
         });
 
 
-        Schema::table('installation_quotes', function (Blueprint $table) {
+        Schema::table('partner_quotes', function (Blueprint $table) {
 
             $table->foreignId('company_id')
                 ->nullable()
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->dropConstrainedForeignId('company_id');
         });
 
-        Schema::table('installation_quotes', function (Blueprint $table) {
+        Schema::table('partner_quotes', function (Blueprint $table) {
             $table->dropConstrainedForeignId('company_id');
         });
 

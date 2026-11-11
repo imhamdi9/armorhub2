@@ -18,23 +18,22 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->foreignId('film_id')
+            $table->foreignId('product_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('vehicle_model_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            // The thing being serviced (vehicle, property, device...), if any
+            $table->nullableMorphs('subject');
 
 
             $table->string('status')
                 ->default('pending');
 
 
-            $table->decimal('film_amount',10,2)
+            $table->decimal('product_amount',10,2)
                 ->default(0);
 
-            $table->decimal('installation_amount',10,2)
+            $table->decimal('service_amount',10,2)
                 ->default(0);
 
             $table->decimal('commission_amount',10,2)

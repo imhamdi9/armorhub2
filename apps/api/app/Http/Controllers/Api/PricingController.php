@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\Pricing\CalculateFilmPriceService;
+use App\Services\Pricing\CalculateProductPriceService;
 
 
 class PricingController extends Controller
@@ -12,21 +12,23 @@ class PricingController extends Controller
 
     public function calculate(
         Request $request,
-        CalculateFilmPriceService $service
+        CalculateProductPriceService $service
     )
     {
 
         $validated = $request->validate([
-            'film_id'=>'required|integer',
-            'parts'=>'required|array',
-            'parts.*'=>'integer',
+            'product_id'=>'required|integer',
+            'targets'=>'required|array',
+            'targets.*'=>'integer',
+            'target_type'=>'nullable|string',
         ]);
 
 
         return response()->json(
             $service->calculate(
-                $validated['film_id'],
-                $validated['parts']
+                $validated['product_id'],
+                $validated['targets'],
+                $validated['target_type'] ?? null
             )
         );
 

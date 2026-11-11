@@ -5,31 +5,31 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Enums\QuoteStatus;
 use Illuminate\Support\Facades\DB;
-use App\Models\InstallationQuote;
+use App\Models\PartnerQuote;
 
 class QuoteService
 {
-    public function accept(InstallationQuote $installationQuote)
+    public function accept(PartnerQuote $partnerQuote)
     {
-      return DB::transaction(function () use ($installationQuote) {
+      return DB::transaction(function () use ($partnerQuote) {
 
-          $order = $installationQuote->order;
-          $order->installationQuotes()
-              ->where('id', '!=', $installationQuote->id)
+          $order = $partnerQuote->order;
+          $order->partnerQuotes()
+              ->where('id', '!=', $partnerQuote->id)
               ->update([
                  'status' => QuoteStatus::Rejected,
                ]);
 
-           $installationQuote->update([
+           $partnerQuote->update([
                'status' => QuoteStatus::Accepted,
             ]);
 
-            $total = $order->film_amount
-                + $installationQuote->price
+            $total = $order->product_amount
+                + $partnerQuote->price
                 + $order->commission_amount;
 
             $order->update([
-                'installation_amount' => $installationQuote->price,
+                'service_amount' => $partnerQuote->price,
                 'total_amount' => $total,
                 'status' => OrderStatus::PartnerSelected,
             ]);
