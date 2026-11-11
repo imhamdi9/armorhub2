@@ -123,7 +123,10 @@ class IndustryModulesTest extends TestCase
         $model = VehicleModel::create(['vehicle_make_id' => $make->id, 'name' => 'M4', 'slug' => 'm4']);
         $product = Product::create(['name' => 'Film', 'slug' => 'f', 'base_price' => 1]);
 
+        $company = \App\Models\Company::create(['tenant_id' => Tenant::create(['name' => 'T'])->id, 'name' => 'Acme']);
+
         $order = \App\Models\Order::withoutGlobalScopes()->create([
+            'company_id' => $company->id,
             'product_id' => $product->id,
             'subject_type' => 'vehicle_model',
             'subject_id' => $model->id,
@@ -132,7 +135,10 @@ class IndustryModulesTest extends TestCase
         $this->assertTrue($order->fresh()->subject->is($model));
 
         // Industries with nothing to service (e.g. a salon) need no subject.
-        $noSubject = \App\Models\Order::withoutGlobalScopes()->create(['product_id' => $product->id]);
+        $noSubject = \App\Models\Order::withoutGlobalScopes()->create([
+            'company_id' => $company->id,
+            'product_id' => $product->id,
+        ]);
         $this->assertNull($noSubject->fresh()->subject);
     }
 }
