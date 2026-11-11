@@ -173,6 +173,20 @@ try {
   await admin.waitForSelector("[role=dialog] >> text=delivered");
   ok("the platform page lists the ArmorHub module, its event contracts, the event log, and replays a delivery");
 
+  // Workflows are data: a market re-wires the order lifecycle from the admin panel, and can put it back.
+  await admin.click("[role=tab]:has-text('Workflows')");
+  await admin.waitForSelector("text=accept_quote");
+  const editor = admin.locator('[aria-label="Workflow definition"]');
+  const definition = JSON.parse(await editor.inputValue());
+  definition.transitions.cancel.from.push("paid");
+  await editor.fill(JSON.stringify(definition));
+  await admin.click("button:has-text('Save for this market')");
+  await admin.waitForSelector("text=This market now runs its own version");
+  await admin.waitForSelector("text=Customised v1");
+  await admin.click("button:has-text('Revert to product default')");
+  await admin.waitForSelector("text=Product default");
+  ok("the order workflow is shown as data; a market customised it and reverted it from the admin panel");
+
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");
   await admin.waitForSelector("text=Emergency");

@@ -5,6 +5,7 @@ namespace App\Core\Modules;
 use App\Core\Core;
 use App\Core\Events\EventCatalog;
 use App\Core\Events\SubscriberRegistry;
+use App\Core\Workflow\WorkflowRegistry;
 
 /** Loads modules, checks they fit this core and each other, and lets them register in dependency order. */
 class ModuleRegistry
@@ -12,8 +13,9 @@ class ModuleRegistry
     /** @var array<string, Module> */
     private array $modules = [];
 
-    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers)
+    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null)
     {
+        $this->workflows ??= new WorkflowRegistry();
     }
 
     /** @param list<class-string<Module>> $classes */
@@ -36,7 +38,7 @@ class ModuleRegistry
 
         foreach ($this->inDependencyOrder($found) as $module) {
             $this->modules[$module->manifest()->id] = $module;
-            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers));
+            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers, $this->workflows));
         }
     }
 

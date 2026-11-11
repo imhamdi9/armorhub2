@@ -10,6 +10,8 @@ use App\Core\Events\EventCatalog;
 use App\Core\Events\SubscriberRegistry;
 use App\Core\Modules\ModuleRegistry;
 use App\Core\Modules\TenantModules;
+use App\Core\Workflow\WorkflowEngine;
+use App\Core\Workflow\WorkflowRegistry;
 use Illuminate\Support\ServiceProvider;
 
 /** Wires the platform core. It lists no product: products arrive through config/modules.php. */
@@ -20,6 +22,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(EventCatalog::class);
         $this->app->singleton(SubscriberRegistry::class);
         $this->app->singleton(TenantModules::class);
+        $this->app->singleton(WorkflowRegistry::class);
+        $this->app->singleton(WorkflowEngine::class);
         $this->app->singleton(EventBus::class);
         $this->app->singleton(DeliveryProcessor::class);
         $this->app->singleton(ModuleRegistry::class);

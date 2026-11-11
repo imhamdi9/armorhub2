@@ -14,6 +14,9 @@ class Order extends Model
 {
     use BelongsToCompany;
 
+    /** The workflow that governs an order's life (declared by the ArmorHub module as data). */
+    public const WORKFLOW = 'armorhub.order';
+
     protected $fillable = [
         'customer_id',
         'product_id',

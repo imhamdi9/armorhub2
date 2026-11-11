@@ -10,6 +10,10 @@ import { errorMessage } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import {
   getEventCatalog,
+  getWorkflows,
+  resetWorkflow,
+  saveWorkflow,
+  type WorkflowInfo,
   getPlatformEvent,
   getPlatformEvents,
   getPlatformModules,
@@ -29,7 +33,7 @@ const STATUSES = ["", "pending", "delivered", "failed", "dead", "skipped"];
  * each switched on, every event type and its contract, and what happened to each event (with replay).
  */
 export default function PlatformPage() {
-  const [tab, setTab] = useState<"modules" | "catalog" | "log">("modules");
+  const [tab, setTab] = useState<"modules" | "workflows" | "catalog" | "log">("modules");
   const [forbidden, setForbidden] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +49,10 @@ export default function PlatformPage() {
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState<PlatformEvent | null>(null);
   const [tick, setTick] = useState(0);
+  // workflows
+  const [workflows, setWorkflows] = useState<WorkflowInfo[] | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     getTenants().then((t) => { setMarkets(t); setMarket((m) => m ?? t[0]?.id); }).catch(() => setForbidden(true));
@@ -53,6 +61,10 @@ export default function PlatformPage() {
   useEffect(() => {
     getPlatformModules(market).then(setModules).catch(() => setForbidden(true));
   }, [market, tick]);
+
+  useEffect(() => {
+    if (tab === "workflows") getWorkflows(market).then(setWorkflows).catch(() => setForbidden(true));
+  }, [tab, market, tick]);
 
   useEffect(() => {
     if (tab === "catalog") getEventCatalog().then(setCatalog).catch(() => setForbidden(true));
@@ -71,6 +83,29 @@ export default function PlatformPage() {
     } catch (e) {
       setError(errorMessage(e));
     }
+  }
+
+  async function saveWf(w: WorkflowInfo) {
+    if (!market) return;
+    setError(null);
+    setNote(null);
+    try {
+      await saveWorkflow(market, w.key, JSON.parse(draft[w.key] ?? JSON.stringify(w.active, null, 2)));
+      setDraft((d) => { const next = { ...d }; delete next[w.key]; return next; });
+      setNote(tr("Saved. This market now runs its own version."));
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(e instanceof SyntaxError ? tr("That is not valid JSON.") : errorMessage(e));
+    }
+  }
+
+  async function resetWf(w: WorkflowInfo) {
+    if (!market) return;
+    setError(null);
+    await resetWorkflow(market, w.key);
+    setDraft((d) => { const next = { ...d }; delete next[w.key]; return next; });
+    setNote(tr("Back to the product's own workflow."));
+    setTick((t) => t + 1);
   }
 
   async function show(e: PlatformEvent) {
@@ -103,6 +138,7 @@ export default function PlatformPage() {
       </p>
       <div role="tablist" className="mb-6 inline-flex gap-1 rounded-full bg-secondary p-1">
         {tabButton("modules", "Modules")}
+        {tabButton("workflows", "Workflows")}
         {tabButton("catalog", "Event catalog")}
         {tabButton("log", "Event log")}
       </div>
@@ -140,6 +176,40 @@ export default function PlatformPage() {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {tab === "workflows" && (
+        <section>
+          <div className="mb-4 flex items-center gap-2 text-sm">
+            <label htmlFor="wf-market">{tr("Market")}</label>
+            <select id="wf-market" className="rounded-lg border px-3 py-2" value={market ?? ""} onChange={(e) => setMarket(Number(e.target.value))}>
+              {markets.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          {note && <p className="mb-3 text-sm text-green-600" role="status">{note}</p>}
+          {workflows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : workflows.map((w) => (
+            <article key={w.key} className="mb-4 rounded-xl border p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-bold"><code>{w.key}</code> <span className="text-sm font-normal text-muted-foreground">{w.owner}</span></h2>
+                <Badge variant={w.customised ? "default" : "secondary"}>{w.customised ? `${tr("Customised")} v${w.version}` : tr("Product default")}</Badge>
+              </div>
+              <p className="mt-2 text-sm"><strong>{tr("States")}:</strong> {Object.entries(w.active.states).map(([k, s]) => `${k}${s.final ? " ✓" : ""}`).join(" → ")}</p>
+              <ul className="mt-2 space-y-1 text-sm" dir="ltr">
+                {Object.entries(w.active.transitions).map(([name, t]) => (
+                  <li key={name}><code className="font-semibold">{name}</code>: {(t.from === "*" ? ["any"] : t.from).join(" | ")} → <strong>{t.to}</strong>{t.actions.length ? ` · actions: ${t.actions.join(", ")}` : ""}{t.guards.length ? ` · guards: ${t.guards.join(", ")}` : ""}</li>
+                ))}
+              </ul>
+              <label htmlFor={`def-${w.key}`} className="mt-4 block text-sm font-medium">{tr("This market's version (JSON)")}</label>
+              <textarea id={`def-${w.key}`} aria-label={tr("Workflow definition")} rows={10} dir="ltr" className="w-full rounded-lg border px-3 py-2 font-mono text-xs"
+                value={draft[w.key] ?? JSON.stringify(w.active, null, 2)} onChange={(e) => setDraft((d) => ({ ...d, [w.key]: e.target.value }))} />
+              <p className="text-xs text-muted-foreground">{tr("You can re-wire the steps between the existing states. States cannot be added or removed because existing records live in them.")}</p>
+              <div className="mt-3 flex gap-2">
+                <Button onClick={() => saveWf(w)} disabled={!market}>{tr("Save for this market")}</Button>
+                <Button variant="outline" onClick={() => resetWf(w)} disabled={!market || !w.customised}>{tr("Revert to product default")}</Button>
+              </div>
+            </article>
+          ))}
         </section>
       )}
 

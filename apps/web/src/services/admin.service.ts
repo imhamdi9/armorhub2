@@ -106,3 +106,29 @@ export const getPlatformEvent = async (id: string) => (await api.get<PlatformEve
 
 export const replayPlatformEvent = async (id: string, subscriber?: string) =>
   (await api.post(`/admin/platform/events/${id}/replay`, subscriber ? { subscriber } : {})).data;
+
+export interface WorkflowDef {
+  key: string;
+  version: number;
+  initial: string;
+  states: Record<string, { label?: string; final?: boolean }>;
+  transitions: Record<string, { from: string[] | "*"; to: string; guards: string[]; actions: string[]; event: string | null; message: string | null }>;
+}
+
+export interface WorkflowInfo {
+  key: string;
+  owner: string;
+  default: WorkflowDef;
+  active: WorkflowDef;
+  customised: boolean;
+  version: number | null;
+}
+
+export const getWorkflows = async (tenantId?: number) =>
+  (await api.get<{ workflows: WorkflowInfo[] }>("/admin/platform/workflows", { params: tenantId ? { tenant_id: tenantId } : {} })).data.workflows;
+
+export const saveWorkflow = async (tenantId: number, key: string, definition: unknown) =>
+  (await api.put(`/admin/platform/tenants/${tenantId}/workflows/${key}`, { definition })).data;
+
+export const resetWorkflow = async (tenantId: number, key: string) =>
+  (await api.delete(`/admin/platform/tenants/${tenantId}/workflows/${key}`)).data;

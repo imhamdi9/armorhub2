@@ -20,10 +20,14 @@ class QuoteService
 
             $order = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($quote->order_id);
 
-            if (! $order->status->isOpenForQuotes()) {
-                throw ValidationException::withMessages([
-                    'quote' => ['A quote has already been selected for this order.'],
-                ]);
+            // Whether a quote may be picked now is the order workflow's decision (a tenant may have its own version).
+            try {
+                $planned = app(\App\Core\Workflow\WorkflowEngine::class)->plan(
+                    Order::WORKFLOW, $order->status->value, 'accept_quote',
+                    new \App\Core\Workflow\WorkflowContext($order, $by, \App\Models\Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id')),
+                );
+            } catch (\App\Core\Workflow\TransitionNotAllowed $e) {
+                throw ValidationException::withMessages(['quote' => [$e->getMessage()]]);
             }
 
             if ($quote->status !== QuoteStatus::Submitted) {
@@ -44,7 +48,7 @@ class QuoteService
             $order->update([
                 'service_amount' => $quote->price,
                 'total_amount' => $total,
-                'status' => OrderStatus::PartnerSelected,
+                'status' => $planned->to,
             ] + app(\App\Support\Markets\Markets::class)->taxFor(\App\Models\Company::withoutGlobalScopes()->find($order->company_id), (float) $total));
 
             OrderEvent::record($order, 'quote_accepted', $by, ['partner_id' => $quote->partner_id, 'price' => (string) $quote->price]);

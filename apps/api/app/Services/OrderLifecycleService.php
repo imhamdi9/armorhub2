@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
-use App\Enums\QuoteStatus;
+use App\Core\Workflow\TransitionNotAllowed;
+use App\Core\Workflow\WorkflowContext;
+use App\Core\Workflow\WorkflowEngine;
+use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderEvent;
-use App\Models\PartnerQuote;
 use App\Models\User;
-use App\Models\Warranty;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,77 +19,49 @@ use Illuminate\Validation\ValidationException;
  */
 class OrderLifecycleService
 {
+    public function __construct(private WorkflowEngine $workflows)
+    {
+    }
+
     public function schedule(Order $order, Carbon $when, User $by): Order
     {
-        return $this->move($order, [OrderStatus::Paid, OrderStatus::AppointmentScheduled], OrderStatus::AppointmentScheduled,
-            'scheduled', $by, ['scheduled_at' => $when], ['scheduled_at' => $when->toIso8601String()]);
+        return $this->move($order, 'schedule', $by, ['scheduled_at' => $when], ['scheduled_at' => $when->toIso8601String()]);
     }
 
     public function start(Order $order, User $by): Order
     {
-        return $this->move($order, [OrderStatus::AppointmentScheduled], OrderStatus::ServiceInProgress,
-            'started', $by, ['started_at' => now()]);
+        return $this->move($order, 'start', $by, ['started_at' => now()]);
     }
 
     public function complete(Order $order, User $by): Order
     {
-        return DB::transaction(function () use ($order, $by) {
-            $order = $this->move($order, [OrderStatus::ServiceInProgress], OrderStatus::Completed,
-                'completed', $by, ['completed_at' => now()]);
-
-            $years = $order->product?->warranty_years;
-
-            if ($years) {
-                Warranty::withoutGlobalScopes()->firstOrCreate(['order_id' => $order->id], [
-                    'company_id' => $order->company_id,
-                    'customer_id' => $order->customer_id,
-                    'product_id' => $order->product_id,
-                    'starts_at' => now(),
-                    'ends_at' => now()->addYears($years),
-                ]);
-            }
-
-            return $order;
-        });
+        return $this->move($order, 'complete', $by, ['completed_at' => now()]);
     }
 
     public function cancel(Order $order, User $by, ?string $reason = null): Order
     {
-        return DB::transaction(function () use ($order, $by, $reason) {
-            $order = $this->move($order, array_filter(OrderStatus::cases(), fn ($s) => $s->isCancellable()),
-                OrderStatus::Cancelled, 'cancelled', $by, ['cancelled_at' => now()], array_filter(['reason' => $reason]),
-                'Paid orders cannot be cancelled here; please contact support.');
-
-            PartnerQuote::withoutGlobalScopes()->where('order_id', $order->id)
-                ->whereIn('status', [QuoteStatus::Pending, QuoteStatus::Submitted])
-                ->update(['status' => QuoteStatus::Rejected]);
-
-            return $order;
-        });
+        return $this->move($order, 'cancel', $by, ['cancelled_at' => now()], array_filter(['reason' => $reason]));
     }
 
     /**
-     * @param  list<OrderStatus>  $from
+     * One step of the order's workflow: validated against the (tenant's) definition, locked, applied, announced.
+     * What each step allows, checks and does lives in the workflow definition, not here.
      */
-    private function move(
-        Order $order,
-        array $from,
-        OrderStatus $to,
-        string $event,
-        User $by,
-        array $attributes = [],
-        array $data = [],
-        string $message = 'This step is not available for the order in its current state.'
-    ): Order {
-        return DB::transaction(function () use ($order, $from, $to, $event, $by, $attributes, $data, $message) {
+    private function move(Order $order, string $transition, User $by, array $attributes = [], array $data = []): Order
+    {
+        return DB::transaction(function () use ($order, $transition, $by, $attributes, $data) {
             $locked = Order::withoutGlobalScopes()->with('product')->lockForUpdate()->findOrFail($order->id);
+            $tenantId = Company::withoutGlobalScopes()->whereKey($locked->company_id)->value('tenant_id');
 
-            if (! in_array($locked->status, $from, true)) {
-                throw ValidationException::withMessages(['order' => [$message]]);
+            try {
+                $planned = $this->workflows->plan(Order::WORKFLOW, $locked->status->value, $transition, new WorkflowContext($locked, $by, $tenantId, $data));
+            } catch (TransitionNotAllowed $e) {
+                throw ValidationException::withMessages(['order' => [$e->getMessage()]]);
             }
 
-            $locked->update(['status' => $to] + $attributes);
-            OrderEvent::record($locked, $event, $by, $data);
+            $locked->update(['status' => $planned->to] + $attributes);
+            OrderEvent::record($locked, $planned->event() ?? $transition, $by, $data);
+            $planned->runActions();
 
             return $locked->fresh('product');
         });

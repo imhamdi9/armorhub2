@@ -21,6 +21,21 @@ class ClinicModule implements Module
     {
         $context->event('clinic.appointment_booked', ['appointment_id' => 'int', 'patient' => 'string', 'notes' => 'string?'], 'A patient booked an appointment');
         $context->event('clinic.reminder_scheduled', ['appointment_id' => 'int'], 'A reminder was scheduled');
+        // The clinic's own lifecycle, defined entirely as data. The core knows nothing about appointments.
+        $context->guard(WithinHours::class);
+        $context->action(SendReminder::class);
+        $context->workflow([
+            'key' => 'clinic.appointment',
+            'initial' => 'booked',
+            'states' => ['booked' => ['label' => 'Booked'], 'confirmed' => ['label' => 'Confirmed'], 'checked_in' => ['label' => 'Checked in'], 'completed' => ['label' => 'Completed', 'final' => true], 'cancelled' => ['label' => 'Cancelled', 'final' => true]],
+            'transitions' => [
+                'confirm' => ['from' => ['booked'], 'to' => 'confirmed', 'actions' => ['clinic.send_reminder']],
+                'check_in' => ['from' => ['confirmed'], 'to' => 'checked_in', 'guards' => ['clinic.within_hours']],
+                'complete' => ['from' => ['checked_in'], 'to' => 'completed'],
+                'cancel' => ['from' => ['booked', 'confirmed'], 'to' => 'cancelled', 'message' => 'Too late to cancel: please call the clinic.'],
+            ],
+        ]);
+
         $context->subscribe(BookingReactor::class);
         $context->subscribe(FlakyReactor::class);
     }

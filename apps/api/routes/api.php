@@ -119,6 +119,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
         Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
         Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/platform/workflows', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'index']);
+        Route::put('/platform/tenants/{tenant}/workflows/{key}', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'update'])->where('key', '[a-z0-9_.]+');
+        Route::delete('/platform/tenants/{tenant}/workflows/{key}', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'reset'])->where('key', '[a-z0-9_.]+');
         Route::get('/platform/events/catalog', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'catalog']);
         Route::get('/platform/events', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'events']);
         Route::get('/platform/events/{eventId}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'event']);

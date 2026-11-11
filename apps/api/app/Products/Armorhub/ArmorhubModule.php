@@ -6,6 +6,9 @@ use App\Core\Modules\Module;
 use App\Core\Modules\ModuleContext;
 use App\Core\Modules\ModuleManifest;
 use App\Products\Armorhub\Subscribers\OrderNotificationSubscriber;
+use App\Products\Armorhub\Workflows\GrantWarranty;
+use App\Products\Armorhub\Workflows\OrderWorkflow;
+use App\Products\Armorhub\Workflows\RejectOpenQuotes;
 
 /**
  * ArmorHub, the first product: request a service or product, compare quotes, pay, fulfil, warranty.
@@ -52,5 +55,9 @@ class ArmorhubModule implements Module
         }
 
         $context->subscribe(OrderNotificationSubscriber::class);
+
+        $context->action(GrantWarranty::class);
+        $context->action(RejectOpenQuotes::class);
+        $context->workflow(OrderWorkflow::definition());
     }
 }
