@@ -6,7 +6,9 @@ import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, 
 import { Faq } from "@/components/public/faq";
 import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
+import { SiteProvider, useSiteFlag, useSiteList, useSiteText } from "@/components/public/site-content";
 import { tr } from "@/lib/i18n";
+import type { SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
 const STEPS = [
@@ -17,14 +19,32 @@ const STEPS = [
 ];
 
 /** The platform's front door: what it is, who it serves, and every open store. */
-export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; showcase: PublicShowcase }) {
+export function PlatformHome({ stores, showcase, site }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent }) {
+  return (
+    <SiteProvider content={site ?? { home: {}, brand: {}, nav: {} }}>
+      <PlatformHomeBody stores={stores} showcase={showcase} />
+    </SiteProvider>
+  );
+}
+
+function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; showcase: PublicShowcase }) {
   const facts = factsOf(stores, showcase);
+  const on = {
+    partnerStrip: useSiteFlag("show_partner_strip"), industries: useSiteFlag("show_industries"), quote: useSiteFlag("show_quote_feature"),
+    dashboard: useSiteFlag("show_dashboard_feature"), values: useSiteFlag("show_value_props"), partners: useSiteFlag("show_partners"),
+    useCases: useSiteFlag("show_use_cases"), why: useSiteFlag("show_why"), how: useSiteFlag("show_how"), bento: useSiteFlag("show_bento"),
+    dev: useSiteFlag("show_developers"), compat: useSiteFlag("show_compat"), markets: useSiteFlag("show_markets"), faq: useSiteFlag("show_faq"),
+  };
+  const faqItems = useSiteList<{ question: string; answer: string }>("home", "faq");
+  const bannerTitle = useSiteText("home", "banner_title", "Run a business? Open your own store.");
+  const bannerText = useSiteText("home", "banner_text", "Get a branded storefront, receive quote requests from nearby customers and get paid securely.");
+  const bannerCta = useSiteText("home", "banner_cta", "For businesses: sign in");
 
   return (
     <PublicShell>
       <Hero facts={facts} firstStore={stores[0]} />
-      <PartnerStrip showcase={showcase} facts={facts} />
-      <IndustryTabs showcase={showcase} />
+      {on.partnerStrip && <PartnerStrip showcase={showcase} facts={facts} />}
+      {on.industries && <IndustryTabs showcase={showcase} />}
 
       <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
         <h2 className="display display-md">{tr("ArmorHub Markets")}</h2>
@@ -50,14 +70,14 @@ export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; 
         )}
       </section>
 
-      <QuoteFeature />
-      <DashboardFeature />
-      <ValueProps />
-      <PartnersShowcase data={showcase} />
-      <UseCases showcase={showcase} />
-      <WhySplit />
+      {on.quote && <QuoteFeature />}
+      {on.dashboard && <DashboardFeature />}
+      {on.values && <ValueProps />}
+      {on.partners && <PartnersShowcase data={showcase} />}
+      {on.useCases && <UseCases showcase={showcase} />}
+      {on.why && <WhySplit />}
 
-      <section id="how" className="scroll-mt-20 bg-white py-14">
+      {on.how && <section id="how" className="scroll-mt-20 bg-white py-14">
         <div className="mx-auto max-w-[1200px] px-4">
           <h2 className="display display-md text-center">{tr("How it works")}</h2>
           <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -70,14 +90,14 @@ export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; 
             ))}
           </ol>
         </div>
-      </section>
+      </section>}
 
-      <Bento facts={facts} />
-      <DevRow />
-      <Compatibility />
-      <Markets />
-      <Faq />
-      <Banner title="Run a business? Open your own store." text="Get a branded storefront, receive quote requests from nearby customers and get paid securely." href="/login" label="For businesses: sign in" secondary={{ href: "/signup", label: "Create an account" }} />
+      {on.bento && <Bento facts={facts} />}
+      {on.dev && <DevRow />}
+      {on.compat && <Compatibility />}
+      {on.markets && <Markets />}
+      {on.faq && (faqItems.length > 0 ? <Faq items={faqItems.map((i) => ({ q: i.question, a: i.answer }))} /> : <Faq />)}
+      <Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} secondary={{ href: "/signup", label: "Create an account" }} />
     </PublicShell>
   );
 }

@@ -25,6 +25,16 @@ const call = async (path, { method = "GET", token, body } = {}) => {
 const gateway = await startFakeGateway({ apiUrl: api, apiKey: GATEWAY_KEY, webhookSecret: HOOK_SECRET });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
+/** The public site caches API reads for a few seconds, so a change can take a moment to show: reload until it does. */
+async function eventually(page, check, what) {
+  for (let i = 0; i < 25; i++) {
+    await page.reload();
+    if (await check()) return;
+    await page.waitForTimeout(1000);
+  }
+  throw new Error(`never showed: ${what}`);
+}
+
 /** A customer with an accepted quote, created through the API, ready to pay 1500. */
 async function readyOrder(tag) {
   const challenge = (await call("/signup-challenge")).json;
@@ -57,7 +67,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview
@@ -112,8 +122,9 @@ try {
   await card.locator("button:has-text('Save settings')").click();
   await card.locator("text=Saved").waitFor();
   await card.locator("text=Configured").first().waitFor();
+  const activated = admin.waitForResponse((r) => r.url().endsWith("/admin/payments/active") && r.status() === 200);
   await card.locator("button:has-text('Make active')").click();
-  await card.locator("text=Active").first().waitFor();
+  await activated;
   ok("a custom gateway was configured and activated from the admin panel");
 
   // The secret is never shown again, only that it is set.
@@ -202,6 +213,34 @@ try {
   await admin.waitForSelector("text=Product default");
   ok("the order workflow is shown as data; a market customised it and reverted it from the admin panel");
 
+  // Editable surfaces: an admin changes the public headline and hides a section; nothing shows until it is published.
+  await admin.click('a:has-text("Content")');
+  await admin.waitForSelector("text=Home page");
+  await admin.click("[role=tab]:has-text('Home page')");
+  await admin.waitForSelector("#f-hero_title");
+  await admin.fill("#f-hero_title", "Edited by an admin E2E");
+  await admin.locator("label:has-text('Show: FAQ') input").uncheck();
+  await admin.click("button:has-text('Save draft')");
+  await admin.waitForSelector("text=Draft saved.");
+  const visitor = await admin.context().newPage();
+  await visitor.goto(new URL("/", base).toString());
+  await visitor.waitForSelector("h1");
+  if ((await visitor.textContent("body")).includes("Edited by an admin E2E")) throw new Error("a draft was visible to visitors");
+  await admin.fill("input[placeholder='Note (what changed)']", "e2e");
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  await eventually(visitor, async () => (await visitor.textContent("body")).includes("Edited by an admin E2E"), "the published headline");
+  if (await visitor.locator("#faq").count()) throw new Error("the hidden FAQ section is still shown");
+  await admin.locator("li:has-text('live')").first().waitFor();
+  // Put the built-in content back so later phases see the original home page.
+  await admin.fill("#f-hero_title", "");
+  await admin.locator("label:has-text('Show: FAQ') input").check();
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  await eventually(visitor, async () => (await visitor.locator("#faq").count()) > 0, "the FAQ section again");
+  await visitor.close();
+  ok("an admin edited the home page: drafts stay private, publishing goes live, a section was hidden and restored");
+
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");
   await admin.waitForSelector("text=Emergency");
@@ -209,7 +248,7 @@ try {
 
   console.log("\nAdmin panel passed.");
 } catch (e) {
-  console.error("\nAdmin panel FAILED:", e.message.split("\n")[0]);
+  console.error("\nAdmin panel FAILED:", e.message.split("\n")[0], (e.stack.match(/admin.mjs:\d+/) || [])[0]);
   process.exitCode = 1;
 } finally {
   await browser.close();

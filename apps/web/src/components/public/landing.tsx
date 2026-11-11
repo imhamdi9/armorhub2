@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { HeroArt, Icon } from "@/components/public/art";
 import { price } from "@/components/public/product-card";
+import { useSiteText } from "@/components/public/site-content";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicShowcase } from "@/types/public";
 
@@ -58,19 +59,24 @@ export function factsOf(stores: { market?: string | null }[], showcase: PublicSh
 // ------------------------------------------------------------------ hero
 
 export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name: string; slug: string; headline: string | null; primary_color: string } }) {
+  const badge = useSiteText("home", "badge_text", "Saudi Arabia · Egypt");
+  const title = useSiteText("home", "hero_title", "Trusted services, quoted by experts near you");
+  const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
+  const cta = useSiteText("home", "primary_cta", "Browse markets");
+
   return (
     <section className="overflow-hidden bg-white">
       <div className="mx-auto max-w-[1200px] px-4 pb-6 pt-14 text-center md:pt-20">
         <span className="inline-flex items-center gap-2 rounded-full bg-linen px-4 py-1.5 text-sm font-semibold text-forest">
           <span className="h-2 w-2 rounded-full bg-spruce" aria-hidden="true" />
-          {tr("Saudi Arabia · Egypt")}
+          {badge}
         </span>
-        <h1 className="display display-xl mx-auto mt-6 max-w-5xl uppercase">{tr("Trusted services, quoted by experts near you")}</h1>
+        <h1 className="display display-xl mx-auto mt-6 max-w-5xl uppercase">{title}</h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-charcoal">
-          {tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
+          {subtitle}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-          <a href="#stores" className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{tr("Browse markets")} <span aria-hidden="true">→</span></a>
+          <a href="#stores" className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{cta} <span aria-hidden="true">→</span></a>
           <Link href="/login" className="text-base font-semibold text-forest underline underline-offset-4">{tr("For businesses: sign in")}</Link>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-2 border-t border-dashed border-fog pt-6">

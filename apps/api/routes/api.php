@@ -42,6 +42,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
     Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
     Route::get('/markets', [PublicStorefrontController::class, 'markets']);
+    Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
@@ -122,6 +123,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
         Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
         Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
+        Route::get('/surfaces', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'index']);
+        Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'show'])->where('key', '[a-z0-9_.]+');
+        Route::put('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'save'])->where('key', '[a-z0-9_.]+');
+        Route::post('/surfaces/{key}/publish', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'publish'])->where('key', '[a-z0-9_.]+');
+        Route::post('/surfaces/{key}/rollback', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'rollback'])->where('key', '[a-z0-9_.]+');
         Route::get('/platform/blueprints', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'index']);
         Route::get('/platform/blueprints/applications', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'history']);
         Route::post('/platform/blueprints/{id}/apply', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'apply'])->where('id', '[a-z0-9.-]+');
@@ -192,6 +198,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
+
+    // Published content of non-public editable surfaces (e.g. the dashboard menu names)
+    Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'signedIn'])->where('key', '[a-z0-9_.]+');
 
     // Sellers: the orders for their own products, and their earnings
     Route::get('/seller/earnings', [\App\Http\Controllers\Api\SellerEarningsController::class, 'show']);

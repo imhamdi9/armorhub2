@@ -12,3 +12,11 @@ export function errorMessage(error: unknown, fallback = "Something went wrong.")
   }
   return tr(fallback);
 }
+
+/** Per-field validation messages from an API error (first message per field). */
+export function fieldErrors(error: unknown): Record<string, string> {
+  if (!isAxiosError(error)) return {};
+  const errors = (error.response?.data as { errors?: Record<string, string[]> } | undefined)?.errors ?? {};
+
+  return Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, tr(v[0] ?? "")]));
+}

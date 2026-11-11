@@ -12,6 +12,8 @@ use App\Core\Events\EventCatalog;
 use App\Core\Events\SubscriberRegistry;
 use App\Core\Modules\ModuleRegistry;
 use App\Core\Modules\TenantModules;
+use App\Core\Surfaces\SurfaceRegistry;
+use App\Core\Surfaces\SurfaceStore;
 use App\Core\Workflow\WorkflowEngine;
 use App\Core\Workflow\WorkflowRegistry;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +26,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(EventCatalog::class);
         $this->app->singleton(SubscriberRegistry::class);
         $this->app->singleton(TenantModules::class);
+        $this->app->singleton(SurfaceRegistry::class);
+        $this->app->singleton(SurfaceStore::class);
         $this->app->singleton(BlueprintRegistry::class);
         $this->app->singleton(BlueprintApplier::class);
         $this->app->singleton(WorkflowRegistry::class);

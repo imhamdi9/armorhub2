@@ -71,6 +71,18 @@ Dependencies point **downward only**. Core never imports a product; a product ne
 | M6 | Tenancy hardening: tenant context everywhere, isolation tests, per-tenant modules | A cross-tenant read is impossible by construction and proven by tests |
 | M7 | Plugin packaging: composer discovery, signed manifests, capability permissions | A third party ships a module as a package |
 
+## Editable surfaces (built)
+
+"Everything editable by admins" is delivered as **governed editable surfaces**, not unbounded editing:
+
+- A module *declares* what may be edited (`$context->surface(key, label, fields, ...)`): typed fields (text, longtext, bool, number, https url, #rrggbb colour, select, list), length limits, and whether the content is public.
+- Admins edit a per-language (EN/AR) **draft**, **publish** it with a note, and can **restore** any earlier version. History is immutable; publishing is audited and emits `surface.published`.
+- Validation lives in the core, so no field can carry markup or arbitrary code; unset fields fall back to the built-in wording.
+- Security, payment secrets, roles and money logic are deliberately **not** surfaces.
+- ArmorHub declares: `site.home` (wording, 14 section switches, FAQ, banner), `site.brand` (name, logo, colours), `site.navigation`, `app.sidebar`. A new product adds surfaces from its own module with no core change.
+
+Admin UI: Administration → Content.
+
 ## Blueprints (built)
 
 A **blueprint** is a launch bundle: the steps that turn an empty platform into a working business of one kind (a market for a

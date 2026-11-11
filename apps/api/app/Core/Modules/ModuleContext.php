@@ -8,6 +8,8 @@ use App\Core\Blueprints\BlueprintStepHandler;
 use App\Core\Events\EventCatalog;
 use App\Core\Events\EventDefinition;
 use App\Core\Events\SubscriberRegistry;
+use App\Core\Surfaces\SurfaceDefinition;
+use App\Core\Surfaces\SurfaceRegistry;
 use App\Core\Workflow\Action;
 use App\Core\Workflow\Guard;
 use App\Core\Workflow\WorkflowDefinition;
@@ -16,7 +18,7 @@ use App\Core\Workflow\WorkflowRegistry;
 /** The extension points a module may use. Adding a new kind of extension means adding a method here, once. */
 class ModuleContext
 {
-    public function __construct(private string $moduleId, private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null)
+    public function __construct(private string $moduleId, private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null, private ?SurfaceRegistry $surfaces = null)
     {
     }
 
@@ -28,6 +30,16 @@ class ModuleContext
     public function event(string $name, array $schema = [], string $description = '', int $version = 1): void
     {
         $this->events->register(new EventDefinition($name, $this->moduleId, $schema, $description, $version));
+    }
+
+    /**
+     * Declare something admins may edit: its fields and limits. Not declared = not editable.
+     *
+     * @param array<string, array> $fields
+     */
+    public function surface(string $key, string $label, array $fields, string $description = '', bool $public = false): void
+    {
+        $this->surfaces->register(new SurfaceDefinition($key, $this->moduleId, $label, $fields, $description, $public));
     }
 
     /** Declare a launch bundle (see Blueprint::fromArray). */

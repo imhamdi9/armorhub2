@@ -6,6 +6,7 @@ use App\Core\Core;
 use App\Core\Blueprints\BlueprintRegistry;
 use App\Core\Events\EventCatalog;
 use App\Core\Events\SubscriberRegistry;
+use App\Core\Surfaces\SurfaceRegistry;
 use App\Core\Workflow\WorkflowRegistry;
 
 /** Loads modules, checks they fit this core and each other, and lets them register in dependency order. */
@@ -14,8 +15,9 @@ class ModuleRegistry
     /** @var array<string, Module> */
     private array $modules = [];
 
-    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null)
+    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null, private ?SurfaceRegistry $surfaces = null)
     {
+        $this->surfaces ??= new SurfaceRegistry();
         $this->workflows ??= new WorkflowRegistry();
         $this->blueprints ??= new BlueprintRegistry();
     }
@@ -40,7 +42,7 @@ class ModuleRegistry
 
         foreach ($this->inDependencyOrder($found) as $module) {
             $this->modules[$module->manifest()->id] = $module;
-            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers, $this->workflows, $this->blueprints));
+            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers, $this->workflows, $this->blueprints, $this->surfaces));
         }
     }
 

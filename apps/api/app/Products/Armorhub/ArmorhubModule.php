@@ -71,6 +71,7 @@ class ArmorhubModule implements Module
         $context->action(GrantWarranty::class);
         $context->action(RejectOpenQuotes::class);
         $context->workflow(OrderWorkflow::definition());
+        Surfaces::register($context);
 
         foreach ([MarketStep::class, StoreStep::class, CatalogStep::class, ProductsStep::class] as $step) {
             $context->blueprintStep($step);

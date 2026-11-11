@@ -17,6 +17,7 @@ class CoreModule implements Module
     public function register(ModuleContext $context): void
     {
         $context->event('blueprint.applied', ['blueprint_id' => 'string', 'application_id' => 'int', 'tenant_id' => 'int?'], 'A blueprint was applied: a new market or business was launched');
+        $context->event('surface.published', ['surface' => 'string', 'version' => 'int', 'locale' => 'string', 'tenant_id' => 'int?'], 'Admin-editable content was published');
         $context->blueprintStep(\App\Core\Blueprints\Steps\WorkflowOverrideStep::class);
     }
 }

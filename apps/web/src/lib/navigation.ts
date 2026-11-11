@@ -155,6 +155,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
+    items.push({ title: "Content", href: "/dashboard/admin/content", section: "admin", icon: "settings" });
     items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });
     items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "admin", icon: "audit" });

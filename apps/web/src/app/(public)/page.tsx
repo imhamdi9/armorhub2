@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { PlatformHome } from "@/components/public/platform-home";
-import { getShowcase, getStores } from "@/lib/public-api";
+import { getShowcase, getStores, getSurface } from "@/lib/public-api";
 
 export const metadata: Metadata = {
   title: "ArmorHub — trusted services, quoted by experts near you",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [list, showcase] = await Promise.all([getStores(), getShowcase()]);
+  const [list, showcase, home, brand, nav] = await Promise.all([getStores(), getShowcase(), getSurface("site.home"), getSurface("site.brand"), getSurface("site.navigation")]);
 
-  return <PlatformHome stores={list?.stores ?? []} showcase={showcase ?? { industries: [] }} />;
+  return <PlatformHome stores={list?.stores ?? []} showcase={showcase ?? { industries: [] }} site={{ home, brand, nav }} />;
 }

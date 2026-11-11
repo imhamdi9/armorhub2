@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { Icon, LogoMark } from "@/components/public/art";
-import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { useSite, useSiteText, useSiteValue } from "@/components/public/site-content";
+import { LanguageSwitcher, tr, useLocale } from "@/lib/i18n";
+import { pickText } from "@/lib/surfaces";
 import { textOn } from "@/lib/public-api";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -31,8 +33,16 @@ function useSession() {
 }
 
 /** Colours for the page: the platform's forest and lime, or a store's own colour with matching dark and wash tones. */
-export function themeVars(store?: ShellStore): CSSProperties {
+export function themeVars(store?: ShellStore, brand?: { color?: string | null; dark?: string | null }): CSSProperties {
   if (!store?.primary_color) {
+    const color = brand?.color ?? "#9fe870";
+    const dark = brand?.dark ?? "#163300";
+
+    // The platform's own colours, optionally changed by an admin (colours are validated #rrggbb values).
+    if (brand?.color || brand?.dark) {
+      return { "--brand": color, "--on-brand": color === "#9fe870" ? "#163300" : textOn(color), "--dark": dark, "--on-dark-accent": color, "--brand-wash": `color-mix(in srgb, ${color} 18%, white)`, "--brand-ink": dark } as CSSProperties;
+    }
+
     return { "--brand": "#9fe870", "--on-brand": "#163300", "--dark": "#163300", "--on-dark-accent": "#9fe870", "--brand-wash": "#e2f6d5", "--brand-ink": "#163300" } as CSSProperties;
   }
   const c = store.primary_color; // a validated #rrggbb (see the editor API), never free text
@@ -75,21 +85,29 @@ function Logo({ store, size = "h-9" }: { store?: ShellStore; size?: string }) {
 function Header({ store }: { store?: ShellStore }) {
   const [open, setOpen] = useState(false);
   const home = store ? `/s/${store.slug}` : "/";
+  // Platform pages can carry an admin-edited name, logo and menu wording; stores always use their own.
+  const siteName = useSiteText("brand", "name", "ArmorHub");
+  const siteLogo = useSiteValue("brand", "logo_url");
+  const navMarkets = useSiteText("nav", "nav_markets", "ArmorHub Markets");
+  const navPartners = useSiteText("nav", "nav_partners", "Partners");
+  const navHow = useSiteText("nav", "nav_how", "How it works");
+  const navFaq = useSiteText("nav", "nav_faq", "FAQ");
   const links: [string, string][] = store
-    ? [[`/s/${store.slug}/products`, "Products"], [`${home}#how`, "How it works"], [`${home}#faq`, "FAQ"]]
-    : [["/#stores", "ArmorHub Markets"], ["/#partners", "Partners"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
+    ? [[`/s/${store.slug}/products`, tr("Products")], [`${home}#how`, tr("How it works")], [`${home}#faq`, tr("FAQ")]]
+    : [["/#stores", navMarkets], ["/#partners", navPartners], ["/#how", navHow], ["/#faq", navFaq]];
+  const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
 
   return (
     <header className="sticky top-0 z-40 border-b border-fog bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4">
         <Link href={home} className="flex items-center gap-2.5 text-xl font-black tracking-tight text-obsidian">
-          <Logo store={store} />
-          <span>{store?.name ?? tr("ArmorHub")}</span>
+          <Logo store={shownStore} />
+          <span>{store?.name ?? siteName}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-full bg-fog p-1 text-sm md:flex" aria-label={tr("Main")}>
           {links.map(([href, label]) => (
-            <Link key={label} href={href} className="rounded-full px-4 py-1.5 font-medium text-forest transition hover:bg-white">{tr(label)}</Link>
+            <Link key={label} href={href} className="rounded-full px-4 py-1.5 font-medium text-forest transition hover:bg-white">{label}</Link>
           ))}
         </nav>
 
@@ -111,7 +129,7 @@ function Header({ store }: { store?: ShellStore }) {
         <div className="border-t border-fog bg-white px-4 py-3 md:hidden">
           <nav className="flex flex-col" aria-label={tr("Main")}>
             {links.map(([href, label]) => (
-              <Link key={label} href={href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-semibold text-forest hover:bg-fog">{tr(label)}</Link>
+              <Link key={label} href={href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-semibold text-forest hover:bg-fog">{label}</Link>
             ))}
           </nav>
           <div className="mt-2 border-t border-fog pt-3"><AuthLinks store={store} /></div>
@@ -125,7 +143,11 @@ const COUNTRIES = [["SA", "Saudi Arabia"], ["EG", "Egypt"]];
 
 function Footer({ store }: { store?: ShellStore }) {
   const home = store ? `/s/${store.slug}` : "/";
-  const name = store?.name ?? tr("ArmorHub");
+  const siteName = useSiteText("brand", "name", "ArmorHub");
+  const siteLogo = useSiteValue("brand", "logo_url");
+  const blurb = useSiteText("home", "footer_blurb", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
+  const name = store?.name ?? siteName;
+  const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
   const col = "text-sm font-bold text-on-dark-accent";
   const link = "block py-1 text-sm text-white/75 hover:text-white hover:underline";
 
@@ -134,11 +156,11 @@ function Footer({ store }: { store?: ShellStore }) {
       <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <div className="flex items-center gap-2.5 text-xl font-black tracking-tight text-white">
-            <Logo store={store} size="h-8" />
+            <Logo store={shownStore} size="h-8" />
             {name}
           </div>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">
-            {store ? tr("Book trusted professionals, compare quotes and pay securely. Every job is followed through to the warranty.") : tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
+            {store ? tr("Book trusted professionals, compare quotes and pay securely. Every job is followed through to the warranty.") : blurb}
           </p>
         </div>
 
@@ -194,8 +216,13 @@ function Footer({ store }: { store?: ShellStore }) {
 
 /** Header, themed colours and footer shared by every public page. */
 export function PublicShell({ store, children }: { store?: ShellStore; children: React.ReactNode }) {
+  const site = useSite();
+  const locale = useLocale();
+  const brand = store ? undefined : { color: pickText(site.brand, "en", "brand_color"), dark: pickText(site.brand, "en", "dark_color") };
+  void locale;
+
   return (
-    <div style={themeVars(store)} className="flex min-h-screen flex-col bg-white text-charcoal">
+    <div style={themeVars(store, brand)} className="flex min-h-screen flex-col bg-white text-charcoal">
       <Header store={store} />
       <main className="flex-1">{children}</main>
       <Footer store={store} />

@@ -51,6 +51,15 @@ class ClinicModule implements Module
             'steps' => [['type' => 'clinic.create_clinic', 'args' => ['name' => '{{name}}']], ['type' => 'clinic.explode']],
         ]);
 
+        // What the clinic's staff may edit on its own landing page. Declared here; the core knows nothing about clinics.
+        $context->surface('clinic.landing', 'Clinic landing page', [
+            'welcome' => ['type' => 'text', 'label' => 'Welcome line', 'default' => 'Welcome to the clinic', 'max' => 60],
+            'phone_link' => ['type' => 'url', 'label' => 'Booking link'],
+            'accent' => ['type' => 'color', 'label' => 'Accent', 'default' => '#0b4c72'],
+            'show_hours' => ['type' => 'bool', 'label' => 'Show opening hours', 'default' => true],
+            'doctors' => ['type' => 'list', 'label' => 'Doctors', 'maxItems' => 3, 'items' => ['name' => ['type' => 'text', 'required' => true, 'max' => 40], 'speciality' => ['type' => 'text', 'max' => 40]]],
+        ], 'The public page of a clinic', public: true);
+
         $context->subscribe(BookingReactor::class);
         $context->subscribe(FlakyReactor::class);
     }

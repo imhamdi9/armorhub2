@@ -181,3 +181,29 @@ export const getPayouts = async () =>
 export const createPayout = async (companyId: number, currency: string) => (await api.post<Payout>("/admin/payouts", { company_id: companyId, currency })).data;
 
 export const markPayoutPaid = async (id: number, reference: string) => (await api.post<Payout>(`/admin/payouts/${id}/paid`, { reference })).data;
+
+export interface SurfaceField {
+  type: "text" | "longtext" | "bool" | "number" | "color" | "url" | "select" | "list";
+  label?: string;
+  max?: number;
+  maxItems?: number;
+  options?: string[];
+  required?: boolean;
+  default?: unknown;
+  items?: Record<string, SurfaceField>;
+}
+export interface SurfaceInfo { key: string; owner: string; label: string; description: string; public: boolean; fields: Record<string, SurfaceField>; published_versions: Record<string, number | null> }
+export interface SurfaceDetail {
+  draft: Record<string, unknown> | null;
+  published: Record<string, unknown>;
+  has_draft: boolean;
+  published_version: number | null;
+  surface: SurfaceInfo;
+  history: { version: number; status: string; note: string | null; published_at: string | null }[];
+}
+
+export const getSurfaces = async () => (await api.get<{ surfaces: SurfaceInfo[] }>("/admin/surfaces")).data.surfaces;
+export const getSurfaceDetail = async (key: string, locale: string) => (await api.get<SurfaceDetail>(`/admin/surfaces/${key}`, { params: { locale } })).data;
+export const saveSurfaceDraft = async (key: string, locale: string, values: Record<string, unknown>) => (await api.put(`/admin/surfaces/${key}`, { locale, values })).data;
+export const publishSurface = async (key: string, locale: string, note?: string) => (await api.post(`/admin/surfaces/${key}/publish`, { locale, note })).data;
+export const rollbackSurface = async (key: string, locale: string, version: number) => (await api.post(`/admin/surfaces/${key}/rollback`, { locale, version })).data;

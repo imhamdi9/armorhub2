@@ -47,6 +47,7 @@ async function get<T>(path: string): Promise<T | null> {
 }
 
 export const getStores = () => get<PublicStoreList>("/storefronts");
+export const getSurface = async (key: string) => (await get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`))?.values ?? {};
 export const getShowcase = () => get<PublicShowcase>("/showcase");
 export const getStore = (slug: string) => get<PublicStore>(`/storefronts/${encodeURIComponent(slug)}`);
 export const getStoreProducts = (slug: string, params: { q?: string; category?: string; page?: string }) => {
