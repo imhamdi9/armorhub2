@@ -198,5 +198,8 @@ Route::patch(
     [CommissionDistributionController::class, 'pay']
 );
 
+Route::get('/industries', [\App\Http\Controllers\Api\IndustryController::class, 'index'])
+    ->middleware('auth:sanctum');
+
 // Industry-specific routes (automotive, ...)
 app(\App\Modules\IndustryRegistry::class)->loadRoutes();

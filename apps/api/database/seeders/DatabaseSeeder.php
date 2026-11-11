@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             IndustrySeeder::class,
             RolesAndPermissionsSeeder::class,
             VehicleCatalogSeeder::class,
+            IndustryCatalogSeeder::class,
         ]);
     }
 }

@@ -53,8 +53,8 @@ class IndustryModulesTest extends TestCase
 
     public function test_tenant_belongs_to_an_industry(): void
     {
-        $industry = Industry::create(['key' => 'beauty', 'name' => 'Beauty']);
-        $tenant = Tenant::create(['name' => 'Salon Group', 'industry_id' => $industry->id]);
+        $industry = Industry::create(['key' => 'legal', 'name' => 'Legal']);
+        $tenant = Tenant::create(['name' => 'Law Group', 'industry_id' => $industry->id]);
 
         $this->assertTrue($tenant->industry->is($industry));
         // An industry without a code module is still valid (generic core).
@@ -140,5 +140,70 @@ class IndustryModulesTest extends TestCase
             'product_id' => $product->id,
         ]);
         $this->assertNull($noSubject->fresh()->subject);
+    }
+
+    public function test_all_shipped_industries_are_registered_with_distinct_aliases(): void
+    {
+        $registry = app(IndustryRegistry::class);
+
+        foreach (['automotive', 'home-services', 'beauty', 'devices'] as $key) {
+            $this->assertTrue($registry->has($key), $key);
+        }
+
+        $this->assertSame(\App\Modules\HomeServices\Models\Property::class, Relation::getMorphedModel('property'));
+        $this->assertSame(\App\Modules\Devices\Models\DeviceModel::class, Relation::getMorphedModel('device_model'));
+        $this->assertSame(\App\Modules\Beauty\Models\TreatmentArea::class, Relation::getMorphedModel('treatment_area'));
+
+        // Beauty has no customer-side subject.
+        $this->assertSame([], $registry->get('beauty')->subjectModels());
+    }
+
+    public function test_industries_endpoint_lists_modules_for_authenticated_users(): void
+    {
+        $this->seed(IndustrySeeder::class);
+
+        $this->getJson('/api/industries')->assertUnauthorized();
+
+        $user = \App\Models\User::factory()->create();
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/industries')->assertOk();
+
+        $keys = collect($response->json())->pluck('key')->all();
+        $this->assertEqualsCanonicalizing(['automotive', 'home-services', 'beauty', 'devices'], $keys);
+
+        $auto = collect($response->json())->firstWhere('key', 'automotive');
+        $this->assertSame(['vehicle_model'], $auto['subjects']);
+        $this->assertSame(['vehicle_part'], $auto['targets']);
+    }
+
+    public function test_pricing_works_for_a_non_automotive_industry(): void
+    {
+        $this->seed(IndustrySeeder::class);
+        $this->seed(\Database\Seeders\IndustryCatalogSeeder::class);
+
+        $industry = Industry::where('key', 'beauty')->first();
+        $product = Product::create([
+            'industry_id' => $industry->id,
+            'category' => 'facial',
+            'name' => 'Glow Facial',
+            'slug' => 'glow-facial',
+            'base_price' => 50,
+        ]);
+
+        $face = \App\Modules\Beauty\Models\TreatmentArea::where('slug', 'face')->first();
+        $hands = \App\Modules\Beauty\Models\TreatmentArea::where('slug', 'hands')->first();
+
+        foreach ([[$face, 80], [$hands, 30]] as [$area, $price]) {
+            ProductPriceRule::create([
+                'product_id' => $product->id,
+                'target_type' => 'treatment_area',
+                'target_id' => $area->id,
+                'price' => $price,
+            ]);
+        }
+
+        $result = app(CalculateProductPriceService::class)
+            ->calculate($product->id, [$face->id, $hands->id], 'treatment_area');
+
+        $this->assertEquals(110, $result['total']);
     }
 }

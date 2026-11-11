@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Company;
 use App\Models\Partner;
 use App\Modules\Automotive\AutomotiveModule;
+use App\Modules\Beauty\BeautyModule;
+use App\Modules\Devices\DevicesModule;
+use App\Modules\HomeServices\HomeServicesModule;
 use App\Modules\IndustryRegistry;
 use App\Policies\CompanyPolicy;
 use App\Policies\PartnerPolicy;
@@ -21,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     private const MODULES = [
         AutomotiveModule::class,
+        HomeServicesModule::class,
+        BeautyModule::class,
+        DevicesModule::class,
     ];
 
     public function register(): void
