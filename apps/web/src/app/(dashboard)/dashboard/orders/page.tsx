@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { Badge } from "@/components/ui/badge";
 import { hasRole } from "@/lib/navigation";
+import { statusLabel } from "@/lib/orders";
 import { getOrders } from "@/services/platform.service";
 import type { Order } from "@/types/platform";
 
@@ -52,7 +53,7 @@ export default function OrdersPage() {
                   {o.total_amount} {o.currency}
                 </p>
               </div>
-              <Badge variant="secondary">{o.status.replace(/_/g, " ")}</Badge>
+              <Badge variant="secondary">{statusLabel(o.status)}</Badge>
             </Link>
           ))}
         </div>

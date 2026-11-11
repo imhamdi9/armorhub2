@@ -37,6 +37,32 @@ export interface Order {
   service_amount: string;
   total_amount: string;
   currency: string;
+  scheduled_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  events?: OrderEvent[];
+  warranty?: Warranty | null;
+  customer?: { id: number; name: string; city: string | null; country: string | null };
+  subject?: Record<string, unknown> | null;
+  product?: Product;
+}
+
+export interface OrderEvent {
+  id: number;
+  type: string;
+  data: Record<string, unknown> | null;
+  created_at: string;
+  user?: { id: number; name: string } | null;
+}
+
+export interface Warranty {
+  id: number;
+  order_id: number;
+  starts_at: string;
+  ends_at: string;
+  active?: boolean;
+  product?: { id: number; name: string };
 }
 
 export interface Partner {

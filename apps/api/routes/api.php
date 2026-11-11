@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\IndustryController;
 use App\Http\Controllers\Api\MyItemsController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderLifecycleController;
+use App\Http\Controllers\Api\PartnerJobController;
+use App\Http\Controllers\Api\WarrantyController;
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\UserController;
@@ -94,9 +97,19 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::get('/orders/{order}/partner-quotes', [PartnerQuoteController::class, 'index']);
     Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);
+    Route::post('/orders/{id}/cancel', [OrderLifecycleController::class, 'cancel']);
+    Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('permission:payments.create');
 
-    // Partner side
+    // Partner side: staff work the jobs assigned to their partner
+    Route::middleware('role:partner-manager|technician')->group(function () {
+        Route::get('/partner/jobs', [PartnerJobController::class, 'index']);
+        Route::post('/orders/{id}/schedule', [OrderLifecycleController::class, 'schedule']);
+        Route::post('/orders/{id}/start', [OrderLifecycleController::class, 'start']);
+        Route::post('/orders/{id}/complete', [OrderLifecycleController::class, 'complete']);
+    });
+
+    // Pricing requests: managers only
     Route::middleware('role:partner-manager')->group(function () {
         Route::get('/partner/orders', [PartnerOrderController::class, 'index']);
         Route::patch('/partner-quotes/{id}', [PartnerOrderController::class, 'submitQuote']);

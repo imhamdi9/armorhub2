@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Commission;
 use App\Models\CommissionDistribution;
 use App\Models\Order;
+use App\Models\OrderEvent;
 use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\PartnerQuote;
@@ -63,7 +64,7 @@ class PaymentController extends Controller
             return response()->json(['message' => $charge['message'] ?? 'The payment was declined.'], 402);
         }
 
-        $result = DB::transaction(function () use ($order, $data, $commissions, $charge) {
+        $result = DB::transaction(function () use ($order, $data, $commissions, $charge, $request) {
 
             // Re-check under a row lock so two simultaneous requests cannot both pay.
             $locked = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->id);
@@ -128,6 +129,7 @@ class PaymentController extends Controller
             }
 
             $order->update(['status' => OrderStatus::Paid]);
+            OrderEvent::record($order, 'paid', $request->user(), ['amount' => (string) $order->total_amount]);
 
             return [$payment, $commission];
         });

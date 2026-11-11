@@ -37,7 +37,7 @@ class PartnerQuoteController extends Controller
 
         return response()->json([
             'message' => 'Partner quote accepted',
-            'order' => $quotes->accept($quote),
+            'order' => $quotes->accept($quote, $user),
         ]);
     }
 }

@@ -86,6 +86,39 @@ try {
   await c.waitForSelector("text=paid");
   ok("order paid");
 
+  // The partner works the job: schedule -> start -> complete.
+  await p.click('a:has-text("Jobs")');
+  await p.waitForSelector("text=Ultimate Plus");
+  await p.fill('input[type="datetime-local"]', new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 16));
+  await p.click('button:has-text("Schedule")');
+  await p.waitForSelector("text=Appointment scheduled");
+  await p.click('button:has-text("Start work")');
+  await p.waitForSelector("text=In progress");
+  await p.click('button:has-text("Mark completed")');
+  await p.waitForSelector("text=Completed");
+  ok("partner scheduled, started and completed the job");
+
+  await c.reload();
+  await c.waitForSelector("text=Warranty");
+  await c.waitForSelector("text=Work completed");
+  await c.waitForSelector("text=Appointment scheduled for");
+  ok("customer sees the timeline and a warranty");
+  await c.click('a:has-text("Warranties")');
+  await c.waitForSelector("text=Active");
+  ok("warranty listed as active");
+
+  // A second order can be cancelled before it is paid.
+  await c.goto(`${base}/dashboard/orders/new`);
+  await c.click("text=Ultimate Plus");
+  await c.selectOption("select", { label: "M4" });
+  await c.click('label:has-text("Hood") input');
+  await c.waitForSelector("text=1200");
+  await c.click('button:has-text("Place order")');
+  await c.waitForURL(/orders\/\d+$/);
+  await c.click('button:has-text("Cancel order")');
+  await c.waitForSelector("text=Order cancelled");
+  ok("order cancelled before payment");
+
   await p.click('a:has-text("Commissions")');
   await p.waitForSelector("text=37.50");
   await p.waitForSelector("text=60.00");

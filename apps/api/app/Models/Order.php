@@ -26,12 +26,20 @@ class Order extends Model
         'total_amount',
         'currency',
         'company_id',
+        'scheduled_at',
+        'started_at',
+        'completed_at',
+        'cancelled_at',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => OrderStatus::class,
+            'scheduled_at' => 'datetime',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -59,5 +67,20 @@ class Order extends Model
     public function partnerQuotes()
     {
         return $this->hasMany(PartnerQuote::class);
+    }
+
+    public function events()
+    {
+        return $this->hasMany(OrderEvent::class)->orderBy('id');
+    }
+
+    public function warranty()
+    {
+        return $this->hasOne(Warranty::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
     }
 }

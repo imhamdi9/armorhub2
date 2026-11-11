@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderEvent;
 use App\Models\PartnerQuote;
 use App\Modules\IndustryRegistry;
 use App\Services\Location\FindNearbyPartnersService;
@@ -23,7 +24,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return response()->json($order->load(['product', 'subject']));
+        return response()->json($order->load(['product', 'subject', 'events.user:id,name', 'warranty']));
     }
 
     public function index()
@@ -126,6 +127,8 @@ class OrderController extends Controller
                     'status' => QuoteStatus::Pending,
                 ]);
             }
+
+            OrderEvent::record($order, 'created', $user, ['partners_asked' => $partners->count()]);
 
             return $order;
         });

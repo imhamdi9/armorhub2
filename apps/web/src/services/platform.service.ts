@@ -13,6 +13,7 @@ import type {
   PriceRule,
   Product,
   Tenant,
+  Warranty,
 } from "@/types/platform";
 
 export const getIndustries = async () =>
@@ -171,3 +172,18 @@ export const updateUser = async (
 ) => (await api.put<StaffUser>(`/users/${id}`, data)).data;
 
 export const deleteUser = async (id: number) => (await api.delete(`/users/${id}`)).data;
+
+export const cancelOrder = async (id: number, reason?: string) =>
+  (await api.post<Order>(`/orders/${id}/cancel`, { reason })).data;
+
+export const getJobs = async () => (await api.get<Order[]>("/partner/jobs")).data;
+
+export const scheduleJob = async (id: number, scheduledAt: string) =>
+  (await api.post<Order>(`/orders/${id}/schedule`, { scheduled_at: scheduledAt })).data;
+
+export const startJob = async (id: number) => (await api.post<Order>(`/orders/${id}/start`)).data;
+
+export const completeJob = async (id: number) =>
+  (await api.post<Order>(`/orders/${id}/complete`)).data;
+
+export const getWarranties = async () => (await api.get<Warranty[]>("/warranties")).data;

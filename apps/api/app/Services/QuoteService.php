@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Enums\QuoteStatus;
 use App\Models\Order;
+use App\Models\OrderEvent;
+use App\Models\User;
 use App\Models\PartnerQuote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,15 +14,13 @@ use Illuminate\Validation\ValidationException;
 class QuoteService
 {
     /** Statuses in which a customer may still pick a quote. */
-    private const OPEN = [OrderStatus::PendingQuotes, OrderStatus::QuotesReceived];
-
-    public function accept(PartnerQuote $quote): Order
+    public function accept(PartnerQuote $quote, ?User $by = null): Order
     {
-        return DB::transaction(function () use ($quote) {
+        return DB::transaction(function () use ($quote, $by) {
 
             $order = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($quote->order_id);
 
-            if (! in_array($order->status, self::OPEN, true)) {
+            if (! $order->status->isOpenForQuotes()) {
                 throw ValidationException::withMessages([
                     'quote' => ['A quote has already been selected for this order.'],
                 ]);
@@ -45,13 +45,23 @@ class QuoteService
                 'status' => OrderStatus::PartnerSelected,
             ]);
 
+            OrderEvent::record($order, 'quote_accepted', $by, ['partner_id' => $quote->partner_id, 'price' => (string) $quote->price]);
+
             return $order->fresh();
         });
     }
 
-    public function submit(PartnerQuote $quote, float|int|string $price): PartnerQuote
+    public function submit(PartnerQuote $quote, float|int|string $price, ?User $by = null): PartnerQuote
     {
-        return DB::transaction(function () use ($quote, $price) {
+        return DB::transaction(function () use ($quote, $price, $by) {
+
+            $order = Order::withoutGlobalScopes()->findOrFail($quote->order_id);
+
+            if (! $order->status->isOpenForQuotes()) {
+                throw ValidationException::withMessages([
+                    'quote' => ['This request is no longer open.'],
+                ]);
+            }
 
             if (! in_array($quote->status, [QuoteStatus::Pending, QuoteStatus::Submitted], true)) {
                 throw ValidationException::withMessages([
@@ -69,6 +79,8 @@ class QuoteService
                 ->where('id', $quote->order_id)
                 ->where('status', OrderStatus::PendingQuotes)
                 ->update(['status' => OrderStatus::QuotesReceived]);
+
+            OrderEvent::record($order, 'quote_submitted', $by, ['partner_id' => $quote->partner_id, 'price' => (string) $price]);
 
             return $quote->fresh();
         });

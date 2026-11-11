@@ -14,7 +14,9 @@ export interface NavItem {
     | "commissions"
     | "items"
     | "companies"
-    | "users";
+    | "users"
+    | "jobs"
+    | "warranties";
 }
 
 function pluralize(word: string): string {
@@ -49,13 +51,25 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
  * screens only show for the roles that can use them.
  */
 export function buildNavigation(user: User | null): NavItem[] {
-  const items: NavItem[] = [
-    { title: "Dashboard", href: "/dashboard", icon: "dashboard" },
-    { title: "Orders", href: "/dashboard/orders", icon: "orders" },
-  ];
+  const items: NavItem[] = [{ title: "Dashboard", href: "/dashboard", icon: "dashboard" }];
+
+  // Technicians only work assigned jobs; everyone else deals with orders.
+  const technicianOnly = hasRole(user, "technician") && !hasRole(user, "partner-manager", "platform-admin", "company-owner");
+
+  if (!technicianOnly) {
+    items.push({ title: "Orders", href: "/dashboard/orders", icon: "orders" });
+  }
 
   if (hasRole(user, "partner-manager")) {
     items.push({ title: "Requests", href: "/dashboard/requests", icon: "requests" });
+  }
+
+  if (hasRole(user, "partner-manager", "technician")) {
+    items.push({ title: "Jobs", href: "/dashboard/jobs", icon: "jobs" });
+  }
+
+  if (technicianOnly) {
+    return items;
   }
 
   items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
@@ -69,6 +83,10 @@ export function buildNavigation(user: User | null): NavItem[] {
         icon: "items",
       });
     }
+  }
+
+  if (hasRole(user, "customer")) {
+    items.push({ title: "Warranties", href: "/dashboard/warranties", icon: "warranties" });
   }
 
   // Shared catalogs are managed by admins and company owners.

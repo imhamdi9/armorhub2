@@ -30,6 +30,8 @@ class PartnerOrderController extends Controller
             ])
             ->where('partner_id', $partner->id)
             ->whereIn('status', [QuoteStatus::Pending, QuoteStatus::Submitted])
+            // Cancelled or already-awarded orders no longer need a quote.
+            ->whereHas('order', fn ($q) => $q->withoutGlobalScopes()->whereIn('status', ['pending_quotes', 'quotes_received']))
             ->latest()
             ->get();
     }
@@ -50,7 +52,7 @@ class PartnerOrderController extends Controller
 
         return response()->json([
             'message' => 'Quote submitted successfully.',
-            'quote' => $quotes->submit($quote, $request->price),
+            'quote' => $quotes->submit($quote, $request->price, $request->user()),
         ]);
     }
 }

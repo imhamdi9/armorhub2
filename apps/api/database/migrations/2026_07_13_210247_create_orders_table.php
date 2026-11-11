@@ -47,6 +47,11 @@ return new class extends Migration
                 ->default('USD');
 
 
+            $table->timestamp('scheduled_at')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+
             $table->timestamps();
 
         });

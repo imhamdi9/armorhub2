@@ -70,6 +70,12 @@ describe("buildNavigation", () => {
     expect(nav).toContain("Commissions");
   });
 
+  it("gives technicians only their jobs, and customers their warranties", () => {
+    expect(titles(user(["technician"]))).toEqual(["Dashboard", "Jobs"]);
+    expect(titles(user(["customer"]))).toContain("Warranties");
+    expect(titles(user(["partner-manager"]))).toContain("Jobs");
+  });
+
   it("gives platform admins catalogs and tenant management", () => {
     const nav = titles(user(["platform-admin"]));
     expect(nav).toContain("Room Types");
@@ -85,7 +91,7 @@ describe("buildNavigation", () => {
   });
 
   it("still works without an industry or a user", () => {
-    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Products"]);
+    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Products", "Warranties"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
   });
 });

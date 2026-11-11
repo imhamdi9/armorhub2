@@ -7,10 +7,12 @@ import {
   BookOpen,
   Building,
   Building2,
+  Hammer,
   Inbox,
   LayoutDashboard,
   Package,
   Package2,
+  ShieldCheck,
   UserCog,
   ShoppingCart,
   Users,
@@ -42,6 +44,8 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   items: Package2,
   companies: Building,
   users: UserCog,
+  jobs: Hammer,
+  warranties: ShieldCheck,
 };
 
 export function AppSidebar() {
