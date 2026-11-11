@@ -5,6 +5,8 @@ services:
     name: armorhub-api
     runtime: docker
     plan: free
+    # Same region as the TiDB cluster (Frankfurt) so database calls stay fast. Change both together.
+    region: frankfurt
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     healthCheckPath: /up
@@ -76,6 +78,8 @@ services:
     name: armorhub-web
     runtime: docker
     plan: free
+    # Same region as the TiDB cluster (Frankfurt) so database calls stay fast. Change both together.
+    region: frankfurt
     dockerfilePath: ./apps/web/Dockerfile
     dockerContext: ./apps/web
     envVars:
