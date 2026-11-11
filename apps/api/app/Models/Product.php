@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    use \App\Models\Concerns\Auditable;
     public function priceRules(): HasMany
 {
     return $this->hasMany(

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CommissionController;
@@ -73,6 +75,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:companies.view');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
+
+    // Platform administration (settings, audit log)
+    Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update']);
+        Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    });
 
     // Staff
     Route::middleware('permission:users.manage')->group(function () {

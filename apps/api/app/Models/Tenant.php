@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
+    use \App\Models\Concerns\Auditable;
     use SoftDeletes;
 
 

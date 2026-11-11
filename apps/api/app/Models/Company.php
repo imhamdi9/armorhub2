@@ -13,6 +13,7 @@ use App\Models\Concerns\BelongsToCompany;
 
 class Company extends Model
 {
+    use \App\Models\Concerns\Auditable;
     use SoftDeletes;
     use BelongsToCompany;
 

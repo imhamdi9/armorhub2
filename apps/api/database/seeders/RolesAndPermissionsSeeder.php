@@ -43,6 +43,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Staff
     'users.manage',
+
+    // Platform administration (admins only: they get every permission)
+    'admin.panel',
     'catalog.manage',
 
     // Orders

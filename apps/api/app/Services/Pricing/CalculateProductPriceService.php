@@ -11,6 +11,7 @@ class CalculateProductPriceService
     public function __construct(
         private IndustryRegistry $industries,
         private SumOfRulesStrategy $default,
+        private \App\Support\Settings\Settings $settings,
     ) {
     }
 
@@ -42,7 +43,7 @@ class CalculateProductPriceService
             'product_id' => $product->id,
             'parts_count' => $result['parts_count'],
             'total' => $result['total'],
-            'currency' => 'USD',
+            'currency' => strtoupper((string) $this->settings->get('platform.currency')),
         ];
     }
 }

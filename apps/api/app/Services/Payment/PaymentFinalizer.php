@@ -13,6 +13,7 @@ use App\Models\PartnerQuote;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Commission\CalculateCommissionService;
+use App\Support\Settings\Settings;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class PaymentFinalizer
 {
-    public function __construct(private CalculateCommissionService $commissions)
+    public function __construct(private CalculateCommissionService $commissions, private Settings $settings)
     {
     }
 
@@ -88,7 +89,11 @@ class PaymentFinalizer
 
     private function distribute(Commission $commission, Partner $partner): void
     {
-        $split = config('platform.commission_split');
+        $split = [
+            'platform' => (float) $this->settings->get('platform.commission_split.platform'),
+            'company' => (float) $this->settings->get('platform.commission_split.company'),
+            'partner' => (float) $this->settings->get('platform.commission_split.partner'),
+        ];
 
         CommissionDistribution::create([
             'commission_id' => $commission->id,

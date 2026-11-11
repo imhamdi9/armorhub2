@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToCompany;
 
 class Partner extends Model
 {
+    use \App\Models\Concerns\Auditable;
     use BelongsToCompany;
 
     protected $fillable = [

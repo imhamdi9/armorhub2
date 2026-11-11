@@ -13,6 +13,7 @@ use App\Models\Partner;
 
 class User extends Authenticatable
 {
+    use \App\Models\Concerns\Auditable;
     use HasApiTokens;
     use HasFactory;
     use Notifiable;

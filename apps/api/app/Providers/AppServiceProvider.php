@@ -37,6 +37,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        $this->app->singleton(\App\Support\Settings\SettingsRegistry::class);
+        $this->app->singleton(\App\Support\Settings\Settings::class);
+
         $this->app->bind(PaymentGateway::class, fn () => match (config('platform.payment_gateway')) {
             'simulated' => new SimulatedGateway(),
             'stripe' => new \App\Services\Payment\StripeGateway(),
