@@ -50,7 +50,8 @@ If you had to change a URL after the first deploy: update the env var, then
 
 ## 3. First-time setup in the app (all in the UI, signed in as the admin)
 
-1. **Tenants** → add your brand and pick its industry (Automotive, Home Services, Beauty, Devices).
+1. **Tenants** → add your brand, pick its industry (Automotive, Home Services, Beauty, Devices) and its **country**
+   (Saudi Arabia or Egypt: sets currency, VAT and phone rules).
 2. **Companies** → add the storefront company under that tenant, then open its **Storefront** page: turn it on,
    choose the address, headline and colour. Customers visit `/s/<address>` and sign up from there.
 3. **Products** → add products and their price rules; **Partners** → add service
@@ -66,6 +67,7 @@ If you had to change a URL after the first deploy: update the env var, then
 
 - Emails (password reset, order notifications) are only written to the log until you set SMTP
   (`MAIL_MAILER=smtp` and `MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`); the app works fully without them.
+- Shipping: **Administration → Shipping** (the manual provider works with any carrier out of the box); see `SHIPPING.md`.
 - Real card payments: sign in as admin → **Administration → Payments**, pick a provider, enter its keys and
   press **Make active** (see `DEPLOY.md`). The blueprint ships with the simulated provider allowed for the demo.
 - Free instances restart often; the app is built to self-setup safely on every boot.

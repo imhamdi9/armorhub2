@@ -57,6 +57,9 @@ services:
       # The web app's public URL, e.g. https://armorhub-web.onrender.com (emailed links, trusted origin).
       - key: WEB_URL
         sync: false
+      # Country used by tenants that have not chosen one (sets currency, VAT and phone rules). SA or EG; clear it for a single global currency.
+      - key: PLATFORM_DEFAULT_MARKET
+        value: SA
       # Optional: SMTP so password-reset and notification emails are delivered.
       - key: MAIL_MAILER
         value: log
