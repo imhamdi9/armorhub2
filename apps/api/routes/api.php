@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\PartnerJobController;
 use App\Http\Controllers\Api\WarrantyController;
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\PublicStorefrontController;
+use App\Http\Controllers\Api\StorefrontController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PartnerOrderController;
 use App\Http\Controllers\Api\PartnerQuoteController;
@@ -35,6 +37,14 @@ use App\Modules\IndustryRegistry;
 use Illuminate\Support\Facades\Route;
 
 // Public
+// Public storefront: browse a store and its catalog without an account (read-only, cacheable)
+Route::prefix('public')->middleware('throttle:public')->group(function () {
+    Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
+    Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
+    Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
+    Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
+});
+
 Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -83,6 +93,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:companies.view');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
+    Route::get('/companies/{company}/storefront', [StorefrontController::class, 'show'])->middleware('permission:companies.update');
+    Route::put('/companies/{company}/storefront', [StorefrontController::class, 'update'])->middleware('permission:companies.update');
 
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {

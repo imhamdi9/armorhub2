@@ -23,7 +23,9 @@ class SecurityHeaders
         // The API only ever returns JSON: nothing in a response may load or run anything.
         $response->headers->set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
         // Responses are per-user; never let a shared cache keep them.
-        $response->headers->set('Cache-Control', 'no-store, private');
+        if (! str_contains((string) $response->headers->get('Cache-Control'), 'public')) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+        }
 
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

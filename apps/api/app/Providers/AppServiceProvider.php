@@ -101,6 +101,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         RateLimiter::for('resend', fn (Request $r) => Limit::perHour(3)->by('resend:'.($r->user()?->id ?: $r->ip())));
+        RateLimiter::for('public', fn (Request $r) => Limit::perMinute(120)->by('public:'.$r->ip()));
         RateLimiter::for('challenge', fn (Request $r) => Limit::perMinute(20)->by('challenge:'.$r->ip()));
         RateLimiter::for('orders', fn (Request $r) => Limit::perHour(10)->by('orders:'.($r->user()?->id ?: $r->ip())));
         RateLimiter::for('webhook', fn (Request $r) => Limit::perMinute(300)->by('webhook:'.$r->ip()));

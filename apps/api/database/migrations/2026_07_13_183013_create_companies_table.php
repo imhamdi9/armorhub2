@@ -21,6 +21,11 @@ return new class extends Migration
 
             $table->string('name');
 
+            // Public address of the company's storefront: /s/<slug>
+            $table->string('slug')
+                ->nullable()
+                ->unique();
+
             $table->string('legal_name')
                 ->nullable();
 

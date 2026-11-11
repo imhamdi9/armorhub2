@@ -42,12 +42,24 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
             'password' => StrongPassword::rules(confirmed: true),
-            'company_id' => 'required|integer|exists:companies,id',
+            // Either the store the visitor came from (its public address) or a company id.
+            'store' => 'nullable|string|max:60',
+            'company_id' => 'required_without:store|nullable|integer|exists:companies,id',
             'city' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
         ]);
+
+        if (! empty($data['store'])) {
+            $store = app(\App\Services\Storefront\StorefrontService::class)->find($data['store']);
+
+            if (! $store) {
+                throw ValidationException::withMessages(['store' => ['This store was not found.']]);
+            }
+
+            $data['company_id'] = $store->id;
+        }
 
         if ($emails->isBlocked($data['email'])) {
             Audit::record('auth.signup_blocked', null, ['reason' => 'email_domain', 'email' => $data['email']]);

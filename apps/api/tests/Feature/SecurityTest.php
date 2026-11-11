@@ -514,6 +514,9 @@ class SecurityTest extends TestCase
         $public = [
             'api/signup-challenge', 'api/register', 'api/login', 'api/forgot-password', 'api/reset-password',
             'api/email/verify/{id}/{hash}', 'api/webhooks/{provider}', 'api/webhooks/stripe', 'up',
+            // The public storefront: read-only, throttled and limited to public data (see StorefrontTest).
+            'api/public/storefronts', 'api/public/storefronts/{slug}', 'api/public/storefronts/{slug}/products',
+            'api/public/storefronts/{slug}/products/{id}',
         ];
 
         $checked = 0;
