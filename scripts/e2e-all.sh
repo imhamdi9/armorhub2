@@ -2,7 +2,7 @@
 # Runs every browser end-to-end check against a real API + production web build.
 # Needs: PHP 8.3+/composer deps installed in apps/api, node deps in apps/web, Chromium.
 #   CHROMIUM_PATH=/path/to/chromium scripts/e2e-all.sh      (omit if Playwright's own browser is installed)
-#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | security | stripe  (default: all)
+#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | security | admin | stripe  (default: all)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -34,7 +34,7 @@ npx next build >/tmp/armorhub-web-build.log 2>&1 || { tail -20 /tmp/armorhub-web
 for _ in $(seq 1 30); do curl -fsS "http://127.0.0.1:$WEB_PORT/login" >/dev/null 2>&1 && break; sleep 1; done
 
 if want setup; then
-echo; echo "== 1/7 First-run setup on an empty deployment (only the admin exists)"
+echo; echo "== 1/8 First-run setup on an empty deployment (only the admin exists)"
 fresh_db
 (cd "$ROOT/apps/api" && RUN_MIGRATIONS=true ADMIN_EMAIL=admin@test.com ADMIN_PASSWORD=password123 sh docker-entrypoint.sh true >/dev/null)
 start_api
@@ -43,7 +43,7 @@ fi
 
 if want demo; then
 
-echo; echo "== 2-5/7 Demo marketplace: journey, staff, responsive + Arabic, management"
+echo; echo "== 2-5/8 Demo marketplace: journey, staff, responsive + Arabic, management"
 fresh_db
 (cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
 start_api
@@ -55,16 +55,23 @@ npm run -s e2e:manage   # last: it renames a company other checks look up
 fi
 
 if want security; then
-echo; echo "== 6/7 Security: attacking the running app (fresh database: it exhausts rate limits on purpose)"
+echo; echo "== 6/8 Security: attacking the running app (fresh database: it exhausts rate limits on purpose)"
 fresh_db
 (cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
 start_api
 (cd "$ROOT/apps/web" && npm run -s e2e:security)
 fi
 
-if want stripe; then
+if want admin; then
+echo; echo "== 7/8 Admin control panel: settings, switching payment providers live (against a fake gateway)"
+fresh_db
+(cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
+start_api PLATFORM_ALLOW_INSECURE_PROVIDER_URLS=true
+(cd "$ROOT/apps/web" && npm run -s e2e:admin)
+fi
 
-echo; echo "== 7/7 Card payments through Stripe Checkout (against a local fake of Stripe)"
+if want stripe; then
+echo; echo "== 8/8 Card payments through Stripe Checkout (against a local fake of Stripe)"
 fresh_db
 (cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
 start_api PLATFORM_PAYMENT_GATEWAY=stripe STRIPE_SECRET=sk_test_fake STRIPE_WEBHOOK_SECRET=whsec_e2e \

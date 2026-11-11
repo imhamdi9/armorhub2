@@ -13,6 +13,11 @@ import {
   LayoutDashboard,
   Package,
   Package2,
+  ScrollText,
+  Settings2,
+  ShieldAlert,
+  Gauge,
+  CreditCard,
   ShieldCheck,
   UserCog,
   ShoppingCart,
@@ -49,6 +54,11 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   jobs: Hammer,
   warranties: ShieldCheck,
   catalogs: Library,
+  admin: Gauge,
+  settings: Settings2,
+  payments: CreditCard,
+  security: ShieldAlert,
+  audit: ScrollText,
 };
 
 export function AppSidebar() {
@@ -67,27 +77,38 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarMenu>
-          {items.map((item) => {
-            const Icon = icons[item.icon] ?? Users;
-            const active =
-              item.href === "/dashboard"
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
+        {[
+          { heading: null, entries: items.filter((i) => !i.section) },
+          { heading: "Administration", entries: items.filter((i) => i.section === "admin") },
+        ]
+          .filter((g) => g.entries.length > 0)
+          .map((group) => (
+            <div key={group.heading ?? "main"}>
+              {group.heading && (
+                <p className="px-4 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {tr(group.heading)}
+                </p>
+              )}
+              <SidebarMenu>
+                {group.entries.map((item) => {
+                  const Icon = icons[item.icon] ?? Users;
+                  const active =
+                    item.href === "/dashboard" || item.href === "/dashboard/admin"
+                      ? pathname === item.href
+                      : pathname.startsWith(item.href);
 
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  isActive={active}
-                  render={<Link href={item.href} />}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{tr(item.title)}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton isActive={active} render={<Link href={item.href} />}>
+                        <Icon className="h-4 w-4" />
+                        <span>{tr(item.title)}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </div>
+          ))}
       </SidebarContent>
 
       <SidebarFooter className="p-4 text-xs text-muted-foreground">

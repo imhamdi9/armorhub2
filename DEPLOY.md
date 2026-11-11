@@ -31,14 +31,19 @@ Update later with `git pull` then the same `up -d --build` command.
 
 ## 2. Before real customers use it
 
-- **Payments (Stripe Checkout).** Set `PLATFORM_PAYMENT_GATEWAY=stripe`, `STRIPE_SECRET` and
-  `STRIPE_WEBHOOK_SECRET`. In the Stripe dashboard add a webhook endpoint
-  `https://api.<your-domain>/api/webhooks/stripe` for `checkout.session.completed` and
-  `checkout.session.expired`. Orders are marked paid **only by that signed webhook**, never by
-  the browser, and the amount is verified against the order. Without Stripe configured the app
-  refuses to take payments in production (the simulated gateway needs
-  `PLATFORM_ALLOW_SIMULATED_PAYMENTS=true`, for demos only). Refunds are done in the Stripe
-  dashboard and are not reflected in the app yet.
+- **Payments are configured in the app, not in files.** Sign in as the platform admin and open
+  **Administration → Payments**: choose a provider (Stripe Checkout, a custom HTTP gateway, or the demo
+  simulator), enter its keys, copy the shown **webhook URL** into the provider's dashboard, press **Test**,
+  then **Make active**. You can switch providers at any time; checkouts already started with another
+  provider still complete. Keys are stored encrypted (so keep `APP_KEY` safe) and are never shown again.
+  `STRIPE_SECRET` / `STRIPE_WEBHOOK_SECRET` / `PLATFORM_PAYMENT_GATEWAY` env vars are only the *initial*
+  defaults; the admin panel overrides them. Orders are marked paid **only by the provider's signed webhook**
+  and the amount is verified against the order. Until a real provider is active the app refuses to take
+  payments in production. Refunds are done in the provider's dashboard.
+- **Other runtime settings** (commission and its split, currency, signup/order switches, signup limits, bot
+  challenge, email verification) live under **Administration → Settings** and need no redeploy.
+- **Security:** read [`SECURITY.md`](SECURITY.md); run `php artisan platform:security-check` after deploying.
+  Set `TRUSTED_PROXIES=*` behind Caddy/Render so per-IP limits see real visitors.
 - **Email.** Password resets and order notifications use Laravel mail. Configure SMTP
   (`MAIL_*`) and `WEB_URL`; the default `log` mailer only writes emails to the log.
 - **Customer signup** needs the storefront company's ID; share it with

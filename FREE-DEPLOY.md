@@ -66,8 +66,8 @@ If you had to change a URL after the first deploy: update the env var, then
 
 - Emails (password reset, order notifications) are only written to the log until you set SMTP
   (`MAIL_MAILER=smtp` and `MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`); the app works fully without them.
-- Real card payments: set `PLATFORM_PAYMENT_GATEWAY=stripe`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` and add the
-  webhook endpoint described in `DEPLOY.md`. The blueprint ships with simulated payments enabled for the demo.
+- Real card payments: sign in as admin → **Administration → Payments**, pick a provider, enter its keys and
+  press **Make active** (see `DEPLOY.md`). The blueprint ships with the simulated provider allowed for the demo.
 - Free instances restart often; the app is built to self-setup safely on every boot.
 - Logs are on stderr (Render's log viewer). There is no shell on the free tier;
   use TiDB's SQL editor to inspect data.

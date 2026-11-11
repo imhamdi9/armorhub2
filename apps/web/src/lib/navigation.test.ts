@@ -84,6 +84,18 @@ describe("buildNavigation", () => {
     expect(nav).toContain("Companies");
   });
 
+  it("puts the control panel in its own Administration section, for platform admins only", () => {
+    const admin = buildNavigation(user(["platform-admin"]));
+    expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
+      "Overview", "Settings", "Payments", "Security", "Audit log",
+    ]);
+    expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
+
+    for (const role of ["company-owner", "partner-manager", "technician", "customer"]) {
+      expect(buildNavigation(user([role])).some((i) => i.section === "admin"), role).toBe(false);
+    }
+  });
+
   it("lists a company owner's industry catalogs directly", () => {
     const auto = user(["company-owner"]);
     auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"], catalogs: ["vehicle_part", "vehicle_make"] };

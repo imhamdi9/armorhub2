@@ -3,6 +3,8 @@ import type { User } from "@/types/auth";
 export interface NavItem {
   title: string;
   href: string;
+  /** Items in the "admin" section are grouped under an Administration heading. */
+  section?: "admin";
   icon:
     | "dashboard"
     | "orders"
@@ -15,6 +17,11 @@ export interface NavItem {
     | "items"
     | "companies"
     | "users"
+    | "admin"
+    | "settings"
+    | "payments"
+    | "security"
+    | "audit"
     | "jobs"
     | "warranties"
     | "catalogs";
@@ -118,6 +125,13 @@ export function buildNavigation(user: User | null): NavItem[] {
   if (hasRole(user, "platform-admin")) {
     items.push({ title: "Tenants", href: "/dashboard/tenants", icon: "tenants" });
     items.push({ title: "Companies", href: "/dashboard/companies", icon: "companies" });
+
+    // The control panel for everything that can be changed without a deploy.
+    items.push({ title: "Overview", href: "/dashboard/admin", section: "admin", icon: "admin" });
+    items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
+    items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
+    items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });
+    items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "admin", icon: "audit" });
   }
 
   return items;

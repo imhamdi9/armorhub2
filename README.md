@@ -15,9 +15,11 @@ industry-agnostic: any business with the same flow can be added as an industry m
 | **Customers** | Sign up, add what they bring (property…), order with live pricing, compare quotes, pay, track a timeline, cancel before paying, warranties |
 | **Partners** | Quote inbox, jobs (schedule → start → complete), team of technicians, earnings |
 | **Companies / admins** | Tenants & industries, companies, products & price rules, shared catalogs, partners, staff with roles, commissions & payouts, dashboards with role-based numbers |
-| **Payments** | Stripe Checkout (signed webhook, amount verified, idempotent) or a simulated gateway for demos |
+| **Payments** | Pluggable providers chosen **and switched live from the admin panel**: Stripe Checkout, a configurable HTTP gateway for most hosted-checkout providers, or a simulated one for demos. Signed webhooks, amount verified, idempotent |
+| **Admin control panel** | Overview with an attention list, runtime settings (commission, currency, signup/order switches, security knobs), payments, security health & emergency controls, audit log |
 | **Notifications** | In-app inbox + email for quotes, acceptance, payments, progress |
-| **Accounts** | Roles & permissions, staff management, deactivation, password reset, rate limiting |
+| **Security** | Anti-Sybil/bot defences, HttpOnly cookie sessions, CSRF checks, CSP, tenant isolation, audit trail. See [`SECURITY.md`](SECURITY.md) |
+| **Accounts** | Roles & permissions, staff management, deactivation, email verification, password reset |
 | **UI** | Next.js app, responsive, **English + Arabic (RTL)** |
 
 ## Architecture
@@ -61,25 +63,26 @@ Demo logins (password `password123`): `admin@test.com`, `shop@test.com`; custome
 ## Tests
 
 ```bash
-cd apps/api && php artisan test           # 73 API tests (orders, payments, Stripe, permissions, …)
+cd apps/api && php artisan test           # 127 API tests (orders, payments, providers, security, permissions, …)
 cd apps/web && npm test                   # unit tests (navigation, i18n dictionary, formatting)
 scripts/e2e-all.sh                        # every browser journey, incl. Arabic/mobile and Stripe
 ```
 
 `scripts/e2e-all.sh` covers: first-run setup, the full customer→partner→payment→job→commission journey, staff
-management, responsive + Arabic/RTL (44 page views), admin management screens, and Stripe Checkout against a
-local fake of Stripe. CI (`.github/workflows/ci.yml`) runs the API and web unit tests, lint and build.
+management, responsive + Arabic/RTL (54 page views), admin management screens, a **security attack script**
+(cookie theft, CSRF, brute force, signup floods, bots, headers/CSP), the admin panel (connecting and switching
+payment providers live against a fake gateway), and Stripe Checkout against a local fake of Stripe. CI (`.github/workflows/ci.yml`) runs the API and web unit tests, lint and build.
 
 ## Deploying
 
 - **Free demo:** [`FREE-DEPLOY.md`](FREE-DEPLOY.md) (Render + TiDB Cloud, using `render.yaml`).
 - **Production:** [`DEPLOY.md`](DEPLOY.md) (`docker-compose.prod.yml`: MySQL, API, web, automatic HTTPS).
+- **Security checklist:** [`SECURITY.md`](SECURITY.md).
 
 ## Known limitations
 
 - Refunds and payouts to partners are tracked in the app but money movement is done outside it.
-- The login token is kept in the browser's `localStorage` (a hardening step would be httpOnly cookies); there is
-  no email verification yet.
+- There is no two-factor authentication yet.
 - Notification *bodies* are generated in English by the API (titles and the whole UI are translated).
 - Verified on SQLite in tests/browser runs; MySQL is expected to work but has not been exercised here.
 

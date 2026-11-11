@@ -111,8 +111,10 @@ class HttpProvider implements PaymentProvider
         $url = data_get($response->json(), $config['response_url_path']);
         $reference = data_get($response->json(), $config['response_reference_path']);
 
-        // Only hand the customer a payment-page URL that is an https link.
-        if ($response->failed() || ! is_string($url) || ! preg_match('#^https://#i', $url) || $reference === null) {
+        // Only hand the customer a payment-page URL that is an https link (http only in local development).
+        $scheme = config('platform.allow_insecure_provider_urls') ? '#^https?://#i' : '#^https://#i';
+
+        if ($response->failed() || ! is_string($url) || ! preg_match($scheme, $url) || $reference === null) {
             report(new \RuntimeException('Custom gateway checkout failed: HTTP '.$response->status()));
 
             return ['status' => 'failed', 'transaction_id' => null, 'message' => 'The payment could not be started.'];
