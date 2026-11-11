@@ -1,64 +1,79 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Car,
-  Shield,
+  BookOpen,
   Building2,
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
   Wrench,
-  CreditCard,
-  BarChart3,
-  Settings,
+  type LucideIcon,
 } from "lucide-react";
 
+import { useCurrentUser } from "@/components/providers/current-user";
+import { buildNavigation, type NavItem } from "@/lib/navigation";
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarFooter,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const items = [
-  { title: "Dashboard", icon: LayoutDashboard },
-  { title: "Orders", icon: ShoppingCart },
-  { title: "Catalog", icon: Car },
-  { title: "Products", icon: Shield },
-  { title: "Companies", icon: Building2 },
-  { title: "Partners", icon: Wrench },
-  { title: "Payments", icon: CreditCard },
-  { title: "Reports", icon: BarChart3 },
-  { title: "Settings", icon: Settings },
-];
+const icons: Record<NavItem["icon"], LucideIcon> = {
+  dashboard: LayoutDashboard,
+  orders: ShoppingCart,
+  catalog: BookOpen,
+  products: Package,
+  partners: Wrench,
+  tenants: Building2,
+};
 
 export function AppSidebar() {
+  const user = useCurrentUser();
+  const pathname = usePathname();
+  const items = buildNavigation(user);
+
   return (
     <Sidebar>
       <SidebarHeader className="p-6">
         <h1 className="text-xl font-bold">ArmorHub</h1>
         <p className="text-sm text-muted-foreground">
-          Service Marketplace Platform
+          {user?.industry?.name ?? "Service Marketplace Platform"}
         </p>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton>
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const Icon = icons[item.icon] ?? Users;
+            const active =
+              item.href === "/dashboard"
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  isActive={active}
+                  render={<Link href={item.href} />}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarContent>
 
       <SidebarFooter className="p-4 text-xs text-muted-foreground">
-        ArmorHub v1.0
+        © {new Date().getFullYear()} ArmorHub
       </SidebarFooter>
     </Sidebar>
   );

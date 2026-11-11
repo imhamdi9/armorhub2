@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getVehicleMakes } from "@/services/vehicle-make.service";
 
 export default function VehicleMakesPage() {
-  const [makes, setMakes] = useState<any[]>([]);
+  const [makes, setMakes] = useState<{ id: number; name: string; slug: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");

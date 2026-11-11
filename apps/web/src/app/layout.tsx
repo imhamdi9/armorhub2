@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ArmorHub",
-  description: "Paint Protection Film Management Platform",
+  description: "Service marketplace platform for automotive, home services, beauty and devices",
 };
 
 export default function RootLayout({

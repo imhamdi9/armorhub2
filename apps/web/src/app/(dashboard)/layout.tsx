@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { CurrentUserProvider } from "@/components/providers/current-user";
 import {
   SidebarInset,
   SidebarProvider,
@@ -14,9 +15,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <>
+    <CurrentUserProvider>
+      <TooltipProvider>
+        <SidebarProvider>
           <AppSidebar />
 
           <SidebarInset>
@@ -31,7 +32,7 @@ export default function DashboardLayout({
                   localStorage.removeItem("token");
                   window.location.href = "/login";
                 }}
-                className="rounded-md rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700"
               >
                 Logout
               </button>
@@ -39,8 +40,8 @@ export default function DashboardLayout({
 
             <main className="p-6">{children}</main>
           </SidebarInset>
-        </>
-      </SidebarProvider>
-    </TooltipProvider>
+        </SidebarProvider>
+      </TooltipProvider>
+    </CurrentUserProvider>
   );
 }
