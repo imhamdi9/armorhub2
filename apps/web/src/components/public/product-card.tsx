@@ -10,17 +10,17 @@ export const price = (p: { from_price: number; currency: string }) =>
 
 export function ProductCard({ product, slug }: { product: PublicProduct; slug: string }) {
   return (
-    <Link href={`/s/${slug}/products/${product.id}`} className="flex flex-col rounded-xl border p-4 transition hover:shadow-md">
-      {product.category && <span className="mb-1 text-xs uppercase tracking-wide text-gray-500">{product.category}</span>}
-      <h3 className="text-lg font-semibold">{product.name}</h3>
-      {product.brand && <p className="text-sm text-gray-500">{product.brand}</p>}
-      {product.description && <p className="mt-2 line-clamp-3 text-sm text-gray-600">{product.description}</p>}
+    <Link href={`/s/${slug}/products/${product.id}`} className="hover-lift flex flex-col rounded-[20px] border border-fog bg-white p-5">
+      {product.category && <span className="mb-1 text-xs font-bold uppercase tracking-wider text-spruce">{product.category}</span>}
+      <h3 className="text-lg font-bold text-obsidian">{product.name}</h3>
+      {product.brand && <p className="text-sm text-slate">{product.brand}</p>}
+      {product.description && <p className="mt-2 line-clamp-3 text-sm text-slate">{product.description}</p>}
       <div className="mt-auto flex items-end justify-between pt-4">
         <p className="text-sm">
           {tr("From")} <strong className="text-base">{price(product)}</strong>
         </p>
         {product.warranty_years ? (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">{tr("{n}-year warranty", { n: product.warranty_years })}</span>
+          <span className="rounded-full bg-linen px-2.5 py-1 text-xs font-medium text-forest">{tr("{n}-year warranty", { n: product.warranty_years })}</span>
         ) : null}
       </div>
     </Link>

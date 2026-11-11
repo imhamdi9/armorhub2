@@ -26,31 +26,31 @@ export function Catalog({
   return (
     <PublicShell store={store}>
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <h1 className="mb-6 text-3xl font-bold">{tr("Products")}</h1>
+        <h1 className="display display-md mb-6">{tr("Products")}</h1>
 
         <form action={base} method="get" className="mb-4 flex gap-2">
           <input
             name="q"
             defaultValue={q}
             placeholder={tr("Search products")}
-            className="w-full max-w-md rounded-lg border px-4 py-2"
+            className="h-11 w-full max-w-md rounded-full border border-pebble px-5 outline-none focus:border-forest"
             aria-label={tr("Search products")}
           />
           {category && <input type="hidden" name="category" value={category} />}
-          <button className="btn-brand rounded-lg px-5 py-2 font-medium">{tr("Search")}</button>
+          <button className="btn-brand px-6 py-2.5">{tr("Search")}</button>
         </form>
 
         {categories.length > 0 && (
           <div className="mb-6 flex flex-wrap gap-2">
-            <Link href={link({ q })} className={`rounded-full border px-4 py-1.5 text-sm ${category === "" ? "btn-brand" : "hover:bg-gray-50"}`}>{tr("All")}</Link>
+            <Link href={link({ q })} className={`rounded-full px-4 py-1.5 text-sm font-medium ${category === "" ? "btn-brand" : "bg-fog text-forest hover:bg-linen"}`}>{tr("All")}</Link>
             {categories.map((c) => (
-              <Link key={c} href={link({ q, category: c })} className={`rounded-full border px-4 py-1.5 text-sm ${category === c ? "btn-brand" : "hover:bg-gray-50"}`}>{c}</Link>
+              <Link key={c} href={link({ q, category: c })} className={`rounded-full px-4 py-1.5 text-sm font-medium ${category === c ? "btn-brand" : "bg-fog text-forest hover:bg-linen"}`}>{c}</Link>
             ))}
           </div>
         )}
 
         {!result || result.data.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-10 text-center text-gray-500">{tr("No products found.")}</p>
+          <p className="rounded-[20px] border border-dashed border-pebble p-10 text-center text-slate">{tr("No products found.")}</p>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -59,9 +59,9 @@ export function Catalog({
 
             {result.last_page > 1 && (
               <nav className="mt-8 flex items-center justify-center gap-4" aria-label="Pagination">
-                {result.current_page > 1 && <Link className="rounded-lg border px-4 py-2" href={link({ q, category, page: result.current_page - 1 })}>{tr("Previous")}</Link>}
+                {result.current_page > 1 && <Link className="rounded-full border border-forest px-5 py-2 text-forest hover:bg-linen" href={link({ q, category, page: result.current_page - 1 })}>{tr("Previous")}</Link>}
                 <span className="text-sm">{tr("Page {page} of {total}", { page: result.current_page, total: result.last_page })}</span>
-                {result.current_page < result.last_page && <Link className="rounded-lg border px-4 py-2" href={link({ q, category, page: result.current_page + 1 })}>{tr("Next")}</Link>}
+                {result.current_page < result.last_page && <Link className="rounded-full border border-forest px-5 py-2 text-forest hover:bg-linen" href={link({ q, category, page: result.current_page + 1 })}>{tr("Next")}</Link>}
               </nav>
             )}
           </>

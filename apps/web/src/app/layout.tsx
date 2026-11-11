@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { Geist_Mono, Inter, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter carries the whole interface; weight 900 is the big display voice.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
 });
 
 // Geist has no Arabic glyphs; the browser falls back to this per character.
@@ -31,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable}`}
+      className={`${inter.variable} ${geistMono.variable} ${notoArabic.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen">

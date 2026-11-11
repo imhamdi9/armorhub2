@@ -19,8 +19,6 @@ export interface ShellStore {
   market?: { code: string; currency: string } | null;
 }
 
-const DEFAULT_COLOR = "#111827";
-
 /** Whether the visitor is signed in, without ever redirecting them. */
 function useSession() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -32,28 +30,47 @@ function useSession() {
   return user;
 }
 
+/** Colours for the page: the platform's forest and lime, or a store's own colour with matching dark and wash tones. */
+export function themeVars(store?: ShellStore): CSSProperties {
+  if (!store?.primary_color) {
+    return { "--brand": "#9fe870", "--on-brand": "#163300", "--dark": "#163300", "--on-dark-accent": "#9fe870", "--brand-wash": "#e2f6d5", "--brand-ink": "#163300" } as CSSProperties;
+  }
+  const c = store.primary_color; // a validated #rrggbb (see the editor API), never free text
+  return {
+    "--brand": c,
+    "--on-brand": textOn(c),
+    "--dark": `color-mix(in srgb, ${c} 30%, #0e0f0c)`,
+    "--on-dark-accent": `color-mix(in srgb, ${c} 55%, white)`,
+    "--brand-wash": `color-mix(in srgb, ${c} 14%, white)`,
+    "--brand-ink": `color-mix(in srgb, ${c} 60%, #0e0f0c)`,
+  } as CSSProperties;
+}
+
 /** Sign in / sign up, or a Dashboard link for people who are already signed in. */
 export function AuthLinks({ store }: { store?: ShellStore }) {
   const user = useSession();
   const signup = store ? `/register?store=${encodeURIComponent(store.slug)}` : "/register";
 
   if (user) {
-    return (
-      <Link href="/dashboard" className="btn-brand rounded-lg px-4 py-2 text-sm font-medium">
-        {tr("Dashboard")}
-      </Link>
-    );
+    return <Link href="/dashboard" className="btn-brand px-5 py-2.5 text-sm">{tr("Dashboard")}</Link>;
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Link href="/login" className="rounded-lg px-3 py-2 text-sm hover:bg-black/5">{tr("Sign in")}</Link>
-      <Link href={signup} className="btn-brand rounded-lg px-4 py-2 text-sm font-medium">{tr("Sign up")}</Link>
+    <div className="flex items-center gap-1">
+      <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-medium text-obsidian hover:bg-fog">{tr("Sign in")}</Link>
+      <Link href={signup} className="btn-brand px-5 py-2.5 text-sm">{tr("Sign up")}</Link>
     </div>
   );
 }
 
-const COUNTRIES = [["SA", "Saudi Arabia"], ["EG", "Egypt"]];
+function Logo({ store, size = "h-9" }: { store?: ShellStore; size?: string }) {
+  return store?.logo_url ? (
+    // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
+    <img src={store.logo_url} alt="" className={`${size} w-auto max-w-[9rem] object-contain`} />
+  ) : (
+    <LogoMark className={size === "h-9" ? "h-9 w-9" : "h-8 w-8"} />
+  );
+}
 
 function Header({ store }: { store?: ShellStore }) {
   const [open, setOpen] = useState(false);
@@ -63,31 +80,26 @@ function Header({ store }: { store?: ShellStore }) {
     : [["/#stores", "Stores"], ["/#partners", "Partners"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <Link href={home} className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          {store?.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-            <img src={store.logo_url} alt="" className="h-9 w-auto max-w-[9rem] object-contain" />
-          ) : (
-            <LogoMark />
-          )}
+    <header className="sticky top-0 z-40 border-b border-fog bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4">
+        <Link href={home} className="flex items-center gap-2.5 text-xl font-black tracking-tight text-obsidian">
+          <Logo store={store} />
           <span>{store?.name ?? tr("ArmorHub")}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 text-sm md:flex" aria-label={tr("Main")}>
+        <nav className="hidden items-center gap-1 rounded-full bg-fog p-1 text-sm md:flex" aria-label={tr("Main")}>
           {links.map(([href, label]) => (
-            <Link key={label} href={href} className="rounded-lg px-3 py-2 font-medium text-gray-700 hover:bg-black/5">{tr(label)}</Link>
+            <Link key={label} href={href} className="rounded-full px-4 py-1.5 font-medium text-forest transition hover:bg-white">{tr(label)}</Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-1">
           {store?.market && (
-            <span className="hidden rounded-full border px-2.5 py-1 text-xs font-medium text-gray-600 lg:inline" dir="ltr">{store.market.code} · {store.market.currency}</span>
+            <span className="hidden rounded-full bg-fog px-3 py-1 text-xs font-semibold text-forest lg:inline" dir="ltr">{store.market.code} · {store.market.currency}</span>
           )}
           <LanguageSwitcher className="mx-1" />
           <div className="hidden sm:block"><AuthLinks store={store} /></div>
-          <button type="button" className="grid h-10 w-10 place-items-center rounded-lg border md:hidden" aria-expanded={open} aria-label={tr("Menu")} onClick={() => setOpen((v) => !v)}>
+          <button type="button" className="grid h-10 w-10 place-items-center rounded-full border border-forest md:hidden" aria-expanded={open} aria-label={tr("Menu")} onClick={() => setOpen((v) => !v)}>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
             </svg>
@@ -96,47 +108,44 @@ function Header({ store }: { store?: ShellStore }) {
       </div>
 
       {open && (
-        <div className="border-t bg-white px-4 py-3 md:hidden">
+        <div className="border-t border-fog bg-white px-4 py-3 md:hidden">
           <nav className="flex flex-col" aria-label={tr("Main")}>
             {links.map(([href, label]) => (
-              <Link key={label} href={href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 font-medium hover:bg-black/5">{tr(label)}</Link>
+              <Link key={label} href={href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-semibold text-forest hover:bg-fog">{tr(label)}</Link>
             ))}
           </nav>
-          <div className="mt-2 border-t pt-3"><AuthLinks store={store} /></div>
+          <div className="mt-2 border-t border-fog pt-3"><AuthLinks store={store} /></div>
         </div>
       )}
     </header>
   );
 }
 
+const COUNTRIES = [["SA", "Saudi Arabia"], ["EG", "Egypt"]];
+
 function Footer({ store }: { store?: ShellStore }) {
   const home = store ? `/s/${store.slug}` : "/";
   const name = store?.name ?? tr("ArmorHub");
-  const col = "text-sm font-semibold text-gray-900";
-  const link = "block py-1 text-sm text-gray-600 hover:text-gray-900 hover:underline";
+  const col = "text-sm font-bold text-on-dark-accent";
+  const link = "block py-1 text-sm text-white/75 hover:text-white hover:underline";
 
   return (
-    <footer className="border-t bg-gray-50">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="bg-dark">
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="flex items-center gap-2 text-lg font-bold">
-            {store?.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-              <img src={store.logo_url} alt="" className="h-8 w-auto max-w-[8rem] object-contain" />
-            ) : (
-              <LogoMark className="h-7 w-7" />
-            )}
+          <div className="flex items-center gap-2.5 text-xl font-black tracking-tight text-white">
+            <Logo store={store} size="h-8" />
             {name}
           </div>
-          <p className="mt-3 max-w-xs text-sm text-gray-600">
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">
             {store ? tr("Book trusted professionals, compare quotes and pay securely. Every job is followed through to the warranty.") : tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
           </p>
         </div>
 
         <div>
           <h3 className={col}>{tr("Explore")}</h3>
-          <div className="mt-2">
-            {store ? <Link className={link} href={`${home}/products`}>{tr("Products")}</Link> : <Link className={link} href="/#stores">{tr("Stores")}</Link>}
+          <div className="mt-3">
+            {store ? <Link className={link} href={`${home}/products`}>{tr("Products")}</Link> : <><Link className={link} href="/#stores">{tr("Stores")}</Link><Link className={link} href="/#partners">{tr("Partners")}</Link></>}
             <Link className={link} href={`${home}#how`}>{tr("How it works")}</Link>
             <Link className={link} href={`${home}#faq`}>{tr("FAQ")}</Link>
           </div>
@@ -144,7 +153,7 @@ function Footer({ store }: { store?: ShellStore }) {
 
         <div>
           <h3 className={col}>{store ? tr("Contact") : tr("Countries")}</h3>
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-white/75">
             {store ? (
               <>
                 {store.contact_email && <a className={link} href={`mailto:${store.contact_email}`}>{store.contact_email}</a>}
@@ -159,7 +168,7 @@ function Footer({ store }: { store?: ShellStore }) {
 
         <div>
           <h3 className={col}>{tr("Account")}</h3>
-          <div className="mt-2">
+          <div className="mt-3">
             <Link className={link} href="/login">{tr("Sign in")}</Link>
             <Link className={link} href={store ? `/register?store=${encodeURIComponent(store.slug)}` : "/register"}>{tr("Create an account")}</Link>
             {!store && <Link className={link} href="/login">{tr("For businesses: sign in")}</Link>}
@@ -167,8 +176,8 @@ function Footer({ store }: { store?: ShellStore }) {
         </div>
       </div>
 
-      <div className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-gray-500">
+      <div className="border-t border-white/15">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-white/65">
           <span>© {new Date().getFullYear()} {name}</span>
           <span className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1"><Icon name="lock" className="h-4 w-4" /> {tr("Secure payments")}</span>
@@ -181,14 +190,10 @@ function Footer({ store }: { store?: ShellStore }) {
   );
 }
 
-/** Header, branded colours and footer shared by every public page. */
+/** Header, themed colours and footer shared by every public page. */
 export function PublicShell({ store, children }: { store?: ShellStore; children: React.ReactNode }) {
-  const color = store?.primary_color ?? DEFAULT_COLOR;
-  // Both values are validated hex colours (see the editor API), never free text.
-  const vars = { "--brand": color, "--on-brand": textOn(color) } as CSSProperties;
-
   return (
-    <div style={vars} className="flex min-h-screen flex-col bg-white text-gray-900">
+    <div style={themeVars(store)} className="flex min-h-screen flex-col bg-white text-charcoal">
       <Header store={store} />
       <main className="flex-1">{children}</main>
       <Footer store={store} />

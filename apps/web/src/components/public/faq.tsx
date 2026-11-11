@@ -19,19 +19,40 @@ export function Faq({ items = FAQS, id = "faq" }: { items?: { q: string; a: stri
   };
 
   return (
-    <section id={id} className="mx-auto max-w-3xl scroll-mt-20 px-4 py-14">
-      <h2 className="text-center text-3xl font-bold">{tr("Frequently asked questions")}</h2>
-      <p className="mx-auto mt-2 max-w-xl text-center text-gray-600">{tr("Everything you need to know before you start.")}</p>
-      <div className="mt-8 divide-y rounded-2xl border bg-white">
-        {items.map((i) => (
-          <details key={i.q} className="group p-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
-              {tr(i.q)}
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-lg leading-none transition group-open:rotate-45" aria-hidden="true">+</span>
-            </summary>
-            <p className="mt-3 text-gray-600">{tr(i.a)}</p>
-          </details>
-        ))}
+    <section id={id} className="scroll-mt-20 bg-white">
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-16 md:grid-cols-5">
+        <div className="md:col-span-2">
+          <div className="rounded-[28px] bg-linen p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-spruce">{tr("Help Center")}</p>
+            <div className="mt-4 space-y-3">
+              <p className="max-w-[85%] rounded-2xl rounded-ss-sm bg-white px-4 py-3 text-sm text-forest shadow-card">{tr("Is my payment safe?")}</p>
+              <p className="ms-auto max-w-[85%] rounded-2xl rounded-se-sm bg-forest px-4 py-3 text-sm text-white">{tr("Yes. You pay through a secure payment page and we never see or store your card details.")}</p>
+            </div>
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-white p-4 shadow-card">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-forest font-black text-lime" aria-hidden="true">?</span>
+              <div>
+                <p className="text-sm font-bold text-obsidian">{tr("Still need help?")}</p>
+                <p className="text-xs text-slate">{tr("Use your account to message the store about an order.")}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="md:col-span-3">
+          <h2 className="display display-md">{tr("Frequently asked questions")}</h2>
+          <p className="mt-2 text-slate">{tr("Everything you need to know before you start.")}</p>
+          <div className="mt-6 divide-y divide-fog rounded-[20px] border border-fog bg-white">
+            {items.map((i) => (
+              <details key={i.q} className="group p-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-obsidian [&::-webkit-details-marker]:hidden">
+                  {tr(i.q)}
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-forest text-lg leading-none text-forest transition group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="mt-3 text-slate">{tr(i.a)}</p>
+              </details>
+            ))}
+          </div>
+        </div>
       </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
     </section>

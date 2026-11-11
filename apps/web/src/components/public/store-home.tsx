@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ProductCard } from "@/components/public/product-card";
 import { HeroArt } from "@/components/public/art";
 import { Faq } from "@/components/public/faq";
-import { CallToAction, Steps, StatsBand, WhyUs } from "@/components/public/sections";
+import { Banner } from "@/components/public/landing";
+import { Steps, StatsBand, WhyUs } from "@/components/public/sections";
 import { PublicShell } from "@/components/public/shell";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicStore } from "@/types/public";
@@ -23,28 +24,26 @@ export function StoreHome({ data }: { data: PublicStore }) {
 
   return (
     <PublicShell store={{ ...store, market: data.market }}>
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--brand, #111827) 9%, white), #fff)" }}>
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-2 md:py-20">
-          <div>
-            {industry && <span className="inline-block rounded-full border bg-white px-3 py-1 text-xs font-medium uppercase tracking-wide text-gray-600">{tr(industry.name)}</span>}
-            <h1 className="mt-4 text-4xl font-extrabold tracking-tight md:text-5xl">
-              {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
-            </h1>
-            {store.subheadline && <p className="mt-4 max-w-xl text-lg text-gray-600">{store.subheadline}</p>}
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={`/s/${store.slug}/products`} className="btn-brand rounded-lg px-6 py-3 font-medium shadow-sm">{tr("Browse products")}</Link>
-              <Link href={signup} className="rounded-lg border bg-white px-6 py-3 font-medium hover:bg-gray-50">{tr("Create an account")}</Link>
-            </div>
-            <p className="mt-5 text-sm text-gray-500">{tr("Free to request quotes. No obligation.")}</p>
+      <section className="overflow-hidden bg-white">
+        <div className="mx-auto max-w-[1200px] px-4 pb-6 pt-14 text-center md:pt-20">
+          {industry && <span className="inline-flex items-center gap-2 rounded-full bg-brand-wash px-4 py-1.5 text-sm font-semibold text-brand-ink"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--brand)" }} aria-hidden="true" />{tr(industry.name)}</span>}
+          <h1 className="display display-xl mx-auto mt-6 max-w-5xl uppercase">
+            {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
+          </h1>
+          {store.subheadline && <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-charcoal">{store.subheadline}</p>}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
+            <Link href={`/s/${store.slug}/products`} className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{tr("Browse products")} <span aria-hidden="true">→</span></Link>
+            <Link href={signup} className="text-base font-semibold text-brand-ink underline underline-offset-4">{tr("Create an account")}</Link>
           </div>
-          <div>
-            {store.hero_image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner
-              <img src={store.hero_image_url} alt="" className="aspect-[4/3] w-full rounded-3xl object-cover shadow-xl" />
-            ) : (
-              <HeroArt kind={industry?.key} />
-            )}
-          </div>
+          <p className="mt-4 text-sm text-slate">{tr("Free to request quotes. No obligation.")}</p>
+        </div>
+        <div className="mx-auto max-w-[1000px] px-4 pb-12">
+          {store.hero_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner
+            <img src={store.hero_image_url} alt="" className="aspect-[16/8] w-full rounded-[28px] object-cover shadow-lift" />
+          ) : (
+            <div className="rounded-[28px] bg-brand-wash p-6"><HeroArt kind={industry?.key} className="mx-auto max-h-[22rem] w-full" /></div>
+          )}
         </div>
       </section>
 
@@ -58,10 +57,10 @@ export function StoreHome({ data }: { data: PublicStore }) {
       />
 
       {featured.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-12">
+        <section className="mx-auto max-w-[1200px] px-4 py-12">
           <div className="mb-6 flex items-end justify-between">
-            <h2 className="text-2xl font-bold">{tr("Popular services")}</h2>
-            <Link href={`/s/${store.slug}/products`} className="text-sm underline">{tr("See all")}</Link>
+            <h2 className="display display-md">{tr("Popular services")}</h2>
+            <Link href={`/s/${store.slug}/products`} className="text-sm font-semibold text-brand-ink underline underline-offset-4">{tr("See all")}</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((p) => <ProductCard key={p.id} product={p} slug={store.slug} />)}
@@ -70,11 +69,11 @@ export function StoreHome({ data }: { data: PublicStore }) {
       )}
 
       {categories.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pb-8">
-          <h2 className="mb-3 text-lg font-semibold">{tr("Categories")}</h2>
+        <section className="mx-auto max-w-[1200px] px-4 pb-8">
+          <h2 className="mb-3 text-lg font-bold text-obsidian">{tr("Categories")}</h2>
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
-              <Link key={c} href={`/s/${store.slug}/products?category=${encodeURIComponent(c)}`} className="rounded-full border px-4 py-1.5 text-sm hover:bg-gray-50">{c}</Link>
+              <Link key={c} href={`/s/${store.slug}/products?category=${encodeURIComponent(c)}`} className="rounded-full bg-fog px-4 py-1.5 text-sm font-medium text-forest hover:bg-linen">{c}</Link>
             ))}
           </div>
         </section>
@@ -84,30 +83,30 @@ export function StoreHome({ data }: { data: PublicStore }) {
       <Steps steps={STEPS} />
 
       {partners.count > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="mb-2 text-2xl font-bold">{tr("Professionals near you")}</h2>
-          <p className="text-gray-600">
+        <section className="mx-auto max-w-[1200px] px-4 py-12">
+          <h2 className="display display-md mb-2">{tr("Professionals near you")}</h2>
+          <p className="text-slate">
             {tr("{n} vetted professionals are ready to quote your job.", { n: formatNumber(partners.count) })}
           </p>
           {partners.cities.length > 0 && (
-            <p className="mt-2 text-sm text-gray-500">{tr("Available in")}: {partners.cities.join(" · ")}</p>
+            <p className="mt-2 text-sm text-slate">{tr("Available in")}: {partners.cities.join(" · ")}</p>
           )}
         </section>
       )}
 
       {(store.about || store.contact_email || store.contact_phone) && (
-        <section className="border-t">
-          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-12 md:grid-cols-2">
+        <section className="border-t border-fog">
+          <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-14 md:grid-cols-2">
             {store.about && (
               <div>
-                <h2 className="mb-2 text-2xl font-bold">{tr("About us")}</h2>
-                <p className="whitespace-pre-line text-gray-700">{store.about}</p>
+                <h2 className="display display-md mb-2">{tr("About us")}</h2>
+                <p className="whitespace-pre-line text-charcoal">{store.about}</p>
               </div>
             )}
             {(store.contact_email || store.contact_phone) && (
               <div>
-                <h2 className="mb-2 text-2xl font-bold">{tr("Contact")}</h2>
-                {store.contact_email && <p><a className="underline" href={`mailto:${store.contact_email}`}>{store.contact_email}</a></p>}
+                <h2 className="display display-md mb-2">{tr("Contact")}</h2>
+                {store.contact_email && <p><a className="font-semibold text-brand-ink underline" href={`mailto:${store.contact_email}`}>{store.contact_email}</a></p>}
                 {store.contact_phone && <p dir="ltr" className="text-start">{store.contact_phone}</p>}
               </div>
             )}
@@ -115,7 +114,7 @@ export function StoreHome({ data }: { data: PublicStore }) {
         </section>
       )}
       <Faq />
-      <CallToAction title="Ready to get started?" text="Create a free account, choose a service and receive quotes from professionals near you." href={signup} label="Create an account" />
+      <Banner title="Ready to get started?" text="Create a free account, choose a service and receive quotes from professionals near you." href={signup} label="Create an account" />
     </PublicShell>
   );
 }
