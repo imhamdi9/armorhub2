@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
@@ -26,14 +26,24 @@ interface Option {
 
 /** Pick a product, what to service (if anything) and the options; see the price; order. */
 export default function NewOrderPage() {
+  return (
+    <Suspense>
+      <NewOrder />
+    </Suspense>
+  );
+}
+
+function NewOrder() {
   const router = useRouter();
+  // Coming from a product page on the storefront: that product is already chosen.
+  const preselected = Number(useSearchParams().get("product")) || null;
   const user = useCurrentUser();
   const industry = user?.industry;
   const targetType = industry?.targets[0] ?? "";
   const subjectType = industry?.subjects[0] ?? null;
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [productId, setProductId] = useState<number | null>(null);
+  const [productId, setProductId] = useState<number | null>(preselected);
   const [targets, setTargets] = useState<CatalogItem[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [subjects, setSubjects] = useState<Option[]>([]);

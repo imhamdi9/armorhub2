@@ -16,6 +16,7 @@ export interface User {
   name: string;
   email: string;
   roles?: string[];
+  company_id?: number | null;
   email_verified?: boolean;
   email_verification_required?: boolean;
   industry?: Industry | null;

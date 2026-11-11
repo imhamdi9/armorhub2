@@ -146,6 +146,7 @@ export interface Company {
   id: number;
   tenant_id: number;
   name: string;
+  slug?: string | null;
   type: string;
   status: string;
 }
@@ -224,3 +225,23 @@ export interface DashboardStats {
 
 export const getDashboardStats = async () =>
   (await api.get<DashboardStats>("/dashboard/stats")).data;
+
+export interface StorefrontSettings {
+  slug: string;
+  path: string;
+  enabled: boolean;
+  headline: string | null;
+  subheadline: string | null;
+  about: string | null;
+  primary_color: string;
+  logo_url: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  featured_product_ids: number[];
+}
+
+export const getStorefront = async (companyId: number) =>
+  (await api.get<StorefrontSettings>(`/companies/${companyId}/storefront`)).data;
+
+export const saveStorefront = async (companyId: number, data: Partial<StorefrontSettings>) =>
+  (await api.put<StorefrontSettings>(`/companies/${companyId}/storefront`, data)).data;

@@ -23,6 +23,10 @@ return [
     // Development/tests only: let admin-configured gateway URLs be http:// or private addresses.
     'allow_insecure_provider_urls' => (bool) env('PLATFORM_ALLOW_INSECURE_PROVIDER_URLS', false),
 
+    // Requests per minute per IP for the public storefront API. Generous: the web app's own server renders
+    // public pages from one address, and the data is public, cheap and cacheable.
+    'public_rate_limit' => (int) env('PLATFORM_PUBLIC_RATE_LIMIT', 600),
+
     // Which payment gateway charges orders. Only "simulated" ships with the app.
     'payment_gateway' => env('PLATFORM_PAYMENT_GATEWAY', 'simulated'),
 

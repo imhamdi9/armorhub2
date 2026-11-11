@@ -25,9 +25,12 @@ Caddy for automatic HTTPS. Everything runs from one compose file.
      exec api php artisan platform:create-admin you@example.com --name="Your Name"
    ```
 5. Sign in at `https://app.<your-domain>`, open **Tenants**, create/assign each
-   tenant's industry, and create the storefront company customers sign up under.
+   tenant's industry, and create the storefront company (**Companies**). Then open its **Storefront** page to
+   turn the public store on and set its address, headline, colour and logo. Customers find it at
+   `https://app.<your-domain>/s/<address>` and sign up from there; the platform's home page (`/`) lists every open store.
 
-Update later with `git pull` then the same `up -d --build` command.
+Set `SITE_URL=https://app.<your-domain>` for the web app so `sitemap.xml` and `robots.txt` carry absolute
+addresses. Update later with `git pull` then the same `up -d --build` command.
 
 ## 2. Before real customers use it
 
@@ -46,8 +49,8 @@ Update later with `git pull` then the same `up -d --build` command.
   Set `TRUSTED_PROXIES=*` behind Caddy/Render so per-IP limits see real visitors.
 - **Email.** Password resets and order notifications use Laravel mail. Configure SMTP
   (`MAIL_*`) and `WEB_URL`; the default `log` mailer only writes emails to the log.
-- **Customer signup** needs the storefront company's ID; share it with
-  customers (e.g. in a signup link or on your site).
+- **Customer signup** happens from the storefront (`/s/<address>`, or `/register?store=<address>`), so there is
+  no Company ID to share; just link customers to your store.
 - **Ordering needs location.** Customers share it on the New order screen;
   partners need `latitude`, `longitude` and `location_enabled` to be found.
 - Commission % and split, currency: `apps/api/config/platform.php` (env:

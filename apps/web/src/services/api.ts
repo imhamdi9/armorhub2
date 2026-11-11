@@ -21,7 +21,8 @@ api.interceptors.response.use(
     if (
       typeof window !== "undefined" &&
       error?.response?.status === 401 &&
-      !["/login", "/register", "/forgot-password", "/reset-password"].some((p) => window.location.pathname.startsWith(p))
+      // Only the signed-in app bounces to the login page; public pages just see "not signed in".
+      window.location.pathname.startsWith("/dashboard")
     ) {
       window.location.replace(new URL("/login", window.location.origin).toString());
     }

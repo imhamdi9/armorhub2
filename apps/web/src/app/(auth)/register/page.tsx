@@ -1,20 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
-import { register } from "@/services/auth.service";
+import { getPublicStoreName, register } from "@/services/auth.service";
 import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  // Coming from a store's page: the store (and maybe a product) is already known.
+  const storeSlug = params.get("store");
+  const productId = params.get("product");
+  const [storeName, setStoreName] = useState<string | null>(null);
+  const [storeMissing, setStoreMissing] = useState(false);
+
+  useEffect(() => {
+    if (!storeSlug) return;
+    getPublicStoreName(storeSlug).then((s) => setStoreName(s.name)).catch(() => setStoreMissing(true));
+  }, [storeSlug]);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -35,14 +54,15 @@ export default function RegisterPage() {
     setError(null);
     setBusy(true);
     try {
+      const { company_id, ...fields } = form;
       await register({
-        ...form,
-        company_id: Number(form.company_id),
+        ...fields,
+        ...(storeSlug ? { store: storeSlug } : { company_id: Number(company_id) }),
         signup_token: human.token,
         website,
         captcha_token: human.captchaToken,
       });
-      router.push("/dashboard");
+      router.push(productId ? `/dashboard/orders/new?product=${encodeURIComponent(productId)}` : "/dashboard");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -78,17 +98,23 @@ export default function RegisterPage() {
               <Label htmlFor="password_confirmation">{tr("Confirm password")}</Label>
               <Input id="password_confirmation" type="password" required value={form.password_confirmation} onChange={set("password_confirmation")} />
             </div>
+            {storeSlug ? (
+              <p className={`rounded-lg border p-3 text-sm ${storeMissing ? "border-red-300 bg-red-50" : "bg-muted"}`}>
+                {storeMissing ? tr("This store was not found.") : storeName ? tr("You are signing up with {store}.", { store: storeName }) : tr("Loading...")}
+              </p>
+            ) : (
             <div>
               <Label htmlFor="company_id">{tr("Company ID")}</Label>
-              <Input id="company_id" type="number" min="1" required value={form.company_id} onChange={set("company_id")} />
+              <Input id="company_id" type="number" min="1" required={!storeSlug} value={form.company_id} onChange={set("company_id")} />
               <p className="mt-1 text-xs text-muted-foreground">
                 {tr("Given to you by the business you are ordering from.")}
               </p>
             </div>
+            )}
             <Honeypot value={website} onChange={setWebsite} />
             <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={busy || !human.ready}>
+            <Button type="submit" className="w-full" disabled={busy || !human.ready || storeMissing}>
               {human.waiting ? tr("Please wait a moment…") : tr("Sign up")}
             </Button>
             <p className="text-center text-sm">

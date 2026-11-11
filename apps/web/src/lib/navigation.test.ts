@@ -84,6 +84,12 @@ describe("buildNavigation", () => {
     expect(nav).toContain("Companies");
   });
 
+  it("gives company owners a Storefront editor, and admins reach it from Companies", () => {
+    expect(titles(user(["company-owner"]))).toContain("Storefront");
+    expect(titles(user(["platform-admin"]))).not.toContain("Storefront");
+    expect(titles(user(["customer"]))).not.toContain("Storefront");
+  });
+
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([

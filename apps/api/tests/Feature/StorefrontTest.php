@@ -162,7 +162,7 @@ class StorefrontTest extends TestCase
         // Everything else stays uncacheable.
         $this->actingAs($this->customer, 'sanctum')->getJson('/api/me')->assertHeader('Cache-Control', 'no-store, private');
 
-        RateLimiter::clear('x');
+        config(['platform.public_rate_limit' => 120]);
         foreach (range(1, 120) as $_) {
             $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->getJson('/api/public/storefronts');
         }

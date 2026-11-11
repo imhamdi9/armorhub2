@@ -77,8 +77,10 @@ export const useLocale = () => useContext(LocaleContext);
  *
  * The app is drawn only once the browser's stored language is known. Otherwise a visitor who
  * chose Arabic would first get English and then a remount that wipes whatever they already typed.
+ * Public pages pass `gate={false}`: they must be rendered on the server (search engines, first paint),
+ * and a language switch after load is harmless there because they have no half-typed forms.
  */
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+export function I18nProvider({ children, gate = true }: { children: React.ReactNode; gate?: boolean }) {
   // The server (and the first client render) is English; the stored choice applies right after.
   const locale = useSyncExternalStore(subscribe, readLocale, serverLocale);
   const hydrated = useHydrated();
@@ -90,7 +92,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LocaleContext.Provider value={locale}>
-      {hydrated && (
+      {(hydrated || !gate) && (
         <div key={locale} className="contents">
           {children}
         </div>

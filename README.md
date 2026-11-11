@@ -12,9 +12,10 @@ industry-agnostic: any business with the same flow can be added as an industry m
 | Area | Features |
 | --- | --- |
 | **Industries** | Automotive, Home Services, Beauty & Wellness, Devices — each a self-contained module |
+| **Public site** | A server-rendered home page and a **branded storefront per business** (`/s/<slug>`): hero, featured products, searchable catalog, product pages with public prices, partner showcase, sitemap/robots, English + Arabic. Visitors sign up straight from a product page |
 | **Customers** | Sign up, add what they bring (property…), order with live pricing, compare quotes, pay, track a timeline, cancel before paying, warranties |
 | **Partners** | Quote inbox, jobs (schedule → start → complete), team of technicians, earnings |
-| **Companies / admins** | Tenants & industries, companies, products & price rules, shared catalogs, partners, staff with roles, commissions & payouts, dashboards with role-based numbers |
+| **Companies / admins** | Tenants & industries, companies, **storefront editor** (address, headline, colour, logo, featured products), products & price rules, shared catalogs, partners, staff with roles, commissions & payouts, dashboards with role-based numbers |
 | **Payments** | Pluggable providers chosen **and switched live from the admin panel**: Stripe Checkout, a configurable HTTP gateway for most hosted-checkout providers, or a simulated one for demos. Signed webhooks, amount verified, idempotent |
 | **Admin control panel** | Overview with an attention list, runtime settings (commission, currency, signup/order switches, security knobs), payments, security health & emergency controls, audit log |
 | **Notifications** | In-app inbox + email for quotes, acceptance, payments, progress |
@@ -58,17 +59,18 @@ cd apps/web && npm ci
 NEXT_PUBLIC_API_URL=http://localhost:8000/api npm run dev  # http://localhost:3000
 ```
 
-Demo logins (password `password123`): `admin@test.com`, `shop@test.com`; customers sign up with Company ID `1`.
+Demo logins (password `password123`): `admin@test.com`, `shop@test.com`. The public site is at http://localhost:3000/ and the demo store at
+http://localhost:3000/s/armor-store; customers sign up from there (or at `/register?store=armor-store`).
 
 ## Tests
 
 ```bash
-cd apps/api && php artisan test           # 127 API tests (orders, payments, providers, security, permissions, …)
+cd apps/api && php artisan test           # 143 API tests (orders, payments, providers, security, permissions, …)
 cd apps/web && npm test                   # unit tests (navigation, i18n dictionary, formatting)
 scripts/e2e-all.sh                        # every browser journey, incl. Arabic/mobile and Stripe
 ```
 
-`scripts/e2e-all.sh` covers: first-run setup, the full customer→partner→payment→job→commission journey, staff
+`scripts/e2e-all.sh` covers: first-run setup, the public storefront (checked with JavaScript off, as a search engine sees it), the full customer→partner→payment→job→commission journey, staff
 management, responsive + Arabic/RTL (54 page views), admin management screens, a **security attack script**
 (cookie theft, CSRF, brute force, signup floods, bots, headers/CSP), the admin panel (connecting and switching
 payment providers live against a fake gateway), and Stripe Checkout against a local fake of Stripe. CI (`.github/workflows/ci.yml`) runs the API and web unit tests, lint and build.

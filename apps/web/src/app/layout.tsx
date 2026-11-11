@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
-import { I18nProvider } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +35,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen">
-        <I18nProvider>{children}</I18nProvider>
+        {children}
       </body>
     </html>
   );

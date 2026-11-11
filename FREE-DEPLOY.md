@@ -51,14 +51,14 @@ If you had to change a URL after the first deploy: update the env var, then
 ## 3. First-time setup in the app (all in the UI, signed in as the admin)
 
 1. **Tenants** → add your brand and pick its industry (Automotive, Home Services, Beauty, Devices).
-2. **Companies** → add the storefront company under that tenant; its **Company ID**
-   is shown next to it — customers need it to sign up at `/register`.
+2. **Companies** → add the storefront company under that tenant, then open its **Storefront** page: turn it on,
+   choose the address, headline and colour. Customers visit `/s/<address>` and sign up from there.
 3. **Products** → add products and their price rules; **Partners** → add service
    providers *with latitude/longitude* so nearby customers are matched to them.
 4. **Team** → create accounts for each partner's manager (role *Partner manager*, with their
    company and partner). Managers then add their own technicians; share the temporary password
    securely (they can change it with "Forgot your password?").
-5. Customers sign up at `/register` with the storefront Company ID and can order.
+5. Share your store link, `https://<your-web-url>/s/<address>`; customers browse and sign up from it.
 
 (`npm run e2e:setup` in `apps/web` replays exactly this first-run path in a browser.)
 

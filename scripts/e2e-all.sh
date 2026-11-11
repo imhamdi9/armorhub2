@@ -2,7 +2,7 @@
 # Runs every browser end-to-end check against a real API + production web build.
 # Needs: PHP 8.3+/composer deps installed in apps/api, node deps in apps/web, Chromium.
 #   CHROMIUM_PATH=/path/to/chromium scripts/e2e-all.sh      (omit if Playwright's own browser is installed)
-#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | security | admin | stripe  (default: all)
+#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | storefront | security | admin | stripe  (default: all)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -52,6 +52,14 @@ npm run -s e2e
 npm run -s e2e:staff
 SHOTS="${SHOTS:-/tmp}" npm run -s e2e:responsive
 npm run -s e2e:manage   # last: it renames a company other checks look up
+fi
+
+if want storefront; then
+echo; echo "== Public storefront: server-rendered pages, branding, Arabic/mobile, signup from a product, editor"
+fresh_db
+(cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
+start_api
+(cd "$ROOT/apps/web" && npm run -s e2e:storefront)
 fi
 
 if want security; then

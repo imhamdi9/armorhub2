@@ -17,7 +17,9 @@ export async function register(data: {
   email: string;
   password: string;
   password_confirmation: string;
-  company_id: number;
+  /** Either the store the visitor came from (its address) or a company id. */
+  store?: string;
+  company_id?: number;
   signup_token: string;
   website?: string;
   captcha_token?: string;
@@ -57,4 +59,10 @@ export async function logout() {
 
 export async function resendVerification() {
   return (await api.post<{ message: string }>("/email/resend")).data;
+}
+
+export async function getPublicStoreName(slug: string) {
+  const { data } = await api.get<{ store: { name: string; slug: string } }>(`/public/storefronts/${encodeURIComponent(slug)}`);
+
+  return data.store;
 }

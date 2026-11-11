@@ -76,6 +76,9 @@ services:
     dockerfilePath: ./apps/web/Dockerfile
     dockerContext: ./apps/web
     envVars:
+      # Public address of this web app, used for sitemap.xml / robots.txt, e.g. https://armorhub-web.onrender.com
+      - key: SITE_URL
+        sync: false
       # The API's public origin, e.g. https://armorhub-api.onrender.com (baked in at build time;
       # change it, then redeploy the web service).
       - key: API_PROXY_TARGET

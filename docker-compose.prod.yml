@@ -61,6 +61,8 @@ services:
         NEXT_PUBLIC_API_URL: /api
         API_PROXY_TARGET: http://api:80
     restart: unless-stopped
+    environment:
+      SITE_URL: https://app.${DOMAIN}
 
   caddy:
     image: caddy:2

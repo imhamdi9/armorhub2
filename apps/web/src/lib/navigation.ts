@@ -17,6 +17,7 @@ export interface NavItem {
     | "items"
     | "companies"
     | "users"
+    | "storefront"
     | "admin"
     | "settings"
     | "payments"
@@ -115,6 +116,11 @@ export function buildNavigation(user: User | null): NavItem[] {
 
   if (hasRole(user, "platform-admin", "partner-manager")) {
     items.push({ title: "Partners", href: "/dashboard/partners", icon: "partners" });
+  }
+
+  // Owners shape what the public sees of their store (admins reach it from the Companies page).
+  if (hasRole(user, "company-owner") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Storefront", href: "/dashboard/storefront", icon: "storefront" });
   }
 
   if (hasRole(user, "platform-admin", "company-owner", "partner-manager")) {

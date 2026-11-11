@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { logout, resendVerification } from "@/services/auth.service";
-import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { I18nProvider, LanguageSwitcher, tr } from "@/lib/i18n";
 
 function VerifyEmailBanner() {
   const user = useCurrentUser();
@@ -43,6 +43,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   return (
+    <I18nProvider>
     <CurrentUserProvider>
       <TooltipProvider>
         <SidebarProvider>
@@ -77,5 +78,6 @@ export default function DashboardLayout({
         </SidebarProvider>
       </TooltipProvider>
     </CurrentUserProvider>
+    </I18nProvider>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
@@ -117,13 +118,16 @@ export default function CompaniesPage() {
               ) : (
                 <div>
                   <h2 className="font-semibold">{c.name}</h2>
-                  <p className="text-sm text-muted-foreground">{tr(c.type)} · {tr(c.status)}</p>
+                  <p className="text-sm text-muted-foreground">{tr(c.type)} · {tr(c.status)}{c.slug ? ` · /s/${c.slug}` : ""}</p>
                 </div>
               )}
               <div className="flex items-center gap-2">
                 <span className="rounded bg-muted px-2 py-1 text-sm">
                   {tr("Company ID")}: <strong>{c.id}</strong>
                 </span>
+                <Link href={`/dashboard/storefront?company=${c.id}`} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted">
+                  {tr("Storefront")}
+                </Link>
                 {editing !== c.id && (
                   <Button size="sm" variant="outline" onClick={() => { setEditing(c.id); setDraft({ name: c.name, status: c.status }); }}>
                     {tr("Edit")}

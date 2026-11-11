@@ -128,3 +128,12 @@
     @apply font-sans;
   }
 }
+
+/* Store branding: the colours come from validated hex values set by the store owner. */
+.btn-brand {
+  background-color: var(--brand, #111827);
+  color: var(--on-brand, #ffffff);
+}
+.btn-brand:hover {
+  filter: brightness(0.92);
+}

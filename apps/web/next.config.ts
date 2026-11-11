@@ -30,7 +30,8 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Stores may show a logo hosted elsewhere (https only; the editor refuses anything else).
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")}${isProd ? "" : " ws: wss:"}`,
   `frame-src ${CAPTCHA.join(" ")}`,

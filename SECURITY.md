@@ -32,6 +32,12 @@ covered by an automated test (`apps/api/tests/Feature/SecurityTest.php`, `Paymen
 - **CSRF**: cookie-authenticated writes must come from our own origin (Origin/Referer check). Bearer-token API clients are unaffected.
 - A strict **Content-Security-Policy** (no third-party scripts except the optional captcha provider), `frame-ancestors 'none'`, `nosniff`, HSTS, no-store on API responses. CORS is an explicit allow-list, never `*`.
 
+### The public storefront
+- The public API (`/api/public/*`) is **read-only, throttled and cacheable**, and returns a short, explicit list of fields: store branding, product names/descriptions/prices, and partner *counts and city names*. A test scans every public response and fails if emails, phone numbers, coordinates, commission, ids of private records or settings ever appear.
+- Closed, inactive or suspended stores return 404 everywhere (page, catalog, directory, sitemap). The site keeps its own short cache that remembers "not found", so a closed store cannot linger from a stale copy.
+- What store owners type is **text, never markup**: React escapes it, the brand colour must be a plain `#rrggbb` (it goes in a style attribute) and the logo must be an `https://` address. The editor refuses anything else, and a browser test confirms a hostile headline is displayed literally and never runs. The CSP allows images from any https host only for these logos.
+- Slugs are validated, unique and exclude the site's own addresses.
+
 ### Data isolation and authorization
 - Every API route requires authentication except a short allow-list; a test walks **every route** and fails if a new one is public by accident.
 - Tenants only see and order **their own industry's active products**; guessing ids returns 404. Orders, quotes, payments, commissions and users are scoped by company/partner/owner. Staff can only create roles at or below their own and cannot promote themselves.

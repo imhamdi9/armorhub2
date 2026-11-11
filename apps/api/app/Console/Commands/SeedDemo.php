@@ -35,7 +35,19 @@ class SeedDemo extends Command
             'name' => 'Armor',
             'industry_id' => Industry::where('key', 'automotive')->value('id'),
         ]);
-        $store = Company::create(['tenant_id' => $tenant->id, 'name' => 'Armor Store']);
+        $store = Company::create([
+            'tenant_id' => $tenant->id, 'name' => 'Armor Store', 'status' => 'active',
+            // A ready-made public storefront at /s/armor-store.
+            'settings' => ['storefront' => [
+                'enabled' => true,
+                'headline' => 'Protect your car like it matters',
+                'subheadline' => 'Paint protection film, ceramic coating and tint, fitted by certified installers near you.',
+                'about' => "Armor Store connects car owners with trusted, certified installers.\nGet a price in seconds and book with confidence.",
+                'primary_color' => '#0f766e',
+                'contact_email' => 'hello@armor-store.example',
+                'featured_product_ids' => [],
+            ]],
+        ]);
         $shopCompany = Company::create(['tenant_id' => $tenant->id, 'name' => 'Shop Co', 'type' => 'partner']);
 
         $partner = Partner::create([
@@ -50,7 +62,7 @@ class SeedDemo extends Command
         ]);
         $manager->assignRole('partner-manager');
 
-        $this->info("Demo ready. Storefront company id: {$store->id}");
+        $this->info("Demo ready. Storefront: /s/{$store->slug} (company id {$store->id})");
         $this->line("admin@test.com / shop@test.com — password: {$password}");
 
         return self::SUCCESS;

@@ -21,6 +21,9 @@ RUN npm run build
 
 FROM node:22-alpine AS run
 WORKDIR /app
+# Server-rendered public pages read the API directly at runtime.
+ARG API_PROXY_TARGET
+ENV API_INTERNAL_URL=$API_PROXY_TARGET
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
