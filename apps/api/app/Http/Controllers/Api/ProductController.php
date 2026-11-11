@@ -14,7 +14,11 @@ class ProductController extends Controller
         return Product::query()
             ->when($request->filled('industry_id'), fn ($q) => $q->where('industry_id', $request->industry_id))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
-            ->when(! $request->boolean('include_inactive'), fn ($q) => $q->where('is_active', true))
+            // Only product managers may see inactive products.
+            ->when(
+                ! ($request->boolean('include_inactive') && $request->user()->can('products.update')),
+                fn ($q) => $q->where('is_active', true)
+            )
             ->orderBy('name')
             ->get();
     }

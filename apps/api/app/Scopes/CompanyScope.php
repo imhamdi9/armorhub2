@@ -22,6 +22,13 @@ class CompanyScope implements Scope
             return;
         }
 
+        // A user with no company must not see everyone else's data.
+        if (! $user->company_id) {
+            $builder->whereRaw('1 = 0');
+
+            return;
+        }
+
         // باقي المستخدمين يرون شركتهم فقط
         if ($user->company_id) {
             // A company is scoped by its own id; everything else by company_id.

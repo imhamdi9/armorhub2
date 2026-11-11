@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
-import { aliasLabel } from "@/lib/navigation";
+import { aliasLabel, aliasSingular } from "@/lib/navigation";
 import { errorMessage } from "@/lib/errors";
 import {
   calculatePrice,
@@ -135,7 +135,7 @@ export default function NewOrderPage() {
 
       {subjectType && (
         <section>
-          <h2 className="mb-2 font-semibold">2. {aliasLabel(subjectType).replace(/s$/, "")}</h2>
+          <h2 className="mb-2 font-semibold">2. {aliasSingular(subjectType)}</h2>
           <select
             className="w-full rounded-lg border px-3 py-2"
             value={subjectId ?? ""}

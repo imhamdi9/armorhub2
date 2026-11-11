@@ -14,6 +14,12 @@ return [
         'partner' => 0.40,
     ],
 
+    // Which payment gateway charges orders. Only "simulated" ships with the app.
+    'payment_gateway' => env('PLATFORM_PAYMENT_GATEWAY', 'simulated'),
+
+    // The simulated gateway charges nobody; refuse it in production unless explicitly allowed.
+    'allow_simulated_payments_in_production' => (bool) env('PLATFORM_ALLOW_SIMULATED_PAYMENTS', false),
+
     // Radius in km used when looking for nearby partners with no same-city match.
     'partner_search_radius_km' => 300,
 ];

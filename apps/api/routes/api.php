@@ -21,10 +21,10 @@ use App\Modules\IndustryRegistry;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Session
     Route::get('/me', [AuthController::class, 'me']);

@@ -1,79 +1,91 @@
 # Deploying ArmorHub
 
-Two services: the Laravel API (`apps/api`) and the Next.js web app (`apps/web`).
+Stack: Laravel API (`apps/api`), Next.js web app (`apps/web`), MySQL 8, and
+Caddy for automatic HTTPS. Everything runs from one compose file.
 
-## API
+## 1. One-command deploy (any Linux server with Docker)
 
-Requires PHP 8.4 (the locked dependencies need it; the dev image in
-`infrastructure/docker/php` already uses 8.4), MySQL 8, and a web server
-pointing at `apps/api/public` (see `infrastructure/docker/nginx/default.conf`).
+1. Point two DNS records at the server: `app.<your-domain>` and `api.<your-domain>`.
+2. Configure:
+   ```bash
+   cp .env.production.example .env.production
+   # fill in every value: DOMAIN, DB passwords, CORS origin, APP_URL ...
+   docker compose --env-file .env.production -f docker-compose.prod.yml build api
+   docker run --rm armorhub-api php artisan key:generate --show   # paste into APP_KEY
+   ```
+3. Start:
+   ```bash
+   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+   ```
+   The `migrate` service creates the schema, the industries, and roles/permissions
+   on every deploy. Caddy obtains TLS certificates automatically.
+4. Create the first platform admin:
+   ```bash
+   docker compose --env-file .env.production -f docker-compose.prod.yml \
+     exec api php artisan platform:create-admin you@example.com --name="Your Name"
+   ```
+5. Sign in at `https://app.<your-domain>`, open **Tenants**, create/assign each
+   tenant's industry, and create the storefront company customers sign up under.
+
+Update later with `git pull` then the same `up -d --build` command.
+
+## 2. Before real customers use it
+
+- **Payments are simulated.** The app records a payment and splits the
+  commission but charges no card, and in production it **refuses** to take
+  payments (HTTP 503) until a real gateway exists. Implement
+  `App\Services\Payment\PaymentGateway` (Stripe, Moyasar, ...) and set
+  `PLATFORM_PAYMENT_GATEWAY`. For a staging demo only, set
+  `PLATFORM_ALLOW_SIMULATED_PAYMENTS=true`.
+- **Customer signup** needs the storefront company's ID; share it with
+  customers (e.g. in a signup link or on your site).
+- **Ordering needs location.** Customers share it on the New order screen;
+  partners need `latitude`, `longitude` and `location_enabled` to be found.
+- Commission % and split, currency: `apps/api/config/platform.php` (env:
+  `PLATFORM_COMMISSION_PERCENTAGE`, `PLATFORM_CURRENCY`).
+- Hardening already in place: login/signup rate limiting, API rate limiting,
+  tokens expire after 7 days, CORS limited to your web origin, debug off.
+  Still recommended: email verification, and httpOnly-cookie auth instead of
+  a token in `localStorage`.
+- Back up the `db_data` volume.
+
+## 3. Without Docker
+
+API needs PHP 8.4 (the locked dependencies require it), MySQL 8 and a web
+server pointing at `apps/api/public`:
 
 ```bash
 cd apps/api
 composer install --no-dev --optimize-autoloader
-cp .env.example .env            # then edit, see below
-php artisan key:generate
+cp .env.example .env && php artisan key:generate   # then edit .env (see .env.production.example)
 php artisan migrate --force
-php artisan db:seed --force     # industries, roles/permissions, demo catalogs
-php artisan config:cache && php artisan route:cache
-```
-
-Production `.env` essentials:
-
-```
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://api.your-domain.com
-DB_CONNECTION=mysql
-DB_HOST=... DB_DATABASE=... DB_USERNAME=... DB_PASSWORD=...
-```
-
-`db:seed` also runs `VehicleCatalogSeeder`/`IndustryCatalogSeeder`, which
-create demo catalog data. Skip those two on a real database and run only
-`IndustrySeeder` and `RolesAndPermissionsSeeder`:
-
-```bash
 php artisan db:seed --class=IndustrySeeder --force
 php artisan db:seed --class=RolesAndPermissionsSeeder --force
+php artisan config:cache && php artisan route:cache
+php artisan platform:create-admin you@example.com
 ```
 
-Create the first platform admin (then change the password):
+Web (the API URL is baked in at build time):
 
 ```bash
-php artisan tinker --execute '$u = App\Models\User::create(["name"=>"Admin","email"=>"you@example.com","password"=>"CHANGE-ME-NOW"]); $u->assignRole("platform-admin");'
+cd apps/web
+NEXT_PUBLIC_API_URL=https://api.your-domain.com/api npm ci && npm run build && npm start
 ```
 
-Then sign in to the web app, open **Tenants**, and assign each tenant its industry.
+Do **not** run `php artisan db:seed` with no class on a real database: it
+adds demo catalog data.
 
-## Web
-
-The API URL is baked in at build time.
+## 4. Local demo & tests
 
 ```bash
-docker build --build-arg NEXT_PUBLIC_API_URL=https://api.your-domain.com/api \
-  -t armorhub-web apps/web
-docker run -p 3000:3000 armorhub-web
+cd apps/api && php artisan migrate:fresh && php artisan platform:demo   # demo admin/partner users
+php artisan serve                                                      # :8000
+cd apps/web && NEXT_PUBLIC_API_URL=http://localhost:8000/api npm run dev   # :3000
+npm run e2e        # full browser journey (needs `npx playwright install chromium` once)
+php artisan test   # API tests         |   npm test   # web unit tests
 ```
-
-Or without Docker: `cd apps/web && NEXT_PUBLIC_API_URL=... npm ci && npm run build && npm start`.
 
 ## Adding an industry
 
-See "Industry modules" in the README: create `app/Modules/<Name>`, register it
-in `AppServiceProvider::MODULES`, run `IndustrySeeder`.
-
-## Before real customers use it
-
-- **Payments are simulated.** `POST /orders/{order}/payments` records a payment
-  and splits the commission, but no card is charged. Integrate a payment
-  gateway (Stripe, Moyasar, ...) before taking real money.
-- **Customer signup** needs a company ID (the storefront the customer orders
-  from); share it with customers, e.g. as a signup link.
-- **Ordering needs location.** Customers share it from the New order screen;
-  partners need `latitude`, `longitude` and `location_enabled` set to be found.
-- Commission % and split, and the default currency, live in
-  `apps/api/config/platform.php` (env: `PLATFORM_COMMISSION_PERCENTAGE`,
-  `PLATFORM_CURRENCY`).
-- The web app keeps its API token in `localStorage`. For a hardened launch,
-  move to httpOnly cookies (Sanctum SPA auth) and add email verification and
-  rate limiting on `/login` and `/register`.
+See "Industry modules" in the README: create `app/Modules/<Name>`, register
+it in `AppServiceProvider::MODULES`, run `IndustrySeeder`.

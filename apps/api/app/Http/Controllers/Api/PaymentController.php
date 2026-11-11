@@ -12,6 +12,8 @@ use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\PartnerQuote;
 use App\Services\Commission\CalculateCommissionService;
+use App\Services\Payment\PaymentGateway;
+use App\Services\Payment\PaymentUnavailable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +23,12 @@ class PaymentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function store(Request $request, Order $order, CalculateCommissionService $commissions)
+    public function store(
+        Request $request,
+        Order $order,
+        CalculateCommissionService $commissions,
+        PaymentGateway $gateway
+    )
     {
         $this->authorize('view', $order);
 
@@ -46,7 +53,17 @@ class PaymentController extends Controller
             ]);
         }
 
-        $result = DB::transaction(function () use ($order, $data, $commissions) {
+        try {
+            $charge = $gateway->charge($order, (float) $order->total_amount, $data['payment_method'] ?? null);
+        } catch (PaymentUnavailable $e) {
+            return response()->json(['message' => $e->getMessage()], 503);
+        }
+
+        if ($charge['status'] !== 'completed') {
+            return response()->json(['message' => $charge['message'] ?? 'The payment was declined.'], 402);
+        }
+
+        $result = DB::transaction(function () use ($order, $data, $commissions, $charge) {
 
             // Re-check under a row lock so two simultaneous requests cannot both pay.
             $locked = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->id);
@@ -62,6 +79,7 @@ class PaymentController extends Controller
                 'currency' => $order->currency,
                 'payment_method' => $data['payment_method'] ?? null,
                 'status' => 'completed',
+                'transaction_id' => $charge['transaction_id'],
             ]);
 
             $calc = $commissions->calculate($order->total_amount);

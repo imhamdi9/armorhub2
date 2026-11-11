@@ -32,7 +32,7 @@ class OrderController extends Controller
 
         $user = auth()->user();
 
-        $query = Order::with('product')->latest();
+        $query = Order::with('product')->latest()->limit(200);
 
         if ($user->hasRole('platform-admin')) {
             return $query->get();

@@ -78,7 +78,6 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'company-owner' => [
     'companies.view',
-    'companies.create',
     'companies.update',
 
     'vehicle-makes.view',

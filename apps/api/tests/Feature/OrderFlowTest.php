@@ -318,4 +318,36 @@ class OrderFlowTest extends TestCase
         $this->assertTrue((bool) $this->customer->fresh()->location_enabled);
         $this->putJson('/api/me/location', ['latitude' => 999, 'longitude' => 0])->assertUnprocessable();
     }
+
+    public function test_ordering_for_a_customer_owned_item_enforces_ownership(): void
+    {
+        $roomType = \App\Modules\HomeServices\Models\RoomType::create(['name' => 'Kitchen', 'slug' => 'kitchen']);
+        $cleaning = Product::create(['name' => 'Deep clean', 'slug' => 'deep-clean', 'base_price' => 1]);
+        ProductPriceRule::create([
+            'product_id' => $cleaning->id, 'target_type' => 'room_type',
+            'target_id' => $roomType->id, 'price' => 80,
+        ]);
+
+        $this->actingAs($this->customer, 'sanctum');
+        $mine = $this->postJson('/api/my-items/property', ['type' => 'villa', 'city' => 'Riyadh'])->assertCreated()->json('id');
+
+        $other = User::factory()->create(['company_id' => $this->storefront->id]);
+        $other->assignRole('customer');
+        $theirs = \App\Modules\HomeServices\Models\Property::create(['customer_id' => $other->id, 'type' => 'flat']);
+
+        $payload = fn ($propertyId) => [
+            'product_id' => $cleaning->id, 'subject_type' => 'property', 'subject_id' => $propertyId,
+            'target_type' => 'room_type', 'targets' => [$roomType->id],
+        ];
+
+        // Someone else's property is refused, with nothing created.
+        $this->postJson('/api/orders', $payload($theirs->id))->assertUnprocessable();
+        $this->assertSame(0, Order::withoutGlobalScopes()->count());
+
+        // Their own works, and the order's subject is the property.
+        $orderId = $this->postJson('/api/orders', $payload($mine))->assertCreated()->json('order.id');
+        $this->getJson("/api/orders/{$orderId}")->assertOk()
+            ->assertJsonPath('subject_type', 'property')
+            ->assertJsonPath('subject.type', 'villa');
+    }
 }

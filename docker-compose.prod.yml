@@ -1,0 +1,83 @@
+# One-command production stack: MySQL, API, web app and HTTPS via Caddy.
+#
+#   cp .env.production.example .env.production   # then fill in every value
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#
+# DNS: point app.<DOMAIN> and api.<DOMAIN> at this server before starting.
+name: armorhub
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # Runs once per deploy: schema, industries, roles and permissions.
+  migrate:
+    build: ./apps/api
+    image: armorhub-api
+    restart: "no"
+    env_file: .env.production
+    environment:
+      DB_HOST: db
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan db:seed --class=IndustrySeeder --force &&
+             php artisan db:seed --class=RolesAndPermissionsSeeder --force"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: armorhub-api
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - api_storage:/var/www/html/storage
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+
+volumes:
+  db_data:
+  api_storage:
+  caddy_data:
+  caddy_config:

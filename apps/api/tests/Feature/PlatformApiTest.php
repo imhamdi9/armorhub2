@@ -168,4 +168,37 @@ class PlatformApiTest extends TestCase
 
         $this->actingAs($me, 'sanctum')->deleteJson("/api/my-items/property/{$id}")->assertOk();
     }
+
+    public function test_a_user_without_a_company_sees_no_company_data(): void
+    {
+        $tenant = Tenant::create(['name' => 'T']);
+        Company::create(['tenant_id' => $tenant->id, 'name' => 'Secret Co']);
+
+        // A company-owner who is not attached to any company must not see all companies.
+        $stray = $this->user('company-owner');
+
+        $this->actingAs($stray, 'sanctum')->getJson('/api/companies')->assertOk()->assertJsonCount(0);
+    }
+
+    public function test_inactive_products_are_hidden_from_customers(): void
+    {
+        Product::create(['name' => 'Live', 'slug' => 'live', 'base_price' => 1]);
+        Product::create(['name' => 'Hidden', 'slug' => 'hidden', 'base_price' => 1, 'is_active' => false]);
+
+        $customer = $this->actingAs($this->user('customer'), 'sanctum');
+        $customer->getJson('/api/products?include_inactive=1')->assertOk()->assertJsonCount(1);
+
+        $this->actingAs($this->user('platform-admin'), 'sanctum')
+            ->getJson('/api/products?include_inactive=1')->assertOk()->assertJsonCount(2);
+    }
+
+    public function test_price_rules_must_point_at_existing_records(): void
+    {
+        $product = Product::create(['name' => 'P', 'slug' => 'p', 'base_price' => 1]);
+
+        $this->actingAs($this->user('platform-admin'), 'sanctum')
+            ->putJson("/api/products/{$product->id}/price-rules", ['rules' => [
+                ['target_type' => 'room_type', 'target_id' => 99999, 'price' => 10],
+            ]])->assertUnprocessable()->assertJsonValidationErrors('rules.0.target_id');
+    }
 }

@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import Link from "next/link";
 
 import {
@@ -17,6 +19,7 @@ import {
 export default function LoginPage() {
 
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
 
   const {
@@ -28,11 +31,17 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: LoginFormData) {
-    const response = await login(data);
+    setError(null);
 
-    localStorage.setItem("token", response.token);
+    try {
+      const response = await login(data);
 
-    router.push("/dashboard");
+      localStorage.setItem("token", response.token);
+
+      router.push("/dashboard");
+    } catch (err) {
+      setError(errorMessage(err, "Could not sign in. Please try again."));
+    }
 
   }
 
@@ -78,6 +87,8 @@ export default function LoginPage() {
               </p>
             )}
           </div>
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <Button
             type="submit"

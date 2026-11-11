@@ -15,12 +15,26 @@ export interface NavItem {
     | "items";
 }
 
-/** "vehicle_part" -> "Vehicle Parts" */
+function pluralize(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return word.slice(0, -1) + "ies";
+  if (/(s|x|z|ch|sh)$/i.test(word)) return /s$/i.test(word) ? word : word + "es";
+  return word + "s";
+}
+
+/** "vehicle_part" -> "Vehicle Parts", "property" -> "Properties" */
 export function aliasLabel(alias: string): string {
   const words = alias.split("_").map((w) => w[0].toUpperCase() + w.slice(1));
   const last = words.length - 1;
-  words[last] = words[last].endsWith("s") ? words[last] : `${words[last]}s`;
+  words[last] = pluralize(words[last]);
   return words.join(" ");
+}
+
+/** "property" -> "Property", "vehicle_model" -> "Vehicle Model" */
+export function aliasSingular(alias: string): string {
+  return alias
+    .split("_")
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 export function hasRole(user: User | null, ...roles: string[]): boolean {

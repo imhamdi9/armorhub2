@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Modules\IndustryRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductPriceRuleController extends Controller
 {
@@ -26,6 +27,17 @@ class ProductPriceRuleController extends Controller
             'rules.*.duration_minutes' => 'nullable|integer|min:0',
             'rules.*.is_active' => 'boolean',
         ]);
+
+        // Every rule must point at a real record of its target type.
+        foreach ($data['rules'] as $i => $rule) {
+            $class = $registry->targetModels()[$rule['target_type']];
+
+            if (! $class::whereKey($rule['target_id'])->exists()) {
+                throw ValidationException::withMessages([
+                    "rules.$i.target_id" => ['The selected option does not exist.'],
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($product, $data) {
             $product->priceRules()->delete();
