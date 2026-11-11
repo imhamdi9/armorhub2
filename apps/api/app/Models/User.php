@@ -11,7 +11,7 @@ use App\Models\Company;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Partner;
 
-class User extends Authenticatable
+class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVerifyEmail
 {
     use \App\Models\Concerns\Auditable;
     use HasApiTokens;
@@ -25,6 +25,7 @@ class User extends Authenticatable
       'email',
       'password',
       'is_active',
+      'email_verified_at',
       'company_id',
       'partner_id',
       'latitude',
@@ -34,6 +35,20 @@ class User extends Authenticatable
       'location_enabled',
     ];
     
+    protected static function booted(): void
+    {
+        static::saving(function (self $user) {
+            $user->email = mb_strtolower(trim($user->email));
+            $user->email_canonical = \App\Support\Security\EmailPolicy::canonical($user->email);
+        });
+    }
+
+    /** The industry this user's tenant runs, if any. */
+    public function industryId(): ?int
+    {
+        return $this->company?->tenant?->industry_id;
+    }
+
     public function company(): BelongsTo
     {
     return $this->belongsTo(Company::class);

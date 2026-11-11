@@ -152,8 +152,9 @@ class StaffTest extends TestCase
         $token = $user->createToken('old')->plainTextToken;
 
         // Same answer whether or not the email exists.
-        $this->postJson('/api/forgot-password', ['email' => 'forgetful@example.com'])->assertOk();
-        $this->postJson('/api/forgot-password', ['email' => 'ghost@example.com'])->assertOk();
+        $token = fn () => tap($this->getJson('/api/signup-challenge')->json('token'), fn () => $this->travel(5)->seconds());
+        $this->postJson('/api/forgot-password', ['email' => 'forgetful@example.com', 'signup_token' => $token()])->assertOk();
+        $this->postJson('/api/forgot-password', ['email' => 'ghost@example.com', 'signup_token' => $token()])->assertOk();
         Notification::assertSentTo($user, ResetPassword::class, function ($n) use ($user) {
             $url = $n->toMail($user)->actionUrl;
             $this->assertStringStartsWith('http://localhost:3000/reset-password?token=', $url);

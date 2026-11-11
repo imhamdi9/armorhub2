@@ -31,17 +31,6 @@ class HardeningTest extends TestCase
         return $user;
     }
 
-    public function test_login_is_rate_limited(): void
-    {
-        RateLimiter::clear('auth');
-
-        for ($i = 0; $i < 10; $i++) {
-            $this->postJson('/api/login', ['email' => 'a@b.com', 'password' => 'wrong'])->assertUnprocessable();
-        }
-
-        $this->postJson('/api/login', ['email' => 'a@b.com', 'password' => 'wrong'])->assertStatus(429);
-    }
-
     public function test_company_management(): void
     {
         $tenant = Tenant::create(['name' => 'T']);

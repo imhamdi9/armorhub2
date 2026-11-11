@@ -17,11 +17,17 @@ return [
         'partner' => 0.40,
     ],
 
+    // Share the browser session cookie across subdomains (app.example.com <-> api.example.com), e.g. ".example.com".
+    'auth_cookie_domain' => env('AUTH_COOKIE_DOMAIN'),
+
     // Which payment gateway charges orders. Only "simulated" ships with the app.
     'payment_gateway' => env('PLATFORM_PAYMENT_GATEWAY', 'simulated'),
 
     // The simulated gateway charges nobody; refuse it in production unless explicitly allowed.
     'allow_simulated_payments_in_production' => (bool) env('PLATFORM_ALLOW_SIMULATED_PAYMENTS', false),
+
+    // Refuse passwords found in known breaches (needs outbound access to api.pwnedpasswords.com).
+    'check_pwned_passwords' => (bool) env('PLATFORM_CHECK_PWNED_PASSWORDS', env('APP_ENV') === 'production'),
 
     // Radius in km used when looking for nearby partners with no same-city match.
     'partner_search_radius_km' => 300,

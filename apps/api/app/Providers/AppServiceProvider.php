@@ -71,8 +71,33 @@ class AppServiceProvider extends ServiceProvider
         ResetPassword::createUrlUsing(fn ($user, string $token) => rtrim(config('platform.web_url'), '/')
             .'/reset-password?token='.$token.'&email='.urlencode($user->getEmailForPasswordReset()));
 
-        // Slow down password guessing and signup abuse.
-        RateLimiter::for('auth', fn (Request $r) => Limit::perMinute(10)->by($r->ip().'|'.strtolower((string) $r->input('email'))));
+        $email = fn (Request $r) => strtolower(trim((string) $r->input('email')));
+        $settings = fn () => app(\App\Support\Settings\Settings::class);
+
+        // Password guessing: per person+address, per address across the world (credential stuffing
+        // spreads attempts over many IPs), and per IP overall (one machine trying many accounts).
+        RateLimiter::for('login', fn (Request $r) => [
+            Limit::perMinute(5)->by('login:'.$r->ip().'|'.$email($r)),
+            Limit::perHour(40)->by('login-email:'.$email($r)),
+            Limit::perMinute(30)->by('login-ip:'.$r->ip()),
+        ]);
+
+        // Mass signup (Sybil) is limited by IP, deliberately NOT by email: a bot just rotates emails.
+        RateLimiter::for('register', fn (Request $r) => [
+            Limit::perHour(max(1, (int) $settings()->get('security.signups_per_ip_per_hour')))->by('register:'.$r->ip()),
+            Limit::perDay(30)->by('register-day:'.$r->ip()),
+        ]);
+
+        // Reset emails can be abused to spam a victim; cap per target and per source.
+        RateLimiter::for('forgot', fn (Request $r) => [
+            Limit::perHour(3)->by('forgot:'.$r->ip().'|'.$email($r)),
+            Limit::perHour(10)->by('forgot-ip:'.$r->ip()),
+        ]);
+
+        RateLimiter::for('resend', fn (Request $r) => Limit::perHour(3)->by('resend:'.($r->user()?->id ?: $r->ip())));
+        RateLimiter::for('challenge', fn (Request $r) => Limit::perMinute(20)->by('challenge:'.$r->ip()));
+        RateLimiter::for('orders', fn (Request $r) => Limit::perHour(10)->by('orders:'.($r->user()?->id ?: $r->ip())));
+        RateLimiter::for('webhook', fn (Request $r) => Limit::perMinute(300)->by('webhook:'.$r->ip()));
 
         RateLimiter::for('api', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?: $r->ip()));
     }

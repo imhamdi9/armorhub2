@@ -11,8 +11,15 @@ use Illuminate\Validation\ValidationException;
 
 class ProductPriceRuleController extends Controller
 {
-    public function index(Product $product)
+    public function index(Request $request, Product $product)
     {
+        abort_unless(
+            $request->user()->hasRole('platform-admin')
+                || (($product->industry_id === null || $product->industry_id === $request->user()->industryId())
+                    && ($product->is_active || $request->user()->can('products.update'))),
+            404
+        );
+
         return $product->priceRules()->orderBy('target_type')->orderBy('target_id')->get();
     }
 
@@ -46,6 +53,6 @@ class ProductPriceRuleController extends Controller
             }
         });
 
-        return $this->index($product);
+        return $this->index($request, $product);
     }
 }

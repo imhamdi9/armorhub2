@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\Admin\SecurityController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\CommissionController;
 use App\Http\Controllers\Api\CommissionDashboardController;
 use App\Http\Controllers\Api\CommissionDistributionController;
@@ -31,13 +33,16 @@ use App\Modules\IndustryRegistry;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
-Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle']);
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:webhook');
 
-Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:auth');
-Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:auth');
+Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot');
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
@@ -45,6 +50,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:resend');
 
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
@@ -82,6 +88,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/security', [SecurityController::class, 'overview']);
+        Route::post('/security/revoke-all-sessions', [SecurityController::class, 'revokeAllSessions']);
     });
 
     // Staff
@@ -89,6 +97,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::post('/users/{id}/revoke-sessions', [UserController::class, 'revokeSessions']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
 
@@ -118,7 +127,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Orders, quotes, payments
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::get('/orders/{order}/partner-quotes', [PartnerQuoteController::class, 'index']);
     Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);

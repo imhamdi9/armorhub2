@@ -12,11 +12,16 @@ use Illuminate\Validation\ValidationException;
 class PasswordResetController extends Controller
 {
     /** Always answers the same way, so it cannot be used to discover which emails exist. */
-    public function forgot(Request $request)
+    public function forgot(Request $request, \App\Support\Security\BotGuard $bots)
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate(['email' => 'required|email|max:255']);
 
-        Password::sendResetLink($request->only('email'));
+        // Scripts abusing this to spam a victim's inbox get the same answer but no email.
+        if ($bots->passes($request)) {
+            Password::sendResetLink($request->only('email'));
+        } else {
+            \App\Support\Audit::record('auth.reset_blocked', null, ['email' => $request->input('email')]);
+        }
 
         return response()->json(['message' => 'If that email has an account, a reset link has been sent.']);
     }
@@ -26,12 +31,13 @@ class PasswordResetController extends Controller
         $data = $request->validate([
             'token' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => \App\Rules\StrongPassword::rules(confirmed: true),
         ]);
 
         $status = Password::reset($data, function (User $user, string $password) {
             $user->forceFill(['password' => $password])->save();
             $user->tokens()->delete(); // old sessions must not survive a reset
+            \App\Support\Audit::record('auth.password_reset', $user, [], $user);
             event(new PasswordReset($user));
         });
 

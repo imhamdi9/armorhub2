@@ -12,6 +12,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         return Product::query()
+            ->tap(fn ($q) => $this->visibleTo($request->user(), $q))
             ->when($request->filled('industry_id'), fn ($q) => $q->where('industry_id', $request->industry_id))
             ->when($request->filled('search'), fn ($q) => $q->where(
                 fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('brand', 'like', "%{$request->search}%")
@@ -33,8 +34,10 @@ class ProductController extends Controller
         return response()->json($product, 201);
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
+        abort_unless($this->visibleTo($request->user(), Product::whereKey($product->id))->exists(), 404);
+
         return $product->load('priceRules');
     }
 
@@ -57,6 +60,27 @@ class ProductController extends Controller
         $product->delete();
 
         return response()->json(['message' => 'Deleted']);
+    }
+
+    /**
+     * Platform admins see everything. Everyone else sees only products of their own industry
+     * (or industry-less ones); hiding a product also hides it from non-managers.
+     */
+    private function visibleTo($user, $query)
+    {
+        if ($user->hasRole('platform-admin')) {
+            return $query;
+        }
+
+        $industry = $user->industryId();
+
+        $query->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
+
+        if (! $user->can('products.update')) {
+            $query->where('is_active', true);
+        }
+
+        return $query;
     }
 
     private function validated(Request $request, ?Product $product = null): array

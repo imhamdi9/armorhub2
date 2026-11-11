@@ -41,7 +41,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => \App\Rules\StrongPassword::rules(),
             'role' => ['required', Rule::in($this->allowedRoles($actor))],
             'company_id' => 'nullable|integer|exists:companies,id',
             'partner_id' => 'nullable|integer|exists:partners,id',
@@ -53,6 +53,8 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            // An administrator vouches for the people they add, so no verification email is needed.
+            'email_verified_at' => now(),
             'company_id' => $companyId,
             'partner_id' => $partnerId,
         ]);
@@ -68,7 +70,7 @@ class UserController extends Controller
 
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'password' => 'sometimes|required|string|min:8',
+            'password' => ['sometimes', ...\App\Rules\StrongPassword::rules()],
             'role' => ['sometimes', Rule::in($this->allowedRoles($actor))],
             'is_active' => 'sometimes|boolean',
         ]);
@@ -92,6 +94,20 @@ class UserController extends Controller
         }
 
         return $this->present($user->fresh(['roles:id,name', 'company:id,name', 'partner:id,name']));
+    }
+
+    /** Sign a person out everywhere, e.g. after a lost phone or a suspected account takeover. */
+    public function revokeSessions(Request $request, int $id)
+    {
+        $user = $this->visible($request->user())->findOrFail($id);
+        $this->assertManageable($request->user(), $user);
+
+        $count = $user->tokens()->count();
+        $user->tokens()->delete();
+
+        \App\Support\Audit::record('auth.sessions_revoked', $user, ['sessions' => $count]);
+
+        return response()->json(['message' => "Signed out of {$count} session(s)."]);
     }
 
     public function destroy(Request $request, int $id)

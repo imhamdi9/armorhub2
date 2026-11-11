@@ -57,6 +57,27 @@ class OrderController extends Controller
         $this->authorize('create', Order::class);
 
         $user = auth()->user();
+        $settings = app(\App\Support\Settings\Settings::class);
+
+        if (! $settings->bool('platform.orders_enabled')) {
+            return response()->json(['message' => 'New orders are paused for now. Please try again later.'], 503);
+        }
+
+        if ($user->hasRole('customer') && ! $user->hasVerifiedEmail() && app(\App\Support\Security\EmailPolicy::class)->verificationRequired()) {
+            return response()->json([
+                'message' => 'Please verify your email address before ordering. Check your inbox for the link.',
+                'code' => 'email_unverified',
+            ], 403);
+        }
+
+        $open = Order::withoutGlobalScopes()->where('customer_id', $user->id)
+            ->whereIn('status', ['pending_quotes', 'quotes_received', 'partner_selected', 'awaiting_payment'])->count();
+
+        if ($open >= (int) $settings->get('security.max_open_orders')) {
+            return response()->json([
+                'message' => 'You have too many unpaid orders. Pay for or cancel one before placing another.',
+            ], 422);
+        }
 
         $data = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
@@ -77,6 +98,12 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Please enable location to find nearby partners',
             ], 422);
+        }
+
+        // Customers can only order what their own industry offers, and only what is on sale.
+        $product = \App\Models\Product::find($data['product_id']);
+        if (! $product->is_active || ($product->industry_id !== null && $product->industry_id !== $user->industryId())) {
+            throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
         $this->assertSubject($data, $registry, $user->id);

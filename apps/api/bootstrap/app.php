@@ -14,6 +14,21 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
+        // Behind a reverse proxy (Caddy, Render...) the real client IP comes from X-Forwarded-For.
+        // Without this every visitor looks like the proxy and per-IP limits protect nobody.
+        if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
+        }
+
+        // Global (not in the "api" group): Laravel runs `Authenticate` ahead of unlisted group
+        // middleware, so the cookie must be turned into a token before routing starts.
+        // Each of these only acts on /api/* requests.
+        $middleware->prepend([
+            \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\AuthCookieToBearer::class,
+            \App\Http\Middleware\RequireTrustedOrigin::class,
+        ]);
+
         $middleware->alias([
            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

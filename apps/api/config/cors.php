@@ -20,7 +20,11 @@ return [
     'allowed_methods' => ['*'],
 
     // Comma-separated list in production, e.g. https://app.example.com
-    'allowed_origins' => array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', '*')))),
+    // Explicit origins only (never "*"): the browser session cookie is sent with credentials.
+    'allowed_origins' => array_values(array_unique(array_filter(array_map('trim', array_merge(
+        [env('WEB_URL', 'http://localhost:3000')],
+        explode(',', (string) env('CORS_ALLOWED_ORIGINS', ''))
+    )), fn ($o) => $o !== '' && $o !== '*'))),
 
     'allowed_origins_patterns' => [],
 
@@ -30,6 +34,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

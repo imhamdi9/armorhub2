@@ -19,6 +19,7 @@ Route::put('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'upda
 Route::delete('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'destroy'])
     ->middleware(['auth:sanctum', 'permission:vehicle-makes.delete']);
 
-Route::get('/vehicles/makes', [VehicleController::class, 'makes']);
-
-Route::get('/vehicles/makes/{id}/models', [VehicleController::class, 'models']);
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::get('/vehicles/makes', [VehicleController::class, 'makes']);
+    Route::get('/vehicles/makes/{id}/models', [VehicleController::class, 'models']);
+});

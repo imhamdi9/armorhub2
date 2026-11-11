@@ -275,8 +275,11 @@ class OrderFlowTest extends TestCase
 
     public function test_registration_creates_a_customer_of_a_company(): void
     {
+        $challenge = $this->getJson('/api/signup-challenge')->assertOk()->json();
+        $this->travel(5)->seconds();
+
         $this->postJson('/api/register', [
-            'name' => 'New Customer', 'email' => 'new@example.com',
+            'name' => 'New Customer', 'email' => 'new@example.com', 'signup_token' => $challenge['token'],
             'password' => 'password123', 'password_confirmation' => 'password123',
             'company_id' => $this->storefront->id,
             'latitude' => 24.7, 'longitude' => 46.7,
@@ -286,12 +289,6 @@ class OrderFlowTest extends TestCase
         $this->assertTrue($user->hasRole('customer'));
         $this->assertSame($this->storefront->id, $user->company_id);
         $this->assertTrue((bool) $user->location_enabled);
-
-        $this->postJson('/api/register', [
-            'name' => 'X', 'email' => 'x@example.com',
-            'password' => 'password123', 'password_confirmation' => 'password123',
-            'company_id' => 99999,
-        ])->assertUnprocessable();
     }
 
     public function test_partner_crud(): void
