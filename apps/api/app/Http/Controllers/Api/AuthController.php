@@ -10,19 +10,35 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /** Public signup creates a customer of the chosen company (storefront). */
     public function register(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8|confirmed',
+            'company_id' => 'required|integer|exists:companies,id',
+            'city' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
+        $hasLocation = isset($data['latitude'], $data['longitude']);
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'company_id' => $data['company_id'],
+            'city' => $data['city'] ?? null,
+            'country' => $data['country'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'location_enabled' => $hasLocation,
         ]);
+
+        $user->assignRole('customer');
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -70,6 +86,21 @@ class AuthController extends Controller
             ] : null,
             'roles' => $user->getRoleNames(),
         ]));
+    }
+
+    /** Lets a customer share where they are so nearby partners can be found. */
+    public function updateLocation(Request $request)
+    {
+        $data = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'city' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+        ]);
+
+        $request->user()->update($data + ['location_enabled' => true]);
+
+        return $this->me($request);
     }
 
     public function logout(Request $request)

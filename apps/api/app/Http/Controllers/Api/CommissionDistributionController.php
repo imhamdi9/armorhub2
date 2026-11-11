@@ -10,7 +10,7 @@ class CommissionDistributionController extends Controller
 {
     public function index(Request $request)
 {
-    $query = CommissionDistribution::with([
+    $query = CommissionDistribution::visibleTo($request->user())->with([
         'commission',
         'company',
         'partner'
@@ -61,7 +61,7 @@ class CommissionDistributionController extends Controller
         if ($commissionDistribution->status === 'paid') {
             return response()->json([
                 'message' => 'Already paid'
-            ], 400);
+            ], 422);
         }
 
         $commissionDistribution->update([

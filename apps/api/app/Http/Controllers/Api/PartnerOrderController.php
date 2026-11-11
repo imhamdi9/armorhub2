@@ -2,63 +2,55 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
-use App\Models\PartnerQuote;
-use Illuminate\Http\Request;
 use App\Http\Requests\SubmitPartnerQuoteRequest;
+use App\Models\PartnerQuote;
+use App\Services\QuoteService;
+use Illuminate\Http\Request;
 
 class PartnerOrderController extends Controller
 {
-    public function submitQuote(
-    SubmitPartnerQuoteRequest $request,
-    PartnerQuote $partnerQuote
-   ){
-    if (
-        $partnerQuote->partner_id !==
-        $request->user()->partner_id
-    ) {
-        return response()->json([
-            'message' => 'Unauthorized.'
-        ], 403);
-    }
-
-    $partnerQuote->update([
-        'price' => $request->price,
-        'status' => 'submitted',
-        'submitted_at' => now(),
-    ]);
-
-    return response()->json([
-        'message' => 'Quote submitted successfully.',
-        'quote' => $partnerQuote->fresh(),
-    ]);
-}
+    /** Quotes waiting on (or already given by) the signed-in user's partner. */
     public function index(Request $request)
     {
-        $center = $request->user()
-            ->partner;
+        $partner = $request->user()->partner;
 
-        if (!$center) {
-            return response()->json([
-                'message' => 'No partner assigned'
-            ], 422);
+        if (! $partner) {
+            return response()->json(['message' => 'No partner assigned'], 422);
         }
 
-        $quotes = PartnerQuote::with([
-                'order',
+        // Quotes belong to the customer's company, so the company scope is
+        // bypassed and access is limited to this partner explicitly.
+        return PartnerQuote::withoutGlobalScopes()
+            ->with([
+                'order' => fn ($q) => $q->withoutGlobalScopes(),
                 'order.product',
-                'order.subject'
+                'order.subject',
             ])
-            ->where(
-                'partner_id',
-                $center->id
-            )
-            ->where(
-                'status',
-                'pending'
-            )
+            ->where('partner_id', $partner->id)
+            ->whereIn('status', [QuoteStatus::Pending, QuoteStatus::Submitted])
+            ->latest()
             ->get();
+    }
 
-        return response()->json($quotes);
+    public function submitQuote(
+        SubmitPartnerQuoteRequest $request,
+        int $id,
+        QuoteService $quotes
+    ) {
+        $quote = PartnerQuote::withoutGlobalScopes()->findOrFail($id);
+
+        abort_unless(
+            $request->user()->partner_id !== null
+                && $quote->partner_id === $request->user()->partner_id,
+            403,
+            'Unauthorized.'
+        );
+
+        return response()->json([
+            'message' => 'Quote submitted successfully.',
+            'quote' => $quotes->submit($quote, $request->price),
+        ]);
     }
 }

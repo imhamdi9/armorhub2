@@ -3,55 +3,41 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\PartnerQuote;
-use Illuminate\Http\Request;
 use App\Services\QuoteService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PartnerQuoteController extends Controller
 {
+    use AuthorizesRequests;
 
-    public function index($order)
+    /** Quotes for an order the user is allowed to see. */
+    public function index(Order $order)
     {
-        return PartnerQuote::where('order_id', $order)
-            ->with('partner')
+        $this->authorize('view', $order);
+
+        return PartnerQuote::withoutGlobalScopes()
+            ->where('order_id', $order->id)
+            ->with(['partner' => fn ($q) => $q->withoutGlobalScopes()])
             ->get();
     }
 
-    public function accept(
-    PartnerQuote $partnerQuote,
-    QuoteService $quoteService
-    )
+    /** Only the customer who placed the order (or a platform admin) picks a quote. */
+    public function accept(int $id, QuoteService $quotes)
     {
-        $order = $quoteService->accept($partnerQuote);
+        $quote = PartnerQuote::withoutGlobalScopes()->findOrFail($id);
+        $order = Order::withoutGlobalScopes()->findOrFail($quote->order_id);
+        $user = auth()->user();
+
+        abort_unless(
+            $user->hasRole('platform-admin') || $order->customer_id === $user->id,
+            403
+        );
 
         return response()->json([
-          'message' => 'Partner quote accepted',
-          'order' => $order,
-        ]);
-}
-
-
-    public function update(
-        Request $request,
-        PartnerQuote $partnerQuote
-    ) {
-
-        $data = $request->validate([
-            'price' => 'required|numeric|min:0',
-            'status' => 'nullable|string',
-        ]);
-
-
-        $partnerQuote->update([
-            'price' => $data['price'],
-            'status' => $data['status'] ?? 'submitted',
-        ]);
-
-
-        return response()->json([
-            'message' => 'Partner quote submitted',
-            'quote' => $partnerQuote
+            'message' => 'Partner quote accepted',
+            'order' => $quotes->accept($quote),
         ]);
     }
-
 }

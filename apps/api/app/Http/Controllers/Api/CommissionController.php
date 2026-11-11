@@ -4,28 +4,37 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commission;
+use App\Models\CommissionDistribution;
+use Illuminate\Http\Request;
 
 class CommissionController extends Controller
 {
-    public function index()
-    {
-        $commissions = Commission::with([
-            'order',
-            'distributions.company',
-            'distributions.partner',
-        ])->latest()->get();
+    private const RELATIONS = ['order', 'distributions.company', 'distributions.partner'];
 
-        return response()->json($commissions);
+    public function index(Request $request)
+    {
+        return response()->json(
+            $this->visible($request)->with(self::RELATIONS)->latest()->get()
+        );
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $commission = Commission::with([
-            'order',
-            'distributions.company',
-            'distributions.partner',
-        ])->findOrFail($id);
+        return response()->json(
+            $this->visible($request)->with(self::RELATIONS)->findOrFail($id)
+        );
+    }
 
-        return response()->json($commission);
+    private function visible(Request $request)
+    {
+        $user = $request->user();
+
+        return Commission::query()->when(
+            ! $user->hasRole('platform-admin'),
+            fn ($q) => $q->whereHas(
+                'distributions',
+                fn ($d) => $d->visibleTo($user)
+            )
+        );
     }
 }

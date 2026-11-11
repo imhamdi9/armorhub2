@@ -125,4 +125,47 @@ class PlatformApiTest extends TestCase
         $this->actingAs($owner, 'sanctum')->getJson('/api/companies')
             ->assertOk()->assertJsonCount(1)->assertJsonPath('0.name', 'Mine');
     }
+
+    public function test_catalog_crud_for_managers_only(): void
+    {
+        $admin = $this->user('platform-admin');
+
+        $id = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/catalog/room_type', ['name' => 'Garage', 'slug' => 'garage'])
+            ->assertCreated()->json('id');
+
+        // Duplicate slug is rejected.
+        $this->postJson('/api/catalog/room_type', ['name' => 'Garage 2', 'slug' => 'garage'])->assertUnprocessable();
+
+        $this->putJson("/api/catalog/room_type/{$id}", ['name' => 'Car Garage'])->assertOk()->assertJsonPath('name', 'Car Garage');
+
+        // Parent keys are required (device models need a brand).
+        $this->postJson('/api/catalog/device_model', ['name' => 'X', 'slug' => 'x'])->assertUnprocessable();
+        $brand = \App\Modules\Devices\Models\DeviceBrand::where('slug', 'apple')->value('id');
+        $this->postJson('/api/catalog/device_model', ['name' => 'iPad', 'slug' => 'ipad', 'device_brand_id' => $brand])->assertCreated();
+
+        $this->deleteJson("/api/catalog/room_type/{$id}")->assertOk();
+
+        $this->actingAs($this->user('customer'), 'sanctum')
+            ->postJson('/api/catalog/room_type', ['name' => 'Hack', 'slug' => 'hack'])->assertForbidden();
+    }
+
+    public function test_customers_manage_their_own_items(): void
+    {
+        $me = $this->user('customer');
+        $other = $this->user('customer');
+
+        $id = $this->actingAs($me, 'sanctum')
+            ->postJson('/api/my-items/property', ['type' => 'villa', 'city' => 'Riyadh', 'area_sqm' => 250])
+            ->assertCreated()->assertJsonPath('customer_id', $me->id)->json('id');
+
+        $this->getJson('/api/my-items/property')->assertOk()->assertJsonCount(1);
+
+        // Shared catalogs are not "my items", and others cannot touch mine.
+        $this->getJson('/api/my-items/room_type')->assertNotFound();
+        $this->actingAs($other, 'sanctum')->getJson('/api/my-items/property')->assertJsonCount(0);
+        $this->deleteJson("/api/my-items/property/{$id}")->assertNotFound();
+
+        $this->actingAs($me, 'sanctum')->deleteJson("/api/my-items/property/{$id}")->assertOk();
+    }
 }

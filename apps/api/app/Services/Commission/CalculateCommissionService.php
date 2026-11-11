@@ -2,18 +2,16 @@
 
 namespace App\Services\Commission;
 
-
 class CalculateCommissionService
 {
-
-    public function calculate($amount)
+    /** @return array{percentage: float, amount: float} */
+    public function calculate(float|int|string $amount): array
     {
-        $percentage = 10;
+        $percentage = (float) config('platform.commission_percentage');
 
         return [
             'percentage' => $percentage,
-            'amount' => ($amount * $percentage) / 100,
+            'amount' => round(((float) $amount * $percentage) / 100, 2),
         ];
     }
-
 }

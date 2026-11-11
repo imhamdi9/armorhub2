@@ -27,7 +27,7 @@ return new class extends Migration
 
 
             $table->string('status')
-                ->default('pending');
+                ->default('pending_quotes');
 
 
             $table->decimal('product_amount',10,2)

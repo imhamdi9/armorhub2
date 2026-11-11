@@ -40,6 +40,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Tenants / industries
     'tenants.manage',
+    'catalog.manage',
 
     // Orders
     'orders.view',
@@ -55,6 +56,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Commissions
     'commissions.view',
+    'commissions.pay',
 
     // Dashboard
     'dashboard.view',
@@ -85,7 +87,11 @@ class RolesAndPermissionsSeeder extends Seeder
     'products.create',
     'products.update',
 
+    'catalog.manage',
+
     'orders.view',
+
+    'commissions.view',
 
     'dashboard.view',
 ],
@@ -101,6 +107,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
     'pricing.calculate',
 
+    'commissions.view',
+
     'dashboard.view',
 ],
 
@@ -112,6 +120,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
 'customer' => [
     'orders.create',
+
+    'payments.create',
 
     'products.view',
 

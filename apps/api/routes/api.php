@@ -1,210 +1,103 @@
 <?php
 
-use Illuminate\Http\Request;
-
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\CommissionController;
+use App\Http\Controllers\Api\CommissionDashboardController;
+use App\Http\Controllers\Api\CommissionDistributionController;
 use App\Http\Controllers\Api\CompanyController;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\PricingController;
+use App\Http\Controllers\Api\IndustryController;
+use App\Http\Controllers\Api\MyItemsController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PartnerOrderController;
 use App\Http\Controllers\Api\PartnerQuoteController;
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\CommissionController;
-use App\Http\Controllers\Api\CommissionDistributionController;
-use App\Http\Controllers\Api\CommissionDashboardController;
-use App\Http\Controllers\Api\PartnerOrderController;
+use App\Http\Controllers\Api\PricingController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductPriceRuleController;
+use App\Http\Controllers\Api\TenantController;
+use App\Modules\IndustryRegistry;
+use Illuminate\Support\Facades\Route;
 
-
-Route::middleware([
-    'auth:sanctum',
-    'role:partner-manager'
-])->group(function () {
-
-    Route::get(
-        '/partner/orders',
-        [PartnerOrderController::class, 'index']
-    );
-
-});
+// Public
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // Session
     Route::get('/me', [AuthController::class, 'me']);
-
+    Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    
-    Route::get('/orders', [
-        \App\Http\Controllers\Api\OrderController::class,
-        'index'
-    ]);
 
-    Route::get('/orders/{order}', [
-        \App\Http\Controllers\Api\OrderController::class,
-        'show'
-    ]);
-});
-
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.view'
-])->get('/companies', [CompanyController::class, 'index']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.create'
-])->post('/companies', [CompanyController::class, 'store']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.view'
-])->get('/companies/{company}', [CompanyController::class, 'show']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.update'
-])->put('/companies/{company}', [CompanyController::class, 'update']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.delete'
-])->delete('/companies/{company}', [CompanyController::class, 'destroy']);
-Route::get('/products', [ProductController::class, 'index'])
-    ->middleware(['auth:sanctum', 'permission:products.view']);
-
-Route::post('/products', [ProductController::class, 'store'])
-    ->middleware(['auth:sanctum', 'permission:products.create']);
-
-Route::get('/products/{product}', [ProductController::class, 'show'])
-    ->middleware(['auth:sanctum', 'permission:products.view']);
-
-Route::put('/products/{product}', [ProductController::class, 'update'])
-    ->middleware(['auth:sanctum', 'permission:products.update']);
-
-Route::delete('/products/{product}', [ProductController::class, 'destroy'])
-    ->middleware(['auth:sanctum', 'permission:products.delete']);
-
-Route::middleware([
-    'auth:sanctum',
-    'role:partner-manager'
-])->group(function () {
-
-    Route::patch(
-    '/partner-quotes/{partnerQuote}',
-    [PartnerOrderController::class, 'submitQuote']
-);
-
-    Route::apiResource(
-        'partners',
-        PartnerController::class
-    );
-
-});
-
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::post('/orders', [OrderController::class, 'store']);
-
-});
-
-Route::get(
-    '/dashboard/commissions',
-    [CommissionDashboardController::class, 'commissions']
-)->middleware([
-    'auth:sanctum',
-    'permission:dashboard.view'
-]);
-
-
-Route::get(
-    '/commission-distributions',
-    [CommissionDistributionController::class, 'index']
-);
-
-Route::get(
-    '/dashboard/earnings',
-    [CommissionDashboardController::class, 'earnings']
-)->middleware([
-    'auth:sanctum',
-    'permission:dashboard.view'
-]);
-
-Route::get('/commissions', [CommissionController::class, 'index'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:commissions.view'
-    ]);
-
-Route::post(
-    '/orders/{order}/payments',
-    [PaymentController::class, 'store']
-)->middleware([
-    'auth:sanctum',
-    'permission:payments.create'
-]);
-
-Route::get('/commissions/{id}', [CommissionController::class, 'show'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:commissions.view'
-    ]);
-
-Route::get(
-    '/orders/{order}/partner-quotes',
-    [PartnerQuoteController::class, 'index']
-);
-
-Route::get('/partners', [PartnerController::class,'index'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:partners.view'
-    ]);
-
-Route::post('/partners', [PartnerController::class,'store'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:partners.create'
-    ]);
-
-Route::post('/pricing/calculate', [PricingController::class,'calculate'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:pricing.calculate'
-    ]);
-
-Route::patch(
-    '/partner-quotes/{partnerQuote}/accept',
-    [PartnerQuoteController::class, 'accept']
-);
-
-Route::patch(
-    '/partner-quotes/{partnerQuote}',
-    [PartnerQuoteController::class, 'update']
-);
-
-Route::patch(
-    '/commission-distributions/{commissionDistribution}/pay',
-    [CommissionDistributionController::class, 'pay']
-);
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/catalog/{alias}', [\App\Http\Controllers\Api\CatalogController::class, 'index']);
-
-    Route::get('/products/{product}/price-rules', [\App\Http\Controllers\Api\ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
-    Route::put('/products/{product}/price-rules', [\App\Http\Controllers\Api\ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
-
-    Route::middleware('permission:tenants.manage')->group(function () {
-        Route::get('/tenants', [\App\Http\Controllers\Api\TenantController::class, 'index']);
-        Route::post('/tenants', [\App\Http\Controllers\Api\TenantController::class, 'store']);
-        Route::put('/tenants/{tenant}', [\App\Http\Controllers\Api\TenantController::class, 'update']);
+    // Industries and shared catalogs
+    Route::get('/industries', [IndustryController::class, 'index']);
+    Route::get('/catalog/{alias}', [CatalogController::class, 'index']);
+    Route::middleware('permission:catalog.manage')->group(function () {
+        Route::post('/catalog/{alias}', [CatalogController::class, 'store']);
+        Route::put('/catalog/{alias}/{id}', [CatalogController::class, 'update']);
+        Route::delete('/catalog/{alias}/{id}', [CatalogController::class, 'destroy']);
     });
-});
 
-Route::get('/industries', [\App\Http\Controllers\Api\IndustryController::class, 'index'])
-    ->middleware('auth:sanctum');
+    // Customer-owned items (property, ...)
+    Route::get('/my-items/{alias}', [MyItemsController::class, 'index']);
+    Route::post('/my-items/{alias}', [MyItemsController::class, 'store']);
+    Route::delete('/my-items/{alias}/{id}', [MyItemsController::class, 'destroy']);
+
+    // Companies
+    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:companies.view');
+    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:companies.create');
+    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:companies.view');
+    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:companies.update');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
+
+    // Tenants (platform admin)
+    Route::middleware('permission:tenants.manage')->group(function () {
+        Route::get('/tenants', [TenantController::class, 'index']);
+        Route::post('/tenants', [TenantController::class, 'store']);
+        Route::put('/tenants/{tenant}', [TenantController::class, 'update']);
+    });
+
+    // Products and pricing
+    Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
+    Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create');
+    Route::get('/products/{product}', [ProductController::class, 'show'])->middleware('permission:products.view');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete');
+    Route::get('/products/{product}/price-rules', [ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
+    Route::put('/products/{product}/price-rules', [ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
+    Route::post('/pricing/calculate', [PricingController::class, 'calculate'])->middleware('permission:pricing.calculate');
+
+    // Partners
+    Route::get('/partners', [PartnerController::class, 'index'])->middleware('permission:partners.view');
+    Route::post('/partners', [PartnerController::class, 'store'])->middleware('permission:partners.create');
+    Route::get('/partners/{partner}', [PartnerController::class, 'show'])->middleware('permission:partners.view');
+    Route::put('/partners/{partner}', [PartnerController::class, 'update'])->middleware('permission:partners.update');
+    Route::delete('/partners/{partner}', [PartnerController::class, 'destroy'])->middleware('permission:partners.delete');
+
+    // Orders, quotes, payments
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}/partner-quotes', [PartnerQuoteController::class, 'index']);
+    Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);
+    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('permission:payments.create');
+
+    // Partner side
+    Route::middleware('role:partner-manager')->group(function () {
+        Route::get('/partner/orders', [PartnerOrderController::class, 'index']);
+        Route::patch('/partner-quotes/{id}', [PartnerOrderController::class, 'submitQuote']);
+    });
+
+    // Commissions
+    Route::get('/commissions', [CommissionController::class, 'index'])->middleware('permission:commissions.view');
+    Route::get('/commissions/{id}', [CommissionController::class, 'show'])->middleware('permission:commissions.view');
+    Route::get('/commission-distributions', [CommissionDistributionController::class, 'index'])->middleware('permission:commissions.view');
+    Route::patch('/commission-distributions/{commissionDistribution}/pay', [CommissionDistributionController::class, 'pay'])->middleware('permission:commissions.pay');
+    Route::get('/dashboard/commissions', [CommissionDashboardController::class, 'commissions'])->middleware('permission:dashboard.view');
+    Route::get('/dashboard/earnings', [CommissionDashboardController::class, 'earnings'])->middleware('permission:dashboard.view');
+});
 
 // Industry-specific routes (automotive, ...)
-app(\App\Modules\IndustryRegistry::class)->loadRoutes();
+app(IndustryRegistry::class)->loadRoutes();

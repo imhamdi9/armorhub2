@@ -11,7 +11,7 @@ class FindNearbyPartnersService
         float $longitude,
         float $radius = 30
     ) {
-        $centers = Partner::query()
+        $centers = Partner::withoutGlobalScopes()
             ->where('is_active', true)
             ->where('location_enabled', true)
             ->get();
@@ -35,7 +35,7 @@ class FindNearbyPartnersService
         // 1) نفس المدينة
         if ($city) {
 
-            $sameCity = Partner::query()
+            $sameCity = Partner::withoutGlobalScopes()
                 ->where('is_active', true)
                 ->where('location_enabled', true)
                 ->where('city', $city)
@@ -56,7 +56,7 @@ class FindNearbyPartnersService
         // 2) نفس الدولة
         if ($country) {
 
-            $sameCountry = Partner::query()
+            $sameCountry = Partner::withoutGlobalScopes()
                 ->where('is_active', true)
                 ->where('location_enabled', true)
                 ->where('country', $country)
