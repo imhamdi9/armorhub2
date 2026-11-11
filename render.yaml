@@ -62,6 +62,11 @@ services:
       # Country used by tenants that have not chosen one (sets currency, VAT and phone rules). SA or EG; clear it for a single global currency.
       - key: PLATFORM_DEFAULT_MARKET
         value: SA
+      # Where verification documents are kept. "local" is erased when the free instance restarts: for real use, create a
+      # private S3/R2 bucket, then set DOCUMENTS_DISK=s3 plus AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION,
+      # AWS_BUCKET (and AWS_ENDPOINT + AWS_USE_PATH_STYLE_ENDPOINT=true for R2) in the Render dashboard. See SELLERS.md.
+      - key: DOCUMENTS_DISK
+        value: local
       # Optional: SMTP so password-reset and notification emails are delivered.
       - key: MAIL_MAILER
         value: log

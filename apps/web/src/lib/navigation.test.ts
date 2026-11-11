@@ -70,6 +70,10 @@ describe("buildNavigation", () => {
     expect(nav).toContain("Commissions");
   });
 
+  it("gives sellers only their sales and products", () => {
+    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Products"]);
+  });
+
   it("gives technicians only their jobs, and customers their warranties", () => {
     expect(titles(user(["technician"]))).toEqual(["Dashboard", "Jobs"]);
     expect(titles(user(["customer"]))).toContain("Warranties");

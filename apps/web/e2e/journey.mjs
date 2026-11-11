@@ -8,7 +8,6 @@
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
-const storeId = process.env.STORE_COMPANY_ID ?? "1";
 const email = `cathy${Date.now()}@test.com`;
 const ok = (msg) => console.log("OK ", msg);
 
@@ -48,7 +47,8 @@ try {
   await c.fill("#email", email);
   await c.fill("#password", "password123");
   await c.fill("#password_confirmation", "password123");
-  await c.fill("#company_id", storeId);
+  await c.waitForSelector("#store option", { state: "attached" });
+  await c.selectOption("#store", "armor-store");
   await c.click("button[type=submit]");
   await c.waitForURL("**/dashboard");
   await c.waitForSelector("text=Welcome, Cathy");

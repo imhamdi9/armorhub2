@@ -75,7 +75,7 @@ echo; echo "== Partner signup: apply, wait for approval, role granted on approva
 fresh_db
 (cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null)
 start_api
-(cd "$ROOT/apps/web" && npm run -s e2e:partners)
+(cd "$ROOT/apps/web" && npm run -s e2e:partners && npm run -s e2e:sellers)
 fi
 
 if want security; then

@@ -199,8 +199,22 @@ export interface AppNotification {
   created_at: string;
 }
 
+export interface ApplicationDocument {
+  id: number;
+  kind: string;
+  original_name: string;
+  mime: string;
+  size: number;
+}
+
 export interface PartnerApplication {
   id: number;
+  type: "partner" | "seller";
+  registration_number: string | null;
+  tax_number: string | null;
+  marketplace?: string | null;
+  documents: ApplicationDocument[];
+  missing_documents: string[];
   business_name: string;
   contact_name: string;
   email: string;

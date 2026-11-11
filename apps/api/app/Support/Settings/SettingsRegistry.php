@@ -61,6 +61,8 @@ class SettingsRegistry
                 'Turn off to stop new accounts being created (e.g. during an attack).'),
             new Definition('platform.partner_signup_open', 'platform', 'Partner applications are open', 'bool', true,
                 'Turn off to stop new partner applications (e.g. during an attack).'),
+            new Definition('platform.seller_signup_open', 'platform', 'Seller applications are open', 'bool', true,
+                'Turn off to stop new seller applications.'),
             new Definition('platform.orders_enabled', 'platform', 'New orders are accepted', 'bool', true,
                 'Turn off to pause ordering; existing orders continue normally.'),
 

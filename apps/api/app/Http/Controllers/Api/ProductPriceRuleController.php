@@ -13,8 +13,15 @@ class ProductPriceRuleController extends Controller
 {
     public function index(Request $request, Product $product)
     {
+        $user = $request->user();
+        // A seller reads only its own products' prices; others only the shared catalog and active sellers in their marketplace.
+        abort_unless($user->hasRole('platform-admin') || ($user->hasRole('seller')
+            ? $product->seller_id === $user->company_id
+            : Product::visibleInTenant($user->company?->tenant_id)->whereKey($product->id)->exists()), 404);
+
         abort_unless(
             $request->user()->hasRole('platform-admin')
+                || ($product->seller_id !== null && $product->seller_id === $user->company_id)
                 || (($product->industry_id === null || $product->industry_id === $request->user()->industryId())
                     && ($product->is_active || $request->user()->can('products.update'))),
             404
@@ -26,6 +33,10 @@ class ProductPriceRuleController extends Controller
     /** Replace the product's price rules with the submitted set. */
     public function sync(Request $request, Product $product, IndustryRegistry $registry)
     {
+        $user = $request->user();
+        // Prices of a seller's product are set by that seller; the shared catalog's by admins and store owners.
+        abort_unless($user->hasRole('platform-admin') || ($user->hasRole('seller') ? $product->seller_id === $user->company_id : $product->seller_id === null), 404);
+
         $data = $request->validate([
             'rules' => 'present|array',
             'rules.*.target_type' => ['required', 'string', 'in:'.implode(',', array_keys($registry->targetModels()))],

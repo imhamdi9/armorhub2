@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Route;
 // Public
 // Public storefront: browse a store and its catalog without an account (read-only, cacheable)
 Route::prefix('public')->middleware('throttle:public')->group(function () {
+    Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
     Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
     Route::get('/markets', [PublicStorefrontController::class, 'markets']);
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
@@ -148,6 +149,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Partner applications: reviewed by platform admins and the store's owners
     Route::get('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'index']);
+    Route::get('/partner-applications/{id}/documents/{documentId}', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'document'])->whereNumber(['id', 'documentId']);
     Route::post('/partner-applications/{id}/approve', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'approve'])->whereNumber('id');
     Route::post('/partner-applications/{id}/reject', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'reject'])->whereNumber('id');
 
@@ -175,6 +177,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
+
+    // Sellers: the orders for their own products
+    Route::get('/seller/orders', [\App\Http\Controllers\Api\SellerOrderController::class, 'index']);
+    Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\SellerOrderController::class, 'show'])->whereNumber('id');
 
     // Partner side: staff work the jobs assigned to their partner
     Route::middleware('role:partner-manager|technician')->group(function () {

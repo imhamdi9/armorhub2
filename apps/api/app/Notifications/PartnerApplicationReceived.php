@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notification;
 /** Tells reviewers that a business wants to join as a partner. */
 class PartnerApplicationReceived extends Notification
 {
-    public function __construct(public string $business, public string $store)
+    public function __construct(public string $business, public string $store, public string $type = 'partner')
     {
     }
 
@@ -21,8 +21,8 @@ class PartnerApplicationReceived extends Notification
     {
         return [
             'kind' => 'partner_application',
-            'title' => 'New partner application',
-            'body' => "{$this->business} applied to join {$this->store} as a partner.",
+            'title' => $this->type === 'seller' ? 'New seller application' : 'New partner application',
+            'body' => "{$this->business} applied to ".($this->type === 'seller' ? "sell on {$this->store}." : "join {$this->store} as a partner."),
             'path' => '/dashboard/partner-applications',
         ];
     }
@@ -30,9 +30,9 @@ class PartnerApplicationReceived extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New partner application')
+            ->subject($this->type === 'seller' ? 'New seller application' : 'New partner application')
             ->greeting("Hello {$notifiable->name},")
-            ->line("{$this->business} applied to join {$this->store} as a partner.")
+            ->line("{$this->business} applied to ".($this->type === 'seller' ? "sell on {$this->store}." : "join {$this->store} as a partner."))
             ->action('Review applications', rtrim(config('platform.web_url'), '/').'/dashboard/partner-applications');
     }
 }

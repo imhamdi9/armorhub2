@@ -127,6 +127,18 @@ class RolesAndPermissionsSeeder extends Seeder
     'orders.view',
 ],
 
+// A verified business selling its own products inside a marketplace.
+'seller' => [
+    'products.view',
+    'products.create',
+    'products.update',
+    'products.delete',
+
+    'vehicle-makes.view',
+
+    'dashboard.view',
+],
+
 'customer' => [
     'orders.create',
 

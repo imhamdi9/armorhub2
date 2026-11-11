@@ -64,6 +64,14 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
 export function buildNavigation(user: User | null): NavItem[] {
   const items: NavItem[] = [{ title: "Dashboard", href: "/dashboard", icon: "dashboard" }];
 
+  // Sellers manage their own products and ship the orders for them: nothing else.
+  if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
+    items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
+
+    return items;
+  }
+
   // Technicians only work assigned jobs; everyone else deals with orders.
   const technicianOnly = hasRole(user, "technician") && !hasRole(user, "partner-manager", "platform-admin", "company-owner");
 

@@ -15,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 class PartnerApplicationService
 {
     public const ROLE = 'partner-manager';
+    public const SELLER_ROLE = 'seller';
 
     public function approve(PartnerApplication $application, User $by): PartnerApplication
     {
@@ -28,6 +29,10 @@ class PartnerApplicationService
             // Someone may have registered with the same mailbox since the application was sent.
             if (User::where('email', $app->email)->orWhere('email_canonical', EmailPolicy::canonical($app->email))->exists()) {
                 throw ValidationException::withMessages(['application' => ['An account with this email already exists.']]);
+            }
+
+            if ($app->type === 'seller') {
+                return $this->approveSeller($app, $by);
             }
 
             $company = Company::create(['tenant_id' => $app->tenant_id, 'name' => $app->business_name, 'type' => 'partner', 'status' => 'active']);
@@ -51,6 +56,24 @@ class PartnerApplicationService
 
             return $app;
         });
+    }
+
+    /** A seller gets its own company (a "supplier") and an owner account with the seller role. */
+    private function approveSeller(PartnerApplication $app, User $by): PartnerApplication
+    {
+        $company = Company::create(['tenant_id' => $app->tenant_id, 'name' => $app->business_name, 'type' => 'supplier', 'status' => 'active',
+            'legal_name' => $app->business_name, 'tax_number' => $app->tax_number, 'phone' => $app->phone, 'email' => $app->email]);
+
+        $user = User::create([
+            'name' => $app->contact_name, 'email' => $app->email, 'phone' => $app->phone, 'password' => $app->password,
+            'company_id' => $company->id, 'city' => $app->city, 'country' => $app->country, 'email_verified_at' => now(),
+        ]);
+        $user->assignRole(self::SELLER_ROLE);
+
+        $app->update(['status' => PartnerApplication::APPROVED, 'reviewed_by' => $by->id, 'reviewed_at' => now(), 'user_id' => $user->id]);
+        Audit::record('partner_application.approved', $app, ['type' => 'seller', 'company_id' => $company->id], $by);
+
+        return $app;
     }
 
     public function reject(PartnerApplication $application, User $by, ?string $reason): PartnerApplication

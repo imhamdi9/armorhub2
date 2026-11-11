@@ -77,6 +77,18 @@ class Markets
         return preg_match('/^\+?\d{7,15}$/', $clean) === 1 ? $clean : null;
     }
 
+    /** Like phoneFor(), for someone who belongs to a marketplace (tenant) rather than a store. */
+    public function phoneForTenant(?Tenant $tenant, string $input): ?string
+    {
+        if ($market = $this->forTenant($tenant)) {
+            return $market->normalizePhone($input);
+        }
+
+        $clean = preg_replace('/[^\d+]/', '', $input) ?? '';
+
+        return preg_match('/^\+?\d{7,15}$/', $clean) === 1 ? $clean : null;
+    }
+
     /** The ISO currency orders are charged in for this company. */
     public function currencyFor(?Company $company): string
     {

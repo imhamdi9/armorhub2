@@ -27,7 +27,7 @@ export default function ProductsPage() {
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const canManage = hasRole(user, "platform-admin", "company-owner");
+  const canManage = hasRole(user, "platform-admin", "company-owner", "seller");
 
   useEffect(() => {
     getProducts({
@@ -42,7 +42,7 @@ export default function ProductsPage() {
     try {
       const product = await createProduct({
         name,
-        slug: slugify(name),
+        slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
         category: category || null,
         base_price: price,
         industry_id: user?.industry?.id ?? null,

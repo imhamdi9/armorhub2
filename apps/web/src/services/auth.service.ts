@@ -70,26 +70,12 @@ export async function getPublicStoreName(slug: string) {
   return { ...data.store, market: data.market };
 }
 
-export interface PartnerApplicationForm {
-  store: string;
-  business_name: string;
-  contact_name: string;
-  email: string;
-  phone: string;
-  city: string;
-  country: string;
-  description?: string;
-  latitude?: number;
-  longitude?: number;
-  password: string;
-  password_confirmation: string;
-  signup_token: string;
-  website?: string;
-  captcha_token?: string;
-}
+export type BusinessType = "partner" | "seller";
 
-export async function applyAsPartner(data: PartnerApplicationForm) {
-  return (await api.post<{ message: string }>("/partner-applications", data)).data;
+/** A business application is sent as a form with files (the verification documents). */
+export async function applyAsBusiness(form: FormData) {
+  // Let the browser set the multipart boundary itself (the default JSON header would break the upload).
+  return (await api.post<{ message: string }>("/partner-applications", form, { headers: { "Content-Type": undefined } })).data;
 }
 
 /** The open stores a business can apply to (public). */
@@ -97,4 +83,11 @@ export async function getOpenStores() {
   const { data } = await api.get<{ stores: { name: string; slug: string; market: string | null }[] }>("/public/storefronts");
 
   return data.stores;
+}
+
+/** Marketplaces (a country's platform, e.g. "ArmorHub Egypt") that new sellers can join. */
+export async function getMarketplaces() {
+  const { data } = await api.get<{ marketplaces: { key: string; name: string; industry: string | null; market: string | null }[] }>("/public/marketplaces");
+
+  return data.marketplaces;
 }

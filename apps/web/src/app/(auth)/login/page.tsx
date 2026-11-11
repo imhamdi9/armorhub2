@@ -116,7 +116,7 @@ export default function LoginPage() {
             <Link href="/forgot-password" className="underline">{tr("Forgot your password?")}</Link>
           </p>
           <p className="text-center text-sm">
-            {tr("New here?")}<Link href="/register" className="underline">{tr("Create an account")}</Link>
+            {tr("New here?")}<Link href="/signup" className="underline">{tr("Create an account")}</Link>
           </p>
             </form>
         </CardContent>

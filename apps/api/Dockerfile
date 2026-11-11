@@ -4,7 +4,7 @@ FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction \
-    --ignore-platform-req=ext-intl --ignore-platform-req=ext-bcmath --ignore-platform-req=ext-zip
+    --ignore-platform-req=ext-intl --ignore-platform-req=ext-bcmath --ignore-platform-req=ext-zip --ignore-platform-req=ext-simplexml
 
 FROM php:8.4-apache
 RUN apt-get update && apt-get install -y --no-install-recommends \

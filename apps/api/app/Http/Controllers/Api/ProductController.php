@@ -9,6 +9,22 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    /** A seller manages only its own products; everyone else (admins, store owners) the shared catalog. */
+    private function isSeller($user): bool
+    {
+        return $user->hasRole('seller') && ! $user->hasRole('platform-admin');
+    }
+
+    /** Sellers' products are theirs alone to change; the shared catalog is changed by admins and store owners. */
+    private function mayChange($user, Product $product): bool
+    {
+        if ($user->hasRole('platform-admin')) {
+            return true;
+        }
+
+        return $this->isSeller($user) ? $product->seller_id === $user->company_id : $product->seller_id === null;
+    }
+
     public function index(Request $request)
     {
         return Product::query()
@@ -20,7 +36,7 @@ class ProductController extends Controller
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             // Only product managers may see inactive products.
             ->when(
-                ! ($request->boolean('include_inactive') && $request->user()->can('products.update')),
+                ! $this->isSeller($request->user()) && ! ($request->boolean('include_inactive') && $request->user()->can('products.update')),
                 fn ($q) => $q->where('is_active', true)
             )
             ->orderBy('name')
@@ -29,9 +45,21 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $product = Product::create($this->validated($request));
+        $data = $this->validated($request);
+        $user = $request->user();
 
-        return response()->json($product, 201);
+        if ($this->isSeller($user)) {
+            // A seller's products live in its own marketplace: the industry and country come from there, never from the form.
+            $company = $user->company()->with('tenant')->first();
+            $data = array_merge($data, [
+                'seller_id' => $company->id,
+                'industry_id' => $company->tenant?->industry_id,
+                'market' => app(\App\Support\Markets\Markets::class)->forCompany($company)?->code,
+                'requires_shipping' => $request->boolean('requires_shipping', true),
+            ]);
+        }
+
+        return response()->json(Product::create($data), 201);
     }
 
     public function show(Request $request, Product $product)
@@ -43,13 +71,22 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $product->update($this->validated($request, $product));
+        abort_unless($this->mayChange($request->user(), $product), 404);
+        $data = $this->validated($request, $product);
+
+        if ($this->isSeller($request->user())) {
+            unset($data['industry_id'], $data['market'], $data['seller_id']);
+        }
+
+        $product->update($data);
 
         return $product->fresh();
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
+        abort_unless($this->mayChange($request->user(), $product), 404);
+
         // Orders are financial records; never delete them by deleting a product.
         if (\App\Models\Order::withoutGlobalScopes()->where('product_id', $product->id)->exists()) {
             return response()->json([
@@ -72,6 +109,14 @@ class ProductController extends Controller
             return $query;
         }
 
+        // A seller sees its own products and nothing else.
+        if ($this->isSeller($user)) {
+            return $query->where('seller_id', $user->company_id);
+        }
+
+        // Everyone else sees the shared catalog and the products of the active sellers in their marketplace.
+        $query->visibleInTenant($user->company?->tenant_id);
+
         $industry = $user->industryId();
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
 
@@ -90,7 +135,7 @@ class ProductController extends Controller
     {
         $sometimes = $product ? 'sometimes|' : '';
 
-        return $request->validate([
+        $rules = [
             'industry_id' => 'nullable|exists:industries,id',
             'market' => ['nullable', 'string', Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
             'category' => 'nullable|string|max:255',
@@ -107,6 +152,13 @@ class ProductController extends Controller
             'attributes' => 'nullable|array',
             'is_active' => 'boolean',
             'requires_shipping' => 'boolean',
-        ]);
+        ];
+
+        // A seller cannot choose the industry or country: they come from its marketplace (set in store()).
+        if ($this->isSeller($request->user())) {
+            unset($rules['industry_id'], $rules['market']);
+        }
+
+        return $request->validate($rules);
     }
 }

@@ -67,6 +67,7 @@ If you had to change a URL after the first deploy: update the env var, then
 
 - Emails (password reset, order notifications) are only written to the log until you set SMTP
   (`MAIL_MAILER=smtp` and `MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`); the app works fully without them.
+- Partner and seller documents are stored privately. On this free plan the server disk is erased on restart, so connect a private S3/R2 bucket before accepting real applications (`DOCUMENTS_DISK=s3`; see `SELLERS.md`).
 - Shipping: **Administration → Shipping** (the manual provider works with any carrier out of the box); see `SHIPPING.md`.
 - Real card payments: sign in as admin → **Administration → Payments**, pick a provider, enter its keys and
   press **Make active** (see `DEPLOY.md`). The blueprint ships with the simulated provider allowed for the demo.

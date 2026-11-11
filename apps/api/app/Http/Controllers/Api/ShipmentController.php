@@ -25,7 +25,7 @@ class ShipmentController extends Controller
     /** What staff may choose from when booking: the providers that are ready to use. */
     public function providers(Request $request)
     {
-        abort_unless($request->user()->hasAnyRole(['platform-admin', 'company-owner', 'partner-manager', 'technician']), 403);
+        abort_unless($request->user()->hasAnyRole(['platform-admin', 'company-owner', 'partner-manager', 'technician', 'seller']), 403);
 
         return [
             'default' => $this->providers->activeKey(),
@@ -36,7 +36,7 @@ class ShipmentController extends Controller
 
     public function index(Request $request, int $id)
     {
-        $order = Order::withoutGlobalScopes()->with('product:id,name,requires_shipping')->findOrFail($id);
+        $order = Order::withoutGlobalScopes()->with('product:id,name,requires_shipping,seller_id')->findOrFail($id);
         $role = $this->role($request->user(), $order) ?? abort(404);
 
         return [
@@ -120,6 +120,10 @@ class ShipmentController extends Controller
             return $order->customer_id === $user->id ? 'customer' : null;
         }
         if ($user->hasRole('company-owner') && $user->company_id === $order->company_id) {
+            return 'staff';
+        }
+        // The seller of the product ships it.
+        if ($user->hasRole('seller') && $order->product?->seller_id !== null && $order->product->seller_id === $user->company_id) {
             return 'staff';
         }
         if ($user->hasAnyRole(['partner-manager', 'technician']) && $user->partner_id

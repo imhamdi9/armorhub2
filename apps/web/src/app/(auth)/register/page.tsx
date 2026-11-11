@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
-import { getPublicStoreName, register } from "@/services/auth.service";
+import { getOpenStores, getPublicStoreName, register } from "@/services/auth.service";
 import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 
@@ -25,11 +25,20 @@ function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   // Coming from a store's page: the store (and maybe a product) is already known.
-  const storeSlug = params.get("store");
+  const presetStore = params.get("store");
+  const [openStores, setOpenStores] = useState<{ name: string; slug: string }[]>([]);
+  const [chosenStore, setChosenStore] = useState("");
+  const storeSlug = presetStore ?? (chosenStore || null);
   const productId = params.get("product");
   const [storeName, setStoreName] = useState<string | null>(null);
   const [storeMissing, setStoreMissing] = useState(false);
   const [phoneHint, setPhoneHint] = useState<string | null>(null);
+
+  // Visitors who did not come from a store pick one here (no more typing a company number).
+  useEffect(() => {
+    if (presetStore) return;
+    getOpenStores().then((l) => { setOpenStores(l); setChosenStore((c) => c || l[0]?.slug || ""); }).catch(() => undefined);
+  }, [presetStore]);
 
   useEffect(() => {
     if (!storeSlug) return;
@@ -41,7 +50,6 @@ function RegisterForm() {
     phone: "",
     password: "",
     password_confirmation: "",
-    company_id: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,11 +64,10 @@ function RegisterForm() {
     setError(null);
     setBusy(true);
     try {
-      const { company_id, ...fields } = form;
       await register({
-        ...fields,
-        phone: fields.phone || undefined,
-        ...(storeSlug ? { store: storeSlug } : { company_id: Number(company_id) }),
+        ...form,
+        phone: form.phone || undefined,
+        store: storeSlug ?? "",
         signup_token: human.token,
         website,
         captcha_token: human.captchaToken,
@@ -105,23 +112,23 @@ function RegisterForm() {
               <Label htmlFor="password_confirmation">{tr("Confirm password")}</Label>
               <Input id="password_confirmation" type="password" required value={form.password_confirmation} onChange={set("password_confirmation")} />
             </div>
-            {storeSlug ? (
+            {presetStore ? (
               <p className={`rounded-lg border p-3 text-sm ${storeMissing ? "border-red-300 bg-red-50" : "bg-muted"}`}>
                 {storeMissing ? tr("This store was not found.") : storeName ? tr("You are signing up with {store}.", { store: storeName }) : tr("Loading...")}
               </p>
             ) : (
-            <div>
-              <Label htmlFor="company_id">{tr("Company ID")}</Label>
-              <Input id="company_id" type="number" min="1" required={!storeSlug} value={form.company_id} onChange={set("company_id")} />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {tr("Given to you by the business you are ordering from.")}
-              </p>
-            </div>
+              <div>
+                <Label htmlFor="store">{tr("Store")}</Label>
+                <select id="store" required className="h-10 w-full rounded-[10px] border border-input bg-background px-3" value={chosenStore} onChange={(e) => setChosenStore(e.target.value)}>
+                  {openStores.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">{tr("The store you will order from.")}</p>
+              </div>
             )}
             <Honeypot value={website} onChange={setWebsite} />
             <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={busy || !human.ready || storeMissing}>
+            <Button type="submit" className="w-full" disabled={busy || !human.ready || storeMissing || !storeSlug}>
               {human.waiting ? tr("Please wait a moment…") : tr("Sign up")}
             </Button>
             <p className="text-center text-sm">

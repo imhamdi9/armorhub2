@@ -37,6 +37,12 @@ class PublicStorefrontController extends Controller
         return $this->cached(['stores' => $stores]);
     }
 
+    /** Marketplaces open to new sellers. */
+    public function marketplaces()
+    {
+        return $this->cached(['marketplaces' => $this->stores->marketplaces()]);
+    }
+
     /** The countries the platform operates in, with their currency, VAT and phone rules. */
     public function markets(\App\Support\Markets\Markets $markets)
     {

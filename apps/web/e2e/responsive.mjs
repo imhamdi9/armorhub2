@@ -24,7 +24,8 @@ async function login(context, who) {
     await page.fill("#email", `mobile${Date.now()}x${Math.random().toString(36).slice(2, 6)}@test.com`);
     await page.fill("#password", "password123");
     await page.fill("#password_confirmation", "password123");
-    await page.fill("#company_id", "1");
+    await page.waitForSelector("#store option", { state: "attached" });
+    await page.selectOption("#store", "armor-store");
     await page.click("button[type=submit]");
   } else {
     await page.goto(`${base}/login`);

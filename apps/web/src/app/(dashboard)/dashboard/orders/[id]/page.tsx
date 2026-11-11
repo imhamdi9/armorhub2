@@ -136,7 +136,8 @@ function OrderDetail() {
         <p className="mb-4 rounded-lg border p-3 text-sm">{tr("Payment was cancelled. You can try again below.")}</p>
       )}
 
-      {order.status !== "cancelled" && (
+      {/* A seller's product is bought directly: there are no partner quotes to show. */}
+      {order.status !== "cancelled" && (quotes.length > 0 || canChoose) && (
         <>
           <h2 className="mb-3 text-xl font-semibold">{tr("Partner quotes")}</h2>
           {submitted.length === 0 ? (

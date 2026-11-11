@@ -9,13 +9,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const stamp = Date.now();
 const PASSWORD = "Str0ng-Passw0rd!x";
+const pdf = (name) => ({ name, mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF") });
 
 async function apply(name, email) {
   const ctx = await browser.newContext({ geolocation: { latitude: 24.71, longitude: 46.68 }, permissions: ["geolocation"] });
   const p = await ctx.newPage();
   await p.goto(`${base}/partner-signup?store=armor-store`);
   await p.waitForSelector("#business_name");
+  await p.waitForSelector("#target option", { state: "attached" });
   await p.fill("#business_name", name);
+  await p.fill("#registration_number", "1010123456");
   await p.fill("#contact_name", "Sami Ali");
   await p.fill("#email", email);
   await p.fill("#phone", "0501112233");
@@ -23,6 +26,8 @@ async function apply(name, email) {
   await p.fill("#description", "Certified film installers.");
   await p.click("text=Use my location");
   await p.waitForSelector("text=Location saved");
+  await p.setInputFiles("#doc-id", pdf("owner-id.pdf"));
+  await p.setInputFiles("#doc-commercial_registration", pdf("cr.pdf"));
   await p.fill("#password", PASSWORD);
   await p.fill("#password_confirmation", PASSWORD);
   await sleep(4000);
@@ -67,7 +72,11 @@ try {
   await a.waitForSelector("text=Fresh Film Co");
   await a.waitForSelector("text=Shady Garage");
 
-  await a.locator("article:has-text('Fresh Film Co') >> text=Approve").click();
+  // Documents are listed, and approving is blocked until the reviewer confirms they checked them.
+  await a.waitForSelector("article:has-text('Fresh Film Co') >> text=owner-id.pdf");
+  if (!(await a.locator("article:has-text('Fresh Film Co') >> button:has-text('Approve')").isDisabled())) fail("a reviewer can approve without confirming the documents were checked");
+  await a.locator("article:has-text('Fresh Film Co') >> input[type=checkbox]").check();
+  await a.locator("article:has-text('Fresh Film Co') >> button:has-text('Approve')").click();
   await a.waitForSelector("text=Fresh Film Co", { state: "detached" });
   await a.locator("article:has-text('Shady Garage') >> [aria-label='Reason (optional)']").fill("Could not verify the business");
   await a.locator("article:has-text('Shady Garage') >> text=Reject").click();

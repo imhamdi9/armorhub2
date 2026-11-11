@@ -12,12 +12,17 @@ class PartnerApplication extends Model
     public const APPROVED = 'approved';
     public const REJECTED = 'rejected';
 
-    protected $fillable = ['company_id', 'tenant_id', 'business_name', 'contact_name', 'email', 'email_canonical', 'phone', 'city', 'country',
+    protected $fillable = ['type', 'registration_number', 'tax_number', 'company_id', 'tenant_id', 'business_name', 'contact_name', 'email', 'email_canonical', 'phone', 'city', 'country',
         'description', 'latitude', 'longitude', 'password', 'status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'partner_id', 'user_id'];
 
     protected $hidden = ['password', 'email_canonical'];
 
     protected $casts = ['reviewed_at' => 'datetime'];
+
+    public function documents()
+    {
+        return $this->hasMany(ApplicationDocument::class, 'application_id');
+    }
 
     public function store()
     {

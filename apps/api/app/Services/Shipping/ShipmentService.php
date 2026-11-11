@@ -109,6 +109,11 @@ class ShipmentService
                 if ($type) {
                     OrderEvent::record($locked->order, $type, $by, ['tracking_number' => $locked->tracking_number]);
                 }
+
+                // A seller's product is complete once it is delivered (there is no job for a partner to finish).
+                if ($event->status === Shipment::DELIVERED && $locked->order->product?->seller_id !== null && $locked->order->status === OrderStatus::Paid) {
+                    $locked->order->update(['status' => OrderStatus::Completed, 'completed_at' => $at]);
+                }
             }
 
             return true;

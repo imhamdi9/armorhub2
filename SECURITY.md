@@ -70,6 +70,12 @@ covered by an automated test (`apps/api/tests/Feature/SecurityTest.php`, `Paymen
 ## Reporting a vulnerability
 Email the maintainers privately; please don't open a public issue.
 
+### Verification documents
+- Stored on a private disk under random names; no public URL exists. Only signed-in reviewers can open them (platform admins; a store's owner only for partner applications to their own store), and every view is audited.
+- Files are accepted by what they are (PDF, JPEG, PNG by content), capped at 5 MB, and downloaded with `nosniff` and `no-store`.
+- Approval needs the reviewer's explicit confirmation and all required documents.
+- On hosts that reset their disk, connect an S3/R2 bucket (`DOCUMENTS_DISK=s3`); the security page warns until you do. Rejected applications' files can be purged with `applications:prune-documents`.
+
 ### Partner applications
 - A business applies publicly (same bot checks and per-address limit as customer signup). Nothing is created until a reviewer approves: no account, no role, no partner profile.
 - The password chosen at application time is stored hashed and becomes the account password on approval; it is never returned by any endpoint.

@@ -58,6 +58,7 @@ class OrderNotifier
             ]],
             'paid' => [
                 [$assigned, 'job_ready', 'New paid job', "Order #{$order->id} ({$name}) is paid. Please schedule it.", '/dashboard/jobs'],
+                [$this->sellerStaff($order), 'order_to_ship', 'New paid order to ship', "Order #{$order->id} ({$name}) is paid. Please ship it.", "/dashboard/seller-orders/{$order->id}"],
                 [$customer, 'payment_received', 'Payment received', "We received your payment for {$name}.", "/dashboard/orders/{$order->id}"],
             ],
             'scheduled' => [[
@@ -101,6 +102,14 @@ class OrderNotifier
                 report($e);
             }
         }
+    }
+
+    /** The people at the selling company, for an order of a seller's own product. */
+    private function sellerStaff(Order $order): Collection
+    {
+        $sellerId = $order->product?->seller_id;
+
+        return $sellerId ? User::role('seller')->where('company_id', $sellerId)->get() : collect();
     }
 
     private function customer(Order $order): Collection

@@ -23,7 +23,7 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const user = useCurrentUser();
-  const canEdit = hasRole(user, "platform-admin", "company-owner");
+  const canEdit = hasRole(user, "platform-admin", "company-owner", "seller");
   const targets = user?.industry?.targets ?? [];
 
   const [product, setProduct] = useState<Product | null>(null);

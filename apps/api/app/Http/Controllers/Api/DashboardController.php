@@ -30,11 +30,28 @@ class DashboardController extends Controller
             return $this->owner();
         }
 
+        if ($user->hasRole('seller')) {
+            return $this->seller($user);
+        }
+
         if ($user->hasAnyRole(['partner-manager', 'technician']) && $user->partner_id) {
             return $this->partner($user);
         }
 
         return $this->customer($user);
+    }
+
+    private function seller(User $user): array
+    {
+        $mine = \App\Models\Product::where('seller_id', $user->company_id);
+        $orders = Order::withoutGlobalScopes()->whereHas('product', fn ($q) => $q->where('seller_id', $user->company_id));
+
+        return $this->response('seller', [
+            $this->card('products', 'Products', (clone $mine)->count()),
+            $this->card('active_products', 'On sale', (clone $mine)->where('is_active', true)->count()),
+            $this->card('to_ship', 'Orders to ship', (clone $orders)->where('status', 'paid')->count()),
+            $this->card('delivered', 'Delivered', (clone $orders)->where('status', 'completed')->count()),
+        ], $orders);
     }
 
     private function admin(): array

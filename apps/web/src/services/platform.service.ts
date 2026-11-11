@@ -275,11 +275,31 @@ export const setShipmentStatus = async (id: number, status: string) =>
   (await api.post<Shipment>(`/shipments/${id}/status`, { status })).data;
 
 // ---- Partner applications (reviewers)
-export const getPartnerApplications = async (status: string = "pending") =>
-  (await api.get<Paginated<PartnerApplication>>("/partner-applications", { params: { status } })).data;
+export const getPartnerApplications = async (status: string = "pending", type?: string) =>
+  (await api.get<Paginated<PartnerApplication>>("/partner-applications", { params: { status, ...(type ? { type } : {}) } })).data;
+
+/** Where a reviewer opens one verification document (the browser sends the session cookie). */
+export const applicationDocumentUrl = (applicationId: number, documentId: number) =>
+  `${api.defaults.baseURL ?? "/api"}/partner-applications/${applicationId}/documents/${documentId}`;
 
 export const approvePartnerApplication = async (id: number) =>
-  (await api.post<PartnerApplication>(`/partner-applications/${id}/approve`)).data;
+  (await api.post<PartnerApplication>(`/partner-applications/${id}/approve`, { documents_verified: true })).data;
 
 export const rejectPartnerApplication = async (id: number, reason: string) =>
   (await api.post<PartnerApplication>(`/partner-applications/${id}/reject`, { reason: reason || null })).data;
+
+// ---- Seller sales
+export interface SellerOrder {
+  id: number;
+  status: string;
+  total_amount: string;
+  currency: string;
+  customer_name: string | null;
+  created_at: string;
+  product?: { id: number; name: string; brand: string | null };
+  shipping_address?: import("@/types/platform").ShippingAddress | null;
+  events?: import("@/types/platform").OrderEvent[];
+}
+
+export const getSellerOrders = async () => (await api.get<Paginated<SellerOrder>>("/seller/orders")).data;
+export const getSellerOrder = async (id: number | string) => (await api.get<SellerOrder>(`/seller/orders/${id}`)).data;

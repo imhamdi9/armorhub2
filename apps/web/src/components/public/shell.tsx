@@ -49,7 +49,7 @@ export function themeVars(store?: ShellStore): CSSProperties {
 /** Sign in / sign up, or a Dashboard link for people who are already signed in. */
 export function AuthLinks({ store }: { store?: ShellStore }) {
   const user = useSession();
-  const signup = store ? `/register?store=${encodeURIComponent(store.slug)}` : "/register";
+  const signup = store ? `/register?store=${encodeURIComponent(store.slug)}` : "/signup";
 
   if (user) {
     return <Link href="/dashboard" className="btn-brand px-5 py-2.5 text-sm">{tr("Dashboard")}</Link>;
@@ -170,8 +170,9 @@ function Footer({ store }: { store?: ShellStore }) {
           <h3 className={col}>{tr("Account")}</h3>
           <div className="mt-3">
             <Link className={link} href="/login">{tr("Sign in")}</Link>
-            <Link className={link} href={store ? `/register?store=${encodeURIComponent(store.slug)}` : "/register"}>{tr("Create an account")}</Link>
+            <Link className={link} href={store ? `/register?store=${encodeURIComponent(store.slug)}` : "/signup"}>{tr("Create an account")}</Link>
             <Link className={link} href={store ? `/partner-signup?store=${encodeURIComponent(store.slug)}` : "/partner-signup"}>{tr("Become a partner")}</Link>
+            <Link className={link} href="/seller-signup">{tr("Sell on ArmorHub")}</Link>
             {!store && <Link className={link} href="/login">{tr("For businesses: sign in")}</Link>}
           </div>
         </div>

@@ -94,14 +94,18 @@ class OrderController extends Controller
             ]);
         }
 
-        if (! $user->location_enabled || ! $user->latitude || ! $user->longitude) {
+        // A product sold by a seller goes straight to payment: there is no service for a partner to quote.
+        $directSale = \App\Models\Product::whereKey($data['product_id'])->whereNotNull('seller_id')->exists();
+
+        if (! $directSale && (! $user->location_enabled || ! $user->latitude || ! $user->longitude)) {
             return response()->json([
                 'message' => 'Please enable location to find nearby partners',
             ], 422);
         }
 
         // Customers can only order what their own industry offers, and only what is on sale.
-        $product = \App\Models\Product::find($data['product_id']);
+        $product = \App\Models\Product::visibleInTenant($user->company?->tenant_id)->find($data['product_id'])
+            ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
         if (! $product->is_active || ($product->industry_id !== null && $product->industry_id !== $user->industryId())
             || ($product->market !== null && $product->market !== $market)) {
@@ -125,18 +129,18 @@ class OrderController extends Controller
             ]);
         }
 
-        $partners = $location->executeWithFallback(
+        $partners = $directSale ? collect() : $location->executeWithFallback(
             $user->latitude,
             $user->longitude,
             $user->city,
             $user->country
         );
 
-        if ($partners->isEmpty()) {
+        if (! $directSale && $partners->isEmpty()) {
             return response()->json(['message' => 'No partners available'], 422);
         }
 
-        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address) {
+        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address, $directSale) {
 
             $order = Order::create([
                 'company_id' => $user->company_id,
@@ -144,7 +148,7 @@ class OrderController extends Controller
                 'product_id' => $data['product_id'],
                 'subject_type' => $data['subject_type'] ?? null,
                 'subject_id' => $data['subject_id'] ?? null,
-                'status' => OrderStatus::PendingQuotes,
+                'status' => $directSale ? OrderStatus::AwaitingPayment : OrderStatus::PendingQuotes,
                 'product_amount' => $price['total'],
                 'service_amount' => 0,
                 'commission_amount' => 0,
@@ -163,7 +167,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            OrderEvent::record($order, 'created', $user, ['partners_asked' => $partners->count()]);
+            OrderEvent::record($order, 'created', $user, $directSale ? ['direct_sale' => true] : ['partners_asked' => $partners->count()]);
 
             return $order;
         });

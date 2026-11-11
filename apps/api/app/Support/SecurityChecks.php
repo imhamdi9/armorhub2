@@ -45,9 +45,20 @@ class SecurityChecks
                 app(\App\Support\Security\EmailPolicy::class)->verificationRequired() ? 'Customers must verify their email before ordering.' : 'Email verification is not required, so anyone can order with an address they do not own.'),
             $this->check('payments', $this->paymentsCheck()[0], $this->paymentsCheck()[1]),
             $this->check('shipping', ...$this->shippingCheck()),
+            $this->check('documents', ...$this->documentsCheck()),
         ];
 
         return $checks;
+    }
+
+    /** @return array{0: string, 1: string} */
+    private function documentsCheck(): array
+    {
+        $disk = (string) config('platform.documents_disk');
+
+        return $disk === 'local' && app()->isProduction()
+            ? ['warn', 'Verification documents are kept on the server disk. Hosts that reset their disk (e.g. Render free) lose them: set DOCUMENTS_DISK=s3 and connect a private S3/R2 bucket.']
+            : ['ok', "Verification documents are stored on the '{$disk}' disk, privately."];
     }
 
     /** @return array{0: string, 1: string} */

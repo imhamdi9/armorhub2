@@ -63,6 +63,21 @@ class StorefrontService
             'prices_include_vat' => $m->pricesIncludeVat(), 'phone' => $a['phone']] : null;
     }
 
+    /**
+     * The marketplaces a business can ask to sell in: tenants that have at least one open store.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function marketplaces(): array
+    {
+        return Company::withoutGlobalScopes()->with('tenant.industry')->whereNotNull('slug')->whereNotIn('status', self::HIDDEN_STATUSES)->get()
+            ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant && $c->tenant->status === 'active')
+            ->unique('tenant_id')
+            ->map(fn (Company $c) => ['key' => $c->tenant->uuid, 'name' => $c->tenant->name, 'industry' => $c->tenant->industry?->name,
+                'market' => $this->market($c)['code'] ?? null])
+            ->sortBy('name')->values()->all();
+    }
+
     /** @return Builder<Product> products a visitor may see: on sale, and in this store's industry */
     public function products(Company $company): Builder
     {
@@ -70,6 +85,7 @@ class StorefrontService
         $market = $this->markets->forCompany($company)?->code;
 
         return Product::query()->where('is_active', true)
+            ->visibleInTenant($company->tenant_id)
             ->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)))
             ->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
     }
@@ -105,6 +121,7 @@ class StorefrontService
     public function card(Product $product, ?Company $company = null, ?float $from = null): array
     {
         return [
+            'seller' => $product->seller_id ? $product->seller?->name : null,
             'id' => $product->id,
             'name' => $product->name,
             'brand' => $product->brand,

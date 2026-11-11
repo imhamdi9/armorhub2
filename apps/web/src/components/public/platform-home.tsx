@@ -77,7 +77,7 @@ export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; 
       <Compatibility />
       <Markets />
       <Faq />
-      <Banner title="Run a business? Open your own store." text="Get a branded storefront, receive quote requests from nearby customers and get paid securely." href="/login" label="For businesses: sign in" secondary={{ href: "/partner-signup", label: "Become a partner" }} />
+      <Banner title="Run a business? Open your own store." text="Get a branded storefront, receive quote requests from nearby customers and get paid securely." href="/login" label="For businesses: sign in" secondary={{ href: "/signup", label: "Create an account" }} />
     </PublicShell>
   );
 }
