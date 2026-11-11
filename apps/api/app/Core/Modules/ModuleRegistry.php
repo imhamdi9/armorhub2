@@ -3,6 +3,7 @@
 namespace App\Core\Modules;
 
 use App\Core\Core;
+use App\Core\Blueprints\BlueprintRegistry;
 use App\Core\Events\EventCatalog;
 use App\Core\Events\SubscriberRegistry;
 use App\Core\Workflow\WorkflowRegistry;
@@ -13,9 +14,10 @@ class ModuleRegistry
     /** @var array<string, Module> */
     private array $modules = [];
 
-    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null)
+    public function __construct(private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null)
     {
         $this->workflows ??= new WorkflowRegistry();
+        $this->blueprints ??= new BlueprintRegistry();
     }
 
     /** @param list<class-string<Module>> $classes */
@@ -38,7 +40,7 @@ class ModuleRegistry
 
         foreach ($this->inDependencyOrder($found) as $module) {
             $this->modules[$module->manifest()->id] = $module;
-            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers, $this->workflows));
+            $module->register(new ModuleContext($module->manifest()->id, $this->events, $this->subscribers, $this->workflows, $this->blueprints));
         }
     }
 

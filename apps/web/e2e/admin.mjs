@@ -173,6 +173,21 @@ try {
   await admin.waitForSelector("[role=dialog] >> text=delivered");
   ok("the platform page lists the ArmorHub module, its event contracts, the event log, and replays a delivery");
 
+  // A blueprint launches a whole market (country, storefront, starter products) from configuration.
+  await admin.click("[role=tab]:has-text('Blueprints')");
+  await admin.waitForSelector("text=Automotive protection: Egypt");
+  await admin.fill("#armorhub\\.automotive-egypt-name", "ArmorHub Egypt E2E");
+  await admin.locator("article:has-text('Automotive protection: Egypt') >> button:has-text('Launch')").click();
+  await admin.waitForSelector("text=Market launched.");
+  const storeHref = await admin.getAttribute("text=Open its store", "href");
+  const launched = await admin.context().newPage();
+  await launched.goto(new URL(storeHref, base).toString());
+  await launched.waitForSelector("text=Protect your car like it matters");
+  await launched.waitForSelector("text=Paint Protection Film");
+  await launched.waitForSelector("text=/EGP/");
+  await launched.close();
+  ok("a blueprint launched an Egyptian market with a live storefront and starter products, priced in EGP");
+
   // Workflows are data: a market re-wires the order lifecycle from the admin panel, and can put it back.
   await admin.click("[role=tab]:has-text('Workflows')");
   await admin.waitForSelector("text=accept_quote");

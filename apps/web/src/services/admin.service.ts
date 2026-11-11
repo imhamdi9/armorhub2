@@ -132,3 +132,30 @@ export const saveWorkflow = async (tenantId: number, key: string, definition: un
 
 export const resetWorkflow = async (tenantId: number, key: string) =>
   (await api.delete(`/admin/platform/tenants/${tenantId}/workflows/${key}`)).data;
+
+export interface BlueprintInfo {
+  id: string;
+  owner: string;
+  name: string;
+  description: string;
+  version: number;
+  params: Record<string, string>;
+  steps: { id: string | null; type: string }[];
+}
+
+export interface BlueprintApplication {
+  id: number;
+  blueprint_id: string;
+  tenant_id: number | null;
+  store_slug: string | null;
+  params: Record<string, string>;
+  created_at: string;
+}
+
+export const getBlueprints = async () => (await api.get<{ blueprints: BlueprintInfo[] }>("/admin/platform/blueprints")).data.blueprints;
+
+export const getBlueprintHistory = async () =>
+  (await api.get<{ applications: BlueprintApplication[] }>("/admin/platform/blueprints/applications")).data.applications;
+
+export const applyBlueprint = async (id: string, params: Record<string, string>) =>
+  (await api.post<BlueprintApplication>(`/admin/platform/blueprints/${id}/apply`, { params })).data;

@@ -5,6 +5,11 @@ namespace App\Products\Armorhub;
 use App\Core\Modules\Module;
 use App\Core\Modules\ModuleContext;
 use App\Core\Modules\ModuleManifest;
+use App\Products\Armorhub\Blueprints\ArmorhubBlueprints;
+use App\Products\Armorhub\Blueprints\CatalogStep;
+use App\Products\Armorhub\Blueprints\MarketStep;
+use App\Products\Armorhub\Blueprints\ProductsStep;
+use App\Products\Armorhub\Blueprints\StoreStep;
 use App\Products\Armorhub\Subscribers\OrderNotificationSubscriber;
 use App\Products\Armorhub\Workflows\GrantWarranty;
 use App\Products\Armorhub\Workflows\OrderWorkflow;
@@ -59,5 +64,12 @@ class ArmorhubModule implements Module
         $context->action(GrantWarranty::class);
         $context->action(RejectOpenQuotes::class);
         $context->workflow(OrderWorkflow::definition());
+
+        foreach ([MarketStep::class, StoreStep::class, CatalogStep::class, ProductsStep::class] as $step) {
+            $context->blueprintStep($step);
+        }
+        foreach (ArmorhubBlueprints::all() as $blueprint) {
+            $context->blueprint($blueprint);
+        }
     }
 }

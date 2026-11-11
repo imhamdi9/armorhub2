@@ -36,6 +36,21 @@ class ClinicModule implements Module
             ],
         ]);
 
+        // A launch bundle for a clinic: one step of its own, one step from the core.
+        $context->blueprintStep(CreateClinicStep::class);
+        $context->blueprintStep(ExplodeStep::class);
+        $context->blueprint([
+            'id' => 'clinic.small-clinic', 'name' => 'Small clinic', 'description' => 'A clinic that lets patients cancel right up to check-in.', 'params' => ['name' => 'string', 'city' => 'string?'],
+            'steps' => [
+                ['id' => 'clinic', 'type' => 'clinic.create_clinic', 'args' => ['name' => '{{name}}']],
+                ['type' => 'workflow.override', 'args' => ['key' => 'clinic.appointment', 'changes' => [['transition' => 'cancel', 'from' => ['booked', 'confirmed', 'checked_in']]]]],
+            ],
+        ]);
+        $context->blueprint([
+            'id' => 'clinic.broken', 'name' => 'Broken', 'description' => 'Fails half way', 'params' => ['name' => 'string'],
+            'steps' => [['type' => 'clinic.create_clinic', 'args' => ['name' => '{{name}}']], ['type' => 'clinic.explode']],
+        ]);
+
         $context->subscribe(BookingReactor::class);
         $context->subscribe(FlakyReactor::class);
     }

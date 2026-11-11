@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Core\Blueprints\BlueprintApplier;
+use App\Core\Blueprints\BlueprintRegistry;
 use App\Core\Console\ProcessEvents;
 use App\Core\Console\ReplayEvent;
 use App\Core\Events\DeliveryProcessor;
@@ -22,6 +24,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(EventCatalog::class);
         $this->app->singleton(SubscriberRegistry::class);
         $this->app->singleton(TenantModules::class);
+        $this->app->singleton(BlueprintRegistry::class);
+        $this->app->singleton(BlueprintApplier::class);
         $this->app->singleton(WorkflowRegistry::class);
         $this->app->singleton(WorkflowEngine::class);
         $this->app->singleton(EventBus::class);
@@ -31,7 +35,7 @@ class CoreServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->app->make(ModuleRegistry::class)->load((array) config('modules.modules', []));
+        $this->app->make(ModuleRegistry::class)->load(array_merge([CoreModule::class], (array) config('modules.modules', [])));
 
         if ($this->app->runningInConsole()) {
             $this->commands([ProcessEvents::class, ReplayEvent::class]);

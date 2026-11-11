@@ -2,6 +2,9 @@
 
 namespace App\Core\Modules;
 
+use App\Core\Blueprints\Blueprint;
+use App\Core\Blueprints\BlueprintRegistry;
+use App\Core\Blueprints\BlueprintStepHandler;
 use App\Core\Events\EventCatalog;
 use App\Core\Events\EventDefinition;
 use App\Core\Events\SubscriberRegistry;
@@ -13,7 +16,7 @@ use App\Core\Workflow\WorkflowRegistry;
 /** The extension points a module may use. Adding a new kind of extension means adding a method here, once. */
 class ModuleContext
 {
-    public function __construct(private string $moduleId, private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null)
+    public function __construct(private string $moduleId, private EventCatalog $events, private SubscriberRegistry $subscribers, private ?WorkflowRegistry $workflows = null, private ?BlueprintRegistry $blueprints = null)
     {
     }
 
@@ -25,6 +28,18 @@ class ModuleContext
     public function event(string $name, array $schema = [], string $description = '', int $version = 1): void
     {
         $this->events->register(new EventDefinition($name, $this->moduleId, $schema, $description, $version));
+    }
+
+    /** Declare a launch bundle (see Blueprint::fromArray). */
+    public function blueprint(array $definition): void
+    {
+        $this->blueprints->register(Blueprint::fromArray($definition, $this->moduleId));
+    }
+
+    /** @param class-string<BlueprintStepHandler> $handler */
+    public function blueprintStep(string $handler): void
+    {
+        $this->blueprints->registerHandler(app($handler));
     }
 
     /** Declare a workflow this module owns, as data (see WorkflowDefinition::fromArray). */

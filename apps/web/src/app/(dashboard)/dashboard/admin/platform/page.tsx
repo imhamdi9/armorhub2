@@ -9,10 +9,15 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import {
+  applyBlueprint,
+  getBlueprintHistory,
+  getBlueprints,
   getEventCatalog,
   getWorkflows,
   resetWorkflow,
   saveWorkflow,
+  type BlueprintApplication,
+  type BlueprintInfo,
   type WorkflowInfo,
   getPlatformEvent,
   getPlatformEvents,
@@ -33,7 +38,7 @@ const STATUSES = ["", "pending", "delivered", "failed", "dead", "skipped"];
  * each switched on, every event type and its contract, and what happened to each event (with replay).
  */
 export default function PlatformPage() {
-  const [tab, setTab] = useState<"modules" | "workflows" | "catalog" | "log">("modules");
+  const [tab, setTab] = useState<"modules" | "blueprints" | "workflows" | "catalog" | "log">("modules");
   const [forbidden, setForbidden] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +54,11 @@ export default function PlatformPage() {
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState<PlatformEvent | null>(null);
   const [tick, setTick] = useState(0);
+  // blueprints
+  const [blueprints, setBlueprints] = useState<BlueprintInfo[] | null>(null);
+  const [history, setHistory] = useState<BlueprintApplication[]>([]);
+  const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
+  const [launched, setLaunched] = useState<BlueprintApplication | null>(null);
   // workflows
   const [workflows, setWorkflows] = useState<WorkflowInfo[] | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -61,6 +71,13 @@ export default function PlatformPage() {
   useEffect(() => {
     getPlatformModules(market).then(setModules).catch(() => setForbidden(true));
   }, [market, tick]);
+
+  useEffect(() => {
+    if (tab === "blueprints") {
+      getBlueprints().then(setBlueprints).catch(() => setForbidden(true));
+      getBlueprintHistory().then(setHistory).catch(() => undefined);
+    }
+  }, [tab, tick]);
 
   useEffect(() => {
     if (tab === "workflows") getWorkflows(market).then(setWorkflows).catch(() => setForbidden(true));
@@ -79,6 +96,17 @@ export default function PlatformPage() {
     setError(null);
     try {
       await setTenantModule(market, m.id, !m.enabled);
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
+
+  async function launch(b: BlueprintInfo) {
+    setError(null);
+    setLaunched(null);
+    try {
+      setLaunched(await applyBlueprint(b.id, answers[b.id] ?? {}));
       setTick((t) => t + 1);
     } catch (e) {
       setError(errorMessage(e));
@@ -138,6 +166,7 @@ export default function PlatformPage() {
       </p>
       <div role="tablist" className="mb-6 inline-flex gap-1 rounded-full bg-secondary p-1">
         {tabButton("modules", "Modules")}
+        {tabButton("blueprints", "Blueprints")}
         {tabButton("workflows", "Workflows")}
         {tabButton("catalog", "Event catalog")}
         {tabButton("log", "Event log")}
@@ -175,6 +204,51 @@ export default function PlatformPage() {
                 </article>
               ))}
             </div>
+          )}
+        </section>
+      )}
+
+      {tab === "blueprints" && (
+        <section>
+          <p className="mb-4 text-sm text-muted-foreground">{tr("A blueprint launches a whole market from a bundle of configuration: its country, storefront, starter products and any policy changes. Nothing is coded.")}</p>
+          {launched && (
+            <p className="mb-4 rounded-xl bg-accent p-4 text-sm font-semibold text-accent-foreground" role="status">
+              {tr("Market launched.")} {launched.store_slug && <a className="underline" href={`/s/${launched.store_slug}`} target="_blank" rel="noopener noreferrer">{tr("Open its store")}</a>}
+            </p>
+          )}
+          {blueprints === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : (
+            <div className="space-y-4">
+              {blueprints.map((b) => (
+                <article key={b.id} className="rounded-xl border p-5">
+                  <h2 className="text-lg font-bold">{b.name} <span className="text-sm font-normal text-muted-foreground">{b.owner} · v{b.version}</span></h2>
+                  <p className="text-sm text-muted-foreground">{b.description}</p>
+                  <p className="mt-2 text-xs text-muted-foreground" dir="ltr">{b.steps.map((s) => s.type).join(" → ")}</p>
+                  <div className="mt-3 flex flex-wrap items-end gap-3">
+                    {Object.entries(b.params).map(([field, type]) => (
+                      <div key={field}>
+                        <label className="block text-sm font-medium" htmlFor={`${b.id}-${field}`}>{field === "name" ? tr("Market name") : field === "country" ? tr("Country code") : field}{type.endsWith("?") ? "" : " *"}</label>
+                        <Input id={`${b.id}-${field}`} className="w-56" dir={field === "country" ? "ltr" : undefined} maxLength={field === "country" ? 2 : 120} value={answers[b.id]?.[field] ?? ""}
+                          onChange={(e) => setAnswers((a) => ({ ...a, [b.id]: { ...a[b.id], [field]: field === "country" ? e.target.value.toUpperCase() : e.target.value } }))} />
+                      </div>
+                    ))}
+                    <Button onClick={() => launch(b)}>{tr("Launch")}</Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {history.length > 0 && (
+            <>
+              <h3 className="mb-2 mt-8 font-semibold">{tr("Launched so far")}</h3>
+              <div className="divide-y rounded-xl border text-sm">
+                {history.map((h) => (
+                  <div key={h.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+                    <span><code>{h.blueprint_id}</code> · {h.params.name}</span>
+                    <span className="text-muted-foreground">{formatDateTime(h.created_at)}{h.store_slug ? <> · <a className="underline" href={`/s/${h.store_slug}`}>{tr("Store")}</a></> : null}</span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </section>
       )}

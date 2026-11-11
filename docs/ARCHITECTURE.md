@@ -39,7 +39,7 @@ Dependencies point **downward only**. Core never imports a product; a product ne
 |---|---|---|
 | **Event infrastructure** | Event catalog, transactional outbox, subscribers, retry, dead-letter, replay, correlation | **M1 (built)** |
 | **Module system** | Manifest, dependencies, core-version compatibility, registration, per-tenant enablement | **M1 (built)** |
-| **Workflow foundation** | Workflows as data: states, transitions, guards, actions, per-tenant versions | M2 |
+| **Workflow foundation** | Workflows as data: states, transitions, guards, actions, per-tenant versions | **M2 (built)** |
 | **Integration foundation** | Capability ports, connector registry, outbound webhooks, inbound endpoints, mapping, delivery log | M3 (payments/shipping already follow the pattern) |
 | **Configuration engine** | Typed, versioned, tenant/market-scoped config with schema, history, rollback | M4 (settings + market packs exist) |
 | **Identity** | Roles and permissions as definitions contributed by modules; SSO/OIDC provider port | M5 |
@@ -64,12 +64,20 @@ Dependencies point **downward only**. Core never imports a product; a product ne
 | # | Milestone | Done when |
 |---|---|---|
 | **M1** | Event infrastructure + module system + boundary tests | A test-only second product publishes and consumes events without touching core; ArmorHub's notifications run as a subscriber |
-| M2 | Workflow engine; the order lifecycle becomes a workflow definition | The second product defines a different lifecycle by data only; ArmorHub's behaviour is unchanged |
+| **M2 (done)** | Workflow engine; the order lifecycle becomes a workflow definition | The second product defines a different lifecycle by data only; ArmorHub's behaviour is unchanged |
 | M3 | Integration foundation: capability ports, outbound webhooks (events → tenant endpoints), inbound endpoints, mapping | A tenant connects a new system by configuration; payments/shipping move onto it |
 | M4 | Configuration engine: versioned, tenant-scoped, schema-validated, rollback | Any tenant setting can be changed, audited and rolled back |
 | M5 | Identity: roles/permissions contributed by modules; OIDC provider port | A module ships its own roles with no seeder edit |
 | M6 | Tenancy hardening: tenant context everywhere, isolation tests, per-tenant modules | A cross-tenant read is impossible by construction and proven by tests |
 | M7 | Plugin packaging: composer discovery, signed manifests, capability permissions | A third party ships a module as a package |
+
+## Blueprints (built)
+
+A **blueprint** is a launch bundle: the steps that turn an empty platform into a working business of one kind (a market for a
+country, its storefront, starter products, policy changes). It is pure data. The core orchestrates (validates the operator's answers,
+runs the steps in one transaction, records the result, announces `blueprint.applied`); modules supply the *step types*. ArmorHub ships
+automotive (Egypt, Saudi Arabia) and home-services blueprints; the clinic fixture ships its own using one step of its own and the core's
+`workflow.override` step. A new kind of business is a new blueprint, not new code in the core.
 
 ## The second-product test
 

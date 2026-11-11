@@ -741,4 +741,11 @@ export const AR: Record<string, string> = {
   "You can re-wire the steps between the existing states. States cannot be added or removed because existing records live in them.": "يمكنك إعادة ربط الخطوات بين الحالات الحالية. لا يمكن إضافة حالات أو حذفها لأن السجلات الحالية موجودة فيها.",
   "Save for this market": "حفظ لهذا السوق",
   "Revert to product default": "العودة إلى افتراضي المنتج",
+  "Blueprints": "القوالب الجاهزة",
+  "A blueprint launches a whole market from a bundle of configuration: its country, storefront, starter products and any policy changes. Nothing is coded.": "القالب الجاهز يطلق سوقًا كاملًا من حزمة إعدادات: بلده وواجهة متجره ومنتجاته الأولى وأي تغييرات في السياسات. دون أي برمجة.",
+  "Market launched.": "تم إطلاق السوق.",
+  "Open its store": "افتح متجره",
+  "Market name": "اسم السوق",
+  "Launch": "إطلاق",
+  "Launched so far": "ما أُطلق حتى الآن",
 };

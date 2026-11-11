@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Core\Workflow\Models\WorkflowOverride;
+use App\Core\Workflow\WorkflowCustomiser;
 use App\Core\Workflow\WorkflowRegistry;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
@@ -27,31 +28,26 @@ class WorkflowController extends Controller
     }
 
     /** A market re-wires the transitions between the states the product already has. */
-    public function update(Request $request, Tenant $tenant, string $key, WorkflowRegistry $workflows)
+    public function update(Request $request, Tenant $tenant, string $key, WorkflowRegistry $workflows, WorkflowCustomiser $customiser)
     {
         abort_unless(isset($workflows->defaults()[$key]), 404);
         $definition = $request->validate(['definition' => 'required|array'])['definition'];
 
-        if ($errors = $workflows->overrideErrors($key, $definition)) {
+        $version = null;
+        if ($errors = $customiser->apply($tenant->id, $key, $definition, $request->user()->id, $version)) {
             throw ValidationException::withMessages(['definition' => $errors]);
         }
+        Audit::record('platform.workflow_customised', $tenant, ['workflow' => $key, 'version' => $version]);
 
-        $next = (int) WorkflowOverride::where('workflow_key', $key)->where('tenant_id', $tenant->id)->max('version') + 1;
-        WorkflowOverride::where('workflow_key', $key)->where('tenant_id', $tenant->id)->update(['active' => false]);
-        WorkflowOverride::create(['workflow_key' => $key, 'tenant_id' => $tenant->id, 'version' => $next, 'definition' => $definition, 'active' => true, 'created_by' => $request->user()->id]);
-        $workflows->forget();
-        Audit::record('platform.workflow_customised', $tenant, ['workflow' => $key, 'version' => $next]);
-
-        return ['workflow' => $key, 'version' => $next];
+        return ['workflow' => $key, 'version' => $version];
     }
 
     /** Back to the product's own definition. Earlier versions are kept for the record. */
-    public function reset(Tenant $tenant, string $key, WorkflowRegistry $workflows)
+    public function reset(Tenant $tenant, string $key, WorkflowRegistry $workflows, WorkflowCustomiser $customiser)
     {
         abort_unless(isset($workflows->defaults()[$key]), 404);
 
-        WorkflowOverride::where('workflow_key', $key)->where('tenant_id', $tenant->id)->update(['active' => false]);
-        $workflows->forget();
+        $customiser->reset($tenant->id, $key);
         Audit::record('platform.workflow_reset', $tenant, ['workflow' => $key]);
 
         return ['workflow' => $key, 'customised' => false];
