@@ -303,3 +303,16 @@ export interface SellerOrder {
 
 export const getSellerOrders = async () => (await api.get<Paginated<SellerOrder>>("/seller/orders")).data;
 export const getSellerOrder = async (id: number | string) => (await api.get<SellerOrder>(`/seller/orders/${id}`)).data;
+
+export interface LedgerEntry {
+  id: number;
+  order_id: number;
+  type: "sale" | "commission";
+  amount: string;
+  currency: string;
+  status: "held" | "available" | "paid";
+  created_at: string;
+}
+
+export const getSellerEarnings = async () =>
+  (await api.get<{ balances: import("@/services/admin.service").Balances; entries: LedgerEntry[]; payouts: import("@/services/admin.service").Payout[] }>("/seller/earnings")).data;

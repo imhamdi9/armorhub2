@@ -11,6 +11,8 @@ use App\Products\Armorhub\Blueprints\MarketStep;
 use App\Products\Armorhub\Blueprints\ProductsStep;
 use App\Products\Armorhub\Blueprints\StoreStep;
 use App\Products\Armorhub\Subscribers\OrderNotificationSubscriber;
+use App\Products\Armorhub\Subscribers\PayoutNotificationSubscriber;
+use App\Products\Armorhub\Subscribers\SellerLedgerSubscriber;
 use App\Products\Armorhub\Workflows\GrantWarranty;
 use App\Products\Armorhub\Workflows\OrderWorkflow;
 use App\Products\Armorhub\Workflows\RejectOpenQuotes;
@@ -59,7 +61,12 @@ class ArmorhubModule implements Module
             ], $description);
         }
 
+        $context->event('payout.created', ['payout_id' => 'int', 'company_id' => 'int', 'amount' => 'float', 'currency' => 'string'], 'A payout to a seller was prepared');
+        $context->event('payout.paid', ['payout_id' => 'int', 'company_id' => 'int', 'amount' => 'float', 'currency' => 'string', 'reference' => 'string?'], 'A payout to a seller was paid');
+
         $context->subscribe(OrderNotificationSubscriber::class);
+        $context->subscribe(SellerLedgerSubscriber::class);
+        $context->subscribe(PayoutNotificationSubscriber::class);
 
         $context->action(GrantWarranty::class);
         $context->action(RejectOpenQuotes::class);

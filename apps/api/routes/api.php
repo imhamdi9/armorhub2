@@ -119,6 +119,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
         Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
         Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
+        Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
+        Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
         Route::get('/platform/blueprints', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'index']);
         Route::get('/platform/blueprints/applications', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'history']);
         Route::post('/platform/blueprints/{id}/apply', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'apply'])->where('id', '[a-z0-9.-]+');
@@ -190,7 +193,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
 
-    // Sellers: the orders for their own products
+    // Sellers: the orders for their own products, and their earnings
+    Route::get('/seller/earnings', [\App\Http\Controllers\Api\SellerEarningsController::class, 'show']);
     Route::get('/seller/orders', [\App\Http\Controllers\Api\SellerOrderController::class, 'index']);
     Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\SellerOrderController::class, 'show'])->whereNumber('id');
 

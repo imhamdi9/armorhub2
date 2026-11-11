@@ -69,6 +69,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
+    items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
 
     return items;
   }
@@ -152,6 +153,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Overview", href: "/dashboard/admin", section: "admin", icon: "admin" });
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
+    items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
     items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });

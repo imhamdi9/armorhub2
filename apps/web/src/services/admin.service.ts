@@ -159,3 +159,25 @@ export const getBlueprintHistory = async () =>
 
 export const applyBlueprint = async (id: string, params: Record<string, string>) =>
   (await api.post<BlueprintApplication>(`/admin/platform/blueprints/${id}/apply`, { params })).data;
+
+// ---- Seller payouts
+export type Balances = Record<string, { held: number; available: number; in_payout: number; paid: number }>;
+
+export interface Payout {
+  id: number;
+  company_id: number;
+  amount: string;
+  currency: string;
+  status: "pending" | "paid";
+  reference: string | null;
+  paid_at: string | null;
+  created_at: string;
+  company?: { id: number; name: string };
+}
+
+export const getPayouts = async () =>
+  (await api.get<{ sellers: { id: number; name: string; balances: Balances }[]; payouts: Payout[] }>("/admin/payouts")).data;
+
+export const createPayout = async (companyId: number, currency: string) => (await api.post<Payout>("/admin/payouts", { company_id: companyId, currency })).data;
+
+export const markPayoutPaid = async (id: number, reference: string) => (await api.post<Payout>(`/admin/payouts/${id}/paid`, { reference })).data;

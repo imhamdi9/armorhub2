@@ -50,8 +50,16 @@ Files: PDF, JPG or PNG, 5 MB each. They are judged by their **content**, not the
 - **Selling is direct**: there is no partner quote. The order goes to payment, the seller is notified when it is paid,
   sees the delivery address, and ships with any carrier (see `SHIPPING.md`). Delivery completes the sale.
 
+## Earnings and payouts
+
+Driven entirely by events (no code calls the ledger): `order.paid` writes a **held** sale and commission entry for the seller;
+`order.shipment_delivered` makes them **available**; an admin prepares a **payout** (everything available in one currency) and,
+after transferring the money by bank, records the reference (`payout.created`, `payout.paid`; the seller is notified).
+Sellers see balances (held / available / in a payout / paid) and a statement under **Earnings**; admins use **Payouts**.
+Entries are unique per order and type, so replaying events never double-counts.
+
 ## Not built yet
 
-- Seller payouts: the platform commission is recorded per order, but the seller's share is not paid out or reported yet.
+- Payouts move money by bank outside the platform: the admin records the transfer reference. Automated transfers, VAT/tax invoices for sellers, and refunds that reverse a ledger entry are not built yet.
 - "Needs more information" back-and-forth: a reviewer can only approve or reject today; the business then applies again.
 - Seller stock levels, returns and refunds.

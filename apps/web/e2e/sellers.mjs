@@ -141,6 +141,31 @@ try {
   await c.waitForSelector("text=AX778899");
   ok("the seller ships it with any carrier; delivery completes the sale for the customer");
 
+  // ---- 7. Money: held until delivery, then available; the admin pays it out and records the reference
+  await p.click('a:has-text("Earnings")');
+  await p.waitForSelector('[data-testid="balance-available"]');
+  const available = await p.innerText('[data-testid="balance-available"]');
+  if (!/81\.00/.test(available)) fail(`the seller should have 81.00 available (90 sold, 9 commission), saw: ${available}`);
+  if (!/0\.00/.test(await p.innerText('[data-testid="balance-held"]'))) fail("delivered money is still held");
+  ok("the seller's earnings show the sale minus the platform commission, released by delivery");
+
+  const adm = await login("admin@test.com");
+  await adm.p.waitForURL("**/dashboard");
+  await adm.p.click('a:has-text("Payouts")');
+  await adm.p.waitForSelector("text=Gulf Parts Brand");
+  await adm.p.click('button[aria-label^="Prepare payout Gulf Parts Brand"]');
+  await adm.p.waitForSelector('[aria-label="Bank reference"]');
+  await adm.p.fill('[aria-label="Bank reference"]', "BANK-2026-0001");
+  await adm.p.click('button:has-text("Mark paid")');
+  await adm.p.waitForSelector("text=BANK-2026-0001");
+  await p.reload();
+  await p.waitForSelector('[data-testid="balance-paid"]');
+  if (!/81\.00/.test(await p.innerText('[data-testid="balance-paid"]'))) fail("the paid payout is not shown to the seller");
+  await p.waitForSelector("text=BANK-2026-0001");
+  await p.click('a[aria-label^="Notifications"]');
+  await p.waitForSelector("text=Payout sent");
+  ok("the admin prepared and paid the payout with a bank reference; the seller sees it and was notified");
+
   console.log("\nSellers passed.");
 } catch (e) {
   console.error("\nSellers FAILED:", e.message.split("\n")[0]);
