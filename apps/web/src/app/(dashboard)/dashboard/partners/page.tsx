@@ -31,6 +31,7 @@ export default function PartnersPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [form, setForm] = useState<Draft>(EMPTY);
+  const [profile, setProfile] = useState({ public_profile: false, description: "", logo_url: "" });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function PartnersPage() {
 
   function startEdit(p: Partner & { latitude?: number | null; longitude?: number | null }) {
     setEditing(p.id);
+    setProfile({ public_profile: !!p.public_profile, description: p.description ?? "", logo_url: p.logo_url ?? "" });
     setForm({
       name: p.name,
       city: p.city ?? "",
@@ -54,7 +56,12 @@ export default function PartnersPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const body = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== ""));
+    const body = {
+      ...Object.fromEntries(Object.entries(form).filter(([, v]) => v !== "")),
+      public_profile: profile.public_profile,
+      description: profile.description || null,
+      logo_url: profile.logo_url || null,
+    };
     try {
       if (editing === "new") {
         const created = await createPartner(body);
@@ -107,6 +114,22 @@ export default function PartnersPage() {
               />
             </div>
           ))}
+          <fieldset className="space-y-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">{tr("Public profile")}</legend>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="public_profile" checked={profile.public_profile} onChange={(e) => setProfile((v) => ({ ...v, public_profile: e.target.checked }))} />
+              {tr("Show this partner on the public home page")}
+            </label>
+            <div>
+              <Label htmlFor="description">{tr("Short description")}</Label>
+              <textarea id="description" rows={2} maxLength={400} className="w-full rounded-lg border px-3 py-2" value={profile.description} onChange={(e) => setProfile((v) => ({ ...v, description: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="logo_url">{tr("Logo address (https)")}</Label>
+              <Input id="logo_url" dir="ltr" placeholder="https://" value={profile.logo_url} onChange={(e) => setProfile((v) => ({ ...v, logo_url: e.target.value }))} />
+            </div>
+            <p className="text-xs text-muted-foreground">{tr("Only the name, city, description and logo are shown. Phone, address and location stay private.")}</p>
+          </fieldset>
           <p className="text-xs text-muted-foreground">
             {tr("Latitude and longitude let customers be matched with this partner when they are nearby.")}
           </p>

@@ -55,6 +55,7 @@ class SeedDemo extends Command
             'company_id' => $shopCompany->id,
             'name' => 'Shop One', 'city' => 'Riyadh', 'country' => 'SA',
             'latitude' => 24.7, 'longitude' => 46.7, 'location_enabled' => true,
+            'public_profile' => true, 'description' => 'Certified paint protection and ceramic coating specialists in central Riyadh.',
         ]);
 
         $manager = User::create([
@@ -106,6 +107,7 @@ class SeedDemo extends Command
         Partner::create([
             'company_id' => $partnerCompany->id, 'name' => 'Cairo Garage', 'city' => 'Cairo', 'country' => 'EG',
             'latitude' => 30.04, 'longitude' => 31.23, 'location_enabled' => true,
+            'public_profile' => true, 'description' => 'Specialist film and tint installers serving Cairo and Giza.',
         ]);
     }
 }

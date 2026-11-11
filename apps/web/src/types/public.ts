@@ -24,6 +24,21 @@ export interface PublicStoreCard {
   industry: PublicIndustry | null;
 }
 
+export interface PublicShowcasePartner {
+  name: string;
+  city: string | null;
+  country: string | null;
+  description: string | null;
+  logo_url: string | null;
+}
+
+export interface PublicShowcase {
+  industries: {
+    industry: PublicIndustry;
+    stores: { name: string; slug: string; market: string | null; primary_color: string; partners: PublicShowcasePartner[]; products: PublicProduct[] }[];
+  }[];
+}
+
 export interface PublicStoreList {
   stores: PublicStoreCard[];
 }

@@ -145,6 +145,40 @@ class StorefrontService
         ])->filter(fn ($r) => $r['target'] !== null)->values()->all();
     }
 
+    /**
+     * The home page showcase: every open store grouped by industry, each with the partners that chose to be
+     * shown and the products on offer. Partners expose only name, city, description and logo.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function showcase(): array
+    {
+        $stores = Company::withoutGlobalScopes()->with('tenant.industry')->whereNotNull('slug')
+            ->whereNotIn('status', self::HIDDEN_STATUSES)->orderBy('name')->get()
+            ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant?->industry)
+            ->groupBy(fn (Company $c) => $c->tenant->industry->key);
+
+        return $stores->map(function ($companies) {
+            $industry = $companies->first()->tenant->industry;
+
+            return [
+                'industry' => ['key' => $industry->key, 'name' => $industry->name, 'description' => $industry->description],
+                'stores' => $companies->map(fn (Company $c) => [
+                    'name' => $c->name,
+                    'slug' => $c->slug,
+                    'market' => $this->market($c)['code'] ?? null,
+                    'primary_color' => $this->settingsOf($c)['primary_color'],
+                    'partners' => Partner::withoutGlobalScopes()->where('is_active', true)->where('public_profile', true)
+                        ->whereHas('company', fn ($q) => $q->withoutGlobalScopes()->where('tenant_id', $c->tenant_id))
+                        ->orderBy('name')->limit(12)->get()
+                        ->map(fn (Partner $p) => ['name' => $p->name, 'city' => $p->city, 'country' => $p->country, 'description' => $p->description, 'logo_url' => $p->logo_url])
+                        ->values(),
+                    'products' => $this->products($c)->orderBy('name')->limit(6)->get()->map(fn ($p) => $this->card($p, $c))->values(),
+                ])->values(),
+            ];
+        })->values()->all();
+    }
+
     /** Where this store's partners are: a count and city names, never contact details. */
     public function partnerSummary(Company $company): array
     {

@@ -21,11 +21,15 @@ class Partner extends Model
      'latitude',
      'longitude',
      'location_enabled',
+     'public_profile',
+     'description',
+     'logo_url',
     ];
 
 
     protected $casts = [
-        'is_active'=>'boolean'
+        'is_active'=>'boolean',
+        'public_profile'=>'boolean',
     ];
 
 

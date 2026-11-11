@@ -60,7 +60,7 @@ function Header({ store }: { store?: ShellStore }) {
   const home = store ? `/s/${store.slug}` : "/";
   const links: [string, string][] = store
     ? [[`/s/${store.slug}/products`, "Products"], [`${home}#how`, "How it works"], [`${home}#faq`, "FAQ"]]
-    : [["/#stores", "Stores"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
+    : [["/#stores", "Stores"], ["/#partners", "Partners"], ["/#how", "How it works"], ["/#faq", "FAQ"]];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">

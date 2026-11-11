@@ -5,9 +5,10 @@ import Link from "next/link";
 import { HeroArt, Icon } from "@/components/public/art";
 import { Faq } from "@/components/public/faq";
 import { CallToAction, StatsBand, Steps, WhyUs } from "@/components/public/sections";
+import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
 import { tr } from "@/lib/i18n";
-import type { PublicStoreCard } from "@/types/public";
+import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
 const INDUSTRIES = [
   { icon: "🚗", name: "Automotive", text: "Paint protection film, ceramic coating, window tint and detailing." },
@@ -26,7 +27,7 @@ const STEPS = [
 /** The platform's front door: what it is, who it serves, and every open store. */
 const COUNTRY_NAMES: Record<string, string> = { SA: "Saudi Arabia", EG: "Egypt" };
 
-export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
+export function PlatformHome({ stores, showcase }: { stores: PublicStoreCard[]; showcase: PublicShowcase }) {
   return (
     <PublicShell>
       <section className="overflow-hidden" style={{ background: "linear-gradient(180deg, #f3f4f6, #fff)" }}>
@@ -92,6 +93,7 @@ export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
         )}
       </section>
 
+      <PartnersShowcase data={showcase} />
       <WhyUs />
       <Steps steps={STEPS} columns={4} />
       <Faq />

@@ -84,6 +84,10 @@ class PartnerController extends Controller
             'longitude' => 'nullable|numeric|between:-180,180',
             'location_enabled' => 'boolean',
             'is_active' => 'boolean',
+            // Opt in to the public home page; only name, city, description and logo are ever shown.
+            'public_profile' => 'boolean',
+            'description' => 'nullable|string|max:400',
+            'logo_url' => ['nullable', 'string', 'max:500', 'url:https'],
         ]);
     }
 }

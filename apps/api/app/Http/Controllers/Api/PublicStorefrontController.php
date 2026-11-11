@@ -43,6 +43,12 @@ class PublicStorefrontController extends Controller
         return $this->cached(['markets' => collect($markets->all())->map->toArray()->values()]);
     }
 
+    /** Home page: partners and products, one block per industry. */
+    public function showcase()
+    {
+        return $this->cached(['industries' => $this->stores->showcase()]);
+    }
+
     public function show(string $slug)
     {
         $company = $this->stores->find($slug) ?? abort(404);

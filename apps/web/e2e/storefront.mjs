@@ -214,6 +214,15 @@ try {
   await mctx.close();
   ok("FAQ + structured data + footer are server-rendered; mobile menu works and nothing overflows");
 
+  // ---- Home page showcase: partners and their products, one block per industry (server-rendered).
+  const show = await asCrawler("/");
+  for (const need of ["Our trusted partners", "Shop One", "Cairo Garage", "Ultimate Plus", "Automotive"]) {
+    if (!show.text.includes(need)) fail(`the partner showcase is missing "${need}"`);
+  }
+  if (!show.html.includes('id="industry-automotive"')) fail("each industry should have its own block");
+  if (/\+966500000000|24\.7/.test(show.html)) fail("the showcase leaks private partner data");
+  ok("the home page lists trusted partners and their products per industry, with no private details");
+
   console.log("\nStorefront passed.");
 } catch (e) {
   console.error("\nStorefront FAILED:", e.message.split("\n")[0]);

@@ -74,6 +74,9 @@ export interface Partner {
   city: string | null;
   country: string | null;
   phone: string | null;
+  public_profile?: boolean;
+  description?: string | null;
+  logo_url?: string | null;
 }
 
 export interface Tenant {
