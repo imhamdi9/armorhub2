@@ -57,7 +57,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Settings\|Payments\|Shipping\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Settings\|Payments\|Shipping\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview
@@ -157,6 +157,21 @@ try {
   await admin.click('button:has-text("payments")');
   await admin.waitForSelector("text=payments.provider_activated");
   ok("the audit log recorded the changes, without any secret");
+
+  // The platform core: ArmorHub is just a module; its events are catalogued, delivered and replayable.
+  await admin.click('a:has-text("Platform")');
+  await admin.waitForSelector("text=v1.0.0");
+  await admin.waitForSelector("text=order.paid");
+  await admin.click("[role=tab]:has-text('Event catalog')");
+  await admin.waitForSelector("text=order_event_id: int");
+  await admin.click("[role=tab]:has-text('Event log')");
+  await admin.fill('[aria-label="Event name"]', "order.paid");
+  await admin.waitForSelector("button:has-text('order.paid')");
+  await admin.click("button:has-text('order.paid')");
+  await admin.waitForSelector("text=armorhub.order-notifications");
+  await admin.click("button:has-text('Replay')");
+  await admin.waitForSelector("[role=dialog] >> text=delivered");
+  ok("the platform page lists the ArmorHub module, its event contracts, the event log, and replays a delivery");
 
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");

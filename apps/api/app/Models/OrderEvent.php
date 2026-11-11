@@ -12,7 +12,25 @@ class OrderEvent extends Model
 
     protected static function booted(): void
     {
-        static::created(fn (self $event) => app(\App\Services\OrderNotifier::class)->handle($event));
+        // Every step of an order's life is announced on the event bus; notifications (and anything else) react to it.
+        // Publishing is best-effort here: an order must never fail because an announcement could not be sent.
+        static::created(function (self $event) {
+            try {
+                $order = Order::withoutGlobalScopes()->find($event->order_id);
+
+                app(\App\Core\Events\EventBus::class)->publish(new \App\Core\Events\Event(
+                    name: "order.{$event->type}",
+                    payload: ['order_event_id' => $event->id, 'order_id' => $event->order_id, 'type' => $event->type, 'data' => $event->data],
+                    tenantId: $order ? Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id') : null,
+                    aggregateType: 'order',
+                    aggregateId: $event->order_id,
+                    actorType: $event->user_id ? 'user' : null,
+                    actorId: $event->user_id,
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
     }
 
     public function order()

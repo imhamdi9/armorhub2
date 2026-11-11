@@ -54,3 +54,55 @@ export const activateShippingProvider = async (provider: string) =>
 
 export const testShippingProvider = async (key: string) =>
   (await api.post<{ ok: boolean; message: string }>(`/admin/shipping/providers/${key}/test`)).data;
+
+// ---- Platform core: modules and events
+export interface PlatformModule {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  depends_on: string[];
+  events: string[];
+  subscribers: string[];
+  enabled: boolean | null;
+}
+
+export interface EventDelivery {
+  id: number;
+  subscriber: string;
+  status: string;
+  attempts: number;
+  last_error?: string | null;
+}
+
+export interface PlatformEvent {
+  id: number;
+  event_id: string;
+  name: string;
+  version: number;
+  tenant_id: number | null;
+  aggregate_type: string | null;
+  aggregate_id: string | null;
+  source: string | null;
+  correlation_id: string;
+  occurred_at: string;
+  payload?: Record<string, unknown>;
+  deliveries: EventDelivery[];
+}
+
+export const getPlatformModules = async (tenantId?: number) =>
+  (await api.get<{ modules: PlatformModule[] }>("/admin/platform/modules", { params: tenantId ? { tenant_id: tenantId } : {} })).data.modules;
+
+export const setTenantModule = async (tenantId: number, module: string, enabled: boolean) =>
+  (await api.put(`/admin/platform/tenants/${tenantId}/modules/${module}`, { enabled })).data;
+
+export const getEventCatalog = async () =>
+  (await api.get<{ events: { name: string; owner: string; version: number; description: string; schema: Record<string, string> }[] }>("/admin/platform/events/catalog")).data.events;
+
+export const getPlatformEvents = async (params: { name?: string; status?: string }) =>
+  (await api.get<Paginated<PlatformEvent>>("/admin/platform/events", { params: Object.fromEntries(Object.entries(params).filter(([, v]) => v)) })).data;
+
+export const getPlatformEvent = async (id: string) => (await api.get<PlatformEvent>(`/admin/platform/events/${id}`)).data;
+
+export const replayPlatformEvent = async (id: string, subscriber?: string) =>
+  (await api.post(`/admin/platform/events/${id}/replay`, subscriber ? { subscriber } : {})).data;

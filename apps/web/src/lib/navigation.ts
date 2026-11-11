@@ -22,6 +22,7 @@ export interface NavItem {
     | "settings"
     | "payments"
     | "shipping"
+    | "platform"
     | "applications"
     | "security"
     | "audit"
@@ -152,6 +153,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
+    items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });
     items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "admin", icon: "audit" });
   }

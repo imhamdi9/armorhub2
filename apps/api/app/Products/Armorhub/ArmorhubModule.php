@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Products\Armorhub;
+
+use App\Core\Modules\Module;
+use App\Core\Modules\ModuleContext;
+use App\Core\Modules\ModuleManifest;
+use App\Products\Armorhub\Subscribers\OrderNotificationSubscriber;
+
+/**
+ * ArmorHub, the first product: request a service or product, compare quotes, pay, fulfil, warranty.
+ * It owns its events and reactions and reaches the platform only through the module contract.
+ */
+class ArmorhubModule implements Module
+{
+    /** The steps of an order's life that are announced as events. */
+    public const ORDER_EVENTS = [
+        'created' => 'A customer placed an order',
+        'quote_submitted' => 'A partner sent a quote',
+        'quote_accepted' => 'The customer accepted a quote',
+        'paid' => 'The order was paid',
+        'scheduled' => 'An appointment was scheduled',
+        'started' => 'The work started',
+        'completed' => 'The work was completed',
+        'cancelled' => 'The order was cancelled',
+        'shipped' => 'A shipment was booked',
+        'shipment_out_for_delivery' => 'The parcel is out for delivery',
+        'shipment_delivered' => 'The parcel was delivered',
+        'shipment_failed' => 'A delivery attempt failed',
+        'shipment_returned' => 'The parcel was returned',
+    ];
+
+    public function manifest(): ModuleManifest
+    {
+        return new ModuleManifest(
+            id: 'armorhub',
+            name: 'ArmorHub',
+            version: '1.0.0',
+            description: 'Marketplace for services and products: quotes, payment, fulfilment and warranty.',
+        );
+    }
+
+    public function register(ModuleContext $context): void
+    {
+        foreach (self::ORDER_EVENTS as $type => $description) {
+            $context->event("order.{$type}", [
+                'order_event_id' => 'int',
+                'order_id' => 'int',
+                'type' => 'string',
+                'data' => 'array?',
+            ], $description);
+        }
+
+        $context->subscribe(OrderNotificationSubscriber::class);
+    }
+}

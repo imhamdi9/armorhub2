@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Banknote,
+  Boxes,
   BookOpen,
   Building,
   Building2,
@@ -62,6 +63,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   settings: Settings2,
   payments: CreditCard,
   shipping: Truck,
+  platform: Boxes,
   applications: UserCheck,
   security: ShieldAlert,
   audit: ScrollText,

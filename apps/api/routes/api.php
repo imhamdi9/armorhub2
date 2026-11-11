@@ -117,6 +117,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
         Route::post('/payments/active', [PaymentProviderController::class, 'activate']);
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
+        Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
+        Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/platform/events/catalog', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'catalog']);
+        Route::get('/platform/events', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'events']);
+        Route::get('/platform/events/{eventId}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'event']);
+        Route::post('/platform/events/{eventId}/replay', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'replay']);
         Route::get('/security', [SecurityController::class, 'overview']);
         Route::post('/security/revoke-all-sessions', [SecurityController::class, 'revokeAllSessions']);
     });

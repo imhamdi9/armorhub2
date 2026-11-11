@@ -1,0 +1,89 @@
+# Platform architecture
+
+**ArmorHub is the first product built on this platform. It must never be the platform.**
+In five years the same platform should run a different business with the same workflow concept (request → quote →
+agree → pay → fulfil → warranty/follow-up) by **configuration, plugin, integration, extension or module, without editing the core.**
+
+## Principles
+
+1. **Core is business-neutral.** It knows tenants, identity, events, workflows, integrations, configuration and modules.
+   It does not know cars, quotes, shipments or ArmorHub.
+2. **Zero core modification.** A new capability is added by a module, a plugin, an integration, a configuration or an
+   extension point. If adding something needs a core edit, the core is missing an extension point: add the *point*, once.
+   This is enforced by tests (`tests/Architecture`), not by good intentions.
+3. **Event-driven.** State changes are published as versioned domain events. Everything reactive (notifications, search,
+   analytics, integrations, projections) is a subscriber. Nothing calls those things directly.
+4. **Integration-first.** Every external dependency sits behind a *capability port* (a contract the business owns).
+   Providers are adapters, chosen by configuration per tenant. No business rule may name a vendor.
+5. **Configuration over code.** Differences between tenants, markets, industries and products are data
+   (settings, workflow definitions, market packs, role definitions), versioned and auditable.
+6. **Multi-tenant by construction.** Every event, record, setting, role and integration is tenant-scoped.
+7. **Earn abstractions.** An abstraction needs two real users before it is generalised. The "second product test"
+   (below) is the proof, not speculation.
+
+## Layers
+
+```
+ Products      ArmorHub (first)  ·  <future products>        ← modules: events, workflows, roles, settings, UI
+ ──────────────────────────────────────────────────────────
+ Capability ports   Payments · Shipping · Messaging · Storage · Identity providers ...   ← contracts, vendor-free
+ Adapters           Stripe · custom HTTP · SMSA · S3 · ...                                ← replaceable, configured
+ ──────────────────────────────────────────────────────────
+ Core          Events · Modules · Workflow · Config · Identity · Tenancy · Integration · Audit
+```
+Dependencies point **downward only**. Core never imports a product; a product never reaches into another product.
+
+## Core domains (what the platform owns)
+
+| Domain | Responsibility | State |
+|---|---|---|
+| **Event infrastructure** | Event catalog, transactional outbox, subscribers, retry, dead-letter, replay, correlation | **M1 (built)** |
+| **Module system** | Manifest, dependencies, core-version compatibility, registration, per-tenant enablement | **M1 (built)** |
+| **Workflow foundation** | Workflows as data: states, transitions, guards, actions, per-tenant versions | M2 |
+| **Integration foundation** | Capability ports, connector registry, outbound webhooks, inbound endpoints, mapping, delivery log | M3 (payments/shipping already follow the pattern) |
+| **Configuration engine** | Typed, versioned, tenant/market-scoped config with schema, history, rollback | M4 (settings + market packs exist) |
+| **Identity** | Roles and permissions as definitions contributed by modules; SSO/OIDC provider port | M5 |
+| **Multi-tenant foundation** | Tenant context, isolation enforced below the application code, per-tenant module/config | M6 |
+| **Plugin foundation** | Third-party packaging (composer), discovery, permissions sandbox, signed manifests | M7 |
+
+## Gap analysis: where the code is today
+
+| Area | Today | Gap |
+|---|---|---|
+| Events | An order-timeline table plus a notifier called from a model hook | No bus, no catalog, no retry/replay; the notifier is hard-wired |
+| Workflow | `OrderStatus` enum + `OrderLifecycleService` (hard-coded) | Order lifecycle is code, not data |
+| Integrations | Payment and shipping **drivers** with runtime config, SSRF guard, signed webhooks | Good pattern; not generic; no outbound webhooks/mapping |
+| Config | `Settings` (typed, encrypted secrets, audit) + market packs | Not versioned or tenant-scoped |
+| Identity | Roles/permissions seeded in one PHP file | Not contributed by modules; no SSO port |
+| Tenancy | `tenant_id` + company scope | Soft isolation in app code |
+| Modules | `IndustryModule` registry (automotive, home, beauty, devices) | Good seed; no manifest, no lifecycle, no on/off per tenant |
+| Boundaries | None enforced | Core and ArmorHub are intertwined |
+
+## Roadmap (each milestone has an acceptance test)
+
+| # | Milestone | Done when |
+|---|---|---|
+| **M1** | Event infrastructure + module system + boundary tests | A test-only second product publishes and consumes events without touching core; ArmorHub's notifications run as a subscriber |
+| M2 | Workflow engine; the order lifecycle becomes a workflow definition | The second product defines a different lifecycle by data only; ArmorHub's behaviour is unchanged |
+| M3 | Integration foundation: capability ports, outbound webhooks (events → tenant endpoints), inbound endpoints, mapping | A tenant connects a new system by configuration; payments/shipping move onto it |
+| M4 | Configuration engine: versioned, tenant-scoped, schema-validated, rollback | Any tenant setting can be changed, audited and rolled back |
+| M5 | Identity: roles/permissions contributed by modules; OIDC provider port | A module ships its own roles with no seeder edit |
+| M6 | Tenancy hardening: tenant context everywhere, isolation tests, per-tenant modules | A cross-tenant read is impossible by construction and proven by tests |
+| M7 | Plugin packaging: composer discovery, signed manifests, capability permissions | A third party ships a module as a package |
+
+## The second-product test
+
+The platform is only generic if a second, unrelated product can be built on it **by adding code outside the core**.
+`tests/Architecture/SecondProductTest.php` defines a clinic-appointments module inside the test suite: its own events,
+subscriber and enablement. It must work with zero changes under `app/Core`. Every milestone extends this fixture
+(M2: its own workflow; M3: its own integration; M5: its own roles).
+
+## Decisions taken by default (change them early, not late)
+
+1. **Evolve this codebase** into a modular monolith (strangler pattern), not a rewrite. Services are extracted later only if scale demands it.
+2. **In-process events with a transactional outbox** behind a transport port. A broker (Kafka, SQS, NATS) can be swapped in by
+   writing a transport adapter; no producer or subscriber changes. (Free hosting has no broker.)
+3. **Core lives in `app/Core`**, products in `app/Products/*`. Extraction to a versioned package happens when a second product repository exists.
+4. **Plugin = module + manifest.** The same contract serves first-party products and third-party plugins.
+
+See `docs/adr/` for the reasoning behind each.
