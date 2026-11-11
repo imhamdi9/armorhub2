@@ -66,6 +66,7 @@ class PaymentController extends Controller
                 'currency' => $order->currency,
                 'payment_method' => $data['payment_method'] ?? null,
                 'status' => 'pending',
+                'provider' => $charge['provider'] ?? null,
                 'transaction_id' => $charge['transaction_id'],
             ]);
 

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\Admin\OverviewController;
+use App\Http\Controllers\Api\Admin\PaymentProviderController;
 use App\Http\Controllers\Api\Admin\SecurityController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\AuthController;
@@ -27,7 +29,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductPriceRuleController;
-use App\Http\Controllers\Api\StripeWebhookController;
+use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\Api\TenantController;
 use App\Modules\IndustryRegistry;
 use Illuminate\Support\Facades\Route;
@@ -39,7 +41,7 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
-Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:webhook');
+Route::post('/webhooks/{provider}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot');
@@ -84,10 +86,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::get('/overview', OverviewController::class);
         Route::get('/settings', [SettingsController::class, 'index']);
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/payments/providers', [PaymentProviderController::class, 'index']);
+        Route::put('/payments/providers/{key}', [PaymentProviderController::class, 'update']);
+        Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
+        Route::post('/payments/active', [PaymentProviderController::class, 'activate']);
+        Route::get('/payments', [PaymentProviderController::class, 'payments']);
         Route::get('/security', [SecurityController::class, 'overview']);
         Route::post('/security/revoke-all-sessions', [SecurityController::class, 'revokeAllSessions']);
     });

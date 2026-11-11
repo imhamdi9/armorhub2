@@ -21,6 +21,12 @@ final class Definition
     ) {
     }
 
+    /** Defaults may be closures so they read config/env when asked, not when the app boots. */
+    public function defaultValue(): mixed
+    {
+        return $this->default instanceof \Closure ? ($this->default)() : $this->default;
+    }
+
     public function isSecret(): bool
     {
         return $this->type === 'secret';

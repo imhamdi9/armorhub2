@@ -12,7 +12,6 @@ use App\Modules\IndustryRegistry;
 use App\Policies\CompanyPolicy;
 use App\Policies\PartnerPolicy;
 use App\Services\Payment\PaymentGateway;
-use App\Services\Payment\SimulatedGateway;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -40,13 +39,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Support\Settings\SettingsRegistry::class);
         $this->app->singleton(\App\Support\Settings\Settings::class);
 
-        $this->app->bind(PaymentGateway::class, fn () => match (config('platform.payment_gateway')) {
-            'simulated' => new SimulatedGateway(),
-            'stripe' => new \App\Services\Payment\StripeGateway(),
-            default => throw new \InvalidArgumentException(
-                'Unknown payment gateway ['.config('platform.payment_gateway').'].'
-            ),
+        // Payment providers are drivers; which one is active and its credentials are admin settings.
+        $this->app->singleton(\App\Services\Payment\PaymentProviders::class, function ($app) {
+            $providers = new \App\Services\Payment\PaymentProviders($app->make(\App\Support\Settings\SettingsRegistry::class), $app->make(\App\Support\Settings\Settings::class));
+
+            foreach ([\App\Services\Payment\Providers\SimulatedProvider::class, \App\Services\Payment\Providers\StripeProvider::class, \App\Services\Payment\Providers\HttpProvider::class] as $driver) {
+                $providers->register($app->make($driver));
+            }
+
+            return $providers;
         });
+        $this->app->bind(PaymentGateway::class, \App\Services\Payment\PaymentManager::class);
 
         $this->app->singleton(IndustryRegistry::class, function ($app) {
             $registry = new IndustryRegistry();
@@ -66,6 +69,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Partner::class, PartnerPolicy::class);
 
         $this->app->make(IndustryRegistry::class)->boot();
+
+        // Registers the payment providers' settings so the admin panel and Settings know about them.
+        $this->app->make(\App\Services\Payment\PaymentProviders::class);
 
         // Reset links open the web app, not the API.
         ResetPassword::createUrlUsing(fn ($user, string $token) => rtrim(config('platform.web_url'), '/')

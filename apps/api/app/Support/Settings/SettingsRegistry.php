@@ -44,16 +44,16 @@ class SettingsRegistry
     {
         return [
             // ---- Platform -------------------------------------------------
-            new Definition('platform.currency', 'platform', 'Currency (ISO code)', 'string', config('platform.currency'),
+            new Definition('platform.currency', 'platform', 'Currency (ISO code)', 'string', fn () => config('platform.currency'),
                 'Three-letter code such as USD or SAR. Applies to new orders.', rules: ['size:3', 'alpha']),
             new Definition('platform.commission_percentage', 'platform', 'Commission (% of each order)', 'float',
-                config('platform.commission_percentage'), 'Taken from the order total when it is paid.', rules: ['min:0', 'max:100']),
+                fn () => config('platform.commission_percentage'), 'Taken from the order total when it is paid.', rules: ['min:0', 'max:100']),
             new Definition('platform.commission_split.platform', 'platform', 'Commission share: platform', 'float',
-                config('platform.commission_split.platform'), 'The three shares must add up to 1 (e.g. 0.35).', rules: ['min:0', 'max:1']),
+                fn () => config('platform.commission_split.platform'), 'The three shares must add up to 1 (e.g. 0.35).', rules: ['min:0', 'max:1']),
             new Definition('platform.commission_split.company', 'platform', 'Commission share: partner company', 'float',
-                config('platform.commission_split.company'), rules: ['min:0', 'max:1']),
+                fn () => config('platform.commission_split.company'), rules: ['min:0', 'max:1']),
             new Definition('platform.commission_split.partner', 'platform', 'Commission share: partner', 'float',
-                config('platform.commission_split.partner'), rules: ['min:0', 'max:1']),
+                fn () => config('platform.commission_split.partner'), rules: ['min:0', 'max:1']),
             new Definition('platform.registration_open', 'platform', 'Customer signup is open', 'bool', true,
                 'Turn off to stop new accounts being created (e.g. during an attack).'),
             new Definition('platform.orders_enabled', 'platform', 'New orders are accepted', 'bool', true,

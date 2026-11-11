@@ -13,7 +13,7 @@ interface PaymentGateway
      * - "redirect":  send the customer to `url` to pay; a webhook confirms it later
      * - "failed":    declined or could not start; `message` says why
      *
-     * @return array{status: 'completed'|'redirect'|'failed', transaction_id: ?string, url?: string, message?: string}
+     * @return array{status: 'completed'|'redirect'|'failed', transaction_id: ?string, provider?: string, url?: string, message?: string}
      *
      * @throws PaymentUnavailable when the gateway cannot be used right now
      */

@@ -6,7 +6,7 @@ use App\Models\Company;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Payment\PaymentGateway;
-use App\Services\Payment\SimulatedGateway;
+use App\Services\Payment\PaymentManager;
 use Database\Seeders\IndustrySeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,7 +61,7 @@ class HardeningTest extends TestCase
 
     public function test_simulated_payments_are_refused_in_production(): void
     {
-        $this->assertInstanceOf(SimulatedGateway::class, app(PaymentGateway::class));
+        $this->assertInstanceOf(PaymentManager::class, app(PaymentGateway::class));
 
         $this->app['env'] = 'production';
 
@@ -77,6 +77,7 @@ class HardeningTest extends TestCase
         $result = app(PaymentGateway::class)->charge(new \App\Models\Order(), 10.0);
 
         $this->assertSame('completed', $result['status']);
+        $this->assertSame('simulated', $result['provider']);
         $this->assertStringStartsWith('SIM-', $result['transaction_id']);
     }
 

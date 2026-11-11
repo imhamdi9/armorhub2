@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\PartnerQuote;
 use App\Models\Payment;
-use App\Services\Payment\StripeGateway;
+use App\Services\Payment\Money;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -195,9 +195,9 @@ class StripeTest extends TestCase
 
     public function test_minor_units_follow_the_currency(): void
     {
-        $this->assertSame(120050, StripeGateway::minorUnits('1200.50', 'USD'));
-        $this->assertSame(1200, StripeGateway::minorUnits(1200, 'jpy'));
-        $this->assertSame(1200500, StripeGateway::minorUnits(1200.5, 'KWD'));
-        $this->assertSame(1999, StripeGateway::minorUnits(19.99, 'SAR')); // float rounding
+        $this->assertSame(120050, Money::minorUnits('1200.50', 'USD'));
+        $this->assertSame(1200, Money::minorUnits(1200, 'jpy'));
+        $this->assertSame(1200500, Money::minorUnits(1200.5, 'KWD'));
+        $this->assertSame(1999, Money::minorUnits(19.99, 'SAR')); // float rounding
     }
 }

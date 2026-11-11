@@ -28,7 +28,7 @@ class PaymentFinalizer
     }
 
     /**
-     * @param  array{transaction_id: ?string}  $charge
+     * @param  array{transaction_id: ?string, provider?: string}  $charge
      * @return array{Payment, Commission}|null  null when the order was already paid
      */
     public function complete(Order $order, array $charge, ?string $method = null, ?User $by = null): ?array
@@ -54,6 +54,7 @@ class PaymentFinalizer
                 'payment_method' => $method ?? $payment?->payment_method,
                 'status' => 'completed',
                 'transaction_id' => $charge['transaction_id'] ?? null,
+                'provider' => $charge['provider'] ?? $payment?->provider,
             ];
 
             $payment = $payment

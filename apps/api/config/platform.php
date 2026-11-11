@@ -20,6 +20,9 @@ return [
     // Share the browser session cookie across subdomains (app.example.com <-> api.example.com), e.g. ".example.com".
     'auth_cookie_domain' => env('AUTH_COOKIE_DOMAIN'),
 
+    // Development/tests only: let admin-configured gateway URLs be http:// or private addresses.
+    'allow_insecure_provider_urls' => (bool) env('PLATFORM_ALLOW_INSECURE_PROVIDER_URLS', false),
+
     // Which payment gateway charges orders. Only "simulated" ships with the app.
     'payment_gateway' => env('PLATFORM_PAYMENT_GATEWAY', 'simulated'),
 

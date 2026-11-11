@@ -30,7 +30,7 @@ class Settings
         $raw = $this->stored();
 
         if (! array_key_exists($key, $raw)) {
-            return $definition->default;
+            return $definition->defaultValue();
         }
 
         return $definition->cast($raw[$key]);

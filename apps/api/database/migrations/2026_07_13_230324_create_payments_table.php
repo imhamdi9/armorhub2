@@ -27,6 +27,10 @@ return new class extends Migration
             $table->string('payment_method')
                 ->nullable();
 
+            // Which payment provider handled this payment (stripe, a custom gateway...).
+            $table->string('provider')
+                ->nullable();
+
             $table->string('transaction_id')
                 ->nullable();
 
