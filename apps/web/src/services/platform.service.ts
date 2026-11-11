@@ -5,6 +5,7 @@ import type {
   CommissionDistribution,
   Earnings,
   Order,
+  StaffUser,
   Paginated,
   Partner,
   PartnerQuote,
@@ -151,3 +152,22 @@ export const createCompany = async (data: {
   name: string;
   type?: string;
 }) => (await api.post<Company>("/companies", data)).data;
+
+export const getUsers = async (search?: string) =>
+  (await api.get<Paginated<StaffUser>>("/users", { params: search ? { search } : {} })).data;
+
+export const createUser = async (data: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  company_id?: number;
+  partner_id?: number;
+}) => (await api.post<StaffUser>("/users", data)).data;
+
+export const updateUser = async (
+  id: number,
+  data: Partial<{ name: string; password: string; role: string; is_active: boolean }>,
+) => (await api.put<StaffUser>(`/users/${id}`, data)).data;
+
+export const deleteUser = async (id: number) => (await api.delete(`/users/${id}`)).data;

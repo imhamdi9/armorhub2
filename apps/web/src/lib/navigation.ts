@@ -13,7 +13,8 @@ export interface NavItem {
     | "requests"
     | "commissions"
     | "items"
-    | "companies";
+    | "companies"
+    | "users";
 }
 
 function pluralize(word: string): string {
@@ -86,6 +87,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   }
 
   if (hasRole(user, "platform-admin", "company-owner", "partner-manager")) {
+    items.push({ title: "Team", href: "/dashboard/users", icon: "users" });
     items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
   }
 

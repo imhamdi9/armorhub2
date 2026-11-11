@@ -23,3 +23,16 @@ export async function register(data: {
 
   return response.data;
 }
+
+export async function forgotPassword(email: string) {
+  return (await api.post<{ message: string }>("/forgot-password", { email })).data;
+}
+
+export async function resetPassword(data: {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}) {
+  return (await api.post<{ message: string }>("/reset-password", data)).data;
+}

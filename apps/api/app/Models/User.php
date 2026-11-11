@@ -23,6 +23,7 @@ class User extends Authenticatable
       'name',
       'email',
       'password',
+      'is_active',
       'company_id',
       'partner_id',
       'latitude',
@@ -54,6 +55,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 }

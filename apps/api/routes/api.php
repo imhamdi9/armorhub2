@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\IndustryController;
 use App\Http\Controllers\Api\MyItemsController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PartnerOrderController;
 use App\Http\Controllers\Api\PartnerQuoteController;
 use App\Http\Controllers\Api\PaymentController;
@@ -23,6 +25,8 @@ use Illuminate\Support\Facades\Route;
 // Public
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:auth');
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:auth');
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
@@ -51,6 +55,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:companies.view');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
+
+    // Staff
+    Route::middleware('permission:users.manage')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
 
     // Tenants (platform admin)
     Route::middleware('permission:tenants.manage')->group(function () {

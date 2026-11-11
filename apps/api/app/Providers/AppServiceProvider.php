@@ -13,6 +13,7 @@ use App\Policies\CompanyPolicy;
 use App\Policies\PartnerPolicy;
 use App\Services\Payment\PaymentGateway;
 use App\Services\Payment\SimulatedGateway;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -61,6 +62,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Partner::class, PartnerPolicy::class);
 
         $this->app->make(IndustryRegistry::class)->boot();
+
+        // Reset links open the web app, not the API.
+        ResetPassword::createUrlUsing(fn ($user, string $token) => rtrim(config('platform.web_url'), '/')
+            .'/reset-password?token='.$token.'&email='.urlencode($user->getEmailForPasswordReset()));
 
         // Slow down password guessing and signup abuse.
         RateLimiter::for('auth', fn (Request $r) => Limit::perMinute(10)->by($r->ip().'|'.strtolower((string) $r->input('email'))));

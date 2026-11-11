@@ -97,6 +97,9 @@ export default function LoginPage() {
             Login
           </Button>
           <p className="text-center text-sm">
+            <Link href="/forgot-password" className="underline">Forgot your password?</Link>
+          </p>
+          <p className="text-center text-sm">
             New here? <Link href="/register" className="underline">Create an account</Link>
           </p>
             </form>

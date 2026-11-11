@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Package,
   Package2,
+  UserCog,
   ShoppingCart,
   Users,
   Wrench,
@@ -40,6 +41,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   commissions: Banknote,
   items: Package2,
   companies: Building,
+  users: UserCog,
 };
 
 export function AppSidebar() {

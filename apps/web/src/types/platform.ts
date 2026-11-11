@@ -91,3 +91,13 @@ export interface PriceQuote {
   total: number | string;
   currency: string;
 }
+
+export interface StaffUser {
+  id: number;
+  name: string;
+  email: string;
+  is_active: boolean;
+  role: string | null;
+  company: { id: number; name: string } | null;
+  partner: { id: number; name: string } | null;
+}

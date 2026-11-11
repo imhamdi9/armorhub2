@@ -2,6 +2,9 @@
 
 return [
 
+    // Public URL of the web app (used in password-reset emails).
+    'web_url' => env('WEB_URL', 'http://localhost:3000'),
+
     'currency' => env('PLATFORM_CURRENCY', 'USD'),
 
     // Share of an order's total taken as commission, in percent.

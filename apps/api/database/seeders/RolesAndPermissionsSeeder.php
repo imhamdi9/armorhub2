@@ -40,6 +40,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Tenants / industries
     'tenants.manage',
+
+    // Staff
+    'users.manage',
     'catalog.manage',
 
     // Orders
@@ -88,6 +91,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
     'catalog.manage',
 
+    'users.manage',
+
     'orders.view',
 
     'commissions.view',
@@ -101,6 +106,8 @@ class RolesAndPermissionsSeeder extends Seeder
     'partners.update',
 
     'products.view',
+
+    'users.manage',
 
     'orders.view',
 
