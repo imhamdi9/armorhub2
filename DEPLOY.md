@@ -61,3 +61,19 @@ Or without Docker: `cd apps/web && NEXT_PUBLIC_API_URL=... npm ci && npm run bui
 
 See "Industry modules" in the README: create `app/Modules/<Name>`, register it
 in `AppServiceProvider::MODULES`, run `IndustrySeeder`.
+
+## Before real customers use it
+
+- **Payments are simulated.** `POST /orders/{order}/payments` records a payment
+  and splits the commission, but no card is charged. Integrate a payment
+  gateway (Stripe, Moyasar, ...) before taking real money.
+- **Customer signup** needs a company ID (the storefront the customer orders
+  from); share it with customers, e.g. as a signup link.
+- **Ordering needs location.** Customers share it from the New order screen;
+  partners need `latitude`, `longitude` and `location_enabled` set to be found.
+- Commission % and split, and the default currency, live in
+  `apps/api/config/platform.php` (env: `PLATFORM_COMMISSION_PERCENTAGE`,
+  `PLATFORM_CURRENCY`).
+- The web app keeps its API token in `localStorage`. For a hardened launch,
+  move to httpOnly cookies (Sanctum SPA auth) and add email verification and
+  rate limiting on `/login` and `/register`.
