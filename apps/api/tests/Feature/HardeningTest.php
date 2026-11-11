@@ -102,6 +102,16 @@ class HardeningTest extends TestCase
         $this->artisan('platform:create-admin', ['email' => 'x@example.com', '--password' => 'short'])->assertFailed();
     }
 
+    public function test_create_admin_if_missing_is_idempotent(): void
+    {
+        $args = ['email' => 'boss@example.com', '--password' => 'longenough1', '--if-missing' => true];
+
+        $this->artisan('platform:create-admin', $args)->assertSuccessful();
+        $this->artisan('platform:create-admin', $args)->expectsOutputToContain('already exists')->assertSuccessful();
+
+        $this->assertSame(1, User::where('email', 'boss@example.com')->count());
+    }
+
     public function test_demo_command_builds_a_working_marketplace(): void
     {
         $this->artisan('platform:demo')->assertSuccessful();

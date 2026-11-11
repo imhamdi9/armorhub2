@@ -1,0 +1,70 @@
+# Render Blueprint: free-tier demo deployment (API + web). See FREE-DEPLOY.md.
+# Free services sleep after ~15 minutes idle; the first request then takes about a minute.
+services:
+  - type: web
+    name: armorhub-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: ArmorHub
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      # Self-setup on every boot (the free tier has no shell).
+      - key: RUN_MIGRATIONS
+        value: "true"
+      # Database: any MySQL-compatible server, e.g. TiDB Cloud free.
+      - key: DB_CONNECTION
+        value: mysql
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # First platform admin, created once on first boot.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # The web app's public URL, e.g. https://armorhub-web.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: APP_URL
+        sync: false
+      # DEMO ONLY: no card is charged. Remove once a real payment gateway is integrated.
+      - key: PLATFORM_ALLOW_SIMULATED_PAYMENTS
+        value: "true"
+
+  - type: web
+    name: armorhub-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    envVars:
+      # The API's public URL + /api, e.g. https://armorhub-api.onrender.com/api
+      # (baked in at build time; change it, then redeploy the web service).
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

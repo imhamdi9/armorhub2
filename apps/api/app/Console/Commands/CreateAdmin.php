@@ -13,12 +13,19 @@ class CreateAdmin extends Command
     protected $signature = 'platform:create-admin
                             {email : Login email}
                             {--name=Administrator : Display name}
-                            {--password= : Password (prompted if omitted)}';
+                            {--password= : Password (prompted if omitted)}
+                            {--if-missing : Do nothing (successfully) if this email already exists}';
 
     protected $description = 'Create a platform administrator (also seeds roles and permissions if missing)';
 
     public function handle(): int
     {
+        if ($this->option('if-missing') && User::where('email', $this->argument('email'))->exists()) {
+            $this->line('Admin already exists, nothing to do.');
+
+            return self::SUCCESS;
+        }
+
         $password = $this->option('password') ?: $this->secret('Password (min 8 characters)');
 
         $validator = Validator::make(
