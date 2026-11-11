@@ -22,9 +22,12 @@ class PartnerController extends Controller
     {
         $this->authorize('create', Partner::class);
 
-        $partner = Partner::create(
-            $this->validated($request) + ['company_id' => $request->user()->company_id]
-        );
+        $data = $this->validated($request);
+
+        // A partner with coordinates can be found by nearby customers.
+        $data['location_enabled'] ??= isset($data['latitude'], $data['longitude']);
+
+        $partner = Partner::create($data + ['company_id' => $request->user()->company_id]);
 
         return response()->json($partner, 201);
     }

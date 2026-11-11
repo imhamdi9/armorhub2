@@ -131,3 +131,23 @@ export const updateLocation = async (data: {
   city?: string;
   country?: string;
 }) => (await api.put("/me/location", data)).data;
+
+export const createTenant = async (data: { name: string; industry_id: number }) =>
+  (await api.post<Tenant>("/tenants", data)).data;
+
+export interface Company {
+  id: number;
+  tenant_id: number;
+  name: string;
+  type: string;
+  status: string;
+}
+
+export const getCompanies = async () =>
+  (await api.get<Company[]>("/companies")).data;
+
+export const createCompany = async (data: {
+  tenant_id: number;
+  name: string;
+  type?: string;
+}) => (await api.post<Company>("/companies", data)).data;

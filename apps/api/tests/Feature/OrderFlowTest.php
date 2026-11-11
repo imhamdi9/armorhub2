@@ -300,6 +300,12 @@ class OrderFlowTest extends TestCase
 
         $id = $admin->postJson('/api/partners', ['name' => 'New', 'city' => 'Jeddah', 'country' => 'SA'])
             ->assertCreated()->json('id');
+        // With coordinates, a new partner is discoverable by default.
+        $located = $this->postJson('/api/partners', [
+            'name' => 'Located', 'city' => 'Jeddah', 'country' => 'SA', 'latitude' => 21.5, 'longitude' => 39.2,
+        ])->assertCreated()->assertJsonPath('location_enabled', true);
+        $this->assertNotNull($located->json('id'));
+
         $this->putJson("/api/partners/{$id}", ['phone' => '123'])->assertOk()->assertJsonPath('phone', '123');
         $this->getJson("/api/partners/{$id}")->assertOk();
         $this->deleteJson("/api/partners/{$id}")->assertOk();

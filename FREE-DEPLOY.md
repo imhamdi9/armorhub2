@@ -45,14 +45,16 @@ You need free accounts at [GitHub](https://github.com) (already have),
 If you had to change a URL after the first deploy: update the env var, then
 **Manual Deploy → Deploy latest commit** (the web URL is baked in at build time).
 
-## 3. First-time setup in the app
+## 3. First-time setup in the app (all in the UI, signed in as the admin)
 
-1. **Tenants** → create/assign the industry (Automotive, Home Services, Beauty, Devices).
-2. Create the storefront **company** customers sign up under (note its ID) —
-   via the API `POST /api/companies` for now (needs `tenant_id`, `name`).
-3. Add **products**, their **price rules**, and **partners** (with latitude/longitude
-   so customers can be matched to nearby ones).
-4. Customers sign up at `/register` using the storefront company ID.
+1. **Tenants** → add your brand and pick its industry (Automotive, Home Services, Beauty, Devices).
+2. **Companies** → add the storefront company under that tenant; its **Company ID**
+   is shown next to it — customers need it to sign up at `/register`.
+3. **Products** → add products and their price rules; **Partners** → add service
+   providers *with latitude/longitude* so nearby customers are matched to them.
+4. Customers sign up at `/register` with the storefront Company ID and can order.
+
+(`npm run e2e:setup` in `apps/web` replays exactly this first-run path in a browser.)
 
 ## Limits to know
 

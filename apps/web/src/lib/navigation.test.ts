@@ -74,6 +74,7 @@ describe("buildNavigation", () => {
     const nav = titles(user(["platform-admin"]));
     expect(nav).toContain("Room Types");
     expect(nav).toContain("Tenants");
+    expect(nav).toContain("Companies");
   });
 
   it("follows the industry's targets", () => {

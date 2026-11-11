@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Banknote,
   BookOpen,
+  Building,
   Building2,
   Inbox,
   LayoutDashboard,
@@ -38,6 +39,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   requests: Inbox,
   commissions: Banknote,
   items: Package2,
+  companies: Building,
 };
 
 export function AppSidebar() {

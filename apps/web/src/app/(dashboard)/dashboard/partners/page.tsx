@@ -18,7 +18,7 @@ export default function PartnersPage() {
   const [partners, setPartners] = useState<Partner[] | null>(null);
   const [forbidden, setForbidden] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", city: "", country: "", phone: "" });
+  const [form, setForm] = useState({ name: "", city: "", country: "", phone: "", latitude: "", longitude: "" });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,9 +29,10 @@ export default function PartnersPage() {
     e.preventDefault();
     setError(null);
     try {
-      const created = await createPartner(form);
+      const body = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== ""));
+      const created = await createPartner(body);
       setPartners((prev) => [...(prev ?? []), created]);
-      setForm({ name: "", city: "", country: "", phone: "" });
+      setForm({ name: "", city: "", country: "", phone: "", latitude: "", longitude: "" });
       setShowForm(false);
     } catch (err) {
       setError(errorMessage(err));
@@ -52,17 +53,22 @@ export default function PartnersPage() {
 
       {showForm && (
         <form onSubmit={onSubmit} className="mb-6 space-y-3 rounded-lg border p-4">
-          {(["name", "city", "country", "phone"] as const).map((key) => (
+          {(["name", "city", "country", "phone", "latitude", "longitude"] as const).map((key) => (
             <div key={key}>
               <Label htmlFor={key} className="capitalize">{key}</Label>
               <Input
                 id={key}
-                required={key !== "phone"}
+                type={key === "latitude" || key === "longitude" ? "number" : "text"}
+                step="any"
+                required={key === "name" || key === "city" || key === "country"}
                 value={form[key]}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
               />
             </div>
           ))}
+          <p className="text-xs text-muted-foreground">
+            Latitude and longitude let customers be matched with this partner when they are nearby.
+          </p>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <Button type="submit">Save</Button>
         </form>
