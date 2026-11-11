@@ -112,6 +112,11 @@ function StorefrontEditor() {
             <label htmlFor="sf-logo" className="font-medium">{tr("Logo address (https)")}</label>
             <Input id="sf-logo" dir="ltr" placeholder="https://" value={form.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value)} />
           </div>
+          <div className="md:col-span-2">
+            <label htmlFor="sf-hero" className="font-medium">{tr("Hero image address (https, optional)")}</label>
+            <Input id="sf-hero" dir="ltr" placeholder="https://" value={form.hero_image_url ?? ""} onChange={(e) => set("hero_image_url", e.target.value)} />
+            <p className="mt-1 text-xs text-muted-foreground">{tr("A wide photo for the top of your store. Leave empty to use a drawing in your brand colour.")}</p>
+          </div>
           <div>
             <label htmlFor="sf-email" className="font-medium">{tr("Public contact email")}</label>
             <Input id="sf-email" dir="ltr" type="email" value={form.contact_email ?? ""} onChange={(e) => set("contact_email", e.target.value)} />

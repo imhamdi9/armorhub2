@@ -13,7 +13,7 @@ industry-agnostic: any business with the same flow can be added as an industry m
 | --- | --- |
 | **Industries** | Automotive, Home Services, Beauty & Wellness, Devices — each a self-contained module |
 | **Countries** | Saudi Arabia and Egypt first, as data-driven market packs (currency, VAT, phone rules, cities); a new country is a config entry. See [MARKETS.md](MARKETS.md) |
-| **Public site** | A server-rendered home page and a **branded storefront per business** (`/s/<slug>`): hero, featured products, searchable catalog, product pages with public prices, partner showcase, sitemap/robots, English + Arabic. Visitors sign up straight from a product page |
+| **Public site** | A server-rendered home page and a **branded storefront per business** (`/s/<slug>`): hero, featured products, searchable catalog, product pages with public prices, partner showcase, sitemap/robots, English + Arabic. Visitors sign up straight from a product page. Branded header (mobile menu), illustrated hero (or the store's own photo), stats band, FAQ with Google FAQ markup, and a full footer |
 | **Customers** | Sign up, add what they bring (property…), order with live pricing, compare quotes, pay, track a timeline, cancel before paying, warranties |
 | **Partners** | Quote inbox, jobs (schedule → start → complete), team of technicians, earnings |
 | **Companies / admins** | Tenants & industries, companies, **storefront editor** (address, headline, colour, logo, featured products), products & price rules, shared catalogs, partners, staff with roles, commissions & payouts, dashboards with role-based numbers |

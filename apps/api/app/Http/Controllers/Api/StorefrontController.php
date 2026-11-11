@@ -37,6 +37,7 @@ class StorefrontController extends Controller
             'primary_color' => ['sometimes', 'regex:/^#[0-9a-fA-F]{6}$/'],
             // Only https images; they are loaded by every visitor's browser.
             'logo_url' => ['nullable', 'string', 'max:500', 'url:https'],
+            'hero_image_url' => ['nullable', 'string', 'max:500', 'url:https'],
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:50',
             'featured_product_ids' => 'sometimes|array|max:8',

@@ -36,6 +36,7 @@ export interface PublicBranding {
   about: string | null;
   primary_color: string;
   logo_url: string | null;
+  hero_image_url: string | null;
   contact_email: string | null;
   contact_phone: string | null;
 }

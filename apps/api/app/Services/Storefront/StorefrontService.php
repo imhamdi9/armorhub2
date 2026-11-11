@@ -33,6 +33,7 @@ class StorefrontService
             'about' => null,
             'primary_color' => '#111827',
             'logo_url' => null,
+            'hero_image_url' => null,
             'featured_product_ids' => [],
             'contact_email' => null,
             'contact_phone' => null,
@@ -86,6 +87,7 @@ class StorefrontService
             'about' => $s['about'],
             'primary_color' => $s['primary_color'],
             'logo_url' => $s['logo_url'],
+            'hero_image_url' => $s['hero_image_url'],
             'contact_email' => $s['contact_email'],
             'contact_phone' => $s['contact_phone'],
         ];

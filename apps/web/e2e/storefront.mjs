@@ -196,6 +196,24 @@ try {
   await arCtx.close();
   await eCtx.close();
 
+  // ---- Brand layer: FAQ (readable without JavaScript, with FAQ markup), footer, header, mobile menu.
+  const brand = await asCrawler("/s/armor-store");
+  if (!/Frequently asked questions/.test(brand.text) || !/Is my payment safe\?/.test(brand.text)) fail("the FAQ is not in the server-rendered page");
+  if (!brand.html.includes('"@type":"FAQPage"')) fail("FAQ structured data is missing");
+  if (!/Powered by/.test(brand.text) || !/Secure payments/.test(brand.text)) fail("the footer is missing");
+  const mctx = await browser.newContext({ viewport: { width: 390, height: 800 }, isMobile: true });
+  const mp = await mctx.newPage();
+  await mp.goto(`${base}/s/armor-store`);
+  await mp.click('button[aria-label="Menu"]');
+  await mp.waitForSelector('nav[aria-label="Main"]:visible >> text=Products');
+  const overflow = await mp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  if (overflow > 1) fail(`the page scrolls sideways on a phone by ${overflow}px`);
+  await mp.goto(`${base}/s/armor-store#faq`);
+  await mp.click("summary:has-text('Is my payment safe?')");
+  await mp.waitForSelector("text=we never see or store your card details");
+  await mctx.close();
+  ok("FAQ + structured data + footer are server-rendered; mobile menu works and nothing overflows");
+
   console.log("\nStorefront passed.");
 } catch (e) {
   console.error("\nStorefront FAILED:", e.message.split("\n")[0]);

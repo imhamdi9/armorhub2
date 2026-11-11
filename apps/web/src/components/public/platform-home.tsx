@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 
+import { HeroArt, Icon } from "@/components/public/art";
+import { Faq } from "@/components/public/faq";
+import { CallToAction, StatsBand, Steps, WhyUs } from "@/components/public/sections";
 import { PublicShell } from "@/components/public/shell";
 import { tr } from "@/lib/i18n";
 import type { PublicStoreCard } from "@/types/public";
@@ -26,18 +29,31 @@ const COUNTRY_NAMES: Record<string, string> = { SA: "Saudi Arabia", EG: "Egypt" 
 export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
   return (
     <PublicShell>
-      <section className="bg-gradient-to-b from-gray-50 to-white">
-        <div className="mx-auto max-w-4xl px-4 py-16 text-center md:py-24">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{tr("Trusted services, quoted by experts near you")}</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            {tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="#stores" className="btn-brand rounded-lg px-6 py-3 font-medium">{tr("Browse stores")}</a>
-            <Link href="/login" className="rounded-lg border px-6 py-3 font-medium hover:bg-gray-50">{tr("Sign in")}</Link>
+      <section className="overflow-hidden" style={{ background: "linear-gradient(180deg, #f3f4f6, #fff)" }}>
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-2 md:py-20">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-600"><Icon name="globe" className="h-3.5 w-3.5" /> {tr("Saudi Arabia · Egypt")}</span>
+            <h1 className="mt-4 text-4xl font-extrabold tracking-tight md:text-5xl">{tr("Trusted services, quoted by experts near you")}</h1>
+            <p className="mt-4 max-w-xl text-lg text-gray-600">
+              {tr("A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.")}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#stores" className="btn-brand rounded-lg px-6 py-3 font-medium shadow-sm">{tr("Browse stores")}</a>
+              <Link href="/login" className="rounded-lg border bg-white px-6 py-3 font-medium hover:bg-gray-50">{tr("Sign in")}</Link>
+            </div>
           </div>
+          <HeroArt kind="automotive" />
         </div>
       </section>
+
+      <StatsBand
+        items={[
+          { value: stores.length, label: "Open stores" },
+          { value: new Set(stores.map((s) => s.market).filter(Boolean)).size, label: "Countries" },
+          { value: INDUSTRIES.length, label: "Industries" },
+          { value: "AR · EN", label: "Languages" },
+        ]}
+      />
 
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="mb-6 text-2xl font-bold">{tr("What you can get done")}</h2>
@@ -76,20 +92,10 @@ export function PlatformHome({ stores }: { stores: PublicStoreCard[] }) {
         )}
       </section>
 
-      <section className="bg-gray-50">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="mb-6 text-2xl font-bold">{tr("How it works")}</h2>
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map(([n, title, text]) => (
-              <li key={n} className="rounded-xl bg-white p-5 shadow-sm">
-                <span className="btn-brand inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">{n}</span>
-                <h3 className="mt-3 font-semibold">{tr(title)}</h3>
-                <p className="mt-1 text-sm text-gray-600">{tr(text)}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+      <WhyUs />
+      <Steps steps={STEPS} columns={4} />
+      <Faq />
+      <CallToAction title="Run a business? Open your own store." text="Get a branded storefront, receive quote requests from nearby customers and get paid securely." href="/login" label="For businesses: sign in" />
     </PublicShell>
   );
 }

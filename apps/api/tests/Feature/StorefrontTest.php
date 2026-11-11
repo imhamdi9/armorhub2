@@ -211,6 +211,7 @@ class StorefrontTest extends TestCase
         // Logos are fetched by every visitor's browser: https only.
         foreach (['http://cdn.example.com/a.png', 'javascript:alert(1)', 'data:image/png;base64,AAAA', 'ftp://x/y.png', 'not a url'] as $bad) {
             $put(['logo_url' => $bad])->assertUnprocessable()->assertJsonValidationErrors('logo_url');
+            $put(['hero_image_url' => $bad])->assertUnprocessable()->assertJsonValidationErrors('hero_image_url');
         }
         // Slugs: lowercase words, not reserved, not taken.
         foreach (['Bad Slug', 'ab', 'x_y', '-bad-', 'api', 'admin', '../etc', 'a'.str_repeat('b', 80)] as $bad) {

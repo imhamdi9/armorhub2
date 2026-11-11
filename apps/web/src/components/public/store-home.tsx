@@ -3,6 +3,9 @@
 import Link from "next/link";
 
 import { ProductCard } from "@/components/public/product-card";
+import { HeroArt } from "@/components/public/art";
+import { Faq } from "@/components/public/faq";
+import { CallToAction, Steps, StatsBand, WhyUs } from "@/components/public/sections";
 import { PublicShell } from "@/components/public/shell";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicStore } from "@/types/public";
@@ -19,19 +22,40 @@ export function StoreHome({ data }: { data: PublicStore }) {
   const signup = `/register?store=${encodeURIComponent(store.slug)}`;
 
   return (
-    <PublicShell store={store}>
-      <section className="bg-gray-50">
-        <div className="mx-auto max-w-4xl px-4 py-14 text-center md:py-20">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-            {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
-          </h1>
-          {store.subheadline && <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">{store.subheadline}</p>}
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href={`/s/${store.slug}/products`} className="btn-brand rounded-lg px-6 py-3 font-medium">{tr("Browse products")}</Link>
-            <Link href={signup} className="rounded-lg border bg-white px-6 py-3 font-medium hover:bg-gray-50">{tr("Create an account")}</Link>
+    <PublicShell store={{ ...store, market: data.market }}>
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--brand, #111827) 9%, white), #fff)" }}>
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-2 md:py-20">
+          <div>
+            {industry && <span className="inline-block rounded-full border bg-white px-3 py-1 text-xs font-medium uppercase tracking-wide text-gray-600">{tr(industry.name)}</span>}
+            <h1 className="mt-4 text-4xl font-extrabold tracking-tight md:text-5xl">
+              {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
+            </h1>
+            {store.subheadline && <p className="mt-4 max-w-xl text-lg text-gray-600">{store.subheadline}</p>}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href={`/s/${store.slug}/products`} className="btn-brand rounded-lg px-6 py-3 font-medium shadow-sm">{tr("Browse products")}</Link>
+              <Link href={signup} className="rounded-lg border bg-white px-6 py-3 font-medium hover:bg-gray-50">{tr("Create an account")}</Link>
+            </div>
+            <p className="mt-5 text-sm text-gray-500">{tr("Free to request quotes. No obligation.")}</p>
+          </div>
+          <div>
+            {store.hero_image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner
+              <img src={store.hero_image_url} alt="" className="aspect-[4/3] w-full rounded-3xl object-cover shadow-xl" />
+            ) : (
+              <HeroArt kind={industry?.key} />
+            )}
           </div>
         </div>
       </section>
+
+      <StatsBand
+        items={[
+          { value: partners.count, label: "Vetted professionals" },
+          { value: partners.cities.length, label: "Cities covered" },
+          { value: Math.max(0, ...featured.map((p) => p.warranty_years ?? 0)), label: "Years of warranty", suffix: "+" },
+          { value: data.market && data.market.prices_include_vat ? `${formatNumber(data.market.vat_rate)}%` : null, label: "VAT included in prices" },
+        ]}
+      />
 
       {featured.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12">
@@ -56,20 +80,8 @@ export function StoreHome({ data }: { data: PublicStore }) {
         </section>
       )}
 
-      <section className="bg-gray-50">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="mb-6 text-2xl font-bold">{tr("How it works")}</h2>
-          <ol className="grid gap-4 md:grid-cols-3">
-            {STEPS.map(([n, title, text]) => (
-              <li key={n} className="rounded-xl bg-white p-5 shadow-sm">
-                <span className="btn-brand inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">{n}</span>
-                <h3 className="mt-3 font-semibold">{tr(title)}</h3>
-                <p className="mt-1 text-sm text-gray-600">{tr(text)}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+      <WhyUs />
+      <Steps steps={STEPS} />
 
       {partners.count > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12">
@@ -102,6 +114,8 @@ export function StoreHome({ data }: { data: PublicStore }) {
           </div>
         </section>
       )}
+      <Faq />
+      <CallToAction title="Ready to get started?" text="Create a free account, choose a service and receive quotes from professionals near you." href={signup} label="Create an account" />
     </PublicShell>
   );
 }
