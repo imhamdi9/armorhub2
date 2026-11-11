@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
+import { ShippingPanel } from "@/components/orders/shipping-panel";
 import { eventLabel, statusLabel } from "@/lib/orders";
 import {
   acceptQuote,
@@ -107,6 +108,8 @@ function OrderDetail() {
           <p className="mt-2">{tr("Appointment")}: {formatDateTime(order.scheduled_at)}</p>
         )}
       </div>
+
+      <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
 
       {order.warranty && (
         <div className="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-sm">

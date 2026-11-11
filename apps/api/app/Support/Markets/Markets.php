@@ -65,6 +65,18 @@ class Markets
         return ['market' => $market?->code, 'tax_rate' => $vat['rate'] ?? 0.0, 'tax_amount' => $vat['tax'] ?? 0.0];
     }
 
+    /** A phone number checked for the company's country; with no country, any plausible international number (7-15 digits). */
+    public function phoneFor(?Company $company, string $input): ?string
+    {
+        if ($market = $this->forCompany($company)) {
+            return $market->normalizePhone($input);
+        }
+
+        $clean = preg_replace('/[^\d+]/', '', $input) ?? '';
+
+        return preg_match('/^\+?\d{7,15}$/', $clean) === 1 ? $clean : null;
+    }
+
     /** The ISO currency orders are charged in for this company. */
     public function currencyFor(?Company $company): string
     {

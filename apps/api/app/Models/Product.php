@@ -29,12 +29,14 @@ class Product extends Model
         'warranty_years',
         'attributes',
         'is_active',
+        'requires_shipping',
     ];
 
 
     protected $casts = [
         'base_price'=>'decimal:2',
         'is_active'=>'boolean',
+        'requires_shipping'=>'boolean',
         'attributes'=>'array',
     ];
 

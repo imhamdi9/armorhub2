@@ -33,7 +33,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", warranty_years: "", description: "", is_active: true,
+    name: "", brand: "", category: "", base_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false,
   });
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
 
@@ -48,6 +48,7 @@ export default function ProductDetailPage() {
         warranty_years: p.warranty_years == null ? "" : String(p.warranty_years),
         description: p.description ?? "",
         is_active: p.is_active,
+        requires_shipping: !!p.requires_shipping,
       });
       setPrices(
         Object.fromEntries(
@@ -87,6 +88,7 @@ export default function ProductDetailPage() {
         warranty_years: details.warranty_years === "" ? null : Number(details.warranty_years),
         description: details.description || null,
         is_active: details.is_active,
+        requires_shipping: details.requires_shipping,
       });
       setProduct(updated);
       setDetailsMsg(tr("Saved"));
@@ -122,6 +124,10 @@ export default function ProductDetailPage() {
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
             {tr("Visible to customers")}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="requires_shipping" checked={details.requires_shipping} onChange={(e) => setDetails({ ...details, requires_shipping: e.target.checked })} />
+            {tr("Physical product: needs a delivery address and shipping")}
           </label>
           <textarea
             aria-label={tr("Description")}

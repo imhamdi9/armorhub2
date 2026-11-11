@@ -29,15 +29,20 @@ class Order extends Model
         'tax_rate',
         'tax_amount',
         'company_id',
+        'shipping_address',
         'scheduled_at',
         'started_at',
         'completed_at',
         'cancelled_at',
     ];
 
+    /** The delivery address is only sent to the customer and the staff handling the parcel. */
+    protected $hidden = ['shipping_address'];
+
     protected function casts(): array
     {
         return [
+            'shipping_address' => 'array',
             'status' => OrderStatus::class,
             'scheduled_at' => 'datetime',
             'started_at' => 'datetime',

@@ -10,6 +10,7 @@ export interface Product {
   warranty_years: number | null;
   attributes: Record<string, unknown> | null;
   is_active: boolean;
+  requires_shipping?: boolean;
 }
 
 export interface PriceRule {
@@ -57,6 +58,60 @@ export interface OrderEvent {
   data: Record<string, unknown> | null;
   created_at: string;
   user?: { id: number; name: string } | null;
+}
+
+export interface ShippingAddress {
+  name: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  region?: string;
+  postal_code?: string;
+  country: string;
+}
+
+export interface ShipmentEvent {
+  id: number;
+  status: string;
+  description: string | null;
+  location: string | null;
+  occurred_at: string;
+}
+
+export interface Shipment {
+  id: number;
+  order_id: number;
+  provider: string;
+  carrier: string | null;
+  service: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  label_url: string | null;
+  status: string;
+  cost: string | null;
+  currency: string | null;
+  events: ShipmentEvent[];
+}
+
+export interface OrderShipping {
+  requires_shipping: boolean;
+  can_manage: boolean;
+  address: ShippingAddress | null;
+  shipments: Shipment[];
+}
+
+export interface ShippingChoice {
+  default: string;
+  providers: { key: string; label: string; manual: boolean }[];
+}
+
+export interface ShippingRate {
+  service: string;
+  label: string;
+  price: number;
+  currency: string;
+  eta_days: number | null;
 }
 
 export interface Warranty {

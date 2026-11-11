@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { aliasLabel, aliasSingular } from "@/lib/navigation";
 import { errorMessage } from "@/lib/errors";
 import {
@@ -16,7 +17,7 @@ import {
   getProducts,
   updateLocation,
 } from "@/services/platform.service";
-import type { CatalogItem, PriceQuote, Product } from "@/types/platform";
+import type { CatalogItem, PriceQuote, Product, ShippingAddress } from "@/types/platform";
 import { formatMoney, tr } from "@/lib/i18n";
 
 interface Option {
@@ -52,6 +53,8 @@ function NewOrder() {
   const [error, setError] = useState<string | null>(null);
   const [needsLocation, setNeedsLocation] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [address, setAddress] = useState<ShippingAddress>({ name: user?.name ?? "", phone: user?.phone ?? "", line1: "", city: "", country: user?.market?.code ?? "SA" });
+  const setAddr = (k: keyof ShippingAddress) => (e: React.ChangeEvent<HTMLInputElement>) => setAddress((a) => ({ ...a, [k]: e.target.value }));
 
   useEffect(() => {
     getProducts().then(setProducts);
@@ -76,6 +79,7 @@ function NewOrder() {
   }, [subjectType]);
 
   const canPrice = productId !== null && selected.length > 0;
+  const needsShipping = !!products.find((p) => p.id === productId)?.requires_shipping;
 
   useEffect(() => {
     if (!canPrice) return;
@@ -110,6 +114,7 @@ function NewOrder() {
         subject_id: subjectType ? subjectId : null,
         target_type: targetType,
         targets: selected,
+        ...(needsShipping ? { shipping_address: address } : {}),
       });
       router.push(`/dashboard/orders/${res.order.id}`);
     } catch (e) {
@@ -125,7 +130,8 @@ function NewOrder() {
     return <p className="text-muted-foreground">{tr("Your account has no industry assigned yet.")}</p>;
   }
 
-  const ready = productId && selected.length > 0 && (!subjectType || subjectId);
+  const addressReady = !needsShipping || (address.name && address.phone && address.line1 && address.city && address.country.length === 2);
+  const ready = productId && selected.length > 0 && (!subjectType || subjectId) && addressReady;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -176,6 +182,21 @@ function NewOrder() {
           ))}
         </div>
       </section>
+
+      {needsShipping && (
+        <section>
+          <h2 className="mb-2 font-semibold">{tr("Delivery address")}</h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input aria-label={tr("Full name")} placeholder={tr("Full name")} autoComplete="name" value={address.name} onChange={setAddr("name")} />
+            <Input aria-label={tr("Mobile number")} placeholder={tr("Mobile number")} type="tel" dir="ltr" autoComplete="tel" value={address.phone} onChange={setAddr("phone")} />
+            <Input className="sm:col-span-2" aria-label={tr("Street address")} placeholder={tr("Street address")} autoComplete="address-line1" value={address.line1} onChange={setAddr("line1")} />
+            <Input className="sm:col-span-2" aria-label={tr("Apartment, building (optional)")} placeholder={tr("Apartment, building (optional)")} autoComplete="address-line2" value={address.line2 ?? ""} onChange={setAddr("line2")} />
+            <Input aria-label={tr("City")} placeholder={tr("City")} autoComplete="address-level2" value={address.city} onChange={setAddr("city")} />
+            <Input aria-label={tr("Postal code (optional)")} placeholder={tr("Postal code (optional)")} dir="ltr" autoComplete="postal-code" value={address.postal_code ?? ""} onChange={setAddr("postal_code")} />
+            <Input aria-label={tr("Country code")} placeholder="SA" maxLength={2} dir="ltr" value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value.toUpperCase() }))} />
+          </div>
+        </section>
+      )}
 
       <div className="rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{tr("Estimated price")}</p>

@@ -36,7 +36,7 @@ async function readyOrder(tag) {
   const shop = (await call("/login", { method: "POST", body: { email: "shop@test.com", password: "password123" } })).json.token;
   const products = (await call("/products", { token })).json;
   const hood = (await call("/catalog/vehicle_part", { token })).json.find((p) => p.name === "Hood");
-  const { order } = (await call("/orders", { method: "POST", token, body: { product_id: products[0].id, target_type: "vehicle_part", targets: [hood.id] } })).json;
+  const { order } = (await call("/orders", { method: "POST", token, body: { product_id: products.find((p) => p.name === "Ultimate Plus").id, target_type: "vehicle_part", targets: [hood.id] } })).json;
   const quote = (await call("/partner/orders", { token: shop })).json.find((q) => q.order_id === order.id);
   await call(`/partner-quotes/${quote.id}`, { method: "PATCH", token: shop, body: { price: 300 } });
   await call(`/partner-quotes/${quote.id}/accept`, { method: "PATCH", token });
@@ -57,7 +57,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Settings\|Payments\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Settings\|Payments\|Shipping\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview

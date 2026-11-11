@@ -64,6 +64,17 @@ class SeedDemo extends Command
         ]);
         $manager->assignRole('partner-manager');
 
+        // A physical product: it needs a delivery address and a shipment after payment.
+        $hood = \App\Modules\Automotive\Models\VehiclePart::where('slug', 'hood')->first();
+        $kit = \App\Models\Product::create([
+            'industry_id' => $tenant->industry_id, 'market' => 'SA', 'category' => 'care-kits', 'brand' => 'Armor', 'name' => 'Ceramic Care Kit',
+            'slug' => 'ceramic-care-kit', 'base_price' => 80, 'is_active' => true, 'requires_shipping' => true,
+            'description' => 'Maintenance kit for coated paint, delivered to your door.',
+        ]);
+        if ($hood) {
+            \App\Models\ProductPriceRule::create(['product_id' => $kit->id, 'target_type' => 'vehicle_part', 'target_id' => $hood->id, 'price' => 80, 'is_active' => true]);
+        }
+
         $this->seedEgypt($password);
 
         $this->info("Demo ready. Storefront: /s/{$store->slug} (company id {$store->id})");

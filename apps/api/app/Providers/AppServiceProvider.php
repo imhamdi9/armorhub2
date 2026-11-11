@@ -50,6 +50,16 @@ class AppServiceProvider extends ServiceProvider
 
             return $providers;
         });
+        // Shipping providers: the same idea. Staff may pick any configured one per shipment.
+        $this->app->singleton(\App\Services\Shipping\ShippingProviders::class, function ($app) {
+            $providers = new \App\Services\Shipping\ShippingProviders($app->make(\App\Support\Settings\SettingsRegistry::class), $app->make(\App\Support\Settings\Settings::class));
+
+            foreach ([\App\Services\Shipping\Providers\ManualProvider::class, \App\Services\Shipping\Providers\HttpProvider::class, \App\Services\Shipping\Providers\SimulatedProvider::class] as $driver) {
+                $providers->register($app->make($driver));
+            }
+
+            return $providers;
+        });
         $this->app->bind(PaymentGateway::class, \App\Services\Payment\PaymentManager::class);
 
         $this->app->singleton(IndustryRegistry::class, function ($app) {
@@ -73,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Registers the payment providers' settings so the admin panel and Settings know about them.
         $this->app->make(\App\Services\Payment\PaymentProviders::class);
+        $this->app->make(\App\Services\Shipping\ShippingProviders::class);
 
         // Reset links open the web app, not the API.
         ResetPassword::createUrlUsing(fn ($user, string $token) => rtrim(config('platform.web_url'), '/')

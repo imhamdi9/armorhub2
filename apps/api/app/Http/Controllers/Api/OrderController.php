@@ -24,7 +24,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return response()->json($order->load(['product', 'subject', 'events.user:id,name', 'warranty']));
+        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty']));
     }
 
     public function index(Request $request)
@@ -108,6 +108,8 @@ class OrderController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
+        $address = $this->shippingAddress($request, $product, $user);
+
         $this->assertSubject($data, $registry, $user->id);
 
         $price = $pricing->calculate(
@@ -134,7 +136,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'No partners available'], 422);
         }
 
-        $order = DB::transaction(function () use ($user, $data, $price, $partners) {
+        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address) {
 
             $order = Order::create([
                 'company_id' => $user->company_id,
@@ -148,6 +150,7 @@ class OrderController extends Controller
                 'commission_amount' => 0,
                 'total_amount' => $price['total'],
                 'currency' => $price['currency'],
+                'shipping_address' => $address,
             ] + app(\App\Support\Markets\Markets::class)->taxFor($user->company, (float) $price['total']));
 
             foreach ($partners as $partner) {
@@ -170,6 +173,34 @@ class OrderController extends Controller
             'order' => $order,
             'partner_quotes' => $partners->count(),
         ], 201);
+    }
+
+    /** Physical products need a delivery address (checked against the store's country); services do not. @return array<string, string>|null */
+    private function shippingAddress(Request $request, \App\Models\Product $product, $user): ?array
+    {
+        if (! $product->requires_shipping) {
+            return null;
+        }
+
+        $a = $request->validate([
+            'shipping_address' => 'required|array',
+            'shipping_address.name' => 'required|string|max:120',
+            'shipping_address.phone' => 'required|string|max:30',
+            'shipping_address.line1' => 'required|string|max:200',
+            'shipping_address.line2' => 'nullable|string|max:200',
+            'shipping_address.city' => 'required|string|max:100',
+            'shipping_address.region' => 'nullable|string|max:100',
+            'shipping_address.postal_code' => 'nullable|string|max:20',
+            'shipping_address.country' => 'required|string|size:2|alpha',
+        ])['shipping_address'];
+
+        $phone = app(\App\Support\Markets\Markets::class)->phoneFor($user->company, $a['phone']);
+
+        if (! $phone) {
+            throw ValidationException::withMessages(['shipping_address.phone' => ['Please enter a valid mobile number for delivery.']]);
+        }
+
+        return array_merge($a, ['phone' => $phone, 'country' => strtoupper($a['country'])]);
     }
 
     /** The subject must exist, and customer-owned subjects must be the user's own. */

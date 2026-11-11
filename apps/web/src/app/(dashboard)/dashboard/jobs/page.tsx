@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ShippingPanel } from "@/components/orders/shipping-panel";
 import { errorMessage } from "@/lib/errors";
 import { statusLabel } from "@/lib/orders";
 import { completeJob, getJobs, scheduleJob, startJob } from "@/services/platform.service";
@@ -67,6 +68,8 @@ export default function JobsPage() {
                 </div>
                 <Badge variant="secondary">{statusLabel(job.status)}</Badge>
               </div>
+
+              <div className="mt-3"><ShippingPanel orderId={job.id} paid /></div>
 
               {["paid", "appointment_scheduled"].includes(job.status) && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -20,6 +20,8 @@ export interface User {
   email_verified?: boolean;
   email_verification_required?: boolean;
   industry?: Industry | null;
+  phone?: string | null;
+  market?: { code: string; currency: string } | null;
 }
 
 export interface LoginRequest {

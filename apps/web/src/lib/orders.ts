@@ -25,6 +25,11 @@ const EVENT_LABELS: Record<string, string> = {
   started: "Work started",
   completed: "Work completed",
   cancelled: "Order cancelled",
+  shipped: "Order shipped",
+  shipment_out_for_delivery: "Out for delivery",
+  shipment_delivered: "Delivered",
+  shipment_failed: "Delivery failed",
+  shipment_returned: "Returned to sender",
 };
 
 export function eventLabel(event: OrderEvent): string {

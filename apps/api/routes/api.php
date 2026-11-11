@@ -53,6 +53,7 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
+Route::post('/webhooks/shipping/{provider}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
 Route::post('/webhooks/{provider}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
@@ -105,6 +106,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/shipping/providers', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'index']);
+        Route::put('/shipping/providers/{key}', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'update']);
+        Route::post('/shipping/providers/{key}/test', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'test']);
+        Route::post('/shipping/active', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'activate']);
         Route::get('/payments/providers', [PaymentProviderController::class, 'index']);
         Route::put('/payments/providers/{key}', [PaymentProviderController::class, 'update']);
         Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
@@ -156,6 +161,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/orders/{id}/cancel', [OrderLifecycleController::class, 'cancel']);
     Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('permission:payments.create');
+
+    // Shipping: staff book and track parcels; customers see tracking on their own orders
+    Route::get('/shipping-providers', [\App\Http\Controllers\Api\ShipmentController::class, 'providers']);
+    Route::get('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'index'])->whereNumber('id');
+    Route::post('/orders/{id}/shipping-rates', [\App\Http\Controllers\Api\ShipmentController::class, 'rates'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
 
     // Partner side: staff work the jobs assigned to their partner
     Route::middleware('role:partner-manager|technician')->group(function () {

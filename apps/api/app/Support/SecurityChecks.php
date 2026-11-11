@@ -44,9 +44,20 @@ class SecurityChecks
             $this->check('verification', app(\App\Support\Security\EmailPolicy::class)->verificationRequired() ? 'ok' : 'warn',
                 app(\App\Support\Security\EmailPolicy::class)->verificationRequired() ? 'Customers must verify their email before ordering.' : 'Email verification is not required, so anyone can order with an address they do not own.'),
             $this->check('payments', $this->paymentsCheck()[0], $this->paymentsCheck()[1]),
+            $this->check('shipping', ...$this->shippingCheck()),
         ];
 
         return $checks;
+    }
+
+    /** @return array{0: string, 1: string} */
+    private function shippingCheck(): array
+    {
+        $active = $this->settings->registry()->has('shipping.active_provider') ? $this->settings->get('shipping.active_provider') : 'manual';
+
+        return $active === 'simulated' && app()->isProduction()
+            ? ['warn', 'Shipping uses the demo carrier: no real parcels are booked. Choose a real or manual provider before launch.']
+            : ['ok', "Shipping uses the '{$active}' provider."];
     }
 
     /** @return array{0: string, 1: string} */

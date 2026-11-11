@@ -78,7 +78,7 @@ class AuthController extends Controller
         if (! empty($data['phone'])) {
             $company = \App\Models\Company::withoutGlobalScopes()->with('tenant')->find($data['company_id']);
             $market = app(\App\Support\Markets\Markets::class)->forCompany($company);
-            $phone = $market ? $market->normalizePhone($data['phone']) : preg_replace('/[^\d+]/', '', $data['phone']);
+            $phone = app(\App\Support\Markets\Markets::class)->phoneFor($company, $data['phone']);
 
             if (! $phone) {
                 throw ValidationException::withMessages(['phone' => ['Please enter a valid '.($market?->name() ?? '').' mobile number.']]);

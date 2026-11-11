@@ -69,6 +69,18 @@ class OrderNotifier
             'completed' => [[
                 $customer, 'completed', 'Work completed', "{$name} is done. Check your warranty details.", "/dashboard/orders/{$order->id}",
             ]],
+            'shipped' => [[
+                $customer, 'shipped', 'Your order has shipped', "{$name} is on its way".(($event->data['tracking_number'] ?? null) ? " (tracking {$event->data['tracking_number']})." : '.'), "/dashboard/orders/{$order->id}",
+            ]],
+            'shipment_out_for_delivery' => [[
+                $customer, 'shipment_out_for_delivery', 'Out for delivery', "{$name} is out for delivery today.", "/dashboard/orders/{$order->id}",
+            ]],
+            'shipment_delivered' => [[
+                $customer, 'shipment_delivered', 'Delivered', "{$name} was delivered.", "/dashboard/orders/{$order->id}",
+            ]],
+            'shipment_failed' => [[
+                $customer, 'shipment_failed', 'Delivery problem', "The carrier could not deliver {$name}. We are following up.", "/dashboard/orders/{$order->id}",
+            ]],
             'cancelled' => [[
                 $this->partnerStaff($this->askedPartnerIds($order), ['partner-manager']),
                 'cancelled', 'Order cancelled', "Order #{$order->id} ({$name}) was cancelled.", '/dashboard/requests',

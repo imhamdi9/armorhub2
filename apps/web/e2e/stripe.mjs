@@ -34,7 +34,7 @@ try {
   const products = await call("/products", { token: customer.token });
   const parts = await call("/catalog/vehicle_part", { token: customer.token });
   const hood = parts.find((p) => p.name === "Hood");
-  const { order } = await call("/orders", { method: "POST", token: customer.token, body: { product_id: products[0].id, target_type: "vehicle_part", targets: [hood.id] } });
+  const { order } = await call("/orders", { method: "POST", token: customer.token, body: { product_id: products.find((p) => p.name === "Ultimate Plus").id, target_type: "vehicle_part", targets: [hood.id] } });
   const requests = await call("/partner/orders", { token: shop.token });
   const quote = requests.find((q) => q.order_id === order.id);
   await call(`/partner-quotes/${quote.id}`, { method: "PATCH", token: shop.token, body: { price: 300 } });

@@ -23,6 +23,7 @@ import {
   UserCog,
   ShoppingCart,
   Users,
+  Truck,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -59,6 +60,7 @@ const icons: Record<NavItem["icon"], LucideIcon> = {
   admin: Gauge,
   settings: Settings2,
   payments: CreditCard,
+  shipping: Truck,
   security: ShieldAlert,
   audit: ScrollText,
 };

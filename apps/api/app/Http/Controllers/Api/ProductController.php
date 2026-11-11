@@ -106,6 +106,7 @@ class ProductController extends Controller
             'warranty_years' => 'nullable|integer|min:0',
             'attributes' => 'nullable|array',
             'is_active' => 'boolean',
+            'requires_shipping' => 'boolean',
         ]);
     }
 }

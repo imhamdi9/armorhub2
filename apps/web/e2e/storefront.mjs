@@ -52,7 +52,7 @@ try {
   if (!/Ultimate Plus/.test(r.text)) fail("catalog search did not find the product");
   r = await asCrawler("/s/armor-store/products?q=zzzznothing");
   if (!/No products found/.test(r.text)) fail("empty search not handled");
-  r = await asCrawler("/s/armor-store/products");
+  r = await asCrawler("/s/armor-store/products?q=ultimate");
   const productId = /\/s\/armor-store\/products\/(\d+)/.exec(r.html)?.[1];
   if (!productId) fail("no product link in the catalog");
   r = await asCrawler(`/s/armor-store/products/${productId}`);

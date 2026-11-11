@@ -42,3 +42,15 @@ export const revokeAllSessions = async () =>
 
 export const getAuditLogs = async (params: { action?: string; search?: string; ip?: string; page?: number }) =>
   (await api.get<Paginated<AuditEntry>>("/admin/audit-logs", { params })).data;
+
+export const getShippingProviders = async () =>
+  (await api.get<{ active: string; providers: PaymentProviderInfo[] }>("/admin/shipping/providers")).data;
+
+export const saveShippingProvider = async (key: string, values: Record<string, unknown>) =>
+  (await api.put<{ active: string; providers: PaymentProviderInfo[] }>(`/admin/shipping/providers/${key}`, { values })).data;
+
+export const activateShippingProvider = async (provider: string) =>
+  (await api.post<{ active: string; providers: PaymentProviderInfo[] }>("/admin/shipping/active", { provider })).data;
+
+export const testShippingProvider = async (key: string) =>
+  (await api.post<{ ok: boolean; message: string }>(`/admin/shipping/providers/${key}/test`)).data;

@@ -14,6 +14,11 @@ import type {
   PriceRule,
   Product,
   Tenant,
+  OrderShipping,
+  Shipment,
+  ShippingAddress,
+  ShippingChoice,
+  ShippingRate,
   Warranty,
 } from "@/types/platform";
 
@@ -71,6 +76,7 @@ export interface NewOrder {
   subject_id?: number | null;
   target_type: string;
   targets: number[];
+  shipping_address?: ShippingAddress;
 }
 
 export const createOrder = async (data: NewOrder) =>
@@ -246,3 +252,23 @@ export const getStorefront = async (companyId: number) =>
 
 export const saveStorefront = async (companyId: number, data: Partial<StorefrontSettings>) =>
   (await api.put<StorefrontSettings>(`/companies/${companyId}/storefront`, data)).data;
+
+// ---- Shipping
+export const getOrderShipping = async (orderId: number | string) =>
+  (await api.get<OrderShipping>(`/orders/${orderId}/shipments`)).data;
+
+export const getShippingChoices = async () => (await api.get<ShippingChoice>("/shipping-providers")).data;
+
+export const getShippingRates = async (orderId: number, provider: string) =>
+  (await api.post<{ rates: ShippingRate[] }>(`/orders/${orderId}/shipping-rates`, { provider })).data.rates;
+
+export const bookShipment = async (
+  orderId: number,
+  data: { provider: string; service?: string; carrier?: string; tracking_number?: string },
+) => (await api.post<Shipment>(`/orders/${orderId}/shipments`, data)).data;
+
+export const refreshShipment = async (id: number) =>
+  (await api.post<{ updates: number; shipment: Shipment }>(`/shipments/${id}/refresh`)).data;
+
+export const setShipmentStatus = async (id: number, status: string) =>
+  (await api.post<Shipment>(`/shipments/${id}/status`, { status })).data;
