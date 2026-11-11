@@ -5,8 +5,8 @@ import { chromium } from "playwright";
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const ok = (m) => console.log("OK ", m);
 const stamp = Date.now();
-const manager = `manager+${stamp}@test.com`;
-const tech = `tech+${stamp}@test.com`;
+const manager = `manager${stamp}@test.com`;
+const tech = `tech${stamp}@test.com`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function login(email, password = "password123") {

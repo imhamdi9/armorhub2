@@ -9,7 +9,7 @@ import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const storeId = process.env.STORE_COMPANY_ID ?? "1";
-const email = `cathy+${Date.now()}@test.com`;
+const email = `cathy${Date.now()}@test.com`;
 const ok = (msg) => console.log("OK ", msg);
 
 async function login(ctx, who) {
@@ -42,6 +42,7 @@ try {
   });
   const c = await cctx.newPage();
   c.on("pageerror", (e) => pageErrors.push(e.message));
+  c.on("console", (m) => /Content Security Policy|violates/i.test(m.text()) && pageErrors.push(`CSP: ${m.text()}`));
   await c.goto(`${base}/register`);
   await c.fill("#name", "Cathy");
   await c.fill("#email", email);

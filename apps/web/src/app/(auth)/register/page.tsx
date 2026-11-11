@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { register } from "@/services/auth.service";
+import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function RegisterPage() {
@@ -23,6 +24,8 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [website, setWebsite] = useState(""); // honeypot
+  const human = useHumanCheck();
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -32,8 +35,13 @@ export default function RegisterPage() {
     setError(null);
     setBusy(true);
     try {
-      const res = await register({ ...form, company_id: Number(form.company_id) });
-      localStorage.setItem("token", res.token);
+      await register({
+        ...form,
+        company_id: Number(form.company_id),
+        signup_token: human.token,
+        website,
+        captcha_token: human.captchaToken,
+      });
       router.push("/dashboard");
     } catch (err) {
       setError(errorMessage(err));
@@ -77,9 +85,11 @@ export default function RegisterPage() {
                 {tr("Given to you by the business you are ordering from.")}
               </p>
             </div>
+            <Honeypot value={website} onChange={setWebsite} />
+            <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={busy}>
-              {tr("Sign up")}
+            <Button type="submit" className="w-full" disabled={busy || !human.ready}>
+              {human.waiting ? tr("Please wait a moment…") : tr("Sign up")}
             </Button>
             <p className="text-center text-sm">
               {tr("Already have an account?")}<Link href="/login" className="underline">{tr("Sign in")}</Link>

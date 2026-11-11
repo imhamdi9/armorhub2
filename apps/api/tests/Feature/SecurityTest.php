@@ -630,4 +630,19 @@ class SecurityTest extends TestCase
         $this->assertSame('warn', $checks['debug']['status']);
         $this->artisan('platform:security-check')->assertFailed();
     }
+
+    public function test_two_visitors_behind_one_address_get_different_tokens_in_the_same_second(): void
+    {
+        $a = $this->getJson('/api/signup-challenge')->json('token');
+        $b = $this->getJson('/api/signup-challenge')->json('token');
+        $this->assertNotSame($a, $b);
+
+        $this->travel(5)->seconds();
+        $company = $this->customer->company_id;
+        $register = fn ($token, $email) => $this->postJson('/api/register', ['name' => 'V', 'email' => $email, 'signup_token' => $token,
+            'password' => 'password123', 'password_confirmation' => 'password123', 'company_id' => $company]);
+
+        $register($a, 'one@example.com')->assertCreated();
+        $register($b, 'two@example.com')->assertCreated(); // not mistaken for a replay
+    }
 }

@@ -18,14 +18,17 @@ export async function register(data: {
   password: string;
   password_confirmation: string;
   company_id: number;
+  signup_token: string;
+  website?: string;
+  captcha_token?: string;
 }) {
   const response = await api.post<LoginResponse>("/register", data);
 
   return response.data;
 }
 
-export async function forgotPassword(email: string) {
-  return (await api.post<{ message: string }>("/forgot-password", { email })).data;
+export async function forgotPassword(data: { email: string; signup_token: string; website?: string; captcha_token?: string }) {
+  return (await api.post<{ message: string }>("/forgot-password", data)).data;
 }
 
 export async function resetPassword(data: {
@@ -35,4 +38,23 @@ export async function resetPassword(data: {
   password_confirmation: string;
 }) {
   return (await api.post<{ message: string }>("/reset-password", data)).data;
+}
+
+export interface SignupChallenge {
+  token: string;
+  min_seconds: number;
+  captcha: { provider: "turnstile" | "hcaptcha" | "recaptcha"; site_key: string } | null;
+}
+
+/** Human-check data the signup and reset forms need before they can be submitted. */
+export async function getChallenge() {
+  return (await api.get<SignupChallenge>("/signup-challenge")).data;
+}
+
+export async function logout() {
+  return (await api.post("/logout")).data;
+}
+
+export async function resendVerification() {
+  return (await api.post<{ message: string }>("/email/resend")).data;
 }

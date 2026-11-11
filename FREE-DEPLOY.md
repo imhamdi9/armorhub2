@@ -32,12 +32,14 @@ You need free accounts at [GitHub](https://github.com) (already have),
    | `DB_USERNAME` / `DB_PASSWORD` | from step 1 |
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | the login for your first platform admin (min 8 chars) |
    | `APP_URL` | `https://armorhub-api.onrender.com` |
-   | `CORS_ALLOWED_ORIGINS` | `https://armorhub-web.onrender.com` |
-   | `WEB_URL` | the same web URL as `CORS_ALLOWED_ORIGINS` (used in emailed links) |
-   | `NEXT_PUBLIC_API_URL` (web) | `https://armorhub-api.onrender.com/api` |
+   | `WEB_URL` | `https://armorhub-web.onrender.com` (emailed links and the one trusted browser origin) |
+   | `API_PROXY_TARGET` (web) | `https://armorhub-api.onrender.com` |
 
    If Render says a service name is taken, it appends a suffix — use the URLs it
    actually shows on each service page, and update the three URL values to match.
+
+   The web app serves the API under its own `/api` (so the browser session cookie stays first-party and
+   no CORS is needed); `API_PROXY_TARGET` is where it forwards those calls.
 3. Click **Apply**. The API builds first; on boot it creates the tables, the
    industries, roles and your admin automatically. Watch the API **Logs** for
    `Admin ... created` and Apache starting.

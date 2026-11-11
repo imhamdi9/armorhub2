@@ -9,18 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { forgotPassword } from "@/services/auth.service";
+import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [website, setWebsite] = useState(""); // honeypot
+  const human = useHumanCheck();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      setMessage((await forgotPassword(email)).message);
+      setMessage(
+        (await forgotPassword({ email, signup_token: human.token, website, captcha_token: human.captchaToken })).message,
+      );
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -42,9 +47,13 @@ export default function ForgotPasswordPage() {
               <Label htmlFor="email">{tr("Email")}</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
-            {message && <p className="text-sm text-green-600">{message}</p>}
+            <Honeypot value={website} onChange={setWebsite} />
+            <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
+            {message && <p className="text-sm text-green-600">{tr(message)}</p>}
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full">{tr("Send reset link")}</Button>
+            <Button type="submit" className="w-full" disabled={!human.ready}>
+              {human.waiting ? tr("Please wait a moment…") : tr("Send reset link")}
+            </Button>
             <p className="text-center text-sm">
               <Link href="/login" className="underline">{tr("Back to sign in")}</Link>
             </p>

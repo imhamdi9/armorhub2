@@ -49,6 +49,7 @@ class CreateAdmin extends Command
             'name' => $this->option('name'),
             'email' => $this->argument('email'),
             'password' => $password,
+            'email_verified_at' => now(),
         ]);
         $user->assignRole('platform-admin');
 

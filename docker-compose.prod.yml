@@ -3,7 +3,7 @@
 #   cp .env.production.example .env.production   # then fill in every value
 #   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 #
-# DNS: point app.<DOMAIN> and api.<DOMAIN> at this server before starting.
+# DNS: point app.<DOMAIN> (and optionally api.<DOMAIN>, for mobile apps/webhooks) at this server first.
 name: armorhub
 
 services:
@@ -57,7 +57,9 @@ services:
     build:
       context: ./apps/web
       args:
-        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api
+        # The browser talks to the API through the web app's own address (see the Caddyfile): one origin.
+        NEXT_PUBLIC_API_URL: /api
+        API_PROXY_TARGET: http://api:80
     restart: unless-stopped
 
   caddy:

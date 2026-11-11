@@ -28,7 +28,7 @@ class SeedDemo extends Command
 
         $password = $this->option('password');
 
-        $admin = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => $password]);
+        $admin = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => $password, 'email_verified_at' => now()]);
         $admin->assignRole('platform-admin');
 
         $tenant = Tenant::create([
@@ -46,7 +46,7 @@ class SeedDemo extends Command
 
         $manager = User::create([
             'name' => 'Shop Manager', 'email' => 'shop@test.com', 'password' => $password,
-            'company_id' => $shopCompany->id, 'partner_id' => $partner->id,
+            'company_id' => $shopCompany->id, 'partner_id' => $partner->id, 'email_verified_at' => now(),
         ]);
         $manager->assignRole('partner-manager');
 

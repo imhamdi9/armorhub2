@@ -64,15 +64,24 @@ export function setLocale(locale: Locale) {
 
 const LocaleContext = createContext<Locale>("en");
 
+// False on the server and during hydration, true afterwards: lets us wait for the browser's
+// stored language before drawing anything (see I18nProvider).
+const noopSubscribe = () => () => undefined;
+const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
+
 export const useLocale = () => useContext(LocaleContext);
 
 /**
- * Provides the locale, flips the page direction for Arabic, and remounts the tree on
- * a language change so every `tr()` call re-renders with the new language.
+ * Provides the locale, flips the page direction for Arabic, and remounts the tree when the
+ * user switches language so every `tr()` call re-renders with the new language.
+ *
+ * The app is drawn only once the browser's stored language is known. Otherwise a visitor who
+ * chose Arabic would first get English and then a remount that wipes whatever they already typed.
  */
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   // The server (and the first client render) is English; the stored choice applies right after.
   const locale = useSyncExternalStore(subscribe, readLocale, serverLocale);
+  const hydrated = useHydrated();
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", locale);
@@ -81,9 +90,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LocaleContext.Provider value={locale}>
-      <div key={locale} className="contents">
-        {children}
-      </div>
+      {hydrated && (
+        <div key={locale} className="contents">
+          {children}
+        </div>
+      )}
     </LocaleContext.Provider>
   );
 }

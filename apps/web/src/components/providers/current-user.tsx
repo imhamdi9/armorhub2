@@ -19,10 +19,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     me()
       .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("token");
-        router.replace("/login");
-      });
+      .catch(() => router.replace("/login"));
   }, [router]);
 
   if (!user) {

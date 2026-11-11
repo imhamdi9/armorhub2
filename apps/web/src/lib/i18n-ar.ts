@@ -249,5 +249,21 @@ export const AR: Record<string, string> = {
   "Devices": "الأجهزة",
   "My Vehicle Models": "موديلات مركباتي",
   "My Properties": "عقاراتي",
-  "My Device Models": "أجهزتي"
+  "My Device Models": "أجهزتي",
+  "Please wait a moment…": "يرجى الانتظار لحظة…",
+  "Please verify your email address to place orders. We sent you a link.": "يرجى تأكيد بريدك الإلكتروني لتقديم الطلبات. أرسلنا إليك رابطًا.",
+  "Email sent": "تم إرسال البريد",
+  "Resend email": "إعادة إرسال البريد",
+  "Email verified. You can sign in now.": "تم تأكيد البريد الإلكتروني. يمكنك تسجيل الدخول الآن.",
+  "We could not verify that link. Sign in and request a new one.": "تعذّر التحقق من هذا الرابط. سجّل الدخول واطلب رابطًا جديدًا.",
+  "Signups are temporarily closed. Please try again later.": "التسجيل مغلق مؤقتًا. حاول مرة أخرى لاحقًا.",
+  "We could not create your account. Please reload the page and try again.": "تعذّر إنشاء حسابك. أعد تحميل الصفحة وحاول مرة أخرى.",
+  "Please use a permanent email address.": "يرجى استخدام بريد إلكتروني دائم.",
+  "The email has already been taken.": "هذا البريد الإلكتروني مستخدم بالفعل.",
+  "Too Many Attempts.": "محاولات كثيرة جدًا. حاول مرة أخرى لاحقًا.",
+  "Please verify your email address before ordering. Check your inbox for the link.": "يرجى تأكيد بريدك الإلكتروني قبل الطلب. تحقق من صندوق الوارد.",
+  "You have too many unpaid orders. Pay for or cancel one before placing another.": "لديك طلبات غير مدفوعة كثيرة. ادفع أحدها أو ألغِه قبل تقديم طلب آخر.",
+  "New orders are paused for now. Please try again later.": "الطلبات الجديدة متوقفة مؤقتًا. حاول مرة أخرى لاحقًا.",
+  "This product is not available.": "هذا المنتج غير متاح.",
+  "Untrusted origin.": "مصدر غير موثوق."
 };

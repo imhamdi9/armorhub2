@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/services/auth.service";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import Link from "next/link";
 
@@ -16,6 +16,16 @@ import {
   type LoginFormData,
 } from "@/lib/validators/login";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
+
+/** Message shown after the visitor followed the link in their verification email. */
+function VerifiedNotice() {
+  const verified = useSearchParams().get("verified");
+
+  if (verified === "1") return <p className="text-center text-sm text-green-600">{tr("Email verified. You can sign in now.")}</p>;
+  if (verified === "0") return <p className="text-center text-sm text-red-500">{tr("We could not verify that link. Sign in and request a new one.")}</p>;
+
+  return null;
+}
 
 export default function LoginPage() {
 
@@ -35,9 +45,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await login(data);
-
-      localStorage.setItem("token", response.token);
+      await login(data);
 
       router.push("/dashboard");
     } catch (err) {
@@ -60,6 +68,9 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
+          <Suspense>
+            <VerifiedNotice />
+          </Suspense>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"

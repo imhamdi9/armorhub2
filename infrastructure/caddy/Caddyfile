@@ -1,7 +1,18 @@
-# Automatic HTTPS (Let's Encrypt) for the two public hostnames.
+# Automatic HTTPS (Let's Encrypt).
+#
+# One public origin for the web app: the browser calls /api on the same address, so the session
+# cookie is first-party and no CORS is needed. The API is also available on its own hostname
+# for non-browser clients (mobile apps, payment-provider webhooks).
 app.{$DOMAIN} {
 	encode gzip
-	reverse_proxy web:3000
+
+	handle /api/* {
+		reverse_proxy api:80
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
 }
 
 api.{$DOMAIN} {

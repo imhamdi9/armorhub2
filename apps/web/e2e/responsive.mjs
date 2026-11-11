@@ -21,7 +21,7 @@ async function login(context, who) {
   if (who === "customer") {
     await page.goto(`${base}/register`);
     await page.fill("#name", "Mobile Tester");
-    await page.fill("#email", `mobile+${Date.now()}@test.com`);
+    await page.fill("#email", `mobile${Date.now()}x${Math.random().toString(36).slice(2, 6)}@test.com`);
     await page.fill("#password", "password123");
     await page.fill("#password_confirmation", "password123");
     await page.fill("#company_id", "1");
@@ -38,6 +38,21 @@ async function login(context, who) {
 }
 
 try {
+  // The public pages (signup has an off-screen honeypot that once broke right-to-left layouts).
+  for (const locale of ["en", "ar"]) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+    await context.addInitScript((l) => window.localStorage.setItem("locale", l), locale);
+    const page = await context.newPage();
+    for (const path of ["/", "/login", "/register", "/forgot-password", "/reset-password?token=x&email=a@b.co"]) {
+      await page.goto(`${base}${path}`);
+      await page.waitForLoadState("networkidle");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      checked++;
+      if (overflow > 1) problems.push(`${locale} public ${path}: horizontal overflow of ${overflow}px`);
+    }
+    await context.close();
+  }
+
   for (const locale of ["en", "ar"]) {
     for (const [who, pages] of Object.entries(roles)) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true });
@@ -45,6 +60,7 @@ try {
       const page = await login(context, who);
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
+      page.on("console", (m) => /Content Security Policy|violates/i.test(m.text()) && errors.push(`CSP: ${m.text()}`));
 
       for (const path of pages) {
         await page.goto(`${base}${path}`);

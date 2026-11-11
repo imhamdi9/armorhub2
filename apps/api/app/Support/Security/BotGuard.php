@@ -32,6 +32,8 @@ class BotGuard
 
         return [
             'token' => $this->issueToken($request),
+            // The form should not be submittable sooner than this, or a real person is wrongly refused.
+            'min_seconds' => (int) $this->settings->get('security.min_signup_seconds'),
             'captcha' => $provider === 'none' ? null : [
                 'provider' => $provider,
                 'site_key' => $this->settings->get('security.captcha_site_key'),
@@ -57,15 +59,17 @@ class BotGuard
     public function issueToken(Request $request): string
     {
         $issued = now()->timestamp;
+        // A random part makes every token unique, even for two visitors behind the same IP in the same second.
+        $nonce = bin2hex(random_bytes(8));
 
-        return $issued.'.'.$this->sign($issued, $request);
+        return $issued.'.'.$nonce.'.'.$this->sign($issued.'.'.$nonce, $request);
     }
 
     private function validToken(string $token, Request $request): bool
     {
-        [$issued, $signature] = array_pad(explode('.', $token, 2), 2, '');
+        [$issued, $nonce, $signature] = array_pad(explode('.', $token, 3), 3, '');
 
-        if (! ctype_digit($issued) || ! hash_equals($this->sign((int) $issued, $request), $signature)) {
+        if (! ctype_digit($issued) || ! ctype_xdigit($nonce) || ! hash_equals($this->sign($issued.'.'.$nonce, $request), $signature)) {
             return false;
         }
 
@@ -79,9 +83,9 @@ class BotGuard
         return Cache::add('signup-token:'.hash('sha256', $token), 1, self::TOKEN_TTL);
     }
 
-    private function sign(int $issued, Request $request): string
+    private function sign(string $payload, Request $request): string
     {
-        return hash_hmac('sha256', $issued.'|'.$request->ip(), (string) config('app.key'));
+        return hash_hmac('sha256', $payload.'|'.$request->ip(), (string) config('app.key'));
     }
 
     private function captchaPasses(Request $request): bool

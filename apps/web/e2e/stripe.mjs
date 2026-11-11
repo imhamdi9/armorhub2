@@ -26,8 +26,10 @@ const fake = await startFakeStripe({ apiUrl: api, webhookSecret: process.env.STR
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   // Arrange through the API: a customer with an accepted 300 quote.
-  const email = `stripe+${Date.now()}@test.com`;
-  const customer = await call("/register", { method: "POST", body: { name: "Sam", email, password: "password123", password_confirmation: "password123", company_id: 1, latitude: 24.71, longitude: 46.68 } });
+  const email = `stripe${Date.now()}@test.com`;
+  const challenge = await call("/signup-challenge");
+  await new Promise((r) => setTimeout(r, (challenge.min_seconds + 1) * 1000)); // a script must look human-paced too
+  const customer = await call("/register", { method: "POST", body: { name: "Sam", email, signup_token: challenge.token, password: "password123", password_confirmation: "password123", company_id: 1, latitude: 24.71, longitude: 46.68 } });
   const shop = await call("/login", { method: "POST", body: { email: "shop@test.com", password: "password123" } });
   const products = await call("/products", { token: customer.token });
   const parts = await call("/catalog/vehicle_part", { token: customer.token });

@@ -16,6 +16,8 @@ export interface User {
   name: string;
   email: string;
   roles?: string[];
+  email_verified?: boolean;
+  email_verification_required?: boolean;
   industry?: Industry | null;
 }
 
@@ -26,5 +28,4 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: User;
-  token: string;
 }
