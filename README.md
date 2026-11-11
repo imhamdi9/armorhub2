@@ -1,81 +1,87 @@
-```markdown
 # ArmorHub
 
-ArmorHub is a SaaS marketplace platform connecting customers with professional service providers. It is industry-agnostic: automotive protection is the first industry module, and any business with the same concept (customer requests a service, nearby partners quote, order is paid, commissions are split) can be added as another module.
+A multi-tenant marketplace platform that connects **customers** with trusted **service providers (partners)**.
+It started as an automotive-protection marketplace (PPF, ceramic coating, window tint, detailing) and is now
+industry-agnostic: any business with the same flow can be added as an industry module.
 
-## Vision
+> A customer orders a service → nearby partners send quotes → the customer accepts one and pays →
+> the partner schedules and completes the job → the platform splits a commission and issues a warranty.
 
-Build a complete ecosystem for:
+## What's in the box
 
-- Paint Protection Film (PPF)
-- Ceramic Coating
-- Window Tint
-- Detailing
-- Automotive Protection Services
-
-## Industry modules
-
-The core (tenants, companies, partners, products, orders, partner quotes,
-payments, commissions) is industry-neutral. Everything vertical-specific
-lives in `apps/api/app/Modules/<Industry>`:
-
-- a class implementing `App\Modules\Contracts\IndustryModule` (extend `BaseIndustryModule`)
-- its own models (the "subject" a customer brings, e.g. a vehicle; the "targets" a price rule applies to, e.g. a vehicle part), policies, routes and permissions
-- an optional custom `PricingStrategy`
-
-Register the module in `AppServiceProvider::MODULES` and run `IndustrySeeder`
-to create its `industries` row. Tenants and products reference an industry;
-orders point at their subject polymorphically (`subject_type`/`subject_id`).
-Shipped: `automotive`.
+| Area | Features |
+| --- | --- |
+| **Industries** | Automotive, Home Services, Beauty & Wellness, Devices — each a self-contained module |
+| **Customers** | Sign up, add what they bring (property…), order with live pricing, compare quotes, pay, track a timeline, cancel before paying, warranties |
+| **Partners** | Quote inbox, jobs (schedule → start → complete), team of technicians, earnings |
+| **Companies / admins** | Tenants & industries, companies, products & price rules, shared catalogs, partners, staff with roles, commissions & payouts, dashboards with role-based numbers |
+| **Payments** | Stripe Checkout (signed webhook, amount verified, idempotent) or a simulated gateway for demos |
+| **Notifications** | In-app inbox + email for quotes, acceptance, payments, progress |
+| **Accounts** | Roles & permissions, staff management, deactivation, password reset, rate limiting |
+| **UI** | Next.js app, responsive, **English + Arabic (RTL)** |
 
 ## Architecture
 
-ArmorHub follows:
+- `apps/api` — Laravel 12 API (Sanctum tokens, Spatie permissions). Industry-neutral core
+  (tenants, companies, partners, products, orders, quotes, payments, commissions) plus
+  `app/Modules/<Industry>` plug-ins.
+- `apps/web` — Next.js 16 (App Router) dashboard.
+- `infrastructure/` — Docker/Caddy configs; `render.yaml` for a free-tier demo deploy.
 
-- API First Architecture
-- Domain Driven Design
-- Multi Tenant SaaS Architecture
+### Industry modules
 
-## Applications
+Everything vertical-specific lives in `apps/api/app/Modules/<Industry>`:
 
+- a class implementing `App\Modules\Contracts\IndustryModule` (extend `BaseIndustryModule`)
+- its own models: the **subject** a customer brings (vehicle model, property, device) and the **targets**
+  a price rule applies to (vehicle part, room type, device component), plus optional shared lists
+- optional custom policies, routes, permissions and a `PricingStrategy`
+
+Register it in `AppServiceProvider::MODULES`, run `IndustrySeeder`, and assign it to a tenant. The web app adapts
+its navigation and forms to the signed-in user's industry automatically.
+
+## Run it locally
+
+Requirements: PHP 8.4 (8.3 works with a re-resolved lock file), Composer, Node 22.
+
+```bash
+# API
+cd apps/api
+composer install && cp .env.example .env && php artisan key:generate
+php artisan migrate:fresh && php artisan platform:demo     # demo admin, storefront, partner
+php artisan serve                                          # http://localhost:8000
+
+# Web
+cd apps/web && npm ci
+NEXT_PUBLIC_API_URL=http://localhost:8000/api npm run dev  # http://localhost:3000
 ```
 
-apps/
-├── api              Laravel Backend
-├── customer-web     Customer Platform
-├── provider-web     Service Provider Dashboard
-└── admin            Administration Panel
+Demo logins (password `password123`): `admin@test.com`, `shop@test.com`; customers sign up with Company ID `1`.
 
+## Tests
+
+```bash
+cd apps/api && php artisan test           # 73 API tests (orders, payments, Stripe, permissions, …)
+cd apps/web && npm test                   # unit tests (navigation, i18n dictionary, formatting)
+scripts/e2e-all.sh                        # every browser journey, incl. Arabic/mobile and Stripe
 ```
 
-## Packages
+`scripts/e2e-all.sh` covers: first-run setup, the full customer→partner→payment→job→commission journey, staff
+management, responsive + Arabic/RTL (44 page views), admin management screens, and Stripe Checkout against a
+local fake of Stripe. CI (`.github/workflows/ci.yml`) runs the API and web unit tests, lint and build.
 
-```
+## Deploying
 
-packages/
-├── auth
-├── companies
-├── vehicles
-├── catalog
-├── pricing
-├── orders
-├── payments
-├── bookings
-├── warranties
-└── shared
+- **Free demo:** [`FREE-DEPLOY.md`](FREE-DEPLOY.md) (Render + TiDB Cloud, using `render.yaml`).
+- **Production:** [`DEPLOY.md`](DEPLOY.md) (`docker-compose.prod.yml`: MySQL, API, web, automatic HTTPS).
 
-```
+## Known limitations
 
-## Development
-
-The project uses:
-
-- Laravel
-- Next.js
-- Docker
-- MySQL
-- Redis
-- Meilisearch
+- Refunds and payouts to partners are tracked in the app but money movement is done outside it.
+- The login token is kept in the browser's `localStorage` (a hardening step would be httpOnly cookies); there is
+  no email verification yet.
+- Notification *bodies* are generated in English by the API (titles and the whole UI are translated).
+- Verified on SQLite in tests/browser runs; MySQL is expected to work but has not been exercised here.
 
 ## License
 

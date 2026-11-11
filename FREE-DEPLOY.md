@@ -33,6 +33,7 @@ You need free accounts at [GitHub](https://github.com) (already have),
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | the login for your first platform admin (min 8 chars) |
    | `APP_URL` | `https://armorhub-api.onrender.com` |
    | `CORS_ALLOWED_ORIGINS` | `https://armorhub-web.onrender.com` |
+   | `WEB_URL` | the same web URL as `CORS_ALLOWED_ORIGINS` (used in emailed links) |
    | `NEXT_PUBLIC_API_URL` (web) | `https://armorhub-api.onrender.com/api` |
 
    If Render says a service name is taken, it appends a suffix — use the URLs it
@@ -52,12 +53,19 @@ If you had to change a URL after the first deploy: update the env var, then
    is shown next to it — customers need it to sign up at `/register`.
 3. **Products** → add products and their price rules; **Partners** → add service
    providers *with latitude/longitude* so nearby customers are matched to them.
-4. Customers sign up at `/register` with the storefront Company ID and can order.
+4. **Team** → create accounts for each partner's manager (role *Partner manager*, with their
+   company and partner). Managers then add their own technicians; share the temporary password
+   securely (they can change it with "Forgot your password?").
+5. Customers sign up at `/register` with the storefront Company ID and can order.
 
 (`npm run e2e:setup` in `apps/web` replays exactly this first-run path in a browser.)
 
 ## Limits to know
 
+- Emails (password reset, order notifications) are only written to the log until you set SMTP
+  (`MAIL_MAILER=smtp` and `MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`); the app works fully without them.
+- Real card payments: set `PLATFORM_PAYMENT_GATEWAY=stripe`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` and add the
+  webhook endpoint described in `DEPLOY.md`. The blueprint ships with simulated payments enabled for the demo.
 - Free instances restart often; the app is built to self-setup safely on every boot.
 - Logs are on stderr (Render's log viewer). There is no shell on the free tier;
   use TiDB's SQL editor to inspect data.

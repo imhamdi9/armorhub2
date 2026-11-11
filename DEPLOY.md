@@ -85,8 +85,8 @@ adds demo catalog data.
 cd apps/api && php artisan migrate:fresh && php artisan platform:demo   # demo admin/partner users
 php artisan serve                                                      # :8000
 cd apps/web && NEXT_PUBLIC_API_URL=http://localhost:8000/api npm run dev   # :3000
-npm run e2e        # full browser journey (needs `npx playwright install chromium` once)
-php artisan test   # API tests         |   npm test   # web unit tests
+php artisan test   # API tests         |   npm test   # web unit tests (in apps/web)
+scripts/e2e-all.sh # every browser journey (needs `npx playwright install chromium` once, or CHROMIUM_PATH)
 ```
 
 ## Adding an industry
