@@ -86,18 +86,18 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
 
             <form onSubmit={submit} className="space-y-4 rounded-[28px] bg-white p-6" style={{ boxShadow: SHOP_SHADOW }}>
               <h2 className="text-xl tracking-[-0.05em]">{tr("Your details")}</h2>
-              <div><Label htmlFor="g-name">{tr("Full name")}</Label><Input id="g-name" required autoComplete="name" maxLength={120} value={form.name} onChange={set("name")} />{err("name")}</div>
+              <div><Label htmlFor="g-name" className="mb-1.5 block">{tr("Full name")}</Label><Input id="g-name" required autoComplete="name" maxLength={120} value={form.name} onChange={set("name")} />{err("name")}</div>
               <div className="grid gap-4 md:grid-cols-2">
-                <div><Label htmlFor="g-email">{tr("Email")}</Label><Input id="g-email" type="email" required autoComplete="email" value={form.email} onChange={set("email")} />{err("email")}<p className="mt-1 text-xs text-[#5f5c5b]">{tr("We send your receipt and order link here.")}</p></div>
-                <div><Label htmlFor="g-phone">{tr("Mobile number")}</Label><Input id="g-phone" type="tel" required autoComplete="tel" dir="ltr" placeholder={phoneHint} value={form.phone} onChange={set("phone")} />{err("phone")}</div>
+                <div><Label htmlFor="g-email" className="mb-1.5 block">{tr("Email")}</Label><Input id="g-email" type="email" required autoComplete="email" value={form.email} onChange={set("email")} />{err("email")}<p className="mt-1 text-xs text-[#5f5c5b]">{tr("We send your receipt and order link here.")}</p></div>
+                <div><Label htmlFor="g-phone" className="mb-1.5 block">{tr("Mobile number")}</Label><Input id="g-phone" type="tel" required autoComplete="tel" dir="ltr" placeholder={phoneHint} value={form.phone} onChange={set("phone")} />{err("phone")}</div>
               </div>
               <h2 className="pt-2 text-xl tracking-[-0.05em]">{tr("Delivery address")}</h2>
-              <div><Label htmlFor="g-line1">{tr("Street address")}</Label><Input id="g-line1" required autoComplete="address-line1" maxLength={200} value={form.line1} onChange={set("line1")} />{err("address.line1")}</div>
-              <div><Label htmlFor="g-line2">{tr("Apartment, floor, landmark (optional)")}</Label><Input id="g-line2" autoComplete="address-line2" maxLength={200} value={form.line2} onChange={set("line2")} /></div>
+              <div><Label htmlFor="g-line1" className="mb-1.5 block">{tr("Street address")}</Label><Input id="g-line1" required autoComplete="address-line1" maxLength={200} value={form.line1} onChange={set("line1")} />{err("address.line1")}</div>
+              <div><Label htmlFor="g-line2" className="mb-1.5 block">{tr("Apartment, floor, landmark (optional)")}</Label><Input id="g-line2" autoComplete="address-line2" maxLength={200} value={form.line2} onChange={set("line2")} /></div>
               <div className="grid gap-4 md:grid-cols-3">
-                <div><Label htmlFor="g-city">{tr("City")}</Label><Input id="g-city" required autoComplete="address-level2" maxLength={100} value={form.city} onChange={set("city")} />{err("address.city")}</div>
-                <div><Label htmlFor="g-region">{tr("Governorate or region (optional)")}</Label><Input id="g-region" autoComplete="address-level1" maxLength={100} value={form.region} onChange={set("region")} /></div>
-                <div><Label htmlFor="g-postal">{tr("Postal code (optional)")}</Label><Input id="g-postal" autoComplete="postal-code" maxLength={20} dir="ltr" value={form.postal_code} onChange={set("postal_code")} /></div>
+                <div><Label htmlFor="g-city" className="mb-1.5 block">{tr("City")}</Label><Input id="g-city" required autoComplete="address-level2" maxLength={100} value={form.city} onChange={set("city")} />{err("address.city")}</div>
+                <div><Label htmlFor="g-region" className="mb-1.5 block">{tr("Governorate or region (optional)")}</Label><Input id="g-region" autoComplete="address-level1" maxLength={100} value={form.region} onChange={set("region")} /></div>
+                <div><Label htmlFor="g-postal" className="mb-1.5 block">{tr("Postal code (optional)")}</Label><Input id="g-postal" autoComplete="postal-code" maxLength={20} dir="ltr" value={form.postal_code} onChange={set("postal_code")} /></div>
               </div>
 
               <Honeypot value={website} onChange={setWebsite} />
