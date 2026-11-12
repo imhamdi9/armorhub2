@@ -71,7 +71,7 @@ try {
   ok("order placed");
 
   const p = await login(await browser.newContext(), "shop@test.com");
-  await p.waitForSelector('a[aria-label^="Notifications ("]');
+  await p.waitForSelector('a[href="/dashboard/notifications"]:has-text("unread")');
   ok("partner's bell shows the new request");
   await p.click('a:has-text("Requests")');
   await p.waitForSelector("text=Ultimate Plus");
@@ -81,7 +81,7 @@ try {
   ok("partner quoted");
 
   await c.reload();
-  await c.waitForSelector('a[aria-label^="Notifications ("]');
+  await c.waitForSelector('a[href="/dashboard/notifications"]:has-text("unread")');
   await c.click('a[href="/dashboard/notifications"]');
   await c.waitForSelector("text=You received a quote");
   await c.click("text=You received a quote");
