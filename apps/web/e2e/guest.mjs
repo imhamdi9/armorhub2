@@ -51,7 +51,8 @@ try {
   await page.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
   await pay.click();
   await page.waitForSelector("[role=alert]");
-  if (!/valid mobile/i.test(await text(page))) fail("a bad phone number is not explained");
+  const alerts = (await page.locator("[role=alert]").allInnerTexts()).join(" | ");
+  if (!/valid mobile/i.test(alerts)) fail(`a bad phone number is not explained (alerts: ${alerts})`);
   await page.fill("#g-phone", "01012345678");
   await page.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
   await pay.click();
