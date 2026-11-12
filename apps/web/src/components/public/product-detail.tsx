@@ -12,15 +12,18 @@ import { imageSrc } from "@/lib/surfaces";
 import { me } from "@/services/auth.service";
 import type { PublicProductPage } from "@/types/public";
 
-/** Takes signed-in customers straight to ordering, and everyone else to signup (keeping the product). */
-function useOrderHref(slug: string, productId: number) {
+/** Takes signed-in customers straight to ordering; guests go to checkout (goods) or signup (services), keeping the product. */
+function useOrderHref(slug: string, productId: number, goods: boolean) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     me().then(() => setSignedIn(true)).catch(() => setSignedIn(false));
   }, []);
 
-  return signedIn ? `/dashboard/orders/new?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}`;
+  // Goods can be bought without an account (an account is offered at checkout, never required); services need quotes, so they start with signup.
+  if (signedIn) return `/dashboard/orders/new?product=${productId}`;
+
+  return goods ? `/s/${encodeURIComponent(slug)}/checkout?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}`;
 }
 
 /** Big picture with thumbnails, arrows (and the keyboard) and a hover zoom. */
@@ -88,8 +91,8 @@ const TRUST = [
 
 export function ProductDetail({ store, data }: { store: ShellStore; data: PublicProductPage }) {
   const p = data.product;
-  const href = useOrderHref(store.slug, p.id);
   const goods = !!p.requires_shipping;
+  const href = useOrderHref(store.slug, p.id, goods);
   const options = p.prices.filter((r) => r.target);
   const [picked, setPicked] = useState<string | null>(null);
   const chosen = options.find((o) => `${o.target_type}:${o.target}` === picked) ?? null;
