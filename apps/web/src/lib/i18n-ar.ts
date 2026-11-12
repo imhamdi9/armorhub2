@@ -112,6 +112,7 @@ export const AR: Record<string, string> = {
   "No warranties yet. One is issued when a warranted service is completed.": "لا توجد ضمانات بعد. يصدر الضمان عند إكمال خدمة مشمولة به.",
   "Nothing here yet.": "لا شيء هنا بعد.",
   "Notifications": "الإشعارات",
+  "unread": "غير مقروء",
   "Online payments are not configured yet.": "الدفع الإلكتروني غير مهيّأ بعد.",
   "Only a submitted quote can be accepted.": "يمكن قبول عرض سعر مُرسل فقط.",
   "Only platform admins can manage tenants.": "يمكن لمديري المنصة فقط إدارة المستأجرين.",
