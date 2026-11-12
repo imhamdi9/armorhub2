@@ -89,6 +89,7 @@ try {
   if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 1) fail("a product that needs no fitting offers more than one buy choice");
   ok("only products that can be fitted offer installation");
   await customer.goto(`${base}/s/cairo-devices/products/${glass.id}`);
+  await customer.waitForSelector("[data-testid=buy-buttons] a[href^='/dashboard/']");   // the page knows the visitor is signed in
   await customer.getByRole("link", { name: "Buy now and find me a suitable installation offer" }).click();
   await customer.waitForURL("**/dashboard/installations/new**");
 
