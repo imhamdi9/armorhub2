@@ -80,12 +80,12 @@ try {
   await admin.click('a:has-text("Settings")');
   const commission = admin.locator("#platform\\.commission_percentage");
   await commission.fill("12");
-  await admin.locator("section:has-text('Platform') button:has-text('Save changes')").click();
+  await admin.locator("section:has(> h2:text-is('Platform')) button:has-text('Save changes')").click();
   await admin.waitForSelector("text=Saved");
   await admin.reload();
   if ((await admin.locator("#platform\\.commission_percentage").inputValue()) !== "12") fail("commission was not saved");
   await admin.locator("#platform\\.commission_percentage").fill("150");
-  await admin.locator("section:has-text('Platform') button:has-text('Save changes')").click();
+  await admin.locator("section:has(> h2:text-is('Platform')) button:has-text('Save changes')").click();
   await admin.waitForSelector("p.text-red-500");
   await admin.reload();
   await admin.locator("button:has-text('Reset to default') >> nth=0").click();
@@ -94,13 +94,13 @@ try {
 
   // ---- Close signups, then reopen
   await admin.locator("#platform\\.registration_open").uncheck();
-  await admin.locator("section:has-text('Platform') button:has-text('Save changes')").click();
+  await admin.locator("section:has(> h2:text-is('Platform')) button:has-text('Save changes')").click();
   await admin.waitForSelector("text=Saved");
   const challenge = (await call("/signup-challenge")).json;
   const closed = await call("/register", { method: "POST", body: { name: "X", email: `closed${Date.now()}@test.com`, signup_token: challenge.token, password: "password123", password_confirmation: "password123", company_id: 1 } });
   if (closed.status !== 403) fail(`signup should be closed (${closed.status})`);
   await admin.locator("#platform\\.registration_open").check();
-  await admin.locator("section:has-text('Platform') button:has-text('Save changes')").click();
+  await admin.locator("section:has(> h2:text-is('Platform')) button:has-text('Save changes')").click();
   await admin.waitForSelector("text=Saved");
   ok("the signup switch closes and reopens registration platform-wide");
 
