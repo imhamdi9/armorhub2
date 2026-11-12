@@ -112,7 +112,8 @@ try {
   ok(`two offers shown by code, best first: ${offers.map((o) => o.match(/EGP[\s ]*[\d,.]+|[\d,.]+[\s ]*EGP|ج\.م[\s ]*[\d,.]+/)?.[0]).join(" / ")}`);
 
   // ---- 5. Accept the terms, pay
-  await customer.getByRole("button", { name: "Choose this offer" }).first().click();
+  // Both centres are new (same record), so the cheaper offer is listed first; the journey below is about Nasr City Auto Film (EGP 9,000).
+  await customer.locator("[data-testid=offer]", { hasText: /9,000/ }).getByRole("button", { name: "Choose this offer" }).click();
   const accept = customer.getByRole("button", { name: "Accept offer" });
   if (!(await accept.isDisabled())) fail("an offer can be accepted without the terms");
   await customer.check("[role=dialog] input[type=checkbox]");
