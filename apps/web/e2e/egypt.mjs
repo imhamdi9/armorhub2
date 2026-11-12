@@ -20,13 +20,12 @@ try {
   // ---- Home page: the Egyptian hero and the four markets
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await page.goto(base);
-  await page.waitForSelector("text=Pharaoh Auto Care");
-  for (const name of ["Nefertiti Beauty", "Beit Masr", "Cairo Devices"]) await page.waitForSelector(`text=${name}`);
+  await page.waitForSelector("text=ArmorHub Egypt");
   const hero = page.locator("img[src*='/public/media/']").first();
   await hero.waitFor({ state: "attached" });
   if (!(await loaded(hero))) fail("the published hero image did not load");
   await page.screenshot({ path: `${SHOTS}/egypt-home.png` });
-  ok("the home page shows the Egyptian market and the illustrated hero image");
+  ok("the home page shows the one Egyptian market and the illustrated hero image");
 
   // ---- Product page
   await page.goto(`${base}/s/armorhub-eg/products/${lantern.id}`);
