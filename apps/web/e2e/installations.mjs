@@ -77,21 +77,25 @@ try {
   const customer = await login("nour.fawzy@demo.eg", { geo: true });
 
   // ---- 1. The product page offers installation only where it applies
-  const dev = await (await fetch(`${base}/api/public/storefronts/cairo-devices/products?per_page=50`)).json();
-  const glass = dev.data.find((p) => /Tempered Glass/.test(p.name)) ?? fail("glass product missing");
-  const charger = dev.data.find((p) => /Fast Charger/.test(p.name)) ?? fail("charger missing");
-  await customer.goto(`${base}/s/cairo-devices/products/${glass.id}`);
+  const find = async (q, re) => (await (await fetch(`${base}/api/public/storefronts/armorhub-eg/products?q=${encodeURIComponent(q)}&per_page=50`)).json()).data.find((p) => re.test(p.name));
+  const glass = (await find("Tempered Glass", /Tempered Glass/)) ?? fail("glass product missing");
+  const charger = (await find("Fast Charger", /Fast Charger/)) ?? fail("charger missing");
+  await customer.goto(`${base}/s/armorhub-eg/products/${glass.id}`);
   await customer.waitForSelector("[data-testid=buy-buttons] a");
   if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 2) fail("a product with optional installation should offer two buy choices");
-  await customer.goto(`${base}/s/cairo-devices/products/${charger.id}`);
+  await customer.goto(`${base}/s/armorhub-eg/products/${charger.id}`);
   await customer.waitForSelector("h1");
   await customer.waitForSelector("[data-testid=buy-buttons] a");
   if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 1) fail("a product that needs no fitting offers more than one buy choice");
   ok("only products that can be fitted offer installation");
-  await customer.goto(`${base}/s/cairo-devices/products/${glass.id}`);
+  await customer.goto(`${base}/s/armorhub-eg/products/${glass.id}`);
   await customer.waitForSelector("[data-testid=buy-buttons] a[href^='/dashboard/']");   // the page knows the visitor is signed in
   await customer.getByRole("link", { name: "Buy now and find me a suitable installation offer" }).click();
   await customer.waitForURL("**/dashboard/installations/new**");
+  // The journey below is an automotive job, asked from the general form: a country market asks which industry it is.
+  await customer.goto(`${base}/dashboard/installations/new`);
+  await customer.waitForSelector("#industry");
+  await customer.selectOption("#industry", { label: "Automotive" });
 
   // ---- 2. A request needs the consent and the phone's own location
   const send = customer.getByRole("button", { name: "Send request" });

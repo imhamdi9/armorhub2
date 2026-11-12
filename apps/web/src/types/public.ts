@@ -79,6 +79,9 @@ export interface PublicStore {
   featured: PublicProduct[];
   categories: string[];
   category_counts: Record<string, number>;
+  industries?: PublicIndustry[];
+  industry_counts?: Record<string, number>;
+  merged_into?: string;
   sections: { category: string; count: number; products: PublicProduct[] }[];
   partners: { count: number; cities: string[] };
 }

@@ -24,7 +24,7 @@ async function scan(page, label) {
 }
 
 const stores = await (await fetch(`${base}/api/public/storefronts`)).json().then((j) => j.stores ?? []);
-const store = stores.find((s) => s.slug === "beit-masr") ?? stores[0];
+const store = stores.find((s) => s.slug === "armorhub-eg") ?? stores[0];
 const products = await (await fetch(`${base}/api/public/storefronts/${store.slug}/products?per_page=2`)).json().then((j) => j.data ?? []);
 const publicPages = ["/", "/login", "/signup", "/seller-signup", "/forgot-password", `/s/${store.slug}`, `/s/${store.slug}/products`, ...products.map((p) => `/s/${store.slug}/products/${p.id}`)];
 

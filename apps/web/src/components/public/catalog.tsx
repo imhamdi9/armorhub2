@@ -12,18 +12,22 @@ import type { PublicProducts } from "@/types/public";
 
 /** Search and browse a store's products. All filtering is server-side, so it works without JavaScript. */
 export function Catalog({
-  store, result, categories, counts = {}, q, category,
+  store, result, categories, counts = {}, industries = [], industryCounts = {}, industry = "", q, category,
 }: {
   store: ShellStore;
   result: PublicProducts | null;
   categories: string[];
   counts?: Record<string, number>;
+  industries?: { key: string; name: string }[];
+  industryCounts?: Record<string, number>;
+  industry?: string;
   q: string;
   category: string;
 }) {
   const base = `/s/${store.slug}/products`;
   const link = (params: Record<string, string | number>) => {
-    const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== "" && v !== 0).map(([k, v]) => [k, String(v)])).toString();
+    const merged: Record<string, string | number> = { ...params, ...(industry ? { industry } : {}) };
+    const query = new URLSearchParams(Object.entries(merged).filter(([, v]) => v !== "" && v !== 0).map(([k, v]) => [k, String(v)])).toString();
     return query ? `${base}?${query}` : base;
   };
 
@@ -32,6 +36,16 @@ export function Catalog({
       <div className="pt-10">
         <h1 className="mb-6 text-center text-4xl tracking-[-0.05em]">{tr("Products")}</h1>
         <ShopSearch action={base} q={q} category={category} />
+
+        {industries.length > 1 && (
+          <nav aria-label={tr("Industries")} className="mt-6 flex flex-wrap justify-center gap-2" data-testid="industry-pills">
+            <Link href={link({ q })} aria-current={industry === "" ? "true" : undefined} className={`rounded-full px-4 py-2 text-base ${industry === "" ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{tr("All industries")}</Link>
+            {industries.map((i) => (
+              <Link key={i.key} href={`${base}?${new URLSearchParams({ ...(q ? { q } : {}), industry: i.key }).toString()}`} aria-current={industry === i.key ? "true" : undefined}
+                className={`rounded-full px-4 py-2 text-base ${industry === i.key ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{tr(i.name)} <span className="text-xs">{industryCounts[i.key] ?? ""}</span></Link>
+            ))}
+          </nav>
+        )}
 
         {categories.length > 0 && (
           <div className="mb-8 mt-6 flex flex-wrap justify-center gap-2">

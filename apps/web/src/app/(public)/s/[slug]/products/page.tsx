@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { Catalog } from "@/components/public/catalog";
 import { getStore, getStoreProducts } from "@/lib/public-api";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ q?: string; category?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; page?: string; industry?: string }>;
 };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
   const { q, category, page } = await searchParams;
   const data = await getStore(slug);
+  if (data?.merged_into) return { title: "ArmorHub" };
   if (!data) return { title: "Store not found" };
 
   const filtered = !!(q || category || (page && page !== "1"));
@@ -30,10 +31,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 export default async function ProductsPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { q = "", category = "", page = "" } = await searchParams;
-  const [store, result] = await Promise.all([getStore(slug), getStoreProducts(slug, { q, category, page })]);
+  const { q = "", category = "", page = "", industry = "" } = await searchParams;
+  const first = await getStore(slug);
+  if (first?.merged_into) redirect(`/s/${first.merged_into}/products${industry ? `?industry=${encodeURIComponent(industry)}` : ""}`);
+  const [store, result] = await Promise.all([Promise.resolve(first), getStoreProducts(slug, { q, category, page, industry })]);
 
   if (!store) notFound();
 
-  return <Catalog store={store.store} result={result} categories={store.categories} counts={store.category_counts} q={q} category={category} />;
+  return <Catalog store={store.store} result={result} categories={store.categories} counts={store.category_counts} industries={store.industries ?? []} industryCounts={store.industry_counts ?? {}} industry={industry} q={q} category={category} />;
 }

@@ -24,7 +24,8 @@
     "e2e:audit": "node e2e/audit.mjs",
     "e2e:a11y": "node e2e/a11y.mjs",
     "e2e:installations": "node e2e/installations.mjs",
-    "e2e:guest": "node e2e/guest.mjs"
+    "e2e:guest": "node e2e/guest.mjs",
+    "e2e:markets": "node e2e/markets.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

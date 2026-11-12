@@ -32,7 +32,7 @@ function Heading({ id, children, href, more }: { id?: string; children: React.Re
 
 /** A market's front page in the Shop style, in the store's own accent colour. Any industry or market uses the same layout. */
 export function ShopStoreHome({ data }: { data: PublicStore }) {
-  const { store, industry, featured, categories, partners, sections = [], category_counts: counts = {} } = data;
+  const { store, industry, industries = [], featured, categories, partners, sections = [], category_counts: counts = {} } = data;
   const products = `/s/${store.slug}/products`;
   const stats = [
     { v: partners.count, l: "Vetted professionals" },
@@ -56,6 +56,13 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
           </div>
         )}
         {industry && <p className="mt-6 text-sm text-[#5f5c5b]">{tr(industry.name)}</p>}
+        {industries.length > 1 && (
+          <ul className="mt-6 flex flex-wrap justify-center gap-2" aria-label={tr("Industries")} data-testid="market-industries">
+            {industries.map((i) => (
+              <li key={i.key}><Link href={`${products}?industry=${encodeURIComponent(i.key)}`} className="rounded-full bg-white px-4 py-1.5 text-sm text-[#5f5c5b]" style={pillShadow}>{tr(i.name)}</Link></li>
+            ))}
+          </ul>
+        )}
         <h1 className="mt-2 text-5xl leading-none tracking-[-0.06em] text-brand-ink md:text-[64px]">{store.name}</h1>
         <p className="mx-auto mt-4 max-w-2xl text-xl tracking-[-0.03em]">
           {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}

@@ -14,9 +14,8 @@ const loaded = (loc) => loc.evaluate((img) => img.complete && img.naturalWidth >
 
 try {
   const stores = (await json("/public/storefronts")).stores;
-  if (stores.length !== 4) fail(`expected 4 Egyptian stores, got ${stores.length}`);
-  const list = await json("/public/storefronts/beit-masr/products?per_page=50");
-  const lantern = list.data.find((p) => /Fanous/.test(p.name)) ?? fail("lantern not in the catalog");
+  if (stores.length !== 1 || stores[0].slug !== "armorhub-eg") fail(`expected the one Egyptian market, got ${JSON.stringify(stores.map((x) => x.slug))}`);
+  const lantern = (await json("/public/storefronts/armorhub-eg/products?q=Fanous&per_page=50")).data.find((p) => /Fanous/.test(p.name)) ?? fail("lantern not in the catalog");
 
   // ---- Home page: the Egyptian hero and the four markets
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -27,10 +26,10 @@ try {
   await hero.waitFor({ state: "attached" });
   if (!(await loaded(hero))) fail("the published hero image did not load");
   await page.screenshot({ path: `${SHOTS}/egypt-home.png` });
-  ok("the home page shows four Egyptian markets and the illustrated hero image");
+  ok("the home page shows the Egyptian market and the illustrated hero image");
 
   // ---- Product page
-  await page.goto(`${base}/s/beit-masr/products/${lantern.id}`);
+  await page.goto(`${base}/s/armorhub-eg/products/${lantern.id}`);
   await page.waitForSelector("h1:has-text('Brass Lantern')");
   const main = page.locator("img[alt*='Brass Lantern']").first();
   if (!(await loaded(main))) fail("the main product image did not load");
@@ -63,9 +62,8 @@ try {
   ok("a sticky buy bar appears after scrolling past the main button");
 
   // A service with options: picking one changes the price.
-  const autos = await json("/public/storefronts/pharaoh-auto-care/products?per_page=50");
-  const ppf = autos.data.find((p) => /PPF/.test(p.name)) ?? fail("PPF missing");
-  await page.goto(`${base}/s/pharaoh-auto-care/products/${ppf.id}`);
+  const ppf = (await json("/public/storefronts/armorhub-eg/products?q=PPF&per_page=50")).data.find((p) => /PPF/.test(p.name)) ?? fail("PPF missing");
+  await page.goto(`${base}/s/armorhub-eg/products/${ppf.id}`);
   await page.waitForSelector("fieldset button:has-text('Hood')");
   await page.click("fieldset button:has-text('Bumper')");
   await page.waitForSelector("text=/7,?800/");
@@ -74,7 +72,7 @@ try {
 
   // ---- Mobile and Arabic
   const phone = await browser.newPage({ viewport: { width: 390, height: 800 } });
-  await phone.goto(`${base}/s/beit-masr/products/${lantern.id}`);
+  await phone.goto(`${base}/s/armorhub-eg/products/${lantern.id}`);
   await phone.waitForSelector("h1");
   const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) fail(`the product page scrolls sideways on a phone (${overflow}px)`);

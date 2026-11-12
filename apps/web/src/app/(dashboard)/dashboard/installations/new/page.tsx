@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { field, Note } from "@/components/installations/shared";
 import { PageHeader } from "@/components/layout/page-header";
+import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,11 @@ import { createInstallation } from "@/services/installation.service";
 /** A request for help. The place is the phone's own position, shared only after the person allows it: it is never typed. */
 export default function NewInstallationPage() {
   const router = useRouter();
+  const user = useCurrentUser();
+  // A country market runs several industries: say which kind of job this is (unless it comes from a product, which knows).
+  const industries = user?.industries ?? [];
+  const [industryId, setIndustryId] = useState("");
+  const fromProduct = typeof window !== "undefined" && !!new URLSearchParams(window.location.search).get("product");
   const [subject, setSubject] = useState("");
   const [parts, setParts] = useState("");
   const [workType, setWorkType] = useState("install");
@@ -43,6 +49,7 @@ export default function NewInstallationPage() {
       const job = await createInstallation({
         subject, parts: parts.split("\n").map((p) => p.trim()).filter(Boolean), work_type: workType, notes: notes || null,
         latitude: where.latitude, longitude: where.longitude, location_consent: consent,
+        ...(industries.length > 1 && !fromProduct ? { industry_id: Number(industryId) } : {}),
         ...(new URLSearchParams(window.location.search).get("product") ? { product_id: Number(new URLSearchParams(window.location.search).get("product")) } : {}),
       });
       router.push(`/dashboard/installations/${job.id}`);
@@ -57,6 +64,13 @@ export default function NewInstallationPage() {
       <PageHeader title="New installation request" />
       <Note>{tr("Centres see what must be done and roughly how far away you are. They never see your name, phone or exact place until you accept an offer and pay.")}</Note>
       <form onSubmit={submit} className="space-y-4">
+        {industries.length > 1 && !fromProduct && (
+          <div><Label htmlFor="industry">{tr("What kind of job is it?")}</Label>
+            <select id="industry" required className={field} value={industryId} onChange={(e) => setIndustryId(e.target.value)}>
+              <option value="" disabled>{tr("Choose an industry")}</option>
+              {industries.map((i) => <option key={i.id} value={i.id}>{tr(i.name)}</option>)}
+            </select></div>
+        )}
         <div><Label htmlFor="subject">{tr("What is it for? (car or device model)")}</Label><Input id="subject" required maxLength={160} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Toyota Camry 2020" /></div>
         <div><Label htmlFor="parts">{tr("What must be done? One item per line")}</Label><textarea id="parts" required rows={3} className="w-full rounded-[10px] border border-input bg-transparent p-2.5 text-sm" value={parts} onChange={(e) => setParts(e.target.value)} /></div>
         <div><Label htmlFor="type">{tr("Type of work")}</Label>

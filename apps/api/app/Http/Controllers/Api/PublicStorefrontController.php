@@ -80,6 +80,7 @@ class PublicStorefrontController extends Controller
             'store' => $this->stores->branding($company),
             'sections' => $sections,
             'category_counts' => $all->countBy('category')->sortKeys(),
+            'industry_counts' => $all->groupBy('industry_id')->map->count()->mapWithKeys(fn ($n, $id) => [\App\Models\Industry::where('id', $id)->value('key') => $n]),
             'industry' => $this->stores->industry($company),
             'industries' => $this->stores->industries($company),
             'market' => $this->stores->market($company),
@@ -91,7 +92,7 @@ class PublicStorefrontController extends Controller
 
     public function products(Request $request, string $slug)
     {
-        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50']);
+        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50']);
         $company = $this->stores->find($slug) ?? abort(404);
 
         $page = $this->stores->products($company)
@@ -99,6 +100,7 @@ class PublicStorefrontController extends Controller
                 ->where('name', 'like', '%'.addcslashes($request->q, '%_\\').'%')
                 ->orWhere('brand', 'like', '%'.addcslashes($request->q, '%_\\').'%')))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            ->when($request->filled('industry'), fn ($q) => $q->whereIn('industry_id', \App\Models\Industry::where('key', $request->industry)->select('id')))
             // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle.
             ->orderBy('category')->orderBy('name')
             ->paginate((int) $request->input('per_page', 12))

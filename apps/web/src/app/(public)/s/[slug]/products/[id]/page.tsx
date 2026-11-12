@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ProductDetail } from "@/components/public/product-detail";
 import { getStore, getStoreProduct } from "@/lib/public-api";
@@ -29,7 +29,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug, id } = await params;
-  const [store, data] = await Promise.all([getStore(slug), getStoreProduct(slug, id)]);
+  const store = await getStore(slug);
+  if (store?.merged_into) redirect(`/s/${store.merged_into}/products/${id}`);
+  const data = await getStoreProduct(slug, id);
 
   if (!store || !data) notFound();
 

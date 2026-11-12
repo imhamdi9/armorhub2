@@ -17,16 +17,16 @@ async function scan(page, label) {
 }
 
 try {
-  const list = await (await fetch(`${base}/api/public/storefronts/beit-masr/products?per_page=50`)).json();
-  const lantern = list.data.find((p) => /Fanous/.test(p.name)) ?? fail("lantern missing");
-  const cleaning = list.data.find((p) => /Deep Home Cleaning/.test(p.name)) ?? fail("cleaning service missing");
+  const find = async (q, re) => (await (await fetch(`${base}/api/public/storefronts/armorhub-eg/products?q=${encodeURIComponent(q)}&per_page=50`)).json()).data.find((p) => re.test(p.name));
+  const lantern = (await find("Fanous", /Fanous/)) ?? fail("lantern missing");
+  const cleaning = (await find("Deep Home Cleaning", /Deep Home Cleaning/)) ?? fail("cleaning service missing");
 
   // ---- 1. "Buy now" goes to checkout, never to a sign-in or signup page
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
-  await page.goto(`${base}/s/beit-masr/products/${lantern.id}`);
+  await page.goto(`${base}/s/armorhub-eg/products/${lantern.id}`);
   await page.getByRole("link", { name: "Buy now", exact: true }).first().click();
-  await page.waitForURL(`**/s/beit-masr/checkout?product=${lantern.id}`);
+  await page.waitForURL(`**/s/armorhub-eg/checkout?product=${lantern.id}`);
   if (/\/(login|register)/.test(page.url())) fail("a guest was sent to sign in");
   await page.waitForSelector("#g-name");
   if (!/Fanous/.test(await text(page)) || !/650/.test(await page.locator("[data-testid=checkout-total]").innerText())) fail("the checkout does not show the product and price");
@@ -36,15 +36,15 @@ try {
   ok("Buy now opens a checkout with no sign-in; an account is optional");
 
   // ---- 2. A service still goes through signup (it needs quotes)
-  await page.goto(`${base}/s/beit-masr/products/${cleaning.id}`);
+  await page.goto(`${base}/s/armorhub-eg/products/${cleaning.id}`);
   await page.getByRole("link", { name: "Get a quote" }).first().click();
   await page.waitForURL(/\/register/);
-  await page.goto(`${base}/s/beit-masr/checkout?product=${cleaning.id}`);
+  await page.goto(`${base}/s/armorhub-eg/checkout?product=${cleaning.id}`);
   if ((await page.locator("#g-name").count()) > 0) fail("a service can be ordered as a guest");
   ok("services still need an account (a guest checkout for a service is a 404)");
 
   // ---- 3. Fill in the form: bad details are explained, good ones pay
-  await page.goto(`${base}/s/beit-masr/checkout?product=${lantern.id}`);
+  await page.goto(`${base}/s/armorhub-eg/checkout?product=${lantern.id}`);
   const pay = page.getByRole("button", { name: /^Pay / });
   await page.fill("#g-name", "Salma Guest"); await page.fill("#g-email", `salma${Date.now()}@example.org`); await page.fill("#g-phone", "123");
   await page.fill("#g-line1", "12 Nile Corniche"); await page.fill("#g-city", "Giza");
@@ -91,7 +91,7 @@ try {
   // ---- 6. Mobile and Arabic
   const m = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const mp = await m.newPage();
-  for (const [u, n] of [[`/s/beit-masr/checkout?product=${lantern.id}`, "checkout"], [trackUrl.replace(base, ""), "order"]]) {
+  for (const [u, n] of [[`/s/armorhub-eg/checkout?product=${lantern.id}`, "checkout"], [trackUrl.replace(base, ""), "order"]]) {
     await mp.goto(base + u); await mp.waitForLoadState("networkidle");
     if (await mp.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail(`mobile ${n}: sideways scroll`);
     await mp.screenshot({ path: `${SHOTS}/guest-m-${n}.png`, fullPage: true });
@@ -99,7 +99,7 @@ try {
   const ar = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "ar" });
   await ar.addInitScript(() => { try { localStorage.setItem("locale", "ar"); } catch { /* ignore */ } });
   const ap = await ar.newPage();
-  await ap.goto(`${base}/s/beit-masr/checkout?product=${lantern.id}`); await ap.waitForSelector("#g-name");
+  await ap.goto(`${base}/s/armorhub-eg/checkout?product=${lantern.id}`); await ap.waitForSelector("#g-name");
   if ((await ap.locator("html").getAttribute("dir")) !== "rtl" || /Delivery address|Your details/.test(await text(ap))) fail("the checkout is not Arabic/RTL");
   await ap.screenshot({ path: `${SHOTS}/guest-ar-checkout.png`, fullPage: true });
   await scan(ap, "arabic checkout");
@@ -111,41 +111,40 @@ try {
   const sip = await si.newPage();
   await sip.goto(`${base}/login`); await sip.fill("input[type=email]", "khaled.abdelrahman@demo.eg"); await sip.fill("input[type=password]", "password123"); await sip.click("button[type=submit]");
   await sip.waitForURL("**/dashboard**");
-  await sip.goto(`${base}/s/beit-masr/checkout?product=${lantern.id}`);
+  await sip.goto(`${base}/s/armorhub-eg/checkout?product=${lantern.id}`);
   await sip.waitForSelector("text=You are signed in as");
   if (await sip.locator("#g-name").count()) fail("a signed-in customer is shown the guest form");
   ok("a signed-in customer is offered to continue with their account");
 
   // ---- 8. The product page offers what the seller chose: sell alone / sell alone or with installation / only with an installation offer
-  const lock = list.data.find((p) => /Smart Door Lock/.test(p.name)) ?? fail("door lock missing");
-  const dev = await (await fetch(`${base}/api/public/storefronts/cairo-devices/products?per_page=50`)).json();
-  const glass = dev.data.find((p) => /Tempered Glass/.test(p.name)) ?? fail("glass missing");
+  const lock = (await find("Smart Door Lock", /Smart Door Lock/)) ?? fail("door lock missing");
+  const glass = (await find("Tempered Glass", /Tempered Glass/)) ?? fail("glass missing");
   const view = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   const buttons = async (url) => { await view.goto(base + url); await view.waitForSelector("[data-testid=buy-buttons] a"); return view.locator("[data-testid=buy-buttons] a").allInnerTexts(); };
 
-  let b = await buttons(`/s/beit-masr/products/${lantern.id}`);
+  let b = await buttons(`/s/armorhub-eg/products/${lantern.id}`);
   if (b.length !== 1 || !/^Buy now$/.test(b[0].trim())) fail(`a product sold on its own should show one "Buy now" button, got ${JSON.stringify(b)}`);
-  b = await buttons(`/s/cairo-devices/products/${glass.id}`);
+  b = await buttons(`/s/armorhub-eg/products/${glass.id}`);
   if (b.length !== 2 || !/Buy now without installation/.test(b[0]) || !/Buy now and find me a suitable installation offer/.test(b[1])) fail(`an optional-installation product should show two buttons, got ${JSON.stringify(b)}`);
   await view.screenshot({ path: `${SHOTS}/guest-4-optional-buttons.png` });
-  b = await buttons(`/s/beit-masr/products/${lock.id}`);
+  b = await buttons(`/s/armorhub-eg/products/${lock.id}`);
   if (b.length !== 1 || /^Buy now/.test(b[0].trim()) || !/Find me a suitable installation offer/.test(b[0])) fail(`a product sold only with installation must not offer "Buy now", got ${JSON.stringify(b)}`);
   if (!/sold only together with an installation offer/.test(await view.locator("[data-testid=installation-required-note]").innerText())) fail("the required-installation note is missing");
   await view.screenshot({ path: `${SHOTS}/guest-5-required-buttons.png` });
   ok("the product page shows 'Buy now', or two buy choices, or only 'find me an installation offer', as the seller chose");
 
   // A guest cannot buy a required-installation product at all, and the second optional button leads to signup then the installation request
-  await view.goto(`${base}/s/beit-masr/checkout?product=${lock.id}`);
+  await view.goto(`${base}/s/armorhub-eg/checkout?product=${lock.id}`);
   await view.waitForSelector("[data-testid=installation-required-block]");
   if (await view.locator("#g-name").count()) fail("the guest form is shown for a product sold only with installation");
-  await view.goto(`${base}/s/cairo-devices/products/${glass.id}`);
+  await view.goto(`${base}/s/armorhub-eg/products/${glass.id}`);
   await view.getByRole("link", { name: "Buy now and find me a suitable installation offer" }).click();
   await view.waitForURL(/\/register\?.*installation=1/);
   ok("a guest cannot buy a product that is sold only with installation; the 'find me an installation offer' button leads to signup");
 
   // The optional product still says so at checkout and on the order page (bought without an account)
   const g2 = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
-  await g2.goto(`${base}/s/cairo-devices/checkout?product=${glass.id}`);
+  await g2.goto(`${base}/s/armorhub-eg/checkout?product=${glass.id}`);
   await g2.waitForSelector("[data-testid=installation-note]");
   await g2.fill("#g-name", "Hana Guest"); await g2.fill("#g-email", `hana${Date.now()}@example.org`); await g2.fill("#g-phone", "01012345678");
   await g2.fill("#g-line1", "3 Tahrir Square"); await g2.fill("#g-city", "Cairo");

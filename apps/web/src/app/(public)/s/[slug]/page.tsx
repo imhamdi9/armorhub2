@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ShopStoreHome } from "@/components/shop/shop-store-home";
 import { getStore } from "@/lib/public-api";
@@ -11,6 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const data = await getStore(slug);
 
+  if (data?.merged_into) return { title: "ArmorHub" };
   if (!data) return { title: "Store not found" };
 
   const description = plain(data.store.subheadline ?? data.store.headline) ?? `Services from ${data.store.name}`;
@@ -29,6 +30,8 @@ export default async function StorePage({ params }: Props) {
   const { slug } = await params;
   const data = await getStore(slug);
 
+  // An older per-industry store address now lives inside the country's market.
+  if (data?.merged_into) redirect(`/s/${data.merged_into}`);
   if (!data) notFound();
 
   return <ShopStoreHome data={data} />;

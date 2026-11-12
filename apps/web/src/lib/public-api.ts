@@ -67,7 +67,7 @@ export const getStores = () => get<PublicStoreList>("/storefronts");
 export const getSurface = async (key: string) => (await get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`))?.values ?? {};
 export const getShowcase = () => get<PublicShowcase>("/showcase");
 export const getStore = (slug: string) => get<PublicStore>(`/storefronts/${encodeURIComponent(slug)}`);
-export const getStoreProducts = (slug: string, params: { q?: string; category?: string; page?: string }) => {
+export const getStoreProducts = (slug: string, params: { q?: string; category?: string; page?: string; industry?: string }) => {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
   return get<PublicProducts>(`/storefronts/${encodeURIComponent(slug)}/products${query ? `?${query}` : ""}`);
 };
