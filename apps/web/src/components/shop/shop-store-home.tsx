@@ -57,9 +57,10 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         )}
         {industry && <p className="mt-6 text-sm text-[#787574]">{tr(industry.name)}</p>}
         <h1 className="mt-2 text-5xl leading-none tracking-[-0.06em] text-brand-ink md:text-[64px]">{store.name}</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base text-[#787574]">
-          {store.subheadline ?? store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
+        <p className="mx-auto mt-4 max-w-2xl text-xl tracking-[-0.03em]">
+          {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
         </p>
+        {store.subheadline && <p className="mx-auto mt-2 max-w-2xl text-base text-[#787574]">{store.subheadline}</p>}
         <div className="mt-8"><ShopSearch action={products} /></div>
         {categories.length > 0 && (
           <div className="mt-6 flex flex-wrap justify-center gap-2">
