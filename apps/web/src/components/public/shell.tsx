@@ -6,7 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Icon, LogoMark } from "@/components/public/art";
 import { useSite, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { LanguageSwitcher, tr, useLocale } from "@/lib/i18n";
-import { pickText } from "@/lib/surfaces";
+import { FONT_STACKS, pickText } from "@/lib/surfaces";
 import { textOn } from "@/lib/public-api";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -220,9 +220,13 @@ export function PublicShell({ store, children }: { store?: ShellStore; children:
   const locale = useLocale();
   const brand = store ? undefined : { color: pickText(site.brand, "en", "brand_color"), dark: pickText(site.brand, "en", "dark_color") };
   void locale;
+  // Fonts apply to the platform's own pages only, chosen from a fixed list.
+  const headingFont = store ? undefined : FONT_STACKS[pickText(site.brand, "en", "font_heading") ?? ""];
+  const bodyFont = store ? undefined : FONT_STACKS[pickText(site.brand, "en", "font_body") ?? ""];
+  const style = { ...themeVars(store, brand), ...(headingFont ? { "--theme-heading": headingFont } : {}), ...(bodyFont ? { fontFamily: bodyFont } : {}) } as CSSProperties;
 
   return (
-    <div style={themeVars(store, brand)} className="flex min-h-screen flex-col bg-white text-charcoal">
+    <div style={style} className="flex min-h-screen flex-col bg-white text-charcoal">
       <Header store={store} />
       <main className="flex-1">{children}</main>
       <Footer store={store} />

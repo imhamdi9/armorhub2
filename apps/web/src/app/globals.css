@@ -185,6 +185,7 @@
 
 /* The brand's shout: Inter Black, tight, block-like. Latin only; Arabic falls back to its own heavy face. */
 .display {
+  font-family: var(--theme-heading, inherit);
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: -0.04em;

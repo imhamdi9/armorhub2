@@ -67,7 +67,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Roles\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Roles\|Theme editor\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview
@@ -269,6 +269,49 @@ try {
   await admin.locator("article:has-text('sales-viewer') >> button:has-text('Delete')").click();
   await admin.waitForSelector("h2:has-text('sales-viewer')", { state: "detached" });
   ok("an admin created and deleted a custom role; administrator powers are not offered");
+
+  // Theme editor: live preview of unsaved changes, section order, colours; publishing changes the public page.
+  await admin.click('a:has-text("Theme editor")');
+  await admin.waitForSelector("[data-section=faq]");
+  const preview = admin.frameLocator("iframe[title='Live preview']");
+  await preview.locator("h1").waitFor();
+  await admin.click("[role=tab]:has-text('Text')");
+  await admin.fill("#t-hero_title", "Live preview headline");
+  await preview.locator("h1:has-text('Live preview headline')").waitFor();
+  await admin.click("button[aria-pressed=false]:has-text('Mobile')");
+  const width = await admin.locator("iframe[title='Live preview']").evaluate((el) => el.getBoundingClientRect().width);
+  if (width > 400) throw new Error(`mobile preview is ${width}px wide`);
+  await admin.click("[role=tab]:has-text('Sections')");
+  for (let i = 0; i < 14; i++) await admin.click("[aria-label='Move up FAQ']");
+  await admin.click("[aria-label='Hide Numbers band']");
+  await admin.click("[role=tab]:has-text('Colors and fonts')");
+  await admin.fill("#c-brand_color", "#ff6600");
+  await admin.selectOption("#f-font_heading", "serif");
+  const bg = await preview.locator("a.btn-brand").first().evaluate((el) => getComputedStyle(el).backgroundColor);
+  if (!bg.includes("255, 102, 0")) throw new Error(`preview colour not applied: ${bg}`);
+  const visitor2 = await admin.context().newPage();
+  await visitor2.goto(new URL("/", base).toString());
+  if ((await visitor2.textContent("body")).includes("Live preview headline")) throw new Error("an unsaved change reached visitors");
+  await admin.fill("input[placeholder='Note (what changed)']", "theme");
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  await eventually(visitor2, async () => (await visitor2.textContent("body")).includes("Live preview headline"), "the published theme");
+  const ids = await visitor2.locator("main section[id]").evaluateAll((els) => els.map((e) => e.id));
+  if (ids.indexOf("faq") > ids.indexOf("stores")) throw new Error(`FAQ was not moved above the markets: ${ids}`);
+  // Put the built-in look back.
+  await admin.reload();
+  await admin.waitForSelector("[data-section=faq]", { timeout: 60000 });
+  await admin.click("[role=tab]:has-text('Colors and fonts')");
+  await admin.click("button:has-text('Reset')").catch(() => {});
+  await admin.selectOption("#f-font_heading", "");
+  await admin.click("[role=tab]:has-text('Text')");
+  await admin.fill("#t-hero_title", "");
+  await admin.click("[role=tab]:has-text('Sections')");
+  await admin.click("[aria-label='Show Numbers band']").catch(() => {});
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  await visitor2.close();
+  ok("the theme editor previews unsaved changes live (desktop and mobile), reorders and hides sections, recolours, and publishes");
 
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");

@@ -85,6 +85,10 @@ More surfaces: `app.messages` (notification and email wording with `{placeholder
 
 Admin UI: Administration → Content.
 
+### Theme editor
+
+Administration → Theme editor is a visual editor on top of the same governed surfaces. A live preview (the real home page in a same-site frame, with Desktop/Tablet/Mobile widths) shows unsaved changes instantly; nothing reaches visitors until Publish. It edits: section order and visibility, accent/dark colours, headline/text fonts (a fixed list of safe stacks, no external font files), hero, banner and logo images (https addresses only), and the main wording. Everything is validated server-side, so no CSS, script or markup can be injected. Only `/theme-preview` may be framed, and only by the same site.
+
 ### Custom roles
 
 Administration → Roles lets a platform admin create roles as bundles of everyday permissions. Built-in roles cannot be changed. Admin, delete, user-management and payment permissions are not grantable (privilege-escalation guard), custom-role holders must belong to a company (data scoping), and a role in use cannot be deleted. Creation, change and deletion are audited.

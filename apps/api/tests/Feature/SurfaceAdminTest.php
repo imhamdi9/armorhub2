@@ -127,4 +127,24 @@ class SurfaceAdminTest extends TestCase
         $this->actingAs($this->customer, 'sanctum')->getJson('/api/surfaces/app.sidebar')->assertOk()->assertJsonPath('values.en.labels.0.label', 'Jobs board');
         $this->getJson('/api/surfaces/not.declared')->assertNotFound();
     }
+
+    public function test_theme_fields_are_validated_strictly(): void
+    {
+        $this->actingAs($this->admin, 'sanctum');
+
+        // Fonts come from a fixed list: arbitrary CSS is refused.
+        $this->edit('site.brand', 'en', ['font_heading' => 'red; background:url(//evil)'])->assertStatus(422);
+        $this->edit('site.brand', 'en', ['font_heading' => 'serif', 'font_body' => 'system'])->assertOk();
+
+        // Images must be https; sections must be real ones.
+        $this->edit('site.home', 'en', ['hero_image_url' => 'javascript:alert(1)'])->assertStatus(422);
+        $this->edit('site.home', 'en', ['hero_image_url' => 'http://example.com/a.png'])->assertStatus(422);
+        $this->edit('site.home', 'en', ['section_order' => [['section' => 'not_a_section']]])->assertStatus(422);
+        $this->edit('site.home', 'en', ['hero_image_url' => 'https://example.com/a.png', 'section_order' => [['section' => 'faq'], ['section' => 'how']]])->assertOk();
+        $this->postJson('/api/admin/surfaces/site.home/publish', ['locale' => 'en'])->assertOk();
+
+        $published = $this->getJson('/api/public/surfaces/site.home')->json('values.en');
+        $this->assertSame('https://example.com/a.png', $published['hero_image_url']);
+        $this->assertSame([['section' => 'faq'], ['section' => 'how']], $published['section_order']);
+    }
 }

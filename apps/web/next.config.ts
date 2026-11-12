@@ -26,7 +26,7 @@ const CAPTCHA = [
  * load scripts, frames, forms or connections from anywhere we did not list.
  * (Next.js needs 'unsafe-inline' for its bootstrap scripts, and 'unsafe-eval' only in development.)
  */
-const csp = [
+const cspFor = (frameAncestors: string) => [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
@@ -34,15 +34,19 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")}${isProd ? "" : " ws: wss:"}`,
-  `frame-src ${CAPTCHA.join(" ")}`,
+  `frame-src 'self' ${CAPTCHA.join(" ")}`,
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
-  "frame-ancestors 'none'",
+  `frame-ancestors ${frameAncestors}`,
   isProd ? "upgrade-insecure-requests" : "",
 ]
   .filter(Boolean)
   .join("; ");
+
+const csp = cspFor("'none'");
+// Only the theme editor's own preview may be framed, and only by this same site.
+const previewCsp = cspFor("'self'");
 
 const nextConfig: NextConfig = {
   // Self-contained server output, used by the production Docker image.
@@ -50,9 +54,20 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   async headers() {
+    const common = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), payment=(), geolocation=(self)" },
+      { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+    ];
+
     return [
       {
-        source: "/:path*",
+        source: "/theme-preview",
+        headers: [{ key: "Content-Security-Policy", value: previewCsp }, { key: "X-Frame-Options", value: "SAMEORIGIN" }, ...common],
+      },
+      {
+        source: "/((?!theme-preview$).*)",
         headers: [
           { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },

@@ -7,6 +7,15 @@ use App\Core\Modules\ModuleContext;
 /** What admins may edit on ArmorHub's public site and app. Everything else stays locked. */
 final class Surfaces
 {
+    /** Fonts come from a fixed list of safe stacks (no external font files, nothing an admin types is ever used as CSS). */
+    public const FONTS = ['default', 'system', 'serif', 'rounded', 'mono'];
+
+    /** Home page blocks an admin can reorder (the hero stays first and the closing banner last). */
+    public const SECTIONS = [
+        'partner_strip', 'industries', 'stores', 'quote_feature', 'dashboard_feature', 'value_props', 'partners', 'use_cases', 'why', 'how', 'bento',
+        'developers', 'compat', 'markets', 'faq',
+    ];
+
     public static function register(ModuleContext $c): void
     {
         $c->surface('site.brand', 'Brand', [
@@ -15,6 +24,8 @@ final class Surfaces
             'logo_url' => ['type' => 'url', 'label' => 'Logo address (https)'],
             'brand_color' => ['type' => 'color', 'label' => 'Accent colour (buttons)', 'default' => '#9fe870'],
             'dark_color' => ['type' => 'color', 'label' => 'Dark colour (panels, footer)', 'default' => '#163300'],
+            'font_heading' => ['type' => 'select', 'label' => 'Headline font', 'options' => self::FONTS],
+            'font_body' => ['type' => 'select', 'label' => 'Text font', 'options' => self::FONTS],
         ], 'The name, logo and colours of the public site.', public: true);
 
         $sections = [];
@@ -35,6 +46,11 @@ final class Surfaces
             'banner_title' => ['type' => 'text', 'label' => 'Closing banner: title', 'max' => 100],
             'banner_text' => ['type' => 'longtext', 'label' => 'Closing banner: text', 'max' => 300],
             'banner_cta' => ['type' => 'text', 'label' => 'Closing banner: button', 'max' => 40],
+            'hero_image_url' => ['type' => 'url', 'label' => 'Hero image (https address; replaces the illustration)'],
+            'banner_image_url' => ['type' => 'url', 'label' => 'Closing banner background image (https address)'],
+            'section_order' => ['type' => 'list', 'label' => 'Section order (sections not listed follow in the built-in order)', 'maxItems' => 15, 'items' => [
+                'section' => ['type' => 'select', 'label' => 'Section', 'options' => self::SECTIONS, 'required' => true],
+            ]],
             'footer_blurb' => ['type' => 'longtext', 'label' => 'Footer description', 'max' => 300],
             'quote_title' => ['type' => 'text', 'label' => 'Compare quotes: title', 'max' => 120],
             'quote_text' => ['type' => 'longtext', 'label' => 'Compare quotes: text', 'max' => 300],

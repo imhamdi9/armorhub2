@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { Fragment } from "react";
 
 import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit, COUNTRY_NAMES } from "@/components/public/landing";
 import { Faq } from "@/components/public/faq";
 import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
-import { SiteProvider, useSiteFlag, useSiteList, useSiteText } from "@/components/public/site-content";
+import { SiteProvider, useSiteFlag, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { tr } from "@/lib/i18n";
-import type { SiteContent } from "@/lib/surfaces";
+import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
 const STEPS = [
@@ -44,12 +45,12 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
   const bannerText = useSiteText("home", "banner_text", "Get a branded storefront, receive quote requests from nearby customers and get paid securely.");
   const bannerCta = useSiteText("home", "banner_cta", "For businesses: sign in");
 
-  return (
-    <PublicShell>
-      <Hero facts={facts} firstStore={stores[0]} />
-      {on.partnerStrip && <PartnerStrip showcase={showcase} facts={facts} />}
-      {on.industries && <IndustryTabs showcase={showcase} />}
-
+  const order = orderSections(useSiteList<{ section: string }>("home", "section_order").map((r) => r.section));
+  const bannerImage = useSiteValue("home", "banner_image_url");
+  const blocks: Record<SectionKey, React.ReactNode> = {
+    partner_strip: on.partnerStrip && <PartnerStrip showcase={showcase} facts={facts} />,
+    industries: on.industries && <IndustryTabs showcase={showcase} />,
+    stores: (
       <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
         <h2 className="display display-md">{marketsTitle}</h2>
         {stores.length === 0 ? (
@@ -73,15 +74,15 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
           </div>
         )}
       </section>
-
-      {on.quote && <QuoteFeature />}
-      {on.dashboard && <DashboardFeature />}
-      {on.values && <ValueProps />}
-      {on.partners && <PartnersShowcase data={showcase} />}
-      {on.useCases && <UseCases showcase={showcase} />}
-      {on.why && <WhySplit />}
-
-      {on.how && <section id="how" className="scroll-mt-20 bg-white py-14">
+    ),
+    quote_feature: on.quote && <QuoteFeature />,
+    dashboard_feature: on.dashboard && <DashboardFeature />,
+    value_props: on.values && <ValueProps />,
+    partners: on.partners && <PartnersShowcase data={showcase} />,
+    use_cases: on.useCases && <UseCases showcase={showcase} />,
+    why: on.why && <WhySplit />,
+    how: on.how && (
+      <section id="how" className="scroll-mt-20 bg-white py-14">
         <div className="mx-auto max-w-[1200px] px-4">
           <h2 className="display display-md text-center">{howTitle}</h2>
           <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -94,14 +95,20 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
             ))}
           </ol>
         </div>
-      </section>}
+      </section>
+    ),
+    bento: on.bento && <Bento facts={facts} />,
+    developers: on.dev && <DevRow />,
+    compat: on.compat && <Compatibility />,
+    markets: on.markets && <Markets />,
+    faq: on.faq && (faqItems.length > 0 ? <Faq items={faqItems.map((i) => ({ q: i.question, a: i.answer }))} /> : <Faq />),
+  };
 
-      {on.bento && <Bento facts={facts} />}
-      {on.dev && <DevRow />}
-      {on.compat && <Compatibility />}
-      {on.markets && <Markets />}
-      {on.faq && (faqItems.length > 0 ? <Faq items={faqItems.map((i) => ({ q: i.question, a: i.answer }))} /> : <Faq />)}
-      <Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} secondary={{ href: "/signup", label: "Create an account" }} />
+  return (
+    <PublicShell>
+      <Hero facts={facts} firstStore={stores[0]} />
+      {order.map((key) => <Fragment key={key}>{blocks[key]}</Fragment>)}
+      <Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} image={bannerImage} secondary={{ href: "/signup", label: "Create an account" }} />
     </PublicShell>
   );
 }

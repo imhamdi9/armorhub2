@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { HeroArt, Icon } from "@/components/public/art";
 import { price } from "@/components/public/product-card";
-import { useSiteList, useSiteText } from "@/components/public/site-content";
+import { useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicShowcase } from "@/types/public";
 
@@ -63,6 +63,7 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
   const title = useSiteText("home", "hero_title", "Trusted services, quoted by experts near you");
   const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
   const cta = useSiteText("home", "primary_cta", "Browse markets");
+  const heroImage = useSiteValue("home", "hero_image_url");
 
   return (
     <section className="overflow-hidden bg-white">
@@ -93,7 +94,12 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
         </div>
 
         <div className="relative overflow-hidden rounded-[28px] bg-linen md:col-span-5">
-          <div className="p-5"><HeroArt kind="automotive" className="w-full" /></div>
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- an https image an admin chose
+            <img src={heroImage} alt="" className="h-full min-h-56 w-full object-cover" />
+          ) : (
+            <div className="p-5"><HeroArt kind="automotive" className="w-full" /></div>
+          )}
           {firstStore && (
             <Link href={`/s/${firstStore.slug}`} className="absolute bottom-4 start-4 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-forest shadow-card">
               <span className="h-3 w-3 rounded-full" style={{ backgroundColor: firstStore.primary_color }} />
@@ -494,10 +500,14 @@ export function Markets() {
 
 // ------------------------------------------------------------------ closing banner
 
-export function Banner({ title, text, href, label, secondary }: { title: string; text: string; href: string; label: string; secondary?: { href: string; label: string } }) {
+export function Banner({ title, text, href, label, secondary, image }: { title: string; text: string; href: string; label: string; secondary?: { href: string; label: string }; image?: string | null }) {
   return (
     <section className="bg-white px-4 pb-16 pt-6">
       <div className="bg-dark relative mx-auto max-w-[1200px] overflow-hidden rounded-[32px] px-6 py-16 text-center md:px-14">
+        {image && (
+          // eslint-disable-next-line @next/next/no-img-element -- an https image an admin chose; a dark veil keeps the text readable
+          <><img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-[var(--dark)]/70" aria-hidden="true" /></>
+        )}
         <div className="absolute -end-10 -top-10 h-40 w-40 rounded-full bg-lime/20" aria-hidden="true" />
         <div className="absolute -bottom-12 start-6 h-32 w-32 rounded-full bg-lime/10" aria-hidden="true" />
         <h2 className="display display-lg relative mx-auto max-w-3xl uppercase" style={{ color: "var(--on-dark-accent)" }}>{tr(title)}</h2>

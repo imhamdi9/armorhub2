@@ -31,3 +31,24 @@ export function pickList<T extends Record<string, string>>(surface: Surface | un
 
   return Array.isArray(value) ? (value as T[]) : [];
 }
+
+/** Safe font stacks an admin can pick by name. Nothing typed by an admin is ever used as CSS. */
+export const FONT_STACKS: Record<string, string> = {
+  system: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", sans-serif',
+  serif: 'Georgia, "Times New Roman", "Noto Naskh Arabic", serif',
+  rounded: 'ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif',
+  mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+};
+
+export const SECTION_KEYS = [
+  "partner_strip", "industries", "stores", "quote_feature", "dashboard_feature", "value_props", "partners", "use_cases", "why", "how", "bento",
+  "developers", "compat", "markets", "faq",
+] as const;
+export type SectionKey = (typeof SECTION_KEYS)[number];
+
+/** The admin's order first, then any section they did not mention in the built-in order. */
+export function orderSections(chosen: string[]): SectionKey[] {
+  const picked = chosen.filter((k, i): k is SectionKey => (SECTION_KEYS as readonly string[]).includes(k) && chosen.indexOf(k) === i);
+
+  return [...picked, ...SECTION_KEYS.filter((k) => !picked.includes(k))];
+}

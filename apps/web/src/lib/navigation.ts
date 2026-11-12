@@ -174,6 +174,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
     items.push({ title: "Roles", href: "/dashboard/admin/roles", section: "admin", icon: "users" });
+    items.push({ title: "Theme editor", href: "/dashboard/admin/theme", section: "admin", icon: "settings" });
     items.push({ title: "Content", href: "/dashboard/admin/content", section: "admin", icon: "settings" });
     items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });
