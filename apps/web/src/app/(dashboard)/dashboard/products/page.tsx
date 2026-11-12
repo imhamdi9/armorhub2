@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
@@ -12,6 +13,7 @@ import { hasRole } from "@/lib/navigation";
 import { createProduct, getProducts } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { imageSrc } from "@/lib/surfaces";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -19,6 +21,7 @@ function slugify(value: string) {
 
 export default function ProductsPage() {
   const user = useCurrentUser();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[] | null>(null);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -47,11 +50,8 @@ export default function ProductsPage() {
         base_price: price,
         industry_id: user?.industry?.id ?? null,
       });
-      setProducts((prev) => [...(prev ?? []), product]);
-      setName("");
-      setCategory("");
-      setPrice("");
-      setShowForm(false);
+      // A new product can't be ordered until it has prices (and ideally a photo), so go straight to where those are set.
+      router.push(`/dashboard/products/${product.id}?new=1`);
     } catch {
       setError(tr("Could not save the product. Check the fields and try again."));
     }
@@ -93,7 +93,10 @@ export default function ProductsPage() {
       {products === null ? (
         <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : products.length === 0 ? (
-        <EmptyState>{tr("No products found.")}</EmptyState>
+        <EmptyState>
+          {tr("No products found.")}
+          {canManage && !search && <> <button type="button" onClick={() => setShowForm(true)} className="font-medium underline underline-offset-2">{tr("Add your first product")}</button></>}
+        </EmptyState>
       ) : (
         <div className="space-y-3">
           {products.map((p) => (
@@ -102,15 +105,28 @@ export default function ProductsPage() {
               href={`/dashboard/products/${p.id}`}
               className="block rounded-lg border p-4 hover:bg-muted"
             >
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold">
-                  {p.name} {!p.is_active && <span className="text-xs text-muted-foreground">{tr("(hidden)")}</span>}
-                </h2>
-                <span className="text-sm">{p.base_price}</span>
+              <div className="flex items-center gap-3">
+                {p.images?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- the seller's own product photo, as a thumbnail
+                  <img src={imageSrc(p.images[0]) ?? ""} alt="" className="size-12 shrink-0 rounded-lg border object-cover" />
+                ) : (
+                  <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-lg border bg-muted text-xs text-muted-foreground">{p.name.slice(0, 1)}</span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="truncate font-semibold">
+                      {p.name} {!p.is_active && <span className="text-xs text-muted-foreground">{tr("(hidden)")}</span>}
+                    </h2>
+                    <span className="shrink-0 text-sm">{p.base_price}</span>
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {[p.brand, p.category].filter(Boolean).join(" · ") || p.slug}
+                  </p>
+                  {canManage && p.is_active && p.price_rules_count === 0 && (
+                    <p className="mt-1 text-xs font-medium text-amber-700">{tr("Not for sale yet: add a price")}</p>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {[p.brand, p.category].filter(Boolean).join(" · ") || p.slug}
-              </p>
             </Link>
           ))}
         </div>

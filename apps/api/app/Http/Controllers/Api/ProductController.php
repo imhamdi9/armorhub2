@@ -39,6 +39,7 @@ class ProductController extends Controller
                 ! $this->isSeller($request->user()) && ! ($request->boolean('include_inactive') && $request->user()->can('products.update')),
                 fn ($q) => $q->where('is_active', true)
             )
+            ->withCount('priceRules')
             ->orderBy('name')
             ->get();
     }

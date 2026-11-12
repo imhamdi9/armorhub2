@@ -102,8 +102,25 @@ try {
   await seller.waitForSelector("text=Brass Lantern");
   if (await seller.locator("text=Egyptian Cotton Bath Towel Set").count()) fail("a seller saw another seller's product");
   await (await login("owner.home@demo.eg")).goto(`${base}/dashboard/storefront`);
-  await (await login("nour.fawzy@demo.eg")).goto(`${base}/dashboard/orders`);
-  ok("demo sellers, owners and customers can sign in; a seller sees only their own products");
+  const customer = await login("nour.fawzy@demo.eg");
+  await customer.waitForSelector("text=Next steps");
+  await customer.waitForSelector("a:has-text('Place your first order')");
+  await customer.goto(`${base}/dashboard/orders`);
+  await customer.waitForSelector("text=No orders found");
+  await customer.waitForSelector("main a:has-text('Place your first order')");
+  ok("demo sellers, owners and customers can sign in; a seller sees only their own products; a new customer is pointed to their first order");
+
+  // People are only shown what they can use: a customer sees prices but no editor, an owner cannot edit a seller's product.
+  const prod = await customer.evaluate(async () => (await (await fetch("/api/products", { credentials: "include" })).json())[0]?.id);
+  await customer.goto(`${base}/dashboard/products/${prod}`);
+  await customer.waitForSelector("h2:has-text('Prices')");
+  if (await customer.locator("button:has-text('Save price rules')").count()) fail("a customer was offered the price editor");
+  const owner = await login("owner.home@demo.eg");
+  const sellerProduct = await owner.evaluate(async () => (await (await fetch("/api/products?include_inactive=1", { credentials: "include" })).json()).find((p) => p.seller_id)?.id);
+  await owner.goto(`${base}/dashboard/products/${sellerProduct}`);
+  await owner.waitForSelector("text=managed by its seller");
+  if (await owner.locator("button:has-text('Save details')").count()) fail("an owner was offered to edit a seller's product");
+  ok("the price editor and product form only appear to people who can use them");
 
   console.log("\nEgyptian demo passed.");
 } catch (e) {

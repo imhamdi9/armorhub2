@@ -947,4 +947,9 @@ export const AR: Record<string, string> = {
   "Cancelled.": "ملغى.",
   "Details": "التفاصيل",
   "Sidebar": "الشريط الجانبي",
+  "We could not reach the server.": "تعذّر الوصول إلى الخادم.",
+  "Check your connection. We will keep trying, or you can try now.": "تحقق من اتصالك. سنواصل المحاولة، أو يمكنك المحاولة الآن.",
+  "Try again": "حاول مرة أخرى",
+  "Not for sale yet: add a price": "غير معروض للبيع بعد: أضف سعرًا",
+  "Your product is saved. Add a price for each option below, and a photo, so customers can order it.": "تم حفظ منتجك. أضف سعرًا لكل خيار أدناه وصورة ليتمكن العملاء من طلبه.",
 };

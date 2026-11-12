@@ -16,6 +16,8 @@ export interface Product {
   seller_id?: number | null;
   /** Set by the server on a single product: whether the signed-in person may edit it. */
   can_edit?: boolean;
+  /** On the product list: how many options have a price. A product with none cannot be ordered yet. */
+  price_rules_count?: number;
 }
 
 export interface PriceRule {

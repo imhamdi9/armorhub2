@@ -57,7 +57,10 @@ export default function OrdersPage() {
       {result === null ? (
         <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : result.data.length === 0 ? (
-        <EmptyState>{tr("No orders found.")}</EmptyState>
+        <EmptyState>
+          {tr("No orders found.")}
+          {!status && user?.roles?.includes("customer") && <> <Link href="/dashboard/orders/new" className="font-medium underline underline-offset-2">{tr("Place your first order")}</Link></>}
+        </EmptyState>
       ) : (
         <>
           <div className="space-y-3">

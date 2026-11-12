@@ -122,6 +122,11 @@ export default function ProductDetailPage() {
   return (
     <div>
       <PageHeader title={product.name} />
+      {canEdit && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1" && (
+        <p role="note" className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+          {tr("Your product is saved. Add a price for each option below, and a photo, so customers can order it.")}
+        </p>
+      )}
       <p className="mb-6 text-muted-foreground">{tr("Base price")}: {product.base_price}</p>
 
       {canEdit && (
