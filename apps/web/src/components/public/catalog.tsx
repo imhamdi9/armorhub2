@@ -35,9 +35,9 @@ export function Catalog({
 
         {categories.length > 0 && (
           <div className="mb-8 mt-6 flex flex-wrap justify-center gap-2">
-            <Link href={link({ q })} className={`rounded-full px-4 py-2 text-base ${category === "" ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{tr("All")} <span className="text-xs opacity-70">{Object.values(counts).reduce((a, b) => a + b, 0) || ""}</span></Link>
+            <Link href={link({ q })} className={`rounded-full px-4 py-2 text-base ${category === "" ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{tr("All")} <span className="text-xs">{Object.values(counts).reduce((a, b) => a + b, 0) || ""}</span></Link>
             {categories.map((c) => (
-              <Link key={c} href={link({ q, category: c })} className={`rounded-full px-4 py-2 text-base ${category === c ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{categoryLabel(c)} <span className="text-xs opacity-70">{counts[c] ?? ""}</span></Link>
+              <Link key={c} href={link({ q, category: c })} className={`rounded-full px-4 py-2 text-base ${category === c ? "btn-brand" : "border border-[#ebebeb] bg-white"}`}>{categoryLabel(c)} <span className="text-xs">{counts[c] ?? ""}</span></Link>
             ))}
           </div>
         )}
