@@ -95,8 +95,8 @@ try {
   await p.click('button:has-text("Add product")');
   await p.fill("#name", "Ceramic brake pads");
   // Category is picked from the list in use (or added as new); it is never left empty.
-  if (await p.locator("select#category").count()) await p.selectOption("select#category", "__new__");
-  await p.fill("input[aria-label='New category']", "spare-parts");
+  await p.waitForSelector("select#category");
+  await p.selectOption("select#category", "spare-parts");
   await p.fill("#price", "90");
   await p.click('button:has-text("Save")');
   await p.click("text=Ceramic brake pads");
