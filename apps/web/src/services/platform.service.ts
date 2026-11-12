@@ -375,3 +375,24 @@ export const getSellerStock = async () => (await api.get<SellerStock>("/seller/s
 export const getSellerInbound = async () => (await api.get<InboundRow[]>("/seller/inbound-shipments")).data;
 export const announceInbound = async (body: { items: { product_id: number; cartons: number }[]; carrier?: string; tracking_number?: string; note?: string }) => (await api.post<InboundRow>("/seller/inbound-shipments", body)).data;
 export const cancelInbound = async (id: number) => (await api.post<InboundRow>(`/seller/inbound-shipments/${id}/cancel`)).data;
+
+// ---- Invitations and departments ----------------------------------------------------------------
+export interface InviteOptions { roles: string[]; departments: { id: number; key: string; name: string; name_ar: string | null; roles: string[] }[] }
+export interface InvitationRow { id: number; email: string; role: string; department_id: number | null; status: "pending" | "accepted" | "expired"; expires_at: string }
+export interface DepartmentRow { id: number; key: string; name_en: string; name_ar: string | null; scope: string[]; head: { id: number; name: string; email: string } | null; members: number }
+export interface DepartmentMember { id: number; name: string; email: string; is_head: boolean; is_active: boolean; roles: string[] }
+export interface DepartmentRole { id: number; name: string; label: string; permissions: string[] }
+
+export const getInviteOptions = async () => (await api.get<InviteOptions>("/invitations/options")).data;
+export const getInvitations = async () => (await api.get<InvitationRow[]>("/invitations")).data;
+export const sendInvitation = async (body: { email: string; role: string; department_id?: number | null; as_head?: boolean }) => (await api.post("/invitations", body)).data;
+export const cancelInvitation = async (id: number) => { await api.delete(`/invitations/${id}`); };
+export const getInvitation = async (token: string) => (await api.get<{ email: string; role: string; inviter: string | null }>(`/public/invitations/${encodeURIComponent(token)}`)).data;
+export const acceptInvitation = async (token: string, body: { name: string; password: string }) => (await api.post<{ message: string }>(`/public/invitations/${encodeURIComponent(token)}/accept`, body)).data;
+
+export const getDepartments = async () => (await api.get<DepartmentRow[]>("/departments")).data;
+export const getDepartmentMembers = async (id: number) => (await api.get<DepartmentMember[]>(`/departments/${id}/members`)).data;
+export const updateDepartmentMember = async (id: number, userId: number, body: { role?: string; is_active?: boolean }) => (await api.put(`/departments/${id}/members/${userId}`, body)).data;
+export const getDepartmentRoles = async (id: number) => (await api.get<DepartmentRole[]>(`/departments/${id}/roles`)).data;
+export const createDepartmentRole = async (id: number, body: { name: string; permissions: string[] }) => (await api.post(`/departments/${id}/roles`, body)).data;
+export const setDepartmentHead = async (id: number, headUserId: number | null) => (await api.put<DepartmentRow>(`/departments/${id}`, { head_user_id: headUserId })).data;

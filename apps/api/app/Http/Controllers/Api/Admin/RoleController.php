@@ -17,7 +17,7 @@ use Spatie\Permission\Models\Role;
  */
 class RoleController extends Controller
 {
-    public const BUILT_IN = ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller'];
+    public const BUILT_IN = ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller', 'warehouse-staff'];
 
     public const GRANTABLE = [
         'dashboard.view', 'orders.view', 'products.view', 'products.create', 'products.update', 'partners.view', 'partners.update',

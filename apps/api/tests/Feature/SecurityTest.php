@@ -517,7 +517,7 @@ class SecurityTest extends TestCase
             // The public storefront: read-only, throttled and limited to public data (see StorefrontTest).
             'api/public/markets', 'api/public/surfaces/{key}', 'api/public/media/{name}',
             'api/public/media/{name}', 'api/partner-applications', 'api/webhooks/shipping/{provider}', 'api/public/showcase', 'api/public/marketplaces', 'api/public/storefronts', 'api/public/storefronts/{slug}', 'api/public/storefronts/{slug}/products',
-            'api/public/storefronts/{slug}/products/{id}', 'api/public/storefronts/{slug}/sellers/{id}',
+            'api/public/storefronts/{slug}/products/{id}', 'api/public/storefronts/{slug}/sellers/{id}', 'api/public/invitations/{token}', 'api/public/invitations/{token}/accept',
             // Buying goods without an account: one order, reached by its secret link (see GuestCheckoutTest).
             'api/guest-orders', 'api/guest-orders/{token}', 'api/guest-orders/{token}/pay', 'api/guest-orders/{token}/cancel',
         ];

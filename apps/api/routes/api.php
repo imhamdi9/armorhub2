@@ -61,6 +61,8 @@ Route::prefix('guest-orders')->group(function () {
 });
 
 Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
+Route::get('/public/invitations/{token}', [\App\Http\Controllers\Api\InvitationController::class, 'show'])->middleware('throttle:30,1');
+Route::post('/public/invitations/{token}/accept', [\App\Http\Controllers\Api\InvitationController::class, 'accept'])->middleware('throttle:register');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -213,6 +215,22 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::post('/tenants', [TenantController::class, 'store']);
         Route::put('/tenants/{tenant}', [TenantController::class, 'update']);
     });
+
+    // Invitations (delegated: each person may only bring in the roles their own area allows) and departments with their heads
+    $iv = \App\Http\Controllers\Api\InvitationController::class;
+    Route::get('/invitations/options', [$iv, 'options']);
+    Route::get('/invitations', [$iv, 'index']);
+    Route::post('/invitations', [$iv, 'store'])->middleware('throttle:30,1');
+    Route::delete('/invitations/{id}', [$iv, 'destroy'])->whereNumber('id');
+    $dp = \App\Http\Controllers\Api\DepartmentController::class;
+    Route::get('/departments', [$dp, 'index']);
+    Route::post('/departments', [$dp, 'store']);
+    Route::put('/departments/{id}', [$dp, 'update'])->whereNumber('id');
+    Route::get('/departments/{id}/members', [$dp, 'members'])->whereNumber('id');
+    Route::put('/departments/{id}/members/{userId}', [$dp, 'updateMember'])->whereNumber(['id', 'userId']);
+    Route::get('/departments/{id}/roles', [$dp, 'roles'])->whereNumber('id');
+    Route::post('/departments/{id}/roles', [$dp, 'createRole'])->whereNumber('id');
+    Route::put('/departments/{id}/roles/{roleId}', [$dp, 'updateRole'])->whereNumber(['id', 'roleId']);
 
     // Warehouse: the market's team receives sellers' cartons, counts stock and ships orders; sellers announce deliveries and see stock.
     $wh = \App\Http\Controllers\Api\WarehouseController::class;

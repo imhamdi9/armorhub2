@@ -4,7 +4,7 @@ const site = () => (process.env.SITE_URL ?? "").replace(/\/$/, "");
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: ["/", "/s/"], disallow: ["/dashboard", "/login", "/register", "/forgot-password", "/reset-password", "/api/"] },
+    rules: { userAgent: "*", allow: ["/", "/s/"], disallow: ["/dashboard", "/login", "/register", "/forgot-password", "/reset-password", "/invitation", "/api/"] },
     ...(site() ? { sitemap: `${site()}/sitemap.xml` } : {}),
   };
 }

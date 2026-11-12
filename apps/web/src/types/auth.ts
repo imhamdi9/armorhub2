@@ -26,6 +26,8 @@ export interface User {
   email_verification_required?: boolean;
   industries?: { id: number; key: string; name: string }[];
   tenant?: { id: number; name: string } | null;
+  department_id?: number | null;
+  is_department_head?: boolean;
   industry?: Industry | null;
   phone?: string | null;
   market?: { code: string; currency: string } | null;

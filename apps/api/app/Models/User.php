@@ -29,6 +29,8 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
       'email_verified_at',
       'company_id',
       'partner_id',
+      'department_id',
+      'is_department_head',
       'latitude',
       'longitude',
       'city',
@@ -79,6 +81,7 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_department_head' => 'boolean',
         ];
     }
 }

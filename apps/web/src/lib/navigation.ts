@@ -72,6 +72,15 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
 export function buildNavigation(user: User | null): NavItem[] {
   const items: NavItem[] = [{ title: "Dashboard", href: "/dashboard", icon: "dashboard" }];
 
+  // Anyone who may bring people into a team sees "Invitations" (the API refuses everyone else); heads of departments also see theirs.
+  const mayInvite = hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager") || !!user?.is_department_head;
+  const withInvites = (list: NavItem[]) => {
+    if (mayInvite) list.push({ title: "Invitations", href: "/dashboard/invitations", icon: "users" });
+    if (hasRole(user, "platform-admin") || user?.is_department_head) list.push({ title: "Departments", href: "/dashboard/departments", icon: "companies" });
+
+    return list;
+  };
+
   // Sellers manage their own products and ship the orders for them: nothing else.
   if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
@@ -79,7 +88,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Warehouse", href: "/dashboard/seller-warehouse", icon: "catalog" });
     items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
 
-    return items;
+    return withInvites(items);
   }
 
   // A custom role sees only what its permissions allow.
@@ -91,7 +100,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     if (can("warehouse.manage")) items.push({ title: "Warehouse", href: "/dashboard/warehouse", icon: "catalog" });
     if (can("commissions.view")) items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
 
-    return items;
+    return withInvites(items);
   }
 
   // Technicians only work assigned jobs; everyone else deals with orders.
@@ -205,5 +214,5 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "admin", icon: "audit" });
   }
 
-  return items;
+  return withInvites(items);
 }
