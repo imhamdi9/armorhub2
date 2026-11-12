@@ -206,3 +206,9 @@ html[lang="ar"] .display {
   letter-spacing: 0;
   line-height: 1.15;
 }
+
+/* The thin countdown bar of a toast: it drains over the toast's lifetime, and pauses while the pointer is over the toast. */
+@keyframes toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
