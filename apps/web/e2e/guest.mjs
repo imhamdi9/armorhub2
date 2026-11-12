@@ -50,8 +50,8 @@ try {
   await page.fill("#g-line1", "12 Nile Corniche"); await page.fill("#g-city", "Giza");
   await page.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
   await pay.click();
-  await page.waitForSelector("[role=alert]");
-  const alerts = (await page.locator("[role=alert]").allInnerTexts()).join(" | ");
+  await page.waitForSelector("form p[role=alert]");
+  const alerts = (await page.locator("form p[role=alert]").allInnerTexts()).join(" | ");
   if (!/valid mobile/i.test(alerts)) fail(`a bad phone number is not explained (alerts: ${alerts})`);
   await page.fill("#g-phone", "01012345678");
   await page.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
