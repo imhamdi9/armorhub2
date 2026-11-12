@@ -131,6 +131,7 @@ class StorefrontService
             'images' => array_values($product->images ?? []),
             'compare_at_price' => $product->compare_at_price !== null ? round((float) $product->compare_at_price, 2) : null,
             'requires_shipping' => (bool) $product->requires_shipping,
+            'installation' => $product->installation ?? 'none',
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
         ];

@@ -204,6 +204,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('permission:payments.create');
 
+    // Installation help: customers ask for it; centres answer without ever seeing who asks
+    Route::get('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'index']);
+    Route::post('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'store'])->middleware('throttle:10,60');
+    Route::get('/installation-requests/{id}', [\App\Http\Controllers\Api\InstallationRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/cancel', [\App\Http\Controllers\Api\InstallationRequestController::class, 'cancel'])->whereNumber('id');
+    Route::middleware('role:partner-manager')->group(function () {
+        Route::get('/partner/installation-requests', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'index']);
+        Route::post('/partner/installation-requests/{id}/offer', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'offer'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+
     // Shipping: staff book and track parcels; customers see tracking on their own orders
     Route::get('/shipping-providers', [\App\Http\Controllers\Api\ShipmentController::class, 'providers']);
     Route::get('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'index'])->whereNumber('id');

@@ -174,6 +174,8 @@ class ProductController extends Controller
             'compare_at_price' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
             'requires_shipping' => 'boolean',
+            // Whether the buyer may need a centre to fit it: none, optional or required. The product is always sold on its own.
+            'installation' => 'sometimes|in:none,optional,required',
         ];
 
         // A seller cannot choose the industry or country: they come from its marketplace (set in store()).

@@ -51,6 +51,15 @@ class SettingsRegistry
                 'Three-letter code such as USD or SAR. Applies to new orders.', rules: ['size:3', 'alpha']),
             new Definition('platform.commission_percentage', 'platform', 'Commission (% of each order)', 'float',
                 fn () => config('platform.commission_percentage'), 'Taken from the order total when it is paid.', rules: ['min:0', 'max:100']),
+            // ---- Installation (centre jobs) ---------------------------------
+            new Definition('installation.fee_percent', 'installation', 'Installation fee (% of the centre price), all markets', 'float', 5,
+                'Taken from the centre\'s price when the job is released. A market below can override it.', rules: ['min:0', 'max:30']),
+            new Definition('installation.objection_hours', 'installation', 'Customer objection window (hours)', 'int', 48,
+                'After the centre submits its proof, the customer has this long to object before the money is released.', rules: ['min:1', 'max:336']),
+            new Definition('installation.offer_hours', 'installation', 'How long a request stays open for offers (hours)', 'int', 48, rules: ['min:1', 'max:336']),
+            ...collect(config('markets.markets'))->map(fn ($m, $code) => new Definition(
+                "installation.fee_percent.{$code}", 'installation', "Installation fee: {$m['name']['en']} (%)", 'float', null,
+                'Leave empty to use the all-markets fee above.', rules: ['min:0', 'max:30']))->values()->all(),
             new Definition('platform.commission_split.platform', 'platform', 'Commission share: platform', 'float',
                 fn () => config('platform.commission_split.platform'), 'The three shares must add up to 1 (e.g. 0.35).', rules: ['min:0', 'max:1']),
             new Definition('platform.commission_split.company', 'platform', 'Commission share: partner company', 'float',

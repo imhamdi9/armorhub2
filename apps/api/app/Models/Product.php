@@ -33,6 +33,7 @@ class Product extends Model
         'attributes',
         'is_active',
         'requires_shipping',
+        'installation',
     ];
 
 
