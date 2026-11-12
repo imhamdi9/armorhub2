@@ -34,6 +34,13 @@ class Product extends Model
         'is_active',
         'requires_shipping',
         'installation',
+        'sku',
+        'units_per_carton',
+        'carton_length_cm',
+        'carton_width_cm',
+        'carton_height_cm',
+        'carton_weight_kg',
+        'stock_cartons',
     ];
 
 
@@ -57,7 +64,27 @@ class Product extends Model
         'attributes'=>'array',
         'images'=>'array',
         'compare_at_price'=>'decimal:2',
+        'carton_length_cm'=>'decimal:2',
+        'carton_width_cm'=>'decimal:2',
+        'carton_height_cm'=>'decimal:2',
+        'carton_weight_kg'=>'decimal:3',
     ];
+
+    /** Every product has a SKU: the seller's own code, or one made from the country and the product number. */
+    protected static function booted(): void
+    {
+        static::created(function (Product $p) {
+            if (! $p->sku) {
+                $p->forceFill(['sku' => sprintf('AH-%s-%06d', $p->market ?: 'GL', $p->id)])->saveQuietly();
+            }
+        });
+    }
+
+    /** Units in stock = whole cartons x units per carton. */
+    public function stockUnits(): int
+    {
+        return (int) $this->stock_cartons * (int) ($this->units_per_carton ?: 1);
+    }
 
     public function industry(): BelongsTo
     {

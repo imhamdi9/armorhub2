@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryField } from "@/components/products/category-field";
+import { CartonFields, cartonPayload, emptyCarton, type CartonValues } from "@/components/products/carton-fields";
 import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -40,6 +41,7 @@ export default function ProductDetailPage() {
   const [details, setDetails] = useState({
     name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, installation: "none" as InstallationMode, images: [] as string[], highlights: "",
   });
+  const [carton, setCarton] = useState<CartonValues>(emptyCarton);
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
   const [newImage, setNewImage] = useState("");
 
@@ -59,6 +61,11 @@ export default function ProductDetailPage() {
         is_active: p.is_active,
         requires_shipping: !!p.requires_shipping,
         installation: (p.installation ?? "none") as InstallationMode,
+      });
+      setCarton({
+        sku: p.sku ?? "", units_per_carton: p.units_per_carton == null ? "" : String(p.units_per_carton), carton_length_cm: p.carton_length_cm == null ? "" : String(p.carton_length_cm),
+        carton_width_cm: p.carton_width_cm == null ? "" : String(p.carton_width_cm), carton_height_cm: p.carton_height_cm == null ? "" : String(p.carton_height_cm),
+        carton_weight_kg: p.carton_weight_kg == null ? "" : String(p.carton_weight_kg), stock_cartons: p.stock_cartons ? String(p.stock_cartons) : "",
       });
       setPrices(
         Object.fromEntries(
@@ -103,6 +110,7 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
         installation: details.installation,
+        ...cartonPayload(carton),
       });
       setProduct((current) => ({ ...updated, can_edit: current?.can_edit ?? true }));
       setDetailsMsg(tr("Saved"));
@@ -150,6 +158,7 @@ export default function ProductDetailPage() {
             {tr("Physical product: needs a delivery address and shipping")}
           </label>
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
+          <CartonFields value={carton} onChange={setCarton} />
           <textarea
             aria-label={tr("Description")}
             placeholder={tr("Description")}

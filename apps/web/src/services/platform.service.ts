@@ -330,7 +330,13 @@ export const uploadProductImage = async (file: File) => {
 };
 
 /** The categories already in use, for the product forms' pick list. */
-export const getProductCategories = async () => (await api.get<string[]>("/products/categories")).data;
+export interface CategoryGroup { key: string; name: string; name_ar?: string | null; children: { key: string; name: string; name_ar?: string | null }[] }
+export const getProductCategories = async () => (await api.get<CategoryGroup[]>("/products/categories")).data;
+
+export interface CategoryRow { id: number; key: string; name_en: string; name_ar: string | null; parent_id: number | null; position: number; is_active: boolean; products: number; children?: CategoryRow[] }
+export const getAdminCategories = async () => (await api.get<CategoryRow[]>("/admin/categories")).data;
+export const createCategory = async (body: { key: string; name_en: string; name_ar: string; parent_id?: number | null }) => (await api.post<CategoryRow>("/admin/categories", body)).data;
+export const updateCategory = async (id: number, body: Partial<Pick<CategoryRow, "name_en" | "name_ar" | "is_active">>) => (await api.put<CategoryRow>(`/admin/categories/${id}`, body)).data;
 
 /** Sets installation (none / optional / required) for many products at once. */
 export const bulkSetInstallation = async (ids: number[], installation: "none" | "optional" | "required") =>

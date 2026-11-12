@@ -40,15 +40,47 @@ class ProductCategoryTest extends TestCase
         $this->assertSame('hair-care', Product::find($id)->category);
     }
 
-    public function test_the_category_list_has_each_category_once(): void
+    public function test_products_use_the_platform_taxonomy_and_admins_extend_it(): void
     {
         $this->admin();
-        foreach ([['a', 'ppf'], ['b', 'ppf'], ['c', 'tint']] as [$n, $c]) {
-            Product::create(['name' => $n, 'slug' => $n, 'base_price' => 1, 'is_active' => true, 'category' => $c]);
-        }
-        Product::create(['name' => 'd', 'slug' => 'd', 'base_price' => 1, 'is_active' => true]);
+        $base = ['name' => 'Film', 'slug' => 'film', 'base_price' => 10];
 
-        $this->getJson('/api/products/categories')->assertOk()->assertExactJson(['ppf', 'tint']);
+        // Only a category of the taxonomy is accepted; nobody types a new one in a product form.
+        $this->postJson('/api/products', $base + ['category' => 'made-up'])->assertStatus(422)->assertJsonValidationErrors('category');
+
+        $tree = $this->getJson('/api/products/categories')->assertOk()->json();
+        $auto = collect($tree)->firstWhere('key', 'automotive');
+        $this->assertContains('ppf', array_column($auto['children'], 'key'));
+        $this->assertNotEmpty($auto['name_ar']);
+
+        // An admin adds one (English and Arabic names), then it can be used; a used category cannot be hidden.
+        $parent = \App\Models\ProductCategory::where('key', 'automotive')->value('id');
+        $id = $this->postJson('/api/admin/categories', ['key' => 'tyres', 'name_en' => 'Tyres', 'name_ar' => 'الإطارات', 'parent_id' => $parent])->assertCreated()->json('id');
+        $this->postJson('/api/admin/categories', ['key' => 'tyres', 'name_en' => 'x', 'name_ar' => 'x'])->assertStatus(422);
+        $this->postJson('/api/products', $base + ['category' => 'tyres'])->assertCreated();
+        $this->putJson("/api/admin/categories/{$id}", ['is_active' => false])->assertStatus(422)->assertJsonValidationErrors('is_active');
+        $kids = collect(collect($this->getJson('/api/admin/categories')->json())->firstWhere('key', 'automotive')['children']);
+        $this->assertSame(1, $kids->firstWhere('key', 'tyres')['products']);
+    }
+
+    public function test_every_product_has_a_sku_and_carton_data_is_validated(): void
+    {
+        $this->admin();
+        $base = ['name' => 'Film', 'slug' => 'film', 'base_price' => 10, 'category' => 'ppf', 'market' => 'EG'];
+
+        $made = $this->postJson('/api/products', $base)->assertCreated()->json();
+        $this->assertMatchesRegularExpression('/^AH-EG-\d{6}$/', $made['sku']);
+
+        $own = $this->postJson('/api/products', ['slug' => 'f2', 'sku' => 'my-film-01'] + $base)->assertCreated()->json();
+        $this->assertSame('MY-FILM-01', $own['sku']);
+        $this->postJson('/api/products', ['slug' => 'f3', 'sku' => 'MY-FILM-01'] + $base)->assertStatus(422)->assertJsonValidationErrors('sku');
+        $this->postJson('/api/products', ['slug' => 'f4', 'sku' => 'bad sku!'] + $base)->assertStatus(422)->assertJsonValidationErrors('sku');
+
+        $carton = ['units_per_carton' => 12, 'carton_length_cm' => 40, 'carton_width_cm' => 30, 'carton_height_cm' => 25, 'carton_weight_kg' => 6.5, 'stock_cartons' => 10];
+        $this->putJson("/api/products/{$made['id']}", $carton)->assertOk()->assertJson(['units_per_carton' => 12, 'stock_cartons' => 10]);
+        $this->assertSame(120, Product::find($made['id'])->stockUnits());
+        $this->putJson("/api/products/{$made['id']}", ['units_per_carton' => 0])->assertStatus(422);
+        $this->putJson("/api/products/{$made['id']}", ['carton_weight_kg' => -1])->assertStatus(422);
     }
 
     public function test_installation_can_be_set_for_many_products_at_once_within_what_a_person_may_change(): void

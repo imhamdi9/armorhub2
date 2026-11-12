@@ -15,6 +15,13 @@ export interface Product {
   requires_shipping?: boolean;
   installation?: "none" | "optional" | "required";
   seller_id?: number | null;
+  sku?: string | null;
+  units_per_carton?: number | null;
+  carton_length_cm?: string | number | null;
+  carton_width_cm?: string | number | null;
+  carton_height_cm?: string | number | null;
+  carton_weight_kg?: string | number | null;
+  stock_cartons?: number;
   /** Set by the server on a single product: whether the signed-in person may edit it. */
   can_edit?: boolean;
   /** On the product list: how many options have a price. A product with none cannot be ordered yet. */

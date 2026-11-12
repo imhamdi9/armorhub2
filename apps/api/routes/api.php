@@ -138,6 +138,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/countries', [\App\Http\Controllers\Api\Admin\MarketController::class, 'countries']);
         Route::post('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'store']);
         Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
+        Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
+        Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
+        Route::put('/categories/{category}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update'])->whereNumber('category');
         $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
         Route::get('/installation-disputes', [$ia, 'disputes']);
         Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');

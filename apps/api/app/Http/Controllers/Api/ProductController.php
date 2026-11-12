@@ -45,13 +45,15 @@ class ProductController extends Controller
             ->get();
     }
 
-    /** The categories already used by the products this person can see, so forms offer a tidy list instead of free typing. */
+    /** The platform's category tree (groups with their categories), so forms offer a fixed list and nobody types a category. */
     public function categories(Request $request)
     {
-        return Product::query()
-            ->tap(fn ($q) => $this->visibleTo($request->user(), $q))
-            ->whereNotNull('category')->where('category', '!=', '')
-            ->distinct()->orderBy('category')->pluck('category')->values();
+        $all = \App\Models\ProductCategory::where('is_active', true)->orderBy('position')->orderBy('name_en')->get();
+
+        return $all->whereNull('parent_id')->map(fn ($g) => [
+            'key' => $g->key, 'name' => $g->name_en, 'name_ar' => $g->name_ar,
+            'children' => $all->where('parent_id', $g->id)->values()->map(fn ($c) => ['key' => $c->key, 'name' => $c->name_en, 'name_ar' => $c->name_ar]),
+        ])->values();
     }
 
     /**
@@ -196,10 +198,21 @@ class ProductController extends Controller
             $request->merge(['category' => \Illuminate\Support\Str::slug((string) $request->input('category'))]);
         }
 
+        if ($request->filled('sku')) {
+            $request->merge(['sku' => strtoupper(trim((string) $request->input('sku')))]);
+        }
+
         $rules = [
             'industry_id' => 'nullable|exists:industries,id',
             'market' => ['nullable', 'string', Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
-            'category' => $sometimes.'required|string|max:80',
+            'category' => [...($product ? ['sometimes'] : []), 'required', 'string', 'max:80', Rule::exists('product_categories', 'key')->where('is_active', true)],
+            'sku' => ['nullable', 'string', 'min:3', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('products', 'sku')->ignore($product?->id)],
+            'units_per_carton' => 'nullable|integer|min:1|max:100000',
+            'carton_length_cm' => 'nullable|numeric|min:0.1|max:1000',
+            'carton_width_cm' => 'nullable|numeric|min:0.1|max:1000',
+            'carton_height_cm' => 'nullable|numeric|min:0.1|max:1000',
+            'carton_weight_kg' => 'nullable|numeric|min:0.001|max:2000',
+            'stock_cartons' => 'nullable|integer|min:0|max:10000000',
             'brand' => 'nullable|string|max:255',
             'name' => $sometimes.'required|string|max:255',
             'slug' => [

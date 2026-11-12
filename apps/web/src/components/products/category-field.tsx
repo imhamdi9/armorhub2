@@ -2,48 +2,36 @@
 
 import { useEffect, useState } from "react";
 
-import { Input } from "@/components/ui/input";
 import { categoryLabel } from "@/lib/category";
-import { tr } from "@/lib/i18n";
-import { getProductCategories } from "@/services/platform.service";
+import { tr, useLocale } from "@/lib/i18n";
+import { getProductCategories, type CategoryGroup } from "@/services/platform.service";
 
-const NEW = "__new__";
-
-/**
- * Category is picked from the list already in use (so "Skin care" is never typed three different ways) and is never left empty:
- * "New category" opens a text box, and the API files it under one tidy spelling.
- */
+/** A category is picked from the platform's own list (groups with their categories); nobody types a new one. Admins extend the list. */
 export function CategoryField({ value, onChange, id }: { value: string; onChange: (v: string) => void; id?: string }) {
-  const [options, setOptions] = useState<string[]>([]);
-  const [adding, setAdding] = useState(false);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const locale = useLocale();
 
-  useEffect(() => { getProductCategories().then(setOptions).catch(() => setOptions([])).finally(() => setLoaded(true)); }, []);
+  useEffect(() => { getProductCategories().then(setGroups).catch(() => setGroups([])).finally(() => setLoaded(true)); }, []);
 
-  // Wait for the list before drawing the field, so it does not turn from a text box into a pick list under the person's hands.
   if (!loaded) return <div className="h-10 animate-pulse rounded-md bg-muted" role="status" aria-label={tr("Loading...")} />;
 
-  const known = options.includes(value);
-  const list = value && !known && !adding ? [value, ...options] : options;
-  const showNew = adding || (options.length === 0 && !value);
+  const label = (c: { name: string; name_ar?: string | null }) => (locale === "ar" && c.name_ar ? c.name_ar : c.name);
+  const known = groups.some((g) => g.children.some((c) => c.key === value));
 
   return (
-    <div className="space-y-2">
-      {options.length > 0 && (
-        <select
-          id={id} aria-label={tr("Category")} required={!showNew}
-          value={showNew ? NEW : value}
-          onChange={(e) => { if (e.target.value === NEW) { setAdding(true); onChange(""); } else { setAdding(false); onChange(e.target.value); } }}
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-        >
-          <option value="" disabled>{tr("Choose a category")}</option>
-          {list.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
-          <option value={NEW}>{tr("New category…")}</option>
-        </select>
-      )}
-      {showNew && (
-        <Input aria-label={tr("New category")} required autoFocus={options.length > 0} placeholder={tr("e.g. Skin care")} value={value} onChange={(e) => onChange(e.target.value)} />
-      )}
-    </div>
+    <select
+      id={id} aria-label={tr("Category")} required value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+    >
+      <option value="" disabled>{tr("Choose a category")}</option>
+      {value && !known && <option value={value}>{categoryLabel(value)}</option>}
+      {groups.map((g) => (
+        <optgroup key={g.key} label={label(g)}>
+          {g.children.map((c) => <option key={c.key} value={c.key}>{label(c)}</option>)}
+        </optgroup>
+      ))}
+    </select>
   );
 }

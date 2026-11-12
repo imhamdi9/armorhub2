@@ -166,11 +166,14 @@ class SeedEgyptDemo extends Command
             // The catalogue's organisation can change between releases: keep existing demo products filed under the current category.
             $product?->category !== $p['category'] && $product?->update(['category' => $p['category']]);
             $product && $product->installation !== ($p['installation'] ?? 'none') && $product->update(['installation' => $p['installation'] ?? 'none']);
+            \App\Support\CategoryTaxonomy::adopt($p['category']);
             $product ??= Product::create([
                 'industry_id' => $industry->id, 'market' => 'EG', 'seller_id' => $seller?->id, 'name' => $p['name'], 'slug' => $slug, 'brand' => $p['brand'] ?? null,
                 'category' => $p['category'], 'description' => $p['desc'], 'images' => $this->pics($p['art']), 'base_price' => $p['price'], 'compare_at_price' => $p['was'] ?? null,
                 'warranty_years' => $p['warranty'] ?? null, 'requires_shipping' => $seller !== null, 'is_active' => true, 'installation' => $p['installation'] ?? 'none',
                 'attributes' => ['highlights' => $p['highlights'] ?? []],
+                // Goods ship in cartons: the sizes a warehouse and a carrier need (illustrative demo values).
+                ...($seller ? ['units_per_carton' => 12, 'carton_length_cm' => 40, 'carton_width_cm' => 30, 'carton_height_cm' => 25, 'carton_weight_kg' => 6, 'stock_cartons' => 10] : []),
             ]);
 
             // Goods have one price for the whole order option, so customers can add them to an order like anything else.
