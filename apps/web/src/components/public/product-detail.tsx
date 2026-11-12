@@ -136,7 +136,12 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
           <div>
             {p.category && <span className="text-xs font-bold uppercase tracking-wider text-spruce">{p.category.replace(/-/g, " ")}</span>}
             <h1 className="display display-md mt-1">{p.name}</h1>
-            <p className="mt-1 text-sm text-slate">{[p.brand, p.seller ? `${tr("Sold by")} ${p.seller}` : null].filter(Boolean).join(" · ")}</p>
+            <p className="mt-1 text-sm text-slate">
+              {p.brand}{p.brand && p.seller ? " · " : ""}
+              {p.seller && (p.seller_id
+                ? <>{tr("Sold by")} <Link href={`/s/${store.slug}/sellers/${p.seller_id}`} className="font-medium text-forest hover:underline">{p.seller}</Link></>
+                : `${tr("Sold by")} ${p.seller}`)}
+            </p>
 
             <div className="mt-5 flex flex-wrap items-baseline gap-3">
               {!goods && !chosen && options.length > 0 && <span className="text-sm text-slate">{tr("From")}</span>}

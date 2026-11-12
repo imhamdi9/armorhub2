@@ -38,7 +38,7 @@ const DOCS: Record<BusinessType, DocSpec[]> = {
   ],
 };
 
-type Target = { value: string; label: string; market: string | null };
+type Target = { value: string; label: string; market: string | null; info?: string };
 
 /**
  * One application form for both kinds of business. A partner joins a store to do service work; a seller joins a
@@ -65,7 +65,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
 
   useEffect(() => {
     const load = isSeller
-      ? getMarketplaces().then((l) => l.map((m) => ({ value: m.key, label: m.name, market: m.market })))
+      ? getMarketplaces().then((l) => l.map((m) => ({ value: m.key, label: m.name, market: m.market, info: [m.country, m.currency, m.industries?.join(", ")].filter(Boolean).join(" · ") })))
       : getOpenStores().then((l) => l.map((s) => ({ value: s.slug, label: s.name, market: s.market })));
     load.then((list) => {
       setTargets(list);
@@ -167,6 +167,12 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
                   {targets.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 {fe("target")}
+                {isSeller && (
+                  <p className="mt-1 text-xs text-slate">
+                    {targets.find((t) => t.value === target)?.info ? `${targets.find((t) => t.value === target)?.info}. ` : ""}
+                    {tr("Your seller account belongs to this market only. To sell in another country, apply there separately with its own e-mail; it is a separate account under that market's terms.")}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

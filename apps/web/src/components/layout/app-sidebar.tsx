@@ -108,7 +108,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-6">
         <p className="text-xl font-bold">{tr("ArmorHub")}</p>
         <p className="text-sm text-muted-foreground">
-          {user?.industry ? tr(user.industry.name) : tr("Service Marketplace Platform")}
+          {user?.tenant && !user.roles?.includes("platform-admin") ? user.tenant.name : user?.industry ? tr(user.industry.name) : tr("Service Marketplace Platform")}
         </p>
       </SidebarHeader>
 

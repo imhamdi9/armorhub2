@@ -87,7 +87,7 @@ export async function getOpenStores() {
 
 /** Marketplaces (a country's platform, e.g. "ArmorHub Egypt") that new sellers can join. */
 export async function getMarketplaces() {
-  const { data } = await api.get<{ marketplaces: { key: string; name: string; industry: string | null; market: string | null }[] }>("/public/marketplaces");
+  const { data } = await api.get<{ marketplaces: { key: string; name: string; industry: string | null; industries?: string[]; market: string | null; country?: string | null; currency?: string | null }[] }>("/public/marketplaces");
 
   return data.marketplaces;
 }

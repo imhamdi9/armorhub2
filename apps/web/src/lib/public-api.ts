@@ -1,4 +1,4 @@
-import type { PublicProductPage, PublicProducts, PublicShowcase, PublicStore, PublicStoreList } from "@/types/public";
+import type { PublicProductPage, PublicSellerPage, PublicProducts, PublicShowcase, PublicStore, PublicStoreList } from "@/types/public";
 
 /**
  * Server-side reads of the public API (no login). The Next.js server talks to the API directly:
@@ -67,6 +67,7 @@ export const getStores = () => get<PublicStoreList>("/storefronts");
 export const getSurface = async (key: string) => (await get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`))?.values ?? {};
 export const getShowcase = () => get<PublicShowcase>("/showcase");
 export const getStore = (slug: string) => get<PublicStore>(`/storefronts/${encodeURIComponent(slug)}`);
+export const getSeller = (slug: string, id: string, page?: string) => get<PublicSellerPage>(`/storefronts/${encodeURIComponent(slug)}/sellers/${encodeURIComponent(id)}${page ? `?page=${encodeURIComponent(page)}` : ""}`);
 export const getStoreProducts = (slug: string, params: { q?: string; category?: string; page?: string; industry?: string }) => {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
   return get<PublicProducts>(`/storefronts/${encodeURIComponent(slug)}/products${query ? `?${query}` : ""}`);

@@ -70,6 +70,13 @@ export interface PublicProduct {
   requires_shipping?: boolean;
   installation?: "none" | "optional" | "required";
   seller?: string | null;
+  seller_id?: number | null;
+}
+
+export interface PublicSellerPage {
+  seller: { id: number; name: string; city: string | null; since: string | null };
+  store: { name: string; slug: string };
+  products: PublicProducts;
 }
 
 export interface PublicStore {
