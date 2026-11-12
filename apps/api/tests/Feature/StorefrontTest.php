@@ -317,4 +317,12 @@ class StorefrontTest extends TestCase
         $this->postJson('/api/products', $base + ['images' => array_fill(0, 9, 'https://cdn.example.com/a.jpg')])->assertStatus(422);
         $this->postJson('/api/products', $base + ['images' => ['https://cdn.example.com/a.jpg'], 'compare_at_price' => 12, 'attributes' => ['highlights' => ['One']]])->assertCreated();
     }
+
+    public function test_the_catalogue_page_size_can_be_chosen_up_to_fifty(): void
+    {
+        $slug = $this->store->slug;
+        $this->getJson("/api/public/storefronts/{$slug}/products?per_page=1")->assertOk()->assertJsonPath('per_page', 1);
+        $this->getJson("/api/public/storefronts/{$slug}/products?per_page=51")->assertStatus(422);
+        $this->getJson("/api/public/storefronts/{$slug}/products")->assertOk()->assertJsonPath('per_page', 12);
+    }
 }

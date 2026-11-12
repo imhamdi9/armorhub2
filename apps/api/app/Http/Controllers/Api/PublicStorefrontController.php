@@ -84,7 +84,7 @@ class PublicStorefrontController extends Controller
 
     public function products(Request $request, string $slug)
     {
-        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'page' => 'nullable|integer|min:1|max:1000']);
+        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50']);
         $company = $this->stores->find($slug) ?? abort(404);
 
         $page = $this->stores->products($company)
@@ -94,7 +94,7 @@ class PublicStorefrontController extends Controller
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle.
             ->orderBy('category')->orderBy('name')
-            ->paginate(12)
+            ->paginate((int) $request->input('per_page', 12))
             ->through(fn ($p) => $this->stores->card($p, $company));
 
         return $this->cached($page);
