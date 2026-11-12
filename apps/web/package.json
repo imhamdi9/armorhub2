@@ -20,7 +20,9 @@
     "e2e:shipping": "node e2e/shipping.mjs",
     "e2e:partners": "node e2e/partners.mjs",
     "e2e:sellers": "node e2e/sellers.mjs",
-    "e2e:egypt": "node e2e/egypt.mjs"
+    "e2e:egypt": "node e2e/egypt.mjs",
+    "e2e:audit": "node e2e/audit.mjs",
+    "e2e:a11y": "node e2e/a11y.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -40,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

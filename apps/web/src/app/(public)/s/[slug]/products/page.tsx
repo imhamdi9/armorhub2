@@ -9,11 +9,23 @@ type Props = {
   searchParams: Promise<{ q?: string; category?: string; page?: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const { q, category, page } = await searchParams;
   const data = await getStore(slug);
+  if (!data) return { title: "Store not found" };
 
-  return { title: data ? `Products — ${data.store.name}` : "Store not found" };
+  const filtered = !!(q || category || (page && page !== "1"));
+  const title = `Products — ${data.store.name}`;
+
+  return {
+    title,
+    description: `Browse everything ${data.store.name} offers, with prices.`,
+    // Every search, filter and page 2+ is a different view of the same catalogue: only the plain list is worth indexing.
+    alternates: { canonical: `/s/${slug}/products` },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+    openGraph: { title, type: "website", url: `/s/${slug}/products` },
+  };
 }
 
 export default async function ProductsPage({ params, searchParams }: Props) {

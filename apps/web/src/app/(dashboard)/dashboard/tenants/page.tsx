@@ -74,6 +74,7 @@ export default function TenantsPage() {
           <Input placeholder={tr("New market name")} required value={name} onChange={(e) => setName(e.target.value)} />
           <select
             required
+            aria-label={tr("Industry")}
             className="rounded-lg border px-3 py-2"
             value={industryId}
             onChange={(e) => setIndustryId(e.target.value)}

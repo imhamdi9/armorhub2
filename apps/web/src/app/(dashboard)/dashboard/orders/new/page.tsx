@@ -63,20 +63,15 @@ function NewOrder() {
 
   useEffect(() => {
     if (!subjectType) return;
-    // A subject is either a shared catalog (vehicle model) or the customer's own item (property).
-    getCatalog(subjectType)
-      .then((rows) => setSubjects(rows.map((r) => ({ id: r.id, label: r.name }))))
-      .catch(() =>
-        getMyItems(subjectType).then((rows) =>
-          setSubjects(
-            rows.map((r) => ({
-              id: Number(r.id),
-              label: [r.type, r.address, r.city].filter(Boolean).join(" · ") || `#${r.id}`,
-            })),
-          ),
-        ),
-      );
-  }, [subjectType]);
+    // A subject is either the customer's own item (a property) or a shared catalog (a vehicle model); the server says which.
+    if (industry?.owned_subjects?.includes(subjectType)) {
+      getMyItems(subjectType).then((rows) =>
+        setSubjects(rows.map((r) => ({ id: Number(r.id), label: [r.type, r.address, r.city].filter(Boolean).join(" · ") || `#${r.id}` }))),
+      ).catch(() => setSubjects([]));
+    } else {
+      getCatalog(subjectType).then((rows) => setSubjects(rows.map((r) => ({ id: r.id, label: r.name })))).catch(() => setSubjects([]));
+    }
+  }, [subjectType, industry]);
 
   const canPrice = productId !== null && selected.length > 0;
   const needsShipping = !!products.find((p) => p.id === productId)?.requires_shipping;
@@ -154,6 +149,7 @@ function NewOrder() {
         <section>
           <h2 className="mb-2 font-semibold">2. {tr(aliasSingular(subjectType))}</h2>
           <select
+            aria-label={tr(aliasSingular(subjectType))}
             className="w-full rounded-lg border px-3 py-2"
             value={subjectId ?? ""}
             onChange={(e) => setSubjectId(Number(e.target.value) || null)}

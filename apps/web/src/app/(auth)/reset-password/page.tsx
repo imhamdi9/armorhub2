@@ -49,7 +49,7 @@ function ResetPasswordForm() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">{tr("Choose a new password")}</CardTitle>
+          <CardTitle aria-level={1} className="text-center text-2xl">{tr("Choose a new password")}</CardTitle>
         </CardHeader>
         <CardContent>
           {done ? (

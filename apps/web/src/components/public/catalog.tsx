@@ -54,7 +54,7 @@ export function Catalog({
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {result.data.map((p) => <ProductCard key={p.id} product={p} slug={store.slug} />)}
+              {result.data.map((p) => <ProductCard key={p.id} product={p} slug={store.slug} headingLevel={2} />)}
             </div>
 
             {result.last_page > 1 && (

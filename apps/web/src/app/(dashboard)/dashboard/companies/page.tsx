@@ -78,13 +78,13 @@ export default function CompaniesPage() {
       {isAdmin && (
         <form onSubmit={add} className="mb-6 flex flex-wrap gap-2">
           <Input className="max-w-xs" placeholder={tr("Company name")} required value={name} onChange={(e) => setName(e.target.value)} />
-          <select required className="rounded-lg border px-3 py-2" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
+          <select required aria-label={tr("Market")} className="rounded-lg border px-3 py-2" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
             <option value="" disabled>{tr("Market")}</option>
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
-          <select className="rounded-lg border px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
+          <select aria-label={tr("Company type")} className="rounded-lg border px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="partner">{tr("Partner / service provider")}</option>
             <option value="supplier">{tr("Supplier")}</option>
             <option value="platform">{tr("Storefront / platform")}</option>

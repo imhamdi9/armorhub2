@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "ArmorHub — trusted services, quoted by experts near you",
   description:
     "A marketplace connecting customers with trusted service providers across automotive, home services, beauty and devices.",
+  alternates: { canonical: "/" },
+  openGraph: { title: "ArmorHub — trusted services, quoted by experts near you", type: "website", url: "/" },
 };
 
 // Depends on live data: render per request instead of freezing it at build time.

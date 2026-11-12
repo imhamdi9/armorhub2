@@ -200,6 +200,8 @@ class AuthController extends Controller
                 'key' => $industry->key,
                 'name' => $industry->name,
                 'subjects' => array_keys($industry->module()?->subjectModels() ?? []),
+                // The subjects customers keep themselves (their property), as opposed to shared catalogs (vehicle models).
+                'owned_subjects' => collect($industry->module()?->subjectModels() ?? [])->filter(fn ($class) => in_array('customer_id', (new $class)->getFillable(), true))->keys()->values()->all(),
                 'targets' => array_keys($industry->module()?->targetModels() ?? []),
                 'catalogs' => $industry->module() ? app(\App\Modules\IndustryRegistry::class)->manageableAliases($industry->module()) : [],
             ] : null,

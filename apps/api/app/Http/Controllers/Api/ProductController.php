@@ -66,7 +66,8 @@ class ProductController extends Controller
     {
         abort_unless($this->visibleTo($request->user(), Product::whereKey($product->id))->exists(), 404);
 
-        return $product->load('priceRules');
+        // Whether the signed-in person may change it: the screen shows an editor only to those who can, instead of buttons that fail.
+        return $product->load('priceRules')->toArray() + ['can_edit' => $request->user()->can('products.update') && $this->mayChange($request->user(), $product)];
     }
 
     public function update(Request $request, Product $product)

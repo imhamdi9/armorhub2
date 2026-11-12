@@ -47,9 +47,9 @@ export default function AdminAuditPage() {
         <EmptyState>No matching entries.</EmptyState>
       ) : (
         <>
-          <div className="divide-y rounded-lg border text-sm">
+          <div className="min-w-0 divide-y rounded-lg border text-sm">
             {result.data.map((e) => (
-              <div key={e.id} className="p-3">
+              <div key={e.id} className="min-w-0 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span><code className="rounded bg-muted px-1">{e.action}</code> {e.subject ?? ""}</span>
                   <span className="text-muted-foreground">{formatDateTime(e.created_at)}</span>
@@ -58,7 +58,7 @@ export default function AdminAuditPage() {
                   {e.user ? `${e.user.name} (${e.user.email})` : tr("Anonymous or system")}
                   {e.ip ? ` · ${e.ip}` : ""}
                 </div>
-                {e.meta && <pre className="mt-1 overflow-x-auto rounded bg-muted p-2 text-xs">{JSON.stringify(e.meta, null, 1)}</pre>}
+                {e.meta && <pre className="mt-1 max-w-full overflow-x-auto rounded bg-muted p-2 text-xs">{JSON.stringify(e.meta, null, 1)}</pre>}
               </div>
             ))}
           </div>

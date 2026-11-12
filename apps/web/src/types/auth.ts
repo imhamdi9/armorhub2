@@ -5,6 +5,8 @@ export interface Industry {
   description?: string | null;
   /** Morph aliases of what customers bring to be serviced (may be empty). */
   subjects: string[];
+  /** The subjects a customer keeps themselves (their property), not shared catalogs. */
+  owned_subjects?: string[];
   /** Morph aliases price rules can target. */
   targets: string[];
   /** Shared lists admins manage (targets, makes/brands, catalog-style subjects). */

@@ -7,7 +7,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { aliasLabel, hasRole } from "@/lib/navigation";
+import { aliasLabel } from "@/lib/navigation";
 import { errorMessage } from "@/lib/errors";
 import {
   deleteProduct,
@@ -25,10 +25,11 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const user = useCurrentUser();
-  const canEdit = hasRole(user, "platform-admin", "company-owner", "seller");
   const targets = user?.industry?.targets ?? [];
 
   const [product, setProduct] = useState<Product | null>(null);
+  // The server decides (it knows whose product this is); until it answers nobody gets an editor.
+  const canEdit = product?.can_edit === true;
   const [targetType, setTargetType] = useState(targets[0] ?? "");
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   // price by "type:id"
@@ -188,7 +189,9 @@ export default function ProductDetailPage() {
         </form>
       )}
 
-      <h2 className="mb-3 text-xl font-semibold">{tr("Price rules")}</h2>
+      {!canEdit && product.seller_id && <p className="mb-6 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">{tr("This product is managed by its seller, so you can see it but not change it.")}</p>}
+
+      <h2 className="mb-3 text-xl font-semibold">{canEdit ? tr("Price rules") : tr("Prices")}</h2>
 
       {targets.length === 0 ? (
         <EmptyState>
@@ -209,12 +212,12 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="space-y-2">
-            {catalog.map((item) => {
+            {catalog.filter((item) => canEdit || prices[`${targetType}:${item.id}`] !== undefined).map((item) => {
               const key = `${targetType}:${item.id}`;
               return (
                 <div key={item.id} className="flex items-center justify-between rounded-lg border p-3">
                   <span>{item.name}</span>
-                  <Input
+                  {!canEdit ? <span className="font-medium">{prices[key]}</span> : <Input
                     className="w-32"
                     type="number"
                     min="0"
@@ -225,16 +228,18 @@ export default function ProductDetailPage() {
                       setSaved(false);
                       setPrices((prev) => ({ ...prev, [key]: e.target.value }));
                     }}
-                  />
+                  />}
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
-            <Button onClick={onSave}>{tr("Save price rules")}</Button>
-            {saved && <span className="text-sm text-green-600">{tr("Saved")}</span>}
-          </div>
+          {canEdit && (
+            <div className="mt-4 flex items-center gap-3">
+              <Button onClick={onSave}>{tr("Save price rules")}</Button>
+              {saved && <span className="text-sm text-green-600">{tr("Saved")}</span>}
+            </div>
+          )}
         </>
       )}
     </div>

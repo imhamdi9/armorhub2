@@ -89,7 +89,7 @@ function RegisterForm() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">{tr("Create your account")}</CardTitle>
+          <CardTitle aria-level={1} className="text-center text-2xl">{tr("Create your account")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">

@@ -2,7 +2,7 @@
 # Runs every browser end-to-end check against a real API + production web build.
 # Needs: PHP 8.3+/composer deps installed in apps/api, node deps in apps/web, Chromium.
 #   CHROMIUM_PATH=/path/to/chromium scripts/e2e-all.sh      (omit if Playwright's own browser is installed)
-#   ONLY=security scripts/e2e-all.sh     run one phase: setup | demo | storefront | egypt | shipping | partners | security | admin | stripe  (default: all)
+#   ONLY=security scripts/e2e-all.sh     run one phase (or several: ONLY=audit,a11y): setup | demo | storefront | egypt | audit | a11y | shipping | partners | security | admin | stripe  (default: all)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,7 +11,7 @@ export DB_DATABASE="${E2E_DB:-/tmp/armorhub-e2e.sqlite}"
 API_PORT=8000
 WEB_PORT=3000
 
-want() { [ -z "${ONLY:-}" ] || [ "$ONLY" = "$1" ]; }
+want() { [ -z "${ONLY:-}" ] || [[ ",$ONLY," == *",$1,"* ]]; }   # ONLY=audit or ONLY=audit,a11y
 
 cleanup() { pkill -f "artisan serve" 2>/dev/null || true; pkill -f "next start" 2>/dev/null || true; pkill -f "next-server" 2>/dev/null || true; }
 trap cleanup EXIT
@@ -70,6 +70,22 @@ start_api
 (cd "$ROOT/apps/web" && npm run -s e2e:egypt)
 fi
 
+if want audit; then
+echo; echo "== Full audit: every role, every page, every button (both demo datasets)"
+fresh_db
+(cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null && php artisan platform:demo-egypt >/dev/null)
+start_api
+(cd "$ROOT/apps/web" && npm run -s e2e:audit) || AUDIT_FAILED=1
+fi
+
+if want a11y; then
+echo; echo "== Accessibility scan (axe) of public and signed-in screens, English and Arabic"
+fresh_db
+(cd "$ROOT/apps/api" && php artisan platform:demo >/dev/null && php artisan platform:demo-egypt >/dev/null)
+start_api
+(cd "$ROOT/apps/web" && npm run -s e2e:a11y) || AUDIT_FAILED=1
+fi
+
 if want shipping; then
 echo; echo "== Shipping: physical order, delivery address, any-carrier shipment, tracking"
 fresh_db
@@ -111,4 +127,5 @@ start_api PLATFORM_PAYMENT_GATEWAY=stripe STRIPE_SECRET=sk_test_fake STRIPE_WEBH
 cd "$ROOT/apps/web" && npm run -s e2e:stripe
 fi
 
+[ -z "${AUDIT_FAILED:-}" ] || { echo; echo "AUDIT FOUND PROBLEMS (see above)"; exit 1; }
 echo; echo "ALL END-TO-END CHECKS PASSED"

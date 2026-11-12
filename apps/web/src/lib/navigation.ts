@@ -115,7 +115,7 @@ export function buildNavigation(user: User | null): NavItem[] {
 
   // What a customer brings (their property, device, vehicle...).
   if (hasRole(user, "customer")) {
-    for (const alias of user?.industry?.subjects ?? []) {
+    for (const alias of user?.industry?.owned_subjects ?? []) {
       items.push({
         title: `My ${aliasLabel(alias)}`,
         href: `/dashboard/items/${alias}`,

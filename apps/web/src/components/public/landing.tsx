@@ -209,17 +209,17 @@ export function QuoteFeature() {
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 md:grid-cols-2">
         <div className="relative">
           <div className="bg-dark rounded-[28px] p-6 font-mono text-sm shadow-lift" dir="ltr">
-            <p className="text-white/50">{tr("Example request")}</p>
+            <p className="text-white/70">{tr("Example request")}</p>
             <p className="mt-2 text-white">&gt; Paint protection film · Hood · Riyadh</p>
             <div className="mt-4 space-y-2">
               {[["Shop One", "SAR 1,450", "2 km"], ["Garage 2", "SAR 1,520", "5 km"], ["Garage 3", "SAR 1,390", "8 km"]].map(([n, p, d]) => (
                 <div key={n} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-2.5">
-                  <span className="text-white">{n} <span className="text-white/50">· {d}</span></span>
+                  <span className="text-white">{n} <span className="text-white/70">· {d}</span></span>
                   <span className="font-bold text-on-dark-accent">{p}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-white/50">{tr("Illustration with sample numbers")}</p>
+            <p className="mt-3 text-xs text-white/70">{tr("Illustration with sample numbers")}</p>
           </div>
           <div className="absolute -bottom-5 end-4 grid h-14 w-14 place-items-center rounded-2xl bg-lime text-forest shadow-lift"><Icon name="tag" className="h-7 w-7" /></div>
         </div>
@@ -437,7 +437,7 @@ export function DevRow() {
             </div>
             <button type="button" onClick={() => { navigator.clipboard?.writeText(SNIPPETS[tab]); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="rounded-full border border-forest px-3 py-1 text-xs font-semibold text-forest hover:bg-linen">{copied ? tr("Copied") : tr("Copy")}</button>
           </div>
-          <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-forest"><code>{SNIPPETS[tab]}</code></pre>
+          <pre tabIndex={0} aria-label={tr("Code example")} className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-forest"><code>{SNIPPETS[tab]}</code></pre>
         </div>
       </div>
     </section>

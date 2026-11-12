@@ -8,6 +8,7 @@ const industry = {
   key: "home-services",
   name: "Home Services",
   subjects: ["property"],
+  owned_subjects: ["property"],
   targets: ["room_type"],
 };
 
@@ -108,7 +109,7 @@ describe("buildNavigation", () => {
 
   it("lists a company owner's industry catalogs directly", () => {
     const auto = user(["company-owner"]);
-    auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"], catalogs: ["vehicle_part", "vehicle_make"] };
+    auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"], owned_subjects: [], catalogs: ["vehicle_part", "vehicle_make"] };
     expect(titles(auto)).toContain("Vehicle Makes");
     expect(titles(auto)).toContain("Vehicle Parts");
     expect(titles(auto)).not.toContain("Room Types");
@@ -122,5 +123,11 @@ describe("buildNavigation", () => {
   it("shows a custom role only what its permissions allow", () => {
     const custom = { ...user(["sales-viewer"]), permissions: ["dashboard.view", "products.view"] } as ReturnType<typeof user>;
     expect(titles(custom)).toEqual(["Dashboard", "Products"]);
+  });
+
+  it("does not offer a customer 'My vehicle models': that is a shared catalog, not something they keep", () => {
+    const auto = user(["customer"]);
+    auto.industry = { ...industry, targets: ["vehicle_part"], subjects: ["vehicle_model"], owned_subjects: [], catalogs: [] };
+    expect(titles(auto).some((t) => t.startsWith("My "))).toBe(false);
   });
 });

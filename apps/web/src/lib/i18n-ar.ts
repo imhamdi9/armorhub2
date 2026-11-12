@@ -894,4 +894,10 @@ export const AR: Record<string, string> = {
   "Warranty and cancellation": "الضمان والإلغاء",
   "Upload a photo": "رفع صورة",
   "Please check the highlighted fields.": "يرجى مراجعة الحقول المظللة.",
+  "Filter by status": "تصفية حسب الحالة",
+  "Company type": "نوع الشركة",
+  "Code example": "مثال برمجي",
+  "Role": "الدور",
+  "Company": "الشركة",
+  "This product is managed by its seller, so you can see it but not change it.": "هذا المنتج يديره بائعه، لذا يمكنك رؤيته دون تعديله.",
 };

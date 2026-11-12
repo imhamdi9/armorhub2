@@ -62,7 +62,7 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">
+          <CardTitle aria-level={1} className="text-center text-2xl">
             {tr("Sign in to ArmorHub")}
           </CardTitle>
         </CardHeader>

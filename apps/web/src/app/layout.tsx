@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 
@@ -20,10 +20,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Relative addresses in metadata (images, canonical links) resolve against the real public address when SITE_URL is set.
+const SITE = (process.env.SITE_URL ?? "").replace(/\/$/, "");
+
 export const metadata: Metadata = {
+  ...(SITE ? { metadataBase: new URL(SITE) } : {}),
   title: "ArmorHub",
   description: "Service marketplace platform for automotive, home services, beauty and devices",
+  applicationName: "ArmorHub",
+  openGraph: { siteName: "ArmorHub", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
+
+export const viewport: Viewport = { themeColor: "#163300" };
 
 export default function RootLayout({
   children,

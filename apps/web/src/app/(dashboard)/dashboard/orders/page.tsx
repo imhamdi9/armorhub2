@@ -39,6 +39,7 @@ export default function OrdersPage() {
       />
 
       <select
+        aria-label={tr("Filter by status")}
         className="mb-4 rounded-lg border px-3 py-2"
         value={status}
         onChange={(e) => {

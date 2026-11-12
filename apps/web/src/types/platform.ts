@@ -13,6 +13,9 @@ export interface Product {
   attributes: Record<string, unknown> | null;
   is_active: boolean;
   requires_shipping?: boolean;
+  seller_id?: number | null;
+  /** Set by the server on a single product: whether the signed-in person may edit it. */
+  can_edit?: boolean;
 }
 
 export interface PriceRule {
@@ -183,6 +186,8 @@ export interface PriceQuote {
 }
 
 export interface StaffUser {
+  /** Whether the signed-in person may change or remove this account. */
+  manageable?: boolean;
   id: number;
   name: string;
   email: string;

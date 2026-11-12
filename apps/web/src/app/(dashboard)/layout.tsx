@@ -73,7 +73,7 @@ export default function DashboardLayout({
 
             <VerifyEmailBanner />
 
-            <main className="p-6">{children}</main>
+            <div className="min-w-0 p-4 sm:p-6">{children}</div>
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>

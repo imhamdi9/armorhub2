@@ -16,7 +16,7 @@ class PartnerJobController extends Controller
         $partnerId = $request->user()->partner_id;
 
         if (! $partnerId) {
-            return response()->json(['message' => 'No partner assigned'], 422);
+            return response()->json(['message' => 'Your account is not linked to a partner yet. Ask your company owner to assign you to one.'], 422);
         }
 
         $orderIds = PartnerQuote::withoutGlobalScopes()

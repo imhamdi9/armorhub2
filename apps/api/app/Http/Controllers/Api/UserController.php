@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 class UserController extends Controller
 {
     private const ROLES_BY_MANAGER = [
-        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer'],
+        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller'],
         'company-owner' => ['company-owner', 'partner-manager', 'technician'],
         'partner-manager' => ['technician'],
     ];
@@ -32,7 +32,7 @@ class UserController extends Controller
             ))
             ->orderBy('name')
             ->paginate(25)
-            ->through(fn (User $u) => $this->present($u));
+            ->through(fn (User $u) => $this->present($u, $request->user()));
     }
 
     public function store(Request $request)
@@ -61,7 +61,7 @@ class UserController extends Controller
         ]);
         $user->assignRole($data['role']);
 
-        return response()->json($this->present($user->load(['roles:id,name', 'company:id,name', 'partner:id,name'])), 201);
+        return response()->json($this->present($user->load(['roles:id,name', 'company:id,name', 'partner:id,name']), $actor), 201);
     }
 
     public function update(Request $request, int $id)
@@ -95,7 +95,7 @@ class UserController extends Controller
             $user->tokens()->delete(); // sign them out everywhere
         }
 
-        return $this->present($user->fresh(['roles:id,name', 'company:id,name', 'partner:id,name']));
+        return $this->present($user->fresh(['roles:id,name', 'company:id,name', 'partner:id,name']), $actor);
     }
 
     /** Sign a person out everywhere, e.g. after a lost phone or a suspected account takeover. */
@@ -197,9 +197,13 @@ class UserController extends Controller
         );
     }
 
-    private function present(User $user): array
+    /** `manageable` tells the screen whether to offer deactivate and delete for this person at all. */
+    private function present(User $user, ?User $actor = null): array
     {
+        $allowed = $actor ? $this->allowedRoles($actor) : [];
+
         return [
+            'manageable' => $actor !== null && ! $user->is($actor) && ($user->roles->isEmpty() || $user->roles->pluck('name')->every(fn ($r) => in_array($r, $allowed, true))),
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,

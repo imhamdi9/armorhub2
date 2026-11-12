@@ -17,7 +17,7 @@ class PartnerOrderController extends Controller
         $partner = $request->user()->partner;
 
         if (! $partner) {
-            return response()->json(['message' => 'No partner assigned'], 422);
+            return response()->json(['message' => 'Your account is not linked to a partner yet. Ask your company owner to assign you to one.'], 422);
         }
 
         // Quotes belong to the customer's company, so the company scope is

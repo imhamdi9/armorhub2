@@ -28,6 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
   "partner-manager": "Partner manager",
   technician: "Technician",
   customer: "Customer",
+  seller: "Seller",
 };
 
 export default function TeamPage() {
@@ -56,10 +57,11 @@ export default function TeamPage() {
   }, [search, tick]);
 
   useEffect(() => {
-    getPartners().then(setPartners).catch(() => setPartners([]));
+    if (me?.permissions?.includes("partners.view")) getPartners().then(setPartners).catch(() => setPartners([]));
     if (isAdmin) getRoles().then((r) => setCustomRoles(r.roles.filter((x) => !x.built_in).map((x) => x.name))).catch(() => undefined);
+    // Only people who may see partners ask for them: owners can pick staff placement, others would just get an error.
     if (isAdmin) getCompanies().then(setCompanies).catch(() => setCompanies([]));
-  }, [isAdmin]);
+  }, [isAdmin, me]);
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -103,13 +105,13 @@ export default function TeamPage() {
           <Input placeholder={tr("Full name")} required value={form.name} onChange={set("name")} />
           <Input placeholder={tr("Email")} type="email" required value={form.email} onChange={set("email")} />
           <Input placeholder={tr("Temporary password (min 8)")} type="text" minLength={8} required value={form.password} onChange={set("password")} />
-          <select className="rounded-lg border px-3 py-2" value={form.role} onChange={set("role")}>
+          <select aria-label={tr("Role")} className="rounded-lg border px-3 py-2" value={form.role} onChange={set("role")}>
             {roles.map((r) => (
               <option key={r} value={r}>{tr(ROLE_LABELS[r] ?? r)}</option>
             ))}
           </select>
           {isAdmin && (
-            <select className="rounded-lg border px-3 py-2" value={form.company_id} onChange={set("company_id")}>
+            <select aria-label={tr("Company")} className="rounded-lg border px-3 py-2" value={form.company_id} onChange={set("company_id")}>
               <option value="">{tr("No company")}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -117,7 +119,7 @@ export default function TeamPage() {
             </select>
           )}
           {!hasRole(me, "partner-manager") && (
-            <select className="rounded-lg border px-3 py-2" value={form.partner_id} onChange={set("partner_id")}>
+            <select aria-label={tr("Partner")} className="rounded-lg border px-3 py-2" value={form.partner_id} onChange={set("partner_id")}>
               <option value="">{tr("No partner")}</option>
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -153,16 +155,17 @@ export default function TeamPage() {
               </div>
               <div className="flex items-center gap-2">
                 <select
+                  aria-label={`${tr("Role")}: ${u.name}`}
                   className="rounded-lg border px-2 py-1 text-sm"
                   value={u.role ?? ""}
-                  disabled={u.id === me?.id}
+                  disabled={!u.manageable}
                   onChange={(e) => act(() => updateUser(u.id, { role: e.target.value }))}
                 >
                   {[...new Set([...(u.role ? [u.role] : []), ...roles])].map((r) => (
                     <option key={r} value={r} disabled={!roles.includes(r)}>{tr(ROLE_LABELS[r] ?? r)}</option>
                   ))}
                 </select>
-                {u.id !== me?.id && (
+                {u.manageable && (
                   <>
                     <Button size="sm" variant="outline" onClick={() => act(() => updateUser(u.id, { is_active: !u.is_active }))}>
                       {u.is_active ? "Deactivate" : "Activate"}
