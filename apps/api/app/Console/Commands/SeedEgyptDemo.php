@@ -84,8 +84,11 @@ class SeedEgyptDemo extends Command
             $hex = md5('demo-egypt/'.$base);
             $name = substr($hex, 0, 8).'-'.substr($hex, 8, 4).'-'.substr($hex, 12, 4).'-'.substr($hex, 16, 4).'-'.substr($hex, 20, 12).'.jpg';
 
-            if (! MediaFile::where('name', $name)->exists()) {
+            // The file is re-written when it is missing even if its row exists: a host with a temporary disk loses the files on restart.
+            if (! $disk->exists("media/{$name}")) {
                 $disk->put("media/{$name}", file_get_contents($file));
+            }
+            if (! MediaFile::where('name', $name)->exists()) {
                 MediaFile::create(['name' => $name, 'original_name' => $base, 'mime' => 'image/jpeg', 'size' => filesize($file), 'sha256' => hash_file('sha256', $file)]);
             }
 

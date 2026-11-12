@@ -45,3 +45,6 @@ Work through this top to bottom before inviting real customers. `php artisan pla
 - Public pages have titles, descriptions, canonical links, social cards and, for products, structured data built only from real fields (no invented ratings).
 - Sign-in, sign-up and the dashboard are not indexed by search engines.
 - Server-side tests, unit tests and 100+ browser checks run on every change (`scripts/e2e-all.sh`).
+
+## 1c. Demo data on the live site
+`SEED_EGYPT_DEMO=true` plus `DEMO_PASSWORD=<password>` on the API service fills the platform with four Egyptian stores, sellers, partners, customers, products and (illustrated) pictures on every boot; it only creates what is missing. Demo logins end in `@demo.eg`. **Remove both variables and delete the demo users/stores before launch.** Pictures live on the media disk: on a host with a temporary disk they are re-written at each boot, so use an S3/R2 disk for real photos.

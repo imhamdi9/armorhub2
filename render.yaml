@@ -52,6 +52,8 @@ services:
         sync: false
       # Locked out of the admin account? Add ADMIN_RESET_PASSWORD=true (with ADMIN_EMAIL and a NEW ADMIN_PASSWORD), redeploy, sign in,
       # then delete the variable. It sets that account's password again and signs it out everywhere.
+      # Want a filled demo marketplace (4 Egyptian stores, sellers, partners, products with pictures)? Add SEED_EGYPT_DEMO=true and
+      # DEMO_PASSWORD=<a password for the demo logins> to the API service and redeploy. Remove both before real customers arrive.
       # The two services live on different onrender.com subdomains, so the web app serves the API under
       # its own /api (proxy) and the session cookie stays first-party. No CORS needed.
       - key: TRUSTED_PROXIES

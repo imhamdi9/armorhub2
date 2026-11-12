@@ -28,6 +28,12 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
             php artisan platform:create-admin "$ADMIN_EMAIL" --password="$ADMIN_PASSWORD" --reset-password
         fi
     fi
+
+    # Optional demo marketplace (Egyptian stores, sellers, partners, products and pictures). Needs its own password for the demo logins.
+    # Safe on every boot (it only creates what is missing, and re-writes pictures a temporary disk has lost). Remove the variable to stop.
+    if [ "$SEED_EGYPT_DEMO" = "true" ] && [ -n "$DEMO_PASSWORD" ]; then
+        php artisan platform:demo-egypt --force --no-site --password="$DEMO_PASSWORD" || echo "WARNING: demo seeding failed; continuing."
+    fi
 fi
 
 # Cache config/routes/events with the runtime environment (not at build time).
