@@ -189,6 +189,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Products and pricing
     Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
+    Route::post('/products/bulk-installation', [ProductController::class, 'bulkInstallation'])->middleware('permission:products.update');
     Route::get('/products/categories', [ProductController::class, 'categories'])->middleware('permission:products.view');
     Route::post('/product-images', [\App\Http\Controllers\Api\ProductImageController::class, 'store'])->middleware(['permission:products.update', 'throttle:30,1']);
     Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create');

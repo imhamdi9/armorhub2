@@ -24,3 +24,10 @@ export function InstallationField({ value, onChange }: { value: InstallationMode
     </fieldset>
   );
 }
+
+/** A short label for a product list: how the product is sold. */
+export const INSTALLATION_LABEL: Record<InstallationMode, string> = {
+  none: "Sold on its own",
+  optional: "Optional installation",
+  required: "Only with installation",
+};

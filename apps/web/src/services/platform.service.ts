@@ -331,3 +331,7 @@ export const uploadProductImage = async (file: File) => {
 
 /** The categories already in use, for the product forms' pick list. */
 export const getProductCategories = async () => (await api.get<string[]>("/products/categories")).data;
+
+/** Sets installation (none / optional / required) for many products at once. */
+export const bulkSetInstallation = async (ids: number[], installation: "none" | "optional" | "required") =>
+  (await api.post<{ updated: number; skipped: number }>("/products/bulk-installation", { ids, installation })).data;

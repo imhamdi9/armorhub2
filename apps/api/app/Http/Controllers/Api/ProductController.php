@@ -53,6 +53,28 @@ class ProductController extends Controller
             ->distinct()->orderBy('category')->pluck('category')->values();
     }
 
+    /**
+     * Sets how products come with installation (none / optional / required) for many at once. Only the products this person may change are
+     * touched; the rest are reported back as skipped, never silently changed.
+     */
+    public function bulkInstallation(Request $request)
+    {
+        $data = $request->validate(['ids' => 'required|array|min:1|max:500', 'ids.*' => 'integer', 'installation' => 'required|in:none,optional,required']);
+        $user = $request->user();
+        $products = Product::query()->tap(fn ($q) => $this->visibleTo($user, $q))->whereIn('id', $data['ids'])->get();
+
+        $updated = 0;
+        foreach ($products as $product) {
+            if ($this->mayChange($user, $product)) {
+                $product->update(['installation' => $data['installation']]);
+                $updated++;
+            }
+        }
+        \App\Support\Audit::record('products.bulk_installation', null, ['installation' => $data['installation'], 'updated' => $updated], $user);
+
+        return response()->json(['updated' => $updated, 'skipped' => count($data['ids']) - $updated]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validated($request);

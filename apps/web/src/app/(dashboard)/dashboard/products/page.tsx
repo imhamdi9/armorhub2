@@ -1,7 +1,7 @@
 "use client";
 
 import { CategoryField } from "@/components/products/category-field";
-import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { INSTALLATION_LABEL, InstallationField, type InstallationMode } from "@/components/products/installation-field";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { hasRole } from "@/lib/navigation";
-import { createProduct, getProducts } from "@/services/platform.service";
+import { bulkSetInstallation, createProduct, getProducts } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
@@ -31,6 +31,10 @@ export default function ProductsPage() {
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [installation, setInstallation] = useState<InstallationMode>("none");
+  // Choosing many products to give them all the same installation setting.
+  const [chosen, setChosen] = useState<number[]>([]);
+  const [bulkMode, setBulkMode] = useState<InstallationMode>("optional");
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const canManage = hasRole(user, "platform-admin", "company-owner", "seller");
@@ -41,6 +45,18 @@ export default function ProductsPage() {
       ...(canManage ? { include_inactive: 1 } : {}),
     }).then(setProducts);
   }, [search, canManage]);
+
+  async function applyBulk() {
+    setBulkMsg(null);
+    try {
+      const r = await bulkSetInstallation(chosen, bulkMode);
+      setBulkMsg(tr("Updated {n} products.", { n: r.updated }) + (r.skipped ? ` ${tr("{n} were skipped because you may not change them.", { n: r.skipped })}` : ""));
+      setChosen([]);
+      setProducts(await getProducts({ ...(search ? { search } : {}), ...(canManage ? { include_inactive: 1 } : {}) }));
+    } catch {
+      setBulkMsg(tr("Could not update the products. Try again."));
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +111,24 @@ export default function ProductsPage() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
+      {canManage && products !== null && products.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm" data-testid="bulk-bar">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" aria-label={tr("Select all products")} checked={chosen.length === products.length} onChange={(e) => setChosen(e.target.checked ? products.map((p) => p.id) : [])} />
+            {chosen.length > 0 ? tr("{n} selected", { n: chosen.length }) : tr("Select all products")}
+          </label>
+          {chosen.length > 0 && (
+            <>
+              <select aria-label={tr("Installation")} className="h-9 rounded-md border border-input bg-background px-2" value={bulkMode} onChange={(e) => setBulkMode(e.target.value as InstallationMode)}>
+                {(Object.keys(INSTALLATION_LABEL) as InstallationMode[]).map((m) => <option key={m} value={m}>{tr(INSTALLATION_LABEL[m])}</option>)}
+              </select>
+              <Button type="button" size="sm" onClick={applyBulk}>{tr("Apply to {n} products", { n: chosen.length })}</Button>
+            </>
+          )}
+          {bulkMsg && <span role="status" className="text-muted-foreground">{bulkMsg}</span>}
+        </div>
+      )}
+
       {products === null ? (
         <p className="text-muted-foreground">{tr("Loading...")}</p>
       ) : products.length === 0 ? (
@@ -105,10 +139,14 @@ export default function ProductsPage() {
       ) : (
         <div className="space-y-3">
           {products.map((p) => (
+            <div key={p.id} className="flex items-stretch gap-2">
+              {canManage && (
+                <input type="checkbox" className="ms-1 self-center" aria-label={`${tr("Select")} ${p.name}`} checked={chosen.includes(p.id)}
+                  onChange={(e) => setChosen((c) => (e.target.checked ? [...c, p.id] : c.filter((x) => x !== p.id)))} />
+              )}
             <Link
-              key={p.id}
               href={`/dashboard/products/${p.id}`}
-              className="block rounded-lg border p-4 hover:bg-muted"
+              className="block flex-1 rounded-lg border p-4 hover:bg-muted"
             >
               <div className="flex items-center gap-3">
                 {p.images?.[0] ? (
@@ -127,12 +165,14 @@ export default function ProductsPage() {
                   <p className="truncate text-sm text-muted-foreground">
                     {[p.brand, p.category].filter(Boolean).join(" · ") || p.slug}
                   </p>
+                  {p.requires_shipping && <p className="mt-1 text-xs text-muted-foreground" data-testid="installation-badge">{tr(INSTALLATION_LABEL[(p.installation ?? "none") as InstallationMode])}</p>}
                   {canManage && p.is_active && p.price_rules_count === 0 && (
                     <p className="mt-1 text-xs font-medium text-amber-700">{tr("Not for sale yet: add a price")}</p>
                   )}
                 </div>
               </div>
             </Link>
+            </div>
           ))}
         </div>
       )}

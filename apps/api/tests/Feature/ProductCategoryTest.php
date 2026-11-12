@@ -50,4 +50,30 @@ class ProductCategoryTest extends TestCase
 
         $this->getJson('/api/products/categories')->assertOk()->assertExactJson(['ppf', 'tint']);
     }
+
+    public function test_installation_can_be_set_for_many_products_at_once_within_what_a_person_may_change(): void
+    {
+        $this->admin();
+        $ids = [];
+        foreach (['a', 'b', 'c'] as $n) {
+            $ids[] = Product::create(['name' => $n, 'slug' => $n, 'base_price' => 1, 'is_active' => true, 'category' => 'x'])->id;
+        }
+
+        $this->postJson('/api/products/bulk-installation', ['ids' => $ids, 'installation' => 'bogus'])->assertStatus(422);
+        $this->postJson('/api/products/bulk-installation', ['ids' => [], 'installation' => 'optional'])->assertStatus(422);
+        $this->postJson('/api/products/bulk-installation', ['ids' => $ids, 'installation' => 'optional'])->assertOk()->assertJson(['updated' => 3, 'skipped' => 0]);
+        $this->assertSame(['optional'], Product::whereIn('id', $ids)->pluck('installation')->unique()->values()->all());
+
+        // A seller can only change its own products; the rest are reported as skipped.
+        $seller = User::factory()->create();
+        $seller->assignRole('seller');
+        $tenant = \App\Models\Tenant::create(['name' => 'T', 'industry_id' => \App\Models\Industry::first()->id]);
+        $company = \App\Models\Company::create(['tenant_id' => $tenant->id, 'name' => 'Seller Co', 'type' => 'supplier', 'status' => 'active']);
+        $seller->update(['company_id' => $company->id]);
+        $own = Product::create(['name' => 'own', 'slug' => 'own', 'base_price' => 1, 'is_active' => true, 'category' => 'x', 'seller_id' => $company->id]);
+        Sanctum::actingAs($seller);
+        $this->postJson('/api/products/bulk-installation', ['ids' => [...$ids, $own->id], 'installation' => 'required'])->assertOk()->assertJson(['updated' => 1, 'skipped' => 3]);
+        $this->assertSame('required', $own->fresh()->installation);
+        $this->assertSame(['optional'], Product::whereIn('id', $ids)->pluck('installation')->unique()->values()->all());
+    }
 }

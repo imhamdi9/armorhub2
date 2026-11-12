@@ -282,6 +282,19 @@ try {
   await admin.waitForSelector("text=Confirmed");
   ok("an off-platform report was confirmed by an admin");
 
+  // ---- 10b. Many products can be given the same installation setting at once
+  await admin.goto(`${base}/dashboard/products`);
+  await admin.waitForSelector("[data-testid=bulk-bar]");
+  await admin.getByLabel("Select all products").check();
+  await admin.locator("[data-testid=bulk-bar] select").selectOption("none");
+  await admin.getByRole("button", { name: /^Apply to \d+ products$/ }).click();
+  await admin.waitForSelector("[data-testid=bulk-bar] [role=status]");
+  const badges = await admin.locator("[data-testid=installation-badge]").allInnerTexts();
+  if (badges.length === 0 || badges.some((b) => !/Sold on its own/.test(b))) fail(`bulk change did not apply to every product: ${JSON.stringify([...new Set(badges)])}`);
+  await admin.screenshot({ path: `${SHOTS}/inst-12-bulk.png`, fullPage: true });
+  await scan(admin, "products list");
+  ok("one action gave every selected product the same installation setting");
+
   // ---- 11. Mobile, Arabic and the notification bell of the centre
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const mp = await mobile.newPage();
