@@ -27,10 +27,10 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 /** The public site caches API reads for a few seconds, so a change can take a moment to show: reload until it does. */
 async function eventually(page, check, what) {
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 10; i++) {
     await page.reload();
     if (await check()) return;
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(3000);
   }
   throw new Error(`never showed: ${what}`);
 }
@@ -222,7 +222,7 @@ try {
   await admin.locator("label:has-text('Show: FAQ') input").uncheck();
   await admin.click("button:has-text('Save draft')");
   await admin.waitForSelector("text=Draft saved.");
-  const visitor = await admin.context().newPage();
+  const visitor = await (await browser.newContext()).newPage();
   await visitor.goto(new URL("/", base).toString());
   await visitor.waitForSelector("h1");
   if ((await visitor.textContent("body")).includes("Edited by an admin E2E")) throw new Error("a draft was visible to visitors");
@@ -275,6 +275,12 @@ try {
   await admin.waitForSelector("[data-section=faq]");
   const preview = admin.frameLocator("iframe[title='Live preview']");
   await preview.locator("h1").waitFor();
+  // Click-to-edit: clicking the headline in the preview opens its field; clicking a section selects it in the list.
+  await preview.locator("h1").click();
+  await admin.waitForSelector("#t-hero_title");
+  await admin.waitForFunction(() => document.activeElement?.id === "t-hero_title", null, { timeout: 5000 }).catch(() => { throw new Error("clicking the headline did not focus its field"); });
+  await preview.locator("[data-block=faq] h2, [data-block=faq] section").first().click({ force: true });
+  await admin.waitForSelector("[data-section=faq][data-selected=true]");
   await admin.click("[role=tab]:has-text('Text')");
   await admin.fill("#t-hero_title", "Live preview headline");
   await preview.locator("h1:has-text('Live preview headline')").waitFor();
@@ -287,9 +293,17 @@ try {
   await admin.click("[role=tab]:has-text('Colors and fonts')");
   await admin.fill("#c-brand_color", "#ff6600");
   await admin.selectOption("#f-font_heading", "serif");
+  await admin.click("[role=tab]:has-text('Images')");
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+  await admin.setInputFiles("input[aria-label='Upload an image Hero image']", { name: "hero.png", mimeType: "image/png", buffer: PNG });
+  await admin.waitForSelector("text=Image uploaded.");
+  await preview.locator("img[src*='/public/media/']").first().waitFor({ state: "attached" });
+  const loaded = await preview.locator("img[src*='/public/media/']").first().evaluate((img) => img.complete && img.naturalWidth > 0);
+  if (!loaded) throw new Error("the uploaded hero image did not load in the preview");
+  await admin.click("[role=tab]:has-text('Colors and fonts')");
   const bg = await preview.locator("a.btn-brand").first().evaluate((el) => getComputedStyle(el).backgroundColor);
   if (!bg.includes("255, 102, 0")) throw new Error(`preview colour not applied: ${bg}`);
-  const visitor2 = await admin.context().newPage();
+  const visitor2 = await (await browser.newContext()).newPage();
   await visitor2.goto(new URL("/", base).toString());
   if ((await visitor2.textContent("body")).includes("Live preview headline")) throw new Error("an unsaved change reached visitors");
   await admin.fill("input[placeholder='Note (what changed)']", "theme");
@@ -306,6 +320,8 @@ try {
   await admin.selectOption("#f-font_heading", "");
   await admin.click("[role=tab]:has-text('Text')");
   await admin.fill("#t-hero_title", "");
+  await admin.click("[role=tab]:has-text('Images')");
+  await admin.locator("div:has(> label:has-text('Hero image')) >> button:has-text('Remove')").click();
   await admin.click("[role=tab]:has-text('Sections')");
   await admin.click("[aria-label='Show Numbers band']").catch(() => {});
   await admin.click("button:has-text('Publish')");

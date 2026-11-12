@@ -21,7 +21,7 @@ final class Surfaces
         $c->surface('site.brand', 'Brand', [
             'name' => ['type' => 'text', 'label' => 'Platform name', 'default' => 'ArmorHub', 'max' => 40, 'required' => false],
             'tagline' => ['type' => 'text', 'label' => 'Tagline', 'max' => 120],
-            'logo_url' => ['type' => 'url', 'label' => 'Logo address (https)'],
+            'logo_url' => ['type' => 'image', 'label' => 'Logo address (https)'],
             'brand_color' => ['type' => 'color', 'label' => 'Accent colour (buttons)', 'default' => '#9fe870'],
             'dark_color' => ['type' => 'color', 'label' => 'Dark colour (panels, footer)', 'default' => '#163300'],
             'font_heading' => ['type' => 'select', 'label' => 'Headline font', 'options' => self::FONTS],
@@ -46,8 +46,8 @@ final class Surfaces
             'banner_title' => ['type' => 'text', 'label' => 'Closing banner: title', 'max' => 100],
             'banner_text' => ['type' => 'longtext', 'label' => 'Closing banner: text', 'max' => 300],
             'banner_cta' => ['type' => 'text', 'label' => 'Closing banner: button', 'max' => 40],
-            'hero_image_url' => ['type' => 'url', 'label' => 'Hero image (https address; replaces the illustration)'],
-            'banner_image_url' => ['type' => 'url', 'label' => 'Closing banner background image (https address)'],
+            'hero_image_url' => ['type' => 'image', 'label' => 'Hero image (https address; replaces the illustration)'],
+            'banner_image_url' => ['type' => 'image', 'label' => 'Closing banner background image (https address)'],
             'section_order' => ['type' => 'list', 'label' => 'Section order (sections not listed follow in the built-in order)', 'maxItems' => 15, 'items' => [
                 'section' => ['type' => 'select', 'label' => 'Section', 'options' => self::SECTIONS, 'required' => true],
             ]],

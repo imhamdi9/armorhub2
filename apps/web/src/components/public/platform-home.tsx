@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment } from "react";
 
 import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit, COUNTRY_NAMES } from "@/components/public/landing";
 import { Faq } from "@/components/public/faq";
 import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
-import { SiteProvider, useSiteFlag, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
+import { SiteProvider, useSiteFlag, useEditable, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { tr } from "@/lib/i18n";
 import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
@@ -20,9 +19,9 @@ const STEPS = [
 ];
 
 /** The platform's front door: what it is, who it serves, and every open store. */
-export function PlatformHome({ stores, showcase, site }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent }) {
+export function PlatformHome({ stores, showcase, site, editing = false }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent; editing?: boolean }) {
   return (
-    <SiteProvider content={site ?? { home: {}, brand: {}, nav: {} }}>
+    <SiteProvider content={site ?? { home: {}, brand: {}, nav: {} }} editing={editing}>
       <PlatformHomeBody stores={stores} showcase={showcase} />
     </SiteProvider>
   );
@@ -37,6 +36,7 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
     dev: useSiteFlag("show_developers"), compat: useSiteFlag("show_compat"), markets: useSiteFlag("show_markets"), faq: useSiteFlag("show_faq"),
   };
   const faqItems = useSiteList<{ question: string; answer: string }>("home", "faq");
+  const ed = useEditable();
   const howTitle = useSiteText("home", "how_title", "How it works");
   const howCustom = useSiteList<{ title: string; text: string }>("home", "how_steps");
   const steps = howCustom.length > 0 ? howCustom.map((c, i) => [String(i + 1), c.title, c.text, true] as const) : STEPS.map(([n, t, x]) => [n, tr(t), tr(x), false] as const);
@@ -107,8 +107,8 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
   return (
     <PublicShell>
       <Hero facts={facts} firstStore={stores[0]} />
-      {order.map((key) => <Fragment key={key}>{blocks[key]}</Fragment>)}
-      <Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} image={bannerImage} secondary={{ href: "/signup", label: "Create an account" }} />
+      {order.map((key) => (blocks[key] ? <div key={key} data-block={key} style={{ display: "contents" }}>{blocks[key]}</div> : null))}
+      <div {...ed("banner_title")} style={{ display: "contents" }}><Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} image={bannerImage} secondary={{ href: "/signup", label: "Create an account" }} /></div>
     </PublicShell>
   );
 }

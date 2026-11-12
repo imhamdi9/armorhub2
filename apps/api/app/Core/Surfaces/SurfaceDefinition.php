@@ -6,13 +6,13 @@ namespace App\Core\Surfaces;
  * Something admins may edit, and the rules for editing it: which fields exist, their types and limits, and whether the
  * public may read it. Declared by a module. Anything not declared is not editable: that is how security-critical areas stay locked.
  *
- * Field types: text, longtext, bool, number, color, url (https only), select, list (of items that have their own fields).
+ * Field types: text, longtext, bool, number, color, url (https only), image (https address or a file uploaded to the platform, written /media/<name>), select, list (of items that have their own fields).
  *
  * @phpstan-type Field array{type: string, label?: string, default?: mixed, max?: int, min?: int, required?: bool, options?: list<string>, maxItems?: int, items?: array<string, array>}
  */
 final class SurfaceDefinition
 {
-    private const TYPES = ['text', 'longtext', 'bool', 'number', 'color', 'url', 'select', 'list'];
+    private const TYPES = ['text', 'longtext', 'bool', 'number', 'color', 'url', 'image', 'select', 'list'];
 
     /** @param array<string, array> $fields */
     public function __construct(
@@ -118,6 +118,12 @@ final class SurfaceDefinition
 
             case 'url':
                 return is_string($value) && strlen($value) <= 500 && preg_match('~^https://[^\s<>"\']+$~i', $value) ? [$value, []] : [null, ['Must be an https:// address.']];
+
+            case 'image':
+                $isUpload = is_string($value) && preg_match('~^/media/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|webp|gif)$~', $value);
+                $isHttps = is_string($value) && strlen($value) <= 500 && preg_match('~^https://[^\s<>"\']+$~i', $value);
+
+                return $isUpload || $isHttps ? [$value, []] : [null, ['Must be an https:// address or an uploaded image.']];
 
             case 'select':
                 return in_array($value, $spec['options'] ?? [], true) ? [$value, []] : [null, ['Choose one of the listed options.']];

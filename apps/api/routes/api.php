@@ -42,6 +42,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
     Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
     Route::get('/markets', [PublicStorefrontController::class, 'markets']);
+    Route::get('/media/{name}', [\App\Http\Controllers\Api\MediaReadController::class, 'show']);
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
@@ -120,6 +121,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
         Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
         Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/media', [\App\Http\Controllers\Api\Admin\MediaController::class, 'index']);
+        Route::post('/media', [\App\Http\Controllers\Api\Admin\MediaController::class, 'store'])->middleware('throttle:30,1');
         Route::get('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index']);
         Route::post('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store']);
         Route::put('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->whereNumber('id');

@@ -52,3 +52,10 @@ export function orderSections(chosen: string[]): SectionKey[] {
 
   return [...picked, ...SECTION_KEYS.filter((k) => !picked.includes(k))];
 }
+
+/** An uploaded image is stored as /media/<name>; this turns it into the address the browser loads (https addresses pass through). */
+export function imageSrc(value: string | null): string | null {
+  if (!value || !value.startsWith("/media/")) return value;
+
+  return `${(process.env.NEXT_PUBLIC_API_URL ?? "/api").replace(/\/$/, "")}/public${value}`;
+}

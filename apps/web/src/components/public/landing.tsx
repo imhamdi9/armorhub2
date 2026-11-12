@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { HeroArt, Icon } from "@/components/public/art";
 import { price } from "@/components/public/product-card";
-import { useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
+import { useEditable, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicShowcase } from "@/types/public";
 
@@ -64,20 +64,21 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
   const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
   const cta = useSiteText("home", "primary_cta", "Browse markets");
   const heroImage = useSiteValue("home", "hero_image_url");
+  const ed = useEditable();
 
   return (
     <section className="overflow-hidden bg-white">
       <div className="mx-auto max-w-[1200px] px-4 pb-6 pt-14 text-center md:pt-20">
         <span className="inline-flex items-center gap-2 rounded-full bg-linen px-4 py-1.5 text-sm font-semibold text-forest">
           <span className="h-2 w-2 rounded-full bg-spruce" aria-hidden="true" />
-          {badge}
+          <span {...ed("badge_text")}>{badge}</span>
         </span>
-        <h1 className="display display-xl mx-auto mt-6 max-w-5xl uppercase">{title}</h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-charcoal">
+        <h1 {...ed("hero_title")} className="display display-xl mx-auto mt-6 max-w-5xl uppercase">{title}</h1>
+        <p {...ed("hero_subtitle")} className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-charcoal">
           {subtitle}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-          <a href="#stores" className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{cta} <span aria-hidden="true">→</span></a>
+          <a href="#stores" {...ed("primary_cta")} className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{cta} <span aria-hidden="true">→</span></a>
           <Link href="/login" className="text-base font-semibold text-forest underline underline-offset-4">{tr("For businesses: sign in")}</Link>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-2 border-t border-dashed border-fog pt-6">

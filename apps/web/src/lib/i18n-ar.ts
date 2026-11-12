@@ -846,4 +846,11 @@ export const AR: Record<string, string> = {
   "Closing banner: title": "اللافتة الختامية: العنوان",
   "Closing banner: text": "اللافتة الختامية: النص",
   "Closing banner: button": "اللافتة الختامية: الزر",
+  "Hero image": "صورة الواجهة",
+  "Closing banner background image": "صورة خلفية اللافتة الختامية",
+  "Logo": "الشعار",
+  "Upload an image": "رفع صورة",
+  "Image uploaded.": "تم رفع الصورة.",
+  "Uploaded images": "الصور المرفوعة",
+  "Upload a JPG, PNG, WebP or GIF up to 3 MB, or paste an https address.": "ارفع صورة JPG أو PNG أو WebP أو GIF حتى 3 ميغابايت، أو الصق عنوان https.",
 };

@@ -10,6 +10,9 @@ return [
     // Where verification documents are kept. Always a private disk: "local" (the server's private storage) or an
     // S3-compatible disk configured in config/filesystems.php (e.g. Cloudflare R2). Set DOCUMENTS_DISK=s3 to use a bucket.
     'documents_disk' => env('DOCUMENTS_DISK', 'local'),
+
+    // Where uploaded site images (hero, banner, logo) are kept. Served only through the API, so any disk works (local, s3/R2).
+    'media_disk' => env('MEDIA_DISK', env('DOCUMENTS_DISK', 'local')),
     'document_max_kb' => (int) env('DOCUMENT_MAX_KB', 5120),
 
     // Share of an order's total taken as commission, in percent.

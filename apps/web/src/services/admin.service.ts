@@ -183,7 +183,7 @@ export const createPayout = async (companyId: number, currency: string) => (awai
 export const markPayoutPaid = async (id: number, reference: string) => (await api.post<Payout>(`/admin/payouts/${id}/paid`, { reference })).data;
 
 export interface SurfaceField {
-  type: "text" | "longtext" | "bool" | "number" | "color" | "url" | "select" | "list";
+  type: "text" | "longtext" | "bool" | "number" | "color" | "url" | "image" | "select" | "list";
   label?: string;
   max?: number;
   maxItems?: number;
@@ -214,3 +214,12 @@ export const getRoles = async () => (await api.get<{ roles: RoleInfo[]; grantabl
 export const createRole = async (name: string, permissions: string[]) => (await api.post("/admin/roles", { name, permissions })).data;
 export const updateRole = async (id: number, permissions: string[]) => (await api.put(`/admin/roles/${id}`, { permissions })).data;
 export const deleteRole = async (id: number) => (await api.delete(`/admin/roles/${id}`)).data;
+
+export interface MediaImage { path: string; original_name: string; size: number }
+export const getMedia = async () => (await api.get<{ images: MediaImage[] }>("/admin/media")).data.images;
+export const uploadImage = async (file: File) => {
+  const form = new FormData();
+  form.append("image", file);
+
+  return (await api.post<{ path: string }>("/admin/media", form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
+};

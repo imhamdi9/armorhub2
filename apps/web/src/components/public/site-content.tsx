@@ -3,14 +3,26 @@
 import { createContext, useContext } from "react";
 
 import { tr, useLocale } from "@/lib/i18n";
-import { pickFlag, pickList, pickText, type SiteContent } from "@/lib/surfaces";
+import { imageSrc, pickFlag, pickList, pickText, type SiteContent } from "@/lib/surfaces";
 
 const EMPTY: SiteContent = { home: {}, brand: {}, nav: {} };
 const SiteContext = createContext<SiteContent>(EMPTY);
+const EditingContext = createContext(false);
 
 /** Gives the platform pages the published, admin-edited content. Without it (store pages) everything is built-in. */
-export function SiteProvider({ content, children }: { content: SiteContent; children: React.ReactNode }) {
-  return <SiteContext.Provider value={content}>{children}</SiteContext.Provider>;
+export function SiteProvider({ content, editing = false, children }: { content: SiteContent; editing?: boolean; children: React.ReactNode }) {
+  return (
+    <SiteContext.Provider value={content}>
+      <EditingContext.Provider value={editing}>{children}</EditingContext.Provider>
+    </SiteContext.Provider>
+  );
+}
+
+/** In the theme editor's preview, marks an element so a click on it jumps to its setting. Does nothing on the real site. */
+export function useEditable(): (field: string) => { "data-edit"?: string } {
+  const editing = useContext(EditingContext);
+
+  return (field) => (editing ? { "data-edit": field } : {});
 }
 
 export const useSite = () => useContext(SiteContext);
@@ -28,7 +40,7 @@ export function useSiteValue(surface: keyof SiteContent, field: string): string 
   const site = useSite();
   const locale = useLocale();
 
-  return pickText(site[surface], locale, field) ?? pickText(site[surface], "en", field);
+  return imageSrc(pickText(site[surface], locale, field) ?? pickText(site[surface], "en", field));
 }
 
 export function useSiteFlag(field: string): boolean {

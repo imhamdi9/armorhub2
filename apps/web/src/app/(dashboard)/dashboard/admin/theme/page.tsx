@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
-import { getSurfaceDetail, publishSurface, saveSurfaceDraft } from "@/services/admin.service";
+import { imageSrc } from "@/lib/surfaces";
+import { getMedia, getSurfaceDetail, publishSurface, saveSurfaceDraft, uploadImage, type MediaImage } from "@/services/admin.service";
 
 type Values = Record<string, unknown>;
 
@@ -48,8 +49,17 @@ export default function ThemeEditorPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [library, setLibrary] = useState<MediaImage[]>([]);
+  const loadLibrary = useCallback(async () => { setLibrary(await getMedia().catch(() => [])); }, []);
   const frame = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
+
+  useEffect(() => {
+    let live = true;
+    getMedia().then((m) => { if (live) setLibrary(m); }).catch(() => undefined);
+
+    return () => { live = false; };
+  }, []);
 
   useEffect(() => {
     Promise.all([getSurfaceDetail("site.home", "en"), getSurfaceDetail("site.brand", "en"), getSurfaceDetail("site.home", "ar")])
@@ -57,6 +67,7 @@ export default function ThemeEditorPage() {
       .catch(() => setForbidden(true));
   }, []);
 
+  const [selected, setSelected] = useState<string | null>(null);
   const push = useCallback(() => {
     if (!ready.current || !home) return;
     const site: SiteContent = { home: { en: home, ar: homeAr }, brand: { en: brand, ar: brand }, nav: {} };
@@ -65,7 +76,20 @@ export default function ThemeEditorPage() {
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.origin === window.location.origin && (e.data as { type?: string } | null)?.type === "theme-preview-ready") { ready.current = true; push(); }
+      if (e.origin !== window.location.origin) return;
+      const data = e.data as { type?: string; field?: string | null; block?: string | null } | null;
+      if (data?.type === "theme-preview-ready") { ready.current = true; push(); }
+      if (data?.type === "theme-click") {
+        // Text on the page opens its text field; anything else opens its place in the section list.
+        if (data.field && TEXTS.some(([k]) => k === data.field)) {
+          setTab("text");
+          setTimeout(() => document.getElementById(`t-${data.field}`)?.focus(), 50);
+        } else if (data.block) {
+          setTab("sections");
+          setSelected(data.block);
+          setTimeout(() => document.querySelector(`[data-section="${data.block}"]`)?.scrollIntoView({ block: "nearest" }), 50);
+        }
+      }
     };
     window.addEventListener("message", onMessage);
 
@@ -116,7 +140,7 @@ export default function ThemeEditorPage() {
                 const spec = SECTIONS[key];
                 const visible = spec.flag ? home[spec.flag] !== false : true;
                 return (
-                  <li key={key} data-section={key} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                  <li key={key} data-section={key} data-selected={selected === key} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${selected === key ? "ring-2 ring-blue-500" : ""}`}>
                     <span className={`flex-1 ${visible ? "" : "text-muted-foreground line-through"}`}>{tr(spec.label)}</span>
                     <Button size="sm" variant="outline" disabled={i === 0} aria-label={`${tr("Move up")} ${tr(spec.label)}`} onClick={() => move(i, -1)}>↑</Button>
                     <Button size="sm" variant="outline" disabled={i === order.length - 1} aria-label={`${tr("Move down")} ${tr(spec.label)}`} onClick={() => move(i, 1)}>↓</Button>
@@ -153,17 +177,40 @@ export default function ThemeEditorPage() {
 
           {tab === "images" && (
             <div className="space-y-4">
-              {([["hero_image_url", "Hero image (https address; replaces the illustration)"], ["banner_image_url", "Closing banner background image (https address)"]] as const).map(([k, l]) => (
-                <div key={k}>
-                  <label htmlFor={`i-${k}`} className="mb-1 block text-sm font-medium">{tr(l)}</label>
-                  <Input id={`i-${k}`} placeholder="https://" value={(home[k] as string) ?? ""} onChange={(e) => setHomeValue(k, e.target.value)} />
+              {([["hero_image_url", "Hero image", "home"], ["banner_image_url", "Closing banner background image", "home"], ["logo_url", "Logo", "brand"]] as const).map(([k, l, where]) => {
+                const value = ((where === "home" ? home : brand)[k] as string) ?? "";
+                const set = (v: string) => (where === "home" ? setHomeValue(k, v) : setBrandValue(k, v));
+                return (
+                  <div key={k} className="space-y-2 rounded-lg border p-3">
+                    <label htmlFor={`i-${k}`} className="block text-sm font-medium">{tr(l)}</label>
+                    {value && (
+                      // eslint-disable-next-line @next/next/no-img-element -- an admin-chosen image shown as a thumbnail
+                      <img src={imageSrc(value) ?? ""} alt="" className="h-20 w-auto max-w-full rounded border object-contain" />
+                    )}
+                    <Input id={`i-${k}`} placeholder="https://" value={value} onChange={(e) => set(e.target.value)} />
+                    <div className="flex flex-wrap gap-2">
+                      <label className="inline-flex cursor-pointer items-center rounded-lg border px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                        {tr("Upload an image")}
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label={`${tr("Upload an image")} ${tr(l)}`} className="sr-only"
+                          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) run(async () => { set(await uploadImage(f)); await loadLibrary(); }, tr("Image uploaded.")); }} />
+                      </label>
+                      <Button size="sm" variant="outline" onClick={() => set("")}>{tr("Remove")}</Button>
+                    </div>
+                  </div>
+                );
+              })}
+              {library.length > 0 && (
+                <div>
+                  <p className="mb-1 text-sm font-medium">{tr("Uploaded images")}</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {library.map((m) => (
+                      // eslint-disable-next-line @next/next/no-img-element -- thumbnails of the admin's own uploads
+                      <img key={m.path} src={imageSrc(m.path) ?? ""} alt={m.original_name} title={m.original_name} className="h-16 w-full rounded border object-cover" />
+                    ))}
+                  </div>
                 </div>
-              ))}
-              <div>
-                <label htmlFor="i-logo" className="mb-1 block text-sm font-medium">{tr("Logo address (https)")}</label>
-                <Input id="i-logo" placeholder="https://" value={(brand.logo_url as string) ?? ""} onChange={(e) => setBrandValue("logo_url", e.target.value)} />
-              </div>
-              <p className="text-xs text-muted-foreground">{tr("Images must be https addresses. Uploads are not stored on the platform.")}</p>
+              )}
+              <p className="text-xs text-muted-foreground">{tr("Upload a JPG, PNG, WebP or GIF up to 3 MB, or paste an https address.")}</p>
             </div>
           )}
 
