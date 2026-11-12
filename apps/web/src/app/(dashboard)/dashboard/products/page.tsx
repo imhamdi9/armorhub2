@@ -50,9 +50,10 @@ export default function ProductsPage() {
     setBulkMsg(null);
     try {
       const r = await bulkSetInstallation(chosen, bulkMode);
-      setBulkMsg(tr("Updated {n} products.", { n: r.updated }) + (r.skipped ? ` ${tr("{n} were skipped because you may not change them.", { n: r.skipped })}` : ""));
-      setChosen([]);
+      // Show the new settings first, then say what happened.
       setProducts(await getProducts({ ...(search ? { search } : {}), ...(canManage ? { include_inactive: 1 } : {}) }));
+      setChosen([]);
+      setBulkMsg(tr("Updated {n} products.", { n: r.updated }) + (r.skipped ? ` ${tr("{n} were skipped because you may not change them.", { n: r.skipped })}` : ""));
     } catch {
       setBulkMsg(tr("Could not update the products. Try again."));
     }
