@@ -109,6 +109,19 @@ class PublicStorefrontController extends Controller
         return $this->cached($page);
     }
 
+    /** A seller's page inside the market ("Sold by ..."): who they are and what they sell here. A seller has no store of its own. */
+    public function seller(Request $request, string $slug, int $id)
+    {
+        $request->validate(['page' => 'nullable|integer|min:1|max:1000']);
+        $company = $this->stores->find($slug) ?? abort(404);
+        $seller = \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $company->tenant_id)->where('type', 'supplier')->where('status', 'active')->findOrFail($id);
+
+        $page = $this->stores->products($company)->where('seller_id', $seller->id)->orderBy('category')->orderBy('name')->paginate(12)
+            ->through(fn ($p) => $this->stores->card($p, $company));
+
+        return $this->cached(['seller' => ['id' => $seller->id, 'name' => $seller->name, 'city' => $seller->city ?? null, 'since' => $seller->created_at?->format('Y-m')], 'store' => ['name' => $company->name, 'slug' => $company->slug], 'products' => $page]);
+    }
+
     public function product(string $slug, int $id)
     {
         $company = $this->stores->find($slug) ?? abort(404);

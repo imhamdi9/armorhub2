@@ -97,6 +97,12 @@ class PartnerApplicationController extends Controller
             throw ValidationException::withMessages(['email' => ['The email has already been taken.']]);
         }
 
+        // A business has ONE account in a market. The same business may join another country's market, but separately and under that market's terms.
+        if ($type === 'seller' && PartnerApplication::where('tenant_id', $tenant->id)->where('type', 'seller')->where('registration_number', $data['registration_number'])
+            ->whereIn('status', [PartnerApplication::PENDING, PartnerApplication::APPROVED])->exists()) {
+            throw ValidationException::withMessages(['registration_number' => ['This business has already applied to sell in this market.']]);
+        }
+
         $phone = $markets->phoneForTenant($tenant, $data['phone']) ?? throw ValidationException::withMessages(['phone' => ['Please enter a valid mobile number.']]);
 
         // The tax number is checked for shape against the country's format.

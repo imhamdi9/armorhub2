@@ -48,6 +48,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
     Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
+    Route::get('/storefronts/{slug}/sellers/{id}', [PublicStorefrontController::class, 'seller'])->whereNumber('id');
 });
 
 // Buying goods without an account: one order, reached by its secret link

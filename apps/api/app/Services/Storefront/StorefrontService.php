@@ -73,8 +73,13 @@ class StorefrontService
         return Company::withoutGlobalScopes()->with('tenant.industry')->stores()->whereNotNull('slug')->whereNotIn('status', self::HIDDEN_STATUSES)->get()
             ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant && $c->tenant->status === 'active')
             ->unique('tenant_id')
-            ->map(fn (Company $c) => ['key' => $c->tenant->uuid, 'name' => $c->tenant->name, 'industry' => $c->tenant->industry?->name,
-                'market' => $this->market($c)['code'] ?? null])
+            ->map(function (Company $c) {
+                $industries = collect($this->industries($c))->pluck('name');
+                $market = $this->markets->forCompany($c);
+
+                return ['key' => $c->tenant->uuid, 'name' => $c->tenant->name, 'industry' => $industries->join(', ') ?: null, 'industries' => $industries->values()->all(),
+                    'market' => $market?->code, 'country' => $market?->name('en'), 'country_ar' => $market?->name('ar'), 'currency' => $market?->currency()];
+            })
             ->sortBy('name')->values()->all();
     }
 
@@ -132,6 +137,7 @@ class StorefrontService
     {
         return [
             'seller' => $product->seller_id ? $product->seller?->name : null,
+            'seller_id' => $product->seller_id,
             'id' => $product->id,
             'name' => $product->name,
             'brand' => $product->brand,

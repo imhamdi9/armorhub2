@@ -389,4 +389,20 @@ class PartnerApplicationTest extends TestCase
         $this->assertSame(0, $rejected->documents()->count());
         $this->assertSame(2, $pending->documents()->count());
     }
+
+    public function test_a_business_has_one_seller_account_per_market_and_may_join_another_market_separately(): void
+    {
+        $this->applyAsSeller()->assertCreated();
+        // The same business (same registration number) cannot apply twice to the same market, even with another e-mail...
+        $this->applyAsSeller(['email' => 'second@gulfparts.example.org'])->assertStatus(422)->assertJsonValidationErrors('registration_number');
+
+        // ...but another country's market is a separate marketplace, with its own account and terms.
+        $other = app(\App\Services\MarketLauncher::class)->open('AE', 'ArmorHub UAE', [\App\Models\Industry::value('id')], null);
+        $this->applyAsSeller(['marketplace' => $other->uuid, 'email' => 'uae@gulfparts.example.org', 'phone' => '0501234567', 'country' => 'ae', 'tax_number' => '100000000000009'])->assertCreated();
+        $this->assertSame([$this->store->tenant_id, $other->id], PartnerApplication::orderBy('id')->pluck('tenant_id')->all());
+
+        $list = $this->getJson('/api/public/marketplaces')->assertOk()->json('marketplaces');
+        $this->assertContains('ArmorHub UAE', array_column($list, 'name'));
+        $this->assertSame('AED', collect($list)->firstWhere('name', 'ArmorHub UAE')['currency']);
+    }
 }

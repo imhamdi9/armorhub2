@@ -93,4 +93,25 @@ class CountryMarketTest extends TestCase
         $this->assertSame('البرازيل', $m->name('ar'));
         $this->assertNull(app(\App\Support\Markets\Markets::class)->get('XX'));
     }
+
+    public function test_a_seller_appears_only_inside_its_own_market_on_a_page_that_is_not_a_store(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $this->artisan('platform:demo-egypt')->assertSuccessful();
+        $khan = Company::withoutGlobalScopes()->where('name', 'Khan El-Khalili Crafts')->firstOrFail();
+
+        $page = $this->getJson("/api/public/storefronts/armorhub-eg/sellers/{$khan->id}")->assertOk()->json();
+        $this->assertSame('Khan El-Khalili Crafts', $page['seller']['name']);
+        $this->assertGreaterThan(0, $page['products']['total']);
+        $this->assertSame([$khan->id], collect($page['products']['data'])->pluck('seller_id')->unique()->values()->all());
+
+        // Another country's market does not list it, a service-centre company is not a seller, and a suspended seller disappears.
+        $this->admin();
+        $m = $this->postJson('/api/admin/markets', ['country' => 'AE', 'industries' => [Industry::value('id')]])->assertCreated()->json();
+        $this->getJson("/api/public/storefronts/{$m['store_slug']}/sellers/{$khan->id}")->assertNotFound();
+        $centre = Company::withoutGlobalScopes()->where('name', 'Zamalek Detailing Studio')->firstOrFail();
+        $this->getJson("/api/public/storefronts/armorhub-eg/sellers/{$centre->id}")->assertNotFound();
+        $khan->update(['status' => 'suspended']);
+        $this->getJson("/api/public/storefronts/armorhub-eg/sellers/{$khan->id}")->assertNotFound();
+    }
 }

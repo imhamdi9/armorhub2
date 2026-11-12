@@ -215,6 +215,7 @@ class AuthController extends Controller
             'email_verification_required' => $emails->verificationRequired() && $user->hasRole('customer') && ! $user->hasVerifiedEmail(),
             'industry' => $industry,
             'industries' => $all,
+            'tenant' => $user->company?->tenant ? ['id' => $user->company->tenant->id, 'name' => $user->company->tenant->name] : null,
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
         ]));
