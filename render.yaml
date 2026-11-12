@@ -50,6 +50,8 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # Locked out of the admin account? Add ADMIN_RESET_PASSWORD=true (with ADMIN_EMAIL and a NEW ADMIN_PASSWORD), redeploy, sign in,
+      # then delete the variable. It sets that account's password again and signs it out everywhere.
       # The two services live on different onrender.com subdomains, so the web app serves the API under
       # its own /api (proxy) and the session cookie stays first-party. No CORS needed.
       - key: TRUSTED_PROXIES

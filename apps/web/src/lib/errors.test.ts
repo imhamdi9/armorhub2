@@ -20,4 +20,10 @@ describe("errorMessage", () => {
     expect(errorMessage(apiError({}))).toBe("Something went wrong.");
     expect(errorMessage(new Error("boom"), "Custom")).toBe("Custom");
   });
+
+  it("says the server is waking up when there is no answer or the host's own error page, not that the sign-in failed", () => {
+    expect(errorMessage(new AxiosError("Network Error"), "Could not sign in. Please try again.")).toMatch(/waking up/);
+    expect(errorMessage(apiError("<html>Bad Gateway</html>", 502), "Could not sign in.")).toMatch(/waking up/);
+    expect(errorMessage(apiError({ message: "Server Error" }, 500))).toBe("Server Error");
+  });
 });

@@ -4,6 +4,12 @@ import { tr } from "@/lib/i18n";
 /** Best human-readable message from an API error (validation or plain). */
 export function errorMessage(error: unknown, fallback = "Something went wrong."): string {
   if (isAxiosError(error)) {
+    // No answer at all, or the host's own error page (502/503/504): the server is starting up or unreachable, not the person's mistake.
+    const status = error.response?.status;
+    if (!error.response || status === 502 || status === 503 || status === 504) {
+      return tr("The server is waking up or unreachable. Wait a few seconds and try again.");
+    }
+
     const data = error.response?.data as
       | { message?: string; errors?: Record<string, string[]> }
       | undefined;

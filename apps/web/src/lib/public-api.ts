@@ -24,26 +24,43 @@ const cache = new Map<string, { expires: number; value: unknown }>();
  * when a refresh fails (a store was closed, so the API answers 404) it keeps serving the old successful
  * response, which would leave a closed or suspended store publicly visible. Here a 404 is cached as a 404.
  */
-async function get<T>(path: string): Promise<T | null> {
-  const base = apiBase();
-  if (!base) return null;
+/** How long a visitor waits for the API before the page shows its "waking up" message instead (a sleeping free instance takes ~30-60s). */
+const API_PATIENCE_MS = 8000;
 
+/** One request to the public API. `down` is true when the API could not be reached or failed (not when it simply says "not found"). */
+async function fetchPublic<T>(path: string): Promise<{ value: T | null; down: boolean }> {
+  const base = apiBase();
+  if (!base) return { value: null, down: true };
+
+  try {
+    const res = await fetch(`${base}/api/public${path}`, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(API_PATIENCE_MS) });
+    if (res.status >= 500) return { value: null, down: true };
+
+    return { value: res.ok ? ((await res.json()) as T) : null, down: false };
+  } catch {
+    return { value: null, down: true };
+  }
+}
+
+async function get<T>(path: string): Promise<T | null> {
   const hit = cache.get(path);
   if (hit && hit.expires > Date.now()) return hit.value as T | null;
 
-  let value: T | null = null;
-  try {
-    const res = await fetch(`${base}/api/public${path}`, { headers: { Accept: "application/json" }, cache: "no-store" });
-    value = res.ok ? ((await res.json()) as T) : null;
-  } catch {
-    // The API is unreachable: show an empty state, and retry soon rather than caching the failure for long.
-    return null;
-  }
+  const { value, down } = await fetchPublic<T>(path);
+  // An unreachable API is retried next time rather than remembered, so a store never looks closed just because the server was asleep.
+  if (down) return null;
 
   if (cache.size >= MAX_ENTRIES) cache.clear();
   cache.set(path, { expires: Date.now() + TTL_MS, value });
 
   return value;
+}
+
+/** The open stores, and whether the list is missing because the API could not be reached (so the page can say so instead of "no stores"). */
+export async function getStoresChecked() {
+  const { value, down } = await fetchPublic<PublicStoreList>("/storefronts");
+
+  return { stores: value?.stores ?? [], down };
 }
 
 export const getStores = () => get<PublicStoreList>("/storefronts");

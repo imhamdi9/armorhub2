@@ -15,6 +15,11 @@ Work through this top to bottom before inviting real customers. `php artisan pla
 | ☐ | **Backups** | Daily database backups with a restore you have tried once. Uploaded files live in the bucket, so enable bucket versioning. |
 | ☐ | **Set the public address** | `SITE_URL` on the web service, so `sitemap.xml`, canonical links and social cards use the real domain. |
 
+## 1b. If the site "does not work" right after you open it
+
+- **The free Render plan sleeps after about 15 minutes without visitors, and waking takes 30 to 60 seconds.** During that time the home page may say the service is waking up, and sign-in may say the server is waking up. Wait a minute and try again; it then works normally. For a real launch use a paid instance, or have an uptime monitor (UptimeRobot, cron-job.org, Better Stack) request `https://<your-api>/up` every 10 minutes to keep it awake.
+- **Locked out of the admin account?** Set `ADMIN_EMAIL` (the exact address) and a *new* `ADMIN_PASSWORD`, add `ADMIN_RESET_PASSWORD=true`, redeploy the API, sign in, then delete `ADMIN_RESET_PASSWORD`. It resets that account's password, makes it an active administrator and signs it out everywhere. Without that switch the variables only create the admin the very first time, so changing them later does nothing.
+
 ## 2. Should do (strongly recommended)
 
 | | Item | How |

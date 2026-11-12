@@ -23,6 +23,10 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
         php artisan platform:create-admin "$ADMIN_EMAIL" --name="${ADMIN_NAME:-Administrator}" \
             --password="$ADMIN_PASSWORD" --if-missing
+        # Locked out? Set ADMIN_RESET_PASSWORD=true (with ADMIN_EMAIL and a new ADMIN_PASSWORD), redeploy, sign in, then remove it.
+        if [ "$ADMIN_RESET_PASSWORD" = "true" ]; then
+            php artisan platform:create-admin "$ADMIN_EMAIL" --password="$ADMIN_PASSWORD" --reset-password
+        fi
     fi
 fi
 

@@ -952,4 +952,7 @@ export const AR: Record<string, string> = {
   "Try again": "حاول مرة أخرى",
   "Not for sale yet: add a price": "غير معروض للبيع بعد: أضف سعرًا",
   "Your product is saved. Add a price for each option below, and a photo, so customers can order it.": "تم حفظ منتجك. أضف سعرًا لكل خيار أدناه وصورة ليتمكن العملاء من طلبه.",
+  "The service is waking up.": "الخدمة قيد التشغيل.",
+  "This can take up to a minute the first time. This page will refresh by itself.": "قد يستغرق ذلك حتى دقيقة في المرة الأولى. ستتحدث هذه الصفحة تلقائيًا.",
+  "The server is waking up or unreachable. Wait a few seconds and try again.": "الخادم قيد التشغيل أو لا يمكن الوصول إليه. انتظر بضع ثوانٍ ثم حاول مرة أخرى.",
 };

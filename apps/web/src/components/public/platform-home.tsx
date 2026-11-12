@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit, COUNTRY_NAMES } from "@/components/public/landing";
 import { Faq } from "@/components/public/faq";
@@ -11,6 +13,24 @@ import { tr } from "@/lib/i18n";
 import { imageSrc, orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
+/** Shown when the server could not be reached (a sleeping free instance takes up to a minute), instead of claiming there are no markets. Tries again by itself. */
+function WakingUp() {
+  const router = useRouter();
+  useEffect(() => {
+    const id = setTimeout(() => router.refresh(), 6000);
+
+    return () => clearTimeout(id);
+  }, [router]);
+
+  return (
+    <div className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate" role="status">
+      <p className="font-semibold text-obsidian">{tr("The service is waking up.")}</p>
+      <p className="mt-1 text-sm">{tr("This can take up to a minute the first time. This page will refresh by itself.")}</p>
+      <button type="button" onClick={() => router.refresh()} className="btn-brand mt-4 px-5 py-2.5 text-sm">{tr("Try again")}</button>
+    </div>
+  );
+}
+
 const STEPS = [
   ["1", "Choose what you need", "Pick a service and the options you want. You see a price straight away."],
   ["2", "Get quotes", "Nearby, vetted professionals send you their price for the job."],
@@ -19,15 +39,15 @@ const STEPS = [
 ];
 
 /** The platform's front door: what it is, who it serves, and every open store. */
-export function PlatformHome({ stores, showcase, site, editing = false }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent; editing?: boolean }) {
+export function PlatformHome({ stores, showcase, site, editing = false, unavailable = false }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent; editing?: boolean; unavailable?: boolean }) {
   return (
     <SiteProvider content={site ?? { home: {}, brand: {}, nav: {} }} editing={editing}>
-      <PlatformHomeBody stores={stores} showcase={showcase} />
+      <PlatformHomeBody stores={stores} showcase={showcase} unavailable={unavailable} />
     </SiteProvider>
   );
 }
 
-function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; showcase: PublicShowcase }) {
+function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicStoreCard[]; showcase: PublicShowcase; unavailable: boolean }) {
   const facts = factsOf(stores, showcase);
   const on = {
     partnerStrip: useSiteFlag("show_partner_strip"), industries: useSiteFlag("show_industries"), quote: useSiteFlag("show_quote_feature"),
@@ -53,7 +73,9 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
     stores: (
       <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
         <h2 className="display display-md">{marketsTitle}</h2>
-        {stores.length === 0 ? (
+        {stores.length === 0 && unavailable ? (
+          <WakingUp />
+        ) : stores.length === 0 ? (
           <p className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate">{tr("No markets are open yet. Please check back soon.")}</p>
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
