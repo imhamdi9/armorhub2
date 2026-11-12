@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, fieldErrors } from "@/lib/errors";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 import { applyAsBusiness, getMarketplaces, getOpenStores, type BusinessType } from "@/services/auth.service";
 
@@ -57,6 +57,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   const [locationNote, setLocationNote] = useState<string | null>(null);
   const [website, setWebsite] = useState(""); // honeypot
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrs, setFieldErrs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const human = useHumanCheck();
@@ -73,7 +74,10 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   }, [isSeller]);
 
   const country = countryChoice ?? targets.find((t) => t.value === target)?.market ?? "SA";
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const clearErr = (key: string) => setFieldErrs((f) => (key in f ? Object.fromEntries(Object.entries(f).filter(([k]) => k !== key)) : f));
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { clearErr(key); setForm((f) => ({ ...f, [key]: e.target.value })); };
+  /** The server's message for one field, shown right under it. */
+  const fe = (key: string) => (fieldErrs[key] ? <p id={`err-${key}`} className="mt-1 text-xs text-red-600" role="alert">{fieldErrs[key]}</p> : null);
 
   function pick(kind: string, file: File | undefined) {
     if (file && file.size > MAX_BYTES) {
@@ -97,6 +101,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrs({});
     const missing = DOCS[type].find((d) => d.required && !files[d.kind]);
     if (missing) {
       setError(tr("Please upload: {name}", { name: tr(missing.label) }));
@@ -122,7 +127,12 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
       await applyAsBusiness(data);
       setDone(true);
     } catch (err) {
-      setError(errorMessage(err));
+      const fields = fieldErrors(err);
+      // The server names fields like documents.id or marketplace; map them onto what is on screen.
+      const mapped: Record<string, string> = {};
+      for (const [k, v] of Object.entries(fields)) mapped[k.replace(/^documents\./, "doc-").replace(/^(marketplace|store)$/, "target")] = v;
+      setFieldErrs(mapped);
+      setError(Object.keys(mapped).length > 0 ? tr("Please check the highlighted fields.") : errorMessage(err));
       human.refresh();
     } finally {
       setBusy(false);
@@ -156,46 +166,56 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
                 <select id="target" required className="h-10 w-full rounded-[10px] border border-input bg-background px-3" value={target} onChange={(e) => setTarget(e.target.value)}>
                   {targets.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
+                {fe("target")}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="business_name">{tr("Business name")}</Label>
                   <Input id="business_name" required value={form.business_name} onChange={set("business_name")} />
+                  {fe("business_name")}
                 </div>
                 <div>
                   <Label htmlFor="registration_number">{tr("Commercial registration number")}</Label>
                   <Input id="registration_number" required dir="ltr" value={form.registration_number} onChange={set("registration_number")} />
+                  {fe("registration_number")}
                 </div>
                 <div>
                   <Label htmlFor="tax_number">{isSeller ? tr("Tax registration number") : tr("Tax registration number (optional)")}</Label>
                   <Input id="tax_number" required={isSeller} dir="ltr" value={form.tax_number} onChange={set("tax_number")} />
+                  {fe("tax_number")}
                 </div>
                 <div>
                   <Label htmlFor="contact_name">{tr("Your name")}</Label>
                   <Input id="contact_name" required autoComplete="name" value={form.contact_name} onChange={set("contact_name")} />
+                  {fe("contact_name")}
                 </div>
                 <div>
                   <Label htmlFor="phone">{tr("Mobile number")}</Label>
                   <Input id="phone" type="tel" required dir="ltr" autoComplete="tel" value={form.phone} onChange={set("phone")} />
+                  {fe("phone")}
                 </div>
                 <div>
                   <Label htmlFor="email">{tr("Email")}</Label>
                   <Input id="email" type="email" required autoComplete="email" value={form.email} onChange={set("email")} />
+                  {fe("email")}
                 </div>
                 <div>
                   <Label htmlFor="city">{tr("City")}</Label>
                   <Input id="city" required value={form.city} onChange={set("city")} />
+                  {fe("city")}
                 </div>
                 <div>
                   <Label htmlFor="country">{tr("Country code")}</Label>
                   <Input id="country" required maxLength={2} dir="ltr" value={country} onChange={(e) => setCountryChoice(e.target.value.toUpperCase())} />
+                  {fe("country")}
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="description">{isSeller ? tr("What do you sell? (optional)") : tr("What does your business do? (optional)")}</Label>
                 <textarea id="description" rows={3} maxLength={400} className="w-full rounded-[10px] border border-input px-3 py-2" value={form.description} onChange={set("description")} />
+                {fe("description")}
               </div>
 
               {!isSeller && (
@@ -212,8 +232,9 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
                   <div key={d.kind}>
                     <Label htmlFor={`doc-${d.kind}`}>{tr(d.label)} {d.required && <span className="text-red-500">*</span>}</Label>
                     <input id={`doc-${d.kind}`} type="file" accept={ACCEPT} className="block w-full text-sm file:me-3 file:rounded-full file:border file:border-forest file:bg-background file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-forest"
-                      onChange={(e) => pick(d.kind, e.target.files?.[0])} />
+                      onChange={(e) => { clearErr(`doc-${d.kind}`); pick(d.kind, e.target.files?.[0]); }} />
                     <p className="text-xs text-muted-foreground">{files[d.kind] ? files[d.kind]?.name : tr(d.hint)}</p>
+                    {fe(`doc-${d.kind}`)}
                   </div>
                 ))}
               </fieldset>
@@ -222,10 +243,12 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
                 <div>
                   <Label htmlFor="password">{tr("Password")}</Label>
                   <Input id="password" type="password" minLength={10} required autoComplete="new-password" value={form.password} onChange={set("password")} />
+                  {fe("password")}
                 </div>
                 <div>
                   <Label htmlFor="password_confirmation">{tr("Confirm password")}</Label>
                   <Input id="password_confirmation" type="password" required autoComplete="new-password" value={form.password_confirmation} onChange={set("password_confirmation")} />
+                  {fe("password_confirmation")}
                 </div>
               </div>
 

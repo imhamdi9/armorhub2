@@ -50,6 +50,7 @@ try {
   await s.setInputFiles("#doc-commercial_registration", pdf("cr.pdf"));
   await s.setInputFiles("#doc-tax_certificate", pdf("vat.pdf"));
   await s.click("button[type=submit]");
+  await s.waitForSelector("#err-tax_number");                       // the message sits right under the field
   await s.waitForSelector("text=valid tax registration number");
   // The refused attempt used up its anti-bot token; the form must hand out a fresh one rather than treat the retry as a bot.
   await s.fill("#tax_number", "300000000000003");

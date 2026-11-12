@@ -893,4 +893,5 @@ export const AR: Record<string, string> = {
   "Shipping and delivery": "الشحن والتوصيل",
   "Warranty and cancellation": "الضمان والإلغاء",
   "Upload a photo": "رفع صورة",
+  "Please check the highlighted fields.": "يرجى مراجعة الحقول المظللة.",
 };
