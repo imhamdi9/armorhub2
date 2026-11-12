@@ -81,7 +81,13 @@ Dependencies point **downward only**. Core never imports a product; a product ne
 - Security, payment secrets, roles and money logic are deliberately **not** surfaces.
 - ArmorHub declares: `site.home` (wording, 14 section switches, FAQ, banner), `site.brand` (name, logo, colours), `site.navigation`, `app.sidebar`. A new product adds surfaces from its own module with no core change.
 
+More surfaces: `app.messages` (notification and email wording with `{placeholders}`, English), `app.sidebar` (dashboard menu names, read by the signed-in sidebar), and the home page's promises, steps, use cases and "why us" sections.
+
 Admin UI: Administration → Content.
+
+### Custom roles
+
+Administration → Roles lets a platform admin create roles as bundles of everyday permissions. Built-in roles cannot be changed. Admin, delete, user-management and payment permissions are not grantable (privilege-escalation guard), custom-role holders must belong to a company (data scoping), and a role in use cannot be deleted. Creation, change and deletion are audited.
 
 ## Blueprints (built)
 

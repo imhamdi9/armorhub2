@@ -120,6 +120,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
         Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
         Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index']);
+        Route::post('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store']);
+        Route::put('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->whereNumber('id');
+        Route::delete('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->whereNumber('id');
         Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
         Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
         Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');

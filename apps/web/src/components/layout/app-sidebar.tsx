@@ -81,7 +81,20 @@ export function AppSidebar() {
   const [renames, setRenames] = useState<Record<string, string>>({});
   useEffect(() => {
     let live = true;
-    getSurface("app.sidebar").then((values) => {
+    // Remembered for a minute per browser tab, so moving between pages costs no extra request.
+    const remembered = (() => {
+      try {
+        const hit = JSON.parse(sessionStorage.getItem("sidebar-surface") ?? "null") as { at: number; values: Parameters<typeof pickList>[0] } | null;
+        return hit && Date.now() - hit.at < 60_000 ? hit.values : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    (remembered ? Promise.resolve(remembered) : getSurface("app.sidebar").then((values) => {
+      try { sessionStorage.setItem("sidebar-surface", JSON.stringify({ at: Date.now(), values })); } catch { /* storage unavailable */ }
+      return values;
+    })).then((values) => {
       if (!live) return;
       const rows = pickList<{ item: string; label: string }>(values, locale, "labels");
       setRenames(Object.fromEntries(rows.map((r) => [r.item, r.label])));

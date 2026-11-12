@@ -48,6 +48,7 @@ class UserController extends Controller
         ]);
 
         [$companyId, $partnerId] = $this->placement($actor, $data['company_id'] ?? null, $data['partner_id'] ?? null);
+        $this->requireCompanyForCustomRole($data['role'], $companyId);
 
         $user = User::create([
             'name' => $data['name'],
@@ -84,6 +85,7 @@ class UserController extends Controller
         $this->assertManageable($actor, $user);
 
         if (isset($data['role'])) {
+            $this->requireCompanyForCustomRole($data['role'], $user->company_id);
             $user->syncRoles([$data['role']]);
         }
 
@@ -149,7 +151,8 @@ class UserController extends Controller
     {
         foreach (self::ROLES_BY_MANAGER as $role => $allowed) {
             if ($actor->hasRole($role)) {
-                return $allowed;
+                // Only platform admins hand out custom roles.
+                return $role === 'platform-admin' ? [...$allowed, ...\App\Http\Controllers\Api\Admin\RoleController::customNames()] : $allowed;
             }
         }
 
@@ -173,6 +176,14 @@ class UserController extends Controller
         }
 
         return [$actor->company_id, $partnerId];
+    }
+
+    /** Custom roles are company staff: without a company they would have no data to work with, and nothing to be scoped by. */
+    private function requireCompanyForCustomRole(string $role, ?int $companyId): void
+    {
+        if (! in_array($role, \App\Http\Controllers\Api\Admin\RoleController::BUILT_IN, true) && ! $companyId) {
+            throw ValidationException::withMessages(['company_id' => ['Choose a company for this role.']]);
+        }
     }
 
     private function assertManageable(User $actor, User $target): void

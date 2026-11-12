@@ -92,6 +92,7 @@ function Editor({ surface, locale }: { surface: SurfaceInfo; locale: string }) {
     setError(null); setErrors({}); setMsg(null);
     try {
       await action();
+      try { sessionStorage.removeItem("sidebar-surface"); } catch { /* storage unavailable */ }
       await load();
       setMsg(done);
     } catch (e) {

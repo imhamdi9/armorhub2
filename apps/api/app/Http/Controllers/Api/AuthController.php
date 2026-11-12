@@ -204,6 +204,7 @@ class AuthController extends Controller
                 'catalogs' => $industry->module() ? app(\App\Modules\IndustryRegistry::class)->manageableAliases($industry->module()) : [],
             ] : null,
             'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
         ]));
     }
 

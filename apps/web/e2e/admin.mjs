@@ -67,7 +67,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Settings\|Payments\|Payouts\|Shipping\|Roles\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview
@@ -240,6 +240,35 @@ try {
   await eventually(visitor, async () => (await visitor.locator("#faq").count()) > 0, "the FAQ section again");
   await visitor.close();
   ok("an admin edited the home page: drafts stay private, publishing goes live, a section was hidden and restored");
+
+  // Dashboard menu names and custom roles.
+  await admin.click('a:has-text("Content")');
+  await admin.click("[role=tab]:has-text('Dashboard menu')");
+  await admin.click("button:has-text('Add item')");
+  await admin.fill("#f-labels-0-item", "Orders");
+  await admin.fill("#f-labels-0-label", "My jobs board");
+  await admin.fill("input[placeholder='Note (what changed)']", "rename");
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  await admin.reload();
+  await admin.waitForSelector("[data-sidebar=menu-button]:has-text('My jobs board')");
+  await admin.click("[role=tab]:has-text('Dashboard menu')").catch(() => {});
+  await admin.locator("#f-labels-0-label").fill("");
+  await admin.locator("button:has-text('Remove')").first().click();
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Published.");
+  ok("an admin renamed a dashboard menu item and the signed-in sidebar showed it");
+
+  await admin.click('a:has-text("Roles")');
+  await admin.waitForSelector("text=New role");
+  await admin.fill("[aria-label='Role name']", "sales-viewer");
+  await admin.locator("label:has-text('See products') input").first().check();
+  await admin.click("button:has-text('Create role')");
+  await admin.waitForSelector("h2:has-text('sales-viewer')");
+  if (await admin.locator("label:has-text('admin.panel')").count()) throw new Error("an admin permission was offered");
+  await admin.locator("article:has-text('sales-viewer') >> button:has-text('Delete')").click();
+  await admin.waitForSelector("h2:has-text('sales-viewer')", { state: "detached" });
+  ok("an admin created and deleted a custom role; administrator powers are not offered");
 
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");

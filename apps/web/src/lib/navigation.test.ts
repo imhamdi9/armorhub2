@@ -97,7 +97,7 @@ describe("buildNavigation", () => {
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
-      "Overview", "Settings", "Payments", "Payouts", "Shipping", "Content", "Platform", "Security", "Audit log",
+      "Overview", "Settings", "Payments", "Payouts", "Shipping", "Roles", "Content", "Platform", "Security", "Audit log",
     ]);
     expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
 
@@ -117,5 +117,10 @@ describe("buildNavigation", () => {
   it("still works without an industry or a user", () => {
     expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Products", "Warranties"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
+  });
+
+  it("shows a custom role only what its permissions allow", () => {
+    const custom = { ...user(["sales-viewer"]), permissions: ["dashboard.view", "products.view"] } as ReturnType<typeof user>;
+    expect(titles(custom)).toEqual(["Dashboard", "Products"]);
   });
 });

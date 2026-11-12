@@ -53,6 +53,13 @@ export function aliasSingular(alias: string): string {
     .join(" ");
 }
 
+const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller"];
+
+/** Someone whose only roles are ones an admin created. */
+export function isCustomRole(user: User | null): boolean {
+  return !!user?.roles?.length && user.roles.every((r) => !BUILT_IN_ROLES.includes(r));
+}
+
 export function hasRole(user: User | null, ...roles: string[]): boolean {
   return !!user?.roles?.some((r) => roles.includes(r));
 }
@@ -70,6 +77,17 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
     items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
+
+    return items;
+  }
+
+  // A custom role sees only what its permissions allow.
+  if (isCustomRole(user)) {
+    const can = (p: string) => !!user?.permissions?.includes(p);
+    if (can("orders.view")) items.push({ title: "Orders", href: "/dashboard/orders", icon: "orders" });
+    if (can("products.view")) items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
+    if (can("partners.view")) items.push({ title: "Partners", href: "/dashboard/partners", icon: "partners" });
+    if (can("commissions.view")) items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
 
     return items;
   }
@@ -155,6 +173,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
+    items.push({ title: "Roles", href: "/dashboard/admin/roles", section: "admin", icon: "users" });
     items.push({ title: "Content", href: "/dashboard/admin/content", section: "admin", icon: "settings" });
     items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });

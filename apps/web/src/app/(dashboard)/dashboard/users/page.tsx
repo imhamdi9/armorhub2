@@ -20,6 +20,7 @@ import {
 } from "@/services/platform.service";
 import type { Partner, StaffUser } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { getRoles } from "@/services/admin.service";
 
 const ROLE_LABELS: Record<string, string> = {
   "platform-admin": "Platform admin",
@@ -32,8 +33,9 @@ const ROLE_LABELS: Record<string, string> = {
 export default function TeamPage() {
   const me = useCurrentUser();
   const isAdmin = hasRole(me, "platform-admin");
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
   const roles = isAdmin
-    ? Object.keys(ROLE_LABELS)
+    ? [...Object.keys(ROLE_LABELS), ...customRoles]
     : hasRole(me, "company-owner")
       ? ["company-owner", "partner-manager", "technician"]
       : ["technician"];
@@ -55,6 +57,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     getPartners().then(setPartners).catch(() => setPartners([]));
+    if (isAdmin) getRoles().then((r) => setCustomRoles(r.roles.filter((x) => !x.built_in).map((x) => x.name))).catch(() => undefined);
     if (isAdmin) getCompanies().then(setCompanies).catch(() => setCompanies([]));
   }, [isAdmin]);
 
@@ -102,7 +105,7 @@ export default function TeamPage() {
           <Input placeholder={tr("Temporary password (min 8)")} type="text" minLength={8} required value={form.password} onChange={set("password")} />
           <select className="rounded-lg border px-3 py-2" value={form.role} onChange={set("role")}>
             {roles.map((r) => (
-              <option key={r} value={r}>{tr(ROLE_LABELS[r])}</option>
+              <option key={r} value={r}>{tr(ROLE_LABELS[r] ?? r)}</option>
             ))}
           </select>
           {isAdmin && (
