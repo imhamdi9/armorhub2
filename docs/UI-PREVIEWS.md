@@ -15,3 +15,4 @@ Components live in `apps/web/src/components/auth` (sign-in and onboarding screen
 Each was checked in a real browser at desktop and 390px width: its interactions, horizontal overflow and a 44px minimum for primary controls.
 
 - `/ui/shop-storefront`: "Shop"-style storefront theme preview (white canvas, 28px image cards, pill search with one accent colour, icon rail). Stand-in tiles replace product photos; not yet wired to the real storefront.
+- `/ui/shop-home`: full Shop-style ArmorHub home (shopping first, calmer platform pitch after), same stand-in tiles.

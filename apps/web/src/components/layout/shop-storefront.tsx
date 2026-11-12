@@ -2,12 +2,12 @@ import { ArrowRight, ChevronRight, Home, LayoutGrid, Search, ShoppingBag, Shield
 
 // Preview of a "Shop"-style storefront theme: white-canvas discovery, big rounded image cards, pill controls, one accent colour.
 // Product photos are stand-in warm tiles; real photography is what makes this look work.
-const ACCENT = "#5433eb";
-const SHADOW = "0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1)";
+export const ACCENT = "#5433eb";
+export const SHADOW = "0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1)";
 
 type Item = { name: string; seller: string; price: string; was?: string; rating: string; tone: string; icon: React.ComponentType<{ className?: string }> };
 
-const ITEMS: Item[] = [
+export const ITEMS: Item[] = [
   { name: "Level IIIA vest", seller: "Nile Armor Co.", price: "EGP 18,500", was: "EGP 21,000", rating: "4.8 (212)", tone: "#d9c7ad", icon: Shield },
   { name: "Armoured SUV, whole car", seller: "Cairo Motors", price: "EGP 4.2M", rating: "4.9 (38)", tone: "#b98a6e", icon: Car },
   { name: "Ceramic plate set", seller: "Delta Defence", price: "EGP 9,900", rating: "4.7 (96)", tone: "#a9b39b", icon: Shield },
@@ -18,7 +18,7 @@ const ITEMS: Item[] = [
   { name: "Helmet, ballistic", seller: "Nile Armor Co.", price: "EGP 7,600", rating: "4.8 (140)", tone: "#cdbba0", icon: Shield },
 ];
 
-const PILLS = [{ l: "Armour", i: Shield }, { l: "Vehicles", i: Car }, { l: "Services", i: Wrench }, { l: "Transport", i: Truck }, { l: "Parts", i: Package }];
+export const PILLS = [{ l: "Armour", i: Shield }, { l: "Vehicles", i: Car }, { l: "Services", i: Wrench }, { l: "Transport", i: Truck }, { l: "Parts", i: Package }];
 
 function Stars({ value }: { value: string }) {
   return (
@@ -28,7 +28,7 @@ function Stars({ value }: { value: string }) {
   );
 }
 
-function Tile({ item, big }: { item: Item; big?: boolean }) {
+export function Tile({ item, big }: { item: Item; big?: boolean }) {
   const Icon = item.icon;
   return (
     <a href="#" className="block rounded-[28px] bg-white p-2 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5433eb]" style={{ boxShadow: SHADOW }}>
@@ -48,7 +48,7 @@ function Tile({ item, big }: { item: Item; big?: boolean }) {
   );
 }
 
-function Band({ title, items }: { title: string; items: Item[] }) {
+export function Band({ title, items }: { title: string; items: Item[] }) {
   return (
     <section className="mt-16">
       <h2 className="mb-6 flex items-center text-[20px] tracking-[-0.05em] text-black">
@@ -66,23 +66,11 @@ function Band({ title, items }: { title: string; items: Item[] }) {
   );
 }
 
-export function ShopStorefront() {
-  const nav = [{ l: "Home", i: Home, on: true }, { l: "Markets", i: LayoutGrid }, { l: "Search", i: Search }, { l: "Cart", i: ShoppingBag }];
+export function ShopHero() {
   return (
-    <div className="min-h-screen bg-[#f2f4f5] tracking-[-0.031em] text-black">
-      {/* left rail (bottom bar on small screens) */}
-      <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-20 flex justify-around bg-white py-1 md:inset-y-0 md:right-auto md:w-16 md:flex-col md:items-center md:justify-start md:gap-1 md:py-4">
-        {nav.map(({ l, i: Icon, on }) => (
-          <a key={l} href="#" aria-label={l} aria-current={on ? "page" : undefined} className={`grid size-12 place-items-center rounded-[20px] ${on ? "bg-[#f2f4f5]" : ""}`}>
-            <Icon className="size-6" aria-hidden />
-          </a>
-        ))}
-        <a href="#" aria-label="Account" className="grid size-12 place-items-center md:mt-auto"><span className="grid size-8 place-items-center rounded-full bg-white ring-1 ring-[#ebebeb]"><User className="size-4" aria-hidden /></span></a>
-      </nav>
-
-      <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pl-24 md:pr-6">
+    <>
         {/* hero */}
-        <header className="pt-16 text-center">
+        <header className="overflow-x-clip pt-16 text-center">
           <div className="relative mx-auto h-48 max-w-xl" aria-hidden>
             {[
               { x: "6%", y: 20, r: -6, it: ITEMS[0] }, { x: "30%", y: 0, r: 3, it: ITEMS[1] }, { x: "54%", y: 26, r: -3, it: ITEMS[2] }, { x: "76%", y: 6, r: 6, it: ITEMS[7] },
@@ -111,6 +99,43 @@ export function ShopStorefront() {
           </div>
         </header>
 
+    </>
+  );
+}
+
+export function ShopShell({ children }: { children: React.ReactNode }) {
+  const nav = [{ l: "Home", i: Home, on: true }, { l: "Markets", i: LayoutGrid }, { l: "Search", i: Search }, { l: "Cart", i: ShoppingBag }];
+  return (
+    <div className="min-h-screen bg-[#f2f4f5] tracking-[-0.031em] text-black">
+      {/* left rail (bottom bar on small screens) */}
+      <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-20 flex justify-around bg-white py-1 md:inset-y-0 md:right-auto md:w-16 md:flex-col md:items-center md:justify-start md:gap-1 md:py-4">
+        {nav.map(({ l, i: Icon, on }) => (
+          <a key={l} href="#" aria-label={l} aria-current={on ? "page" : undefined} className={`grid size-12 place-items-center rounded-[20px] ${on ? "bg-[#f2f4f5]" : ""}`}>
+            <Icon className="size-6" aria-hidden />
+          </a>
+        ))}
+        <a href="#" aria-label="Account" className="grid size-12 place-items-center md:mt-auto"><span className="grid size-8 place-items-center rounded-full bg-white ring-1 ring-[#ebebeb]"><User className="size-4" aria-hidden /></span></a>
+      </nav>
+
+      <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pl-24 md:pr-6">
+        {children}
+      </main>
+
+      <footer className="bg-black py-12 text-[14px] text-white md:pl-16">
+        <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-8 px-6 md:grid-cols-4">
+          {["Shop", "Sell", "Partners", "Help"].map((h) => (
+            <div key={h}><p className="mb-3">{h}</p><ul className="space-y-2 text-white/70"><li>Link one</li><li>Link two</li><li>Link three</li></ul></div>
+          ))}
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export function ShopStorefront() {
+  return (
+    <ShopShell>
+      <ShopHero />
         <Band title="Armour" items={ITEMS.slice(0, 4)} />
 
         {/* hero-and-grid band */}
@@ -129,15 +154,6 @@ export function ShopStorefront() {
         </section>
 
         <Band title="Services" items={[ITEMS[5], ITEMS[4], ITEMS[3], ITEMS[7]]} />
-      </main>
-
-      <footer className="bg-black py-12 text-[14px] text-white md:pl-16">
-        <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-8 px-6 md:grid-cols-4">
-          {["Shop", "Sell", "Partners", "Help"].map((h) => (
-            <div key={h}><p className="mb-3">{h}</p><ul className="space-y-2 text-white/70"><li>Link one</li><li>Link two</li><li>Link three</li></ul></div>
-          ))}
-        </div>
-      </footer>
-    </div>
+    </ShopShell>
   );
 }
