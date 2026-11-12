@@ -16,7 +16,7 @@ class SellerOrderController extends Controller
         abort_unless($request->user()->hasRole('seller'), 403);
 
         return $this->mine($request)->with('product:id,name,brand')->latest('id')->paginate(20)
-            ->through(fn (Order $o) => $o->setAttribute('customer_name', $o->customer?->name));
+            ->through(fn (Order $o) => $o->setAttribute('customer_name', $o->customer?->name ?? $o->guest_name));
     }
 
     public function show(Request $request, int $id)
@@ -25,7 +25,7 @@ class SellerOrderController extends Controller
         $order = $this->mine($request)->with(['product:id,name,brand,requires_shipping', 'events.user:id,name'])->findOrFail($id);
 
         // The seller needs the delivery address to ship, and nothing else about the buyer.
-        return response()->json($order->makeVisible('shipping_address')->setAttribute('customer_name', $order->customer?->name));
+        return response()->json($order->makeVisible('shipping_address')->setAttribute('customer_name', $order->customer?->name ?? $order->guest_name));
     }
 
     private function mine(Request $request)

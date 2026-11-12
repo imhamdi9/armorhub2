@@ -65,8 +65,8 @@ class StripeProvider implements PaymentProvider
                             'product_data' => ['name' => "Order #{$order->id}"],
                         ],
                     ]],
-                    'success_url' => "{$web}/dashboard/orders/{$order->id}?checkout=success",
-                    'cancel_url' => "{$web}/dashboard/orders/{$order->id}?checkout=cancelled",
+                    'success_url' => $order->returnUrl('success'),
+                    'cancel_url' => $order->returnUrl('cancelled'),
                 ]);
         } catch (ConnectionException) {
             throw new PaymentUnavailable('The payment provider could not be reached. Please try again.');

@@ -38,7 +38,7 @@ class OrderLifecycleService
         return $this->move($order, 'complete', $by, ['completed_at' => now()]);
     }
 
-    public function cancel(Order $order, User $by, ?string $reason = null): Order
+    public function cancel(Order $order, ?User $by, ?string $reason = null): Order
     {
         return $this->move($order, 'cancel', $by, ['cancelled_at' => now()], array_filter(['reason' => $reason]));
     }
@@ -47,7 +47,7 @@ class OrderLifecycleService
      * One step of the order's workflow: validated against the (tenant's) definition, locked, applied, announced.
      * What each step allows, checks and does lives in the workflow definition, not here.
      */
-    private function move(Order $order, string $transition, User $by, array $attributes = [], array $data = []): Order
+    private function move(Order $order, string $transition, ?User $by, array $attributes = [], array $data = []): Order
     {
         return DB::transaction(function () use ($order, $transition, $by, $attributes, $data) {
             $locked = Order::withoutGlobalScopes()->with('product')->lockForUpdate()->findOrFail($order->id);

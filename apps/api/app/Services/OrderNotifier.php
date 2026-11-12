@@ -39,6 +39,11 @@ class OrderNotifier
             foreach ($this->messages($event, $order) as [$users, $kind, $title, $body, $path]) {
                 [$title, $body] = $this->templates->render($kind, $title, $body, $vars);
                 $this->send($users, new OrderUpdate($order->id, $kind, $title, $body, $path), $event->user_id);
+
+                // Someone who bought without an account hears by e-mail, with the link to their order.
+                if ($order->isGuest() && $order->guest_email && in_array($kind, ['payment_received', 'shipped', 'shipment_out_for_delivery', 'shipment_delivered', 'shipment_failed'], true)) {
+                    \Illuminate\Support\Facades\Notification::route('mail', $order->guest_email)->notify(new \App\Notifications\GuestOrderUpdate($title, $body, $order->guest_token));
+                }
             }
         } catch (Throwable $e) {
             report($e);

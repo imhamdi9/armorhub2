@@ -116,6 +116,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public', fn (Request $r) => Limit::perMinute(max(1, (int) config('platform.public_rate_limit')))->by('public:'.$r->ip()));
         RateLimiter::for('challenge', fn (Request $r) => Limit::perMinute(20)->by('challenge:'.$r->ip()));
         RateLimiter::for('orders', fn (Request $r) => Limit::perHour(10)->by('orders:'.($r->user()?->id ?: $r->ip())));
+        // Orders without an account: per address, because a script would otherwise place orders for anyone.
+        RateLimiter::for('guest-orders', fn (Request $r) => [Limit::perMinute(6)->by('guest:'.$r->ip()), Limit::perHour(40)->by('guest-hour:'.$r->ip())]);
         RateLimiter::for('webhook', fn (Request $r) => Limit::perMinute(300)->by('webhook:'.$r->ip()));
 
         RateLimiter::for('api', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?: $r->ip()));

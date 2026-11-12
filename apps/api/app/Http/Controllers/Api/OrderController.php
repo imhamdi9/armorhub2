@@ -34,6 +34,7 @@ class OrderController extends Controller
         $request->validate(['status' => 'nullable|string', 'per_page' => 'nullable|integer|min:1|max:100']);
 
         $user = $request->user();
+        Order::claimGuestOrders($user); // earlier purchases made without an account (same verified e-mail) join this account
 
         $query = Order::with('product')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))

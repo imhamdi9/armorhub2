@@ -91,8 +91,8 @@ class HttpProvider implements PaymentProvider
             'currency' => strtoupper($order->currency),
             'currency_lower' => strtolower($order->currency),
             'description' => "Order #{$order->id}",
-            'success_url' => "{$web}/dashboard/orders/{$order->id}?checkout=success",
-            'cancel_url' => "{$web}/dashboard/orders/{$order->id}?checkout=cancelled",
+            'success_url' => $order->returnUrl('success'),
+            'cancel_url' => $order->returnUrl('cancelled'),
         ];
 
         $body = $this->fill($this->template($config), $values);

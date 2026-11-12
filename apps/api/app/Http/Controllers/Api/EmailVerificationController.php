@@ -22,6 +22,7 @@ class EmailVerificationController extends Controller
 
         if (! $user->hasVerifiedEmail() && $user->markEmailAsVerified()) {
             event(new Verified($user));
+            \App\Models\Order::claimGuestOrders($user->fresh());
             Audit::record('auth.email_verified', $user, [], $user);
         }
 

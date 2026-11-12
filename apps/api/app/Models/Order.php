@@ -37,10 +37,13 @@ class Order extends Model
         'started_at',
         'completed_at',
         'cancelled_at',
+        'guest_name',
+        'guest_email',
+        'guest_token',
     ];
 
     /** The delivery address is only sent to the customer and the staff handling the parcel. */
-    protected $hidden = ['shipping_address'];
+    protected $hidden = ['shipping_address', 'guest_token'];
 
     protected function casts(): array
     {
@@ -93,5 +96,32 @@ class Order extends Model
     public function customer()
     {
         return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function isGuest(): bool
+    {
+        return $this->customer_id === null && $this->guest_token !== null;
+    }
+
+    /** Where a payment provider sends the buyer back to: the dashboard order, or (for a guest) the order's secret tracking page. */
+    public function returnUrl(string $result): string
+    {
+        $web = rtrim(config('platform.web_url'), '/');
+
+        return $this->isGuest()
+            ? "{$web}/track/{$this->guest_token}?checkout={$result}"
+            : "{$web}/dashboard/orders/{$this->id}?checkout={$result}";
+    }
+
+    /** A signed-in buyer's earlier guest orders (same e-mail) join their account, once that e-mail is verified. */
+    public static function claimGuestOrders(User $user): int
+    {
+        if (! $user->hasVerifiedEmail() || ! $user->email || ! $user->company_id) {
+            return 0;
+        }
+
+        // Only orders of the store the account belongs to: a customer's dashboard shows their own store's orders.
+        return static::withoutGlobalScopes()->where('company_id', $user->company_id)->whereNull('customer_id')->whereNotNull('guest_token')
+            ->where('guest_email', strtolower($user->email))->update(['customer_id' => $user->id, 'guest_token' => null]);
     }
 }

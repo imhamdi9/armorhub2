@@ -50,6 +50,15 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
 });
 
+// Buying goods without an account: one order, reached by its secret link
+Route::prefix('guest-orders')->group(function () {
+    $g = \App\Http\Controllers\Api\GuestOrderController::class;
+    Route::post('/', [$g, 'store'])->middleware('throttle:guest-orders');
+    Route::get('/{token}', [$g, 'show'])->middleware('throttle:public');
+    Route::post('/{token}/pay', [$g, 'pay'])->middleware('throttle:guest-orders');
+    Route::post('/{token}/cancel', [$g, 'cancel'])->middleware('throttle:guest-orders');
+});
+
 Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
