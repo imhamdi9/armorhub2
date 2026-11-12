@@ -89,6 +89,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
               {store.contact_phone && <p dir="ltr" className="py-1 text-start text-sm text-white/70">{store.contact_phone}</p>}
             </div>
           </div>
+          <p className="px-6 pb-2 text-center text-xs text-white/70">🔒 {tr("Secure payments")} · 🛡 {tr("Warranty on every job")}</p>
           <p className="border-t border-white/15 px-6 py-4 text-center text-xs text-white/60">© {new Date().getFullYear()} {store.name} · {tr("Powered by")} <Link href="/" className="underline">{tr("ArmorHub")}</Link></p>
         </footer>
       </div>

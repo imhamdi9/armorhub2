@@ -204,15 +204,15 @@ try {
   const mctx = await browser.newContext({ viewport: { width: 390, height: 800 }, isMobile: true });
   const mp = await mctx.newPage();
   await mp.goto(`${base}/s/armor-store`);
-  await mp.click('button[aria-label="Menu"]');
-  await mp.waitForSelector('nav[aria-label="Main"]:visible >> text=Products');
+  // The Shop-style storefront keeps its navigation in an icon bar at the bottom of a phone screen.
+  await mp.waitForSelector('nav[aria-label="Main"]:visible a[aria-label="Products"]');
   const overflow = await mp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) fail(`the page scrolls sideways on a phone by ${overflow}px`);
   await mp.goto(`${base}/s/armor-store#faq`);
   await mp.click("summary:has-text('Is my payment safe?')");
   await mp.waitForSelector("text=we never see or store your card details");
   await mctx.close();
-  ok("FAQ + structured data + footer are server-rendered; mobile menu works and nothing overflows");
+  ok("FAQ + structured data + footer are server-rendered; the mobile navigation bar shows and nothing overflows");
 
   // ---- Home page showcase: partners and their products, one block per industry (server-rendered).
   const show = await asCrawler("/");
