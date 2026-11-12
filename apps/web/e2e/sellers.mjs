@@ -170,7 +170,7 @@ try {
   await p.waitForSelector('[data-testid="balance-paid"]');
   if (!/81\.00/.test(await p.innerText('[data-testid="balance-paid"]'))) fail("the paid payout is not shown to the seller");
   await p.waitForSelector("text=BANK-2026-0001");
-  await p.click('a[aria-label^="Notifications"]');
+  await p.click('a[href="/dashboard/notifications"]');
   await p.waitForSelector("text=Payout sent");
   ok("the admin prepared and paid the payout with a bank reference; the seller sees it and was notified");
 

@@ -82,7 +82,7 @@ try {
 
   await c.reload();
   await c.waitForSelector('a[aria-label^="Notifications ("]');
-  await c.click('a[aria-label^="Notifications"]');
+  await c.click('a[href="/dashboard/notifications"]');
   await c.waitForSelector("text=You received a quote");
   await c.click("text=You received a quote");
   await c.waitForURL(/orders\/\d+$/);

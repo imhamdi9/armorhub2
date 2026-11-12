@@ -105,7 +105,7 @@ try {
   await c.reload();
   await c.waitForSelector("text=Delivered");
   await c.waitForSelector("text=Order shipped");
-  await c.click('a[aria-label^="Notifications"]');
+  await c.click('a[href="/dashboard/notifications"]');
   await c.waitForSelector("text=Your order has shipped");
   ok("delivery shows on the order timeline and the customer was notified");
 
