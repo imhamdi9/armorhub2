@@ -103,7 +103,10 @@ class PaymentProviderController extends Controller
     /** Recent payments across all providers, for monitoring. */
     public function payments(Request $request)
     {
+        $market = app(Settings::class)->market();
+
         return Payment::withoutGlobalScopes()->latest('id')
+            ->when($market, fn ($q) => $q->whereIn('company_id', \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $market)->select('id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->paginate(30)
             ->through(fn (Payment $p) => [

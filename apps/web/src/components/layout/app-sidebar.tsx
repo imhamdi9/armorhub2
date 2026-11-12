@@ -115,6 +115,7 @@ export function AppSidebar() {
       <SidebarContent>
         {[
           { heading: null, entries: items.filter((i) => !i.section) },
+          { heading: "Market settings", entries: items.filter((i) => i.section === "market") },
           { heading: "Administration", entries: items.filter((i) => i.section === "admin") },
         ]
           .filter((g) => g.entries.length > 0)

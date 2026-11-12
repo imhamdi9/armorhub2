@@ -1264,4 +1264,12 @@ export const AR: Record<string, string> = {
   "Service centres": "مراكز الخدمة",
   "What kind of job is it?": "ما نوع العمل؟",
   "Choose an industry": "اختر صناعة",
+  "These settings apply to every market that has not set its own.": "هذه الإعدادات تسري على كل سوق لم يضع إعداداته الخاصة.",
+  "You are changing the settings of": "أنت تغيّر إعدادات",
+  "only. Anything you leave unset uses the platform's value.": "فقط. أي شيء تتركه بلا قيمة يستخدم قيمة المنصة.",
+  "Market settings": "إعدادات السوق",
+  "Market payments": "مدفوعات السوق",
+  "Market shipping": "شحن السوق",
+  "Market fees": "رسوم السوق",
+  "Fees and settings": "الرسوم والإعدادات",
 };

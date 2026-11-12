@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { ProviderManager } from "@/components/admin/provider-manager";
+import { MarketScopeNotice } from "@/components/layout/market-scope";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
@@ -32,6 +33,7 @@ export default function AdminPaymentsPage() {
   return (
     <div className="max-w-4xl">
       <PageHeader title="Payments" />
+      <Suspense fallback={null}><MarketScopeNotice /></Suspense>
       <p className="mb-6 text-sm text-muted-foreground">
         {tr("Choose which provider takes payments and enter its keys. You can switch at any time; payments already started with another provider still complete.")}
       </p>

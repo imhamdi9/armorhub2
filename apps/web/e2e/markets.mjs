@@ -74,6 +74,37 @@ try {
   if (bad.length) fail(`accessibility: ${bad.map((v) => v.id).join(", ")}`);
   ok("the market's store shows its industries and filters by one");
 
+  // ---- 6. The platform owner edits ONE market's settings from its card
+  await page.goto(`${base}/dashboard/admin/markets`);
+  await page.locator("[data-testid=market-card]", { hasText: "ArmorHub Egypt" }).getByRole("link", { name: "Fees and settings" }).click();
+  await page.waitForSelector("[data-testid=market-scope]");
+  if (!/ArmorHub Egypt/.test(await page.locator("[data-testid=market-scope]").innerText())) fail("the page does not say whose settings are being changed");
+  const sections = await page.locator("h2").allInnerTexts();
+  if (sections.some((h) => /Security|Content/.test(h))) fail(`platform-wide settings are shown inside a market: ${sections.join(", ")}`);
+  await page.fill("#installation\\.fee_percent", "7");
+  await page.locator("section:has(> h2:text-is('Installation by centres')) button:has-text('Save changes')").click();
+  await page.waitForSelector("text=Saved");
+  await page.screenshot({ path: `${SHOTS}/markets-4-egypt-settings.png`, fullPage: true });
+  ok("the owner changes one market's fee; the page says whose settings it is and hides the platform-wide ones");
+
+  // ---- 7. A market manager reaches only their own market's payment, shipping and fee pages
+  const mgr = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  await mgr.goto(`${base}/login`); await mgr.fill("input[type=email]", "owner.auto@demo.eg"); await mgr.fill("input[type=password]", "password123"); await mgr.click("button[type=submit]");
+  await mgr.waitForURL("**/dashboard**");
+  const menu = (await mgr.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
+  if (!/Market payments\|Market shipping\|Market fees/.test(menu) || /Disputes|Withdrawals|Markets\b/.test(menu.replace("Market payments", "").replace("Market shipping", "").replace("Market fees", ""))) fail(`the market manager's menu is wrong: ${menu}`);
+  await mgr.goto(`${base}/dashboard/market/fees`);
+  await mgr.waitForSelector("[data-testid=market-scope]");
+  if (!/ArmorHub Egypt/.test(await mgr.locator("[data-testid=market-scope]").innerText())) fail("the manager's page does not name their market");
+  const v = await mgr.inputValue("#installation\\.fee_percent");
+  if (v !== "7") fail(`the manager sees ${v}, not the 7 the owner set for this market`);
+  await mgr.goto(`${base}/dashboard/market/payments`); await mgr.waitForSelector("[data-testid=market-scope]");
+  await mgr.goto(`${base}/dashboard/market/shipping`); await mgr.waitForSelector("[data-testid=market-scope]");
+  await mgr.goto(`${base}/dashboard/admin/settings`);
+  await mgr.waitForSelector("text=Only platform admins can open this page");
+  await mgr.screenshot({ path: `${SHOTS}/markets-5-manager-fees.png`, fullPage: true });
+  ok("a market manager has Market payments / shipping / fees for their own market only, and no platform-wide settings");
+
   console.log("\nMarkets passed.");
 } catch (e) {
   console.error("Markets FAILED:", e.message);

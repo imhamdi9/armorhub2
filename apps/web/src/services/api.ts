@@ -14,6 +14,20 @@ export const api = axios.create({
   },
 });
 
+// Market settings reuse the admin screens. A market manager's pages (/dashboard/market/...) talk to /market/..., which can only ever reach their
+// own market. A platform admin who opened one market (?market=<id>) edits that market's values instead of the platform-wide ones.
+api.interceptors.request.use((config) => {
+  if (typeof window === "undefined" || !config.url?.startsWith("/admin/")) return config;
+  if (window.location.pathname.startsWith("/dashboard/market/")) {
+    config.url = config.url.replace(/^\/admin\//, "/market/");
+  } else {
+    const market = new URLSearchParams(window.location.search).get("market");
+    if (market && /^\d+$/.test(market) && /^\/admin\/(settings|payments|shipping)/.test(config.url)) config.params = { ...(config.params ?? {}), market };
+  }
+
+  return config;
+});
+
 // An expired or revoked session sends the visitor back to the sign-in page.
 api.interceptors.response.use(
   (response) => response,

@@ -513,7 +513,7 @@ class SecurityTest extends TestCase
     {
         $public = [
             'api/signup-challenge', 'api/register', 'api/login', 'api/forgot-password', 'api/reset-password',
-            'api/email/verify/{id}/{hash}', 'api/webhooks/{provider}', 'api/webhooks/stripe', 'up',
+            'api/email/verify/{id}/{hash}', 'api/webhooks/{provider}', 'api/webhooks/{provider}/{market}', 'api/webhooks/shipping/{provider}/{market}', 'api/webhooks/stripe', 'up',
             // The public storefront: read-only, throttled and limited to public data (see StorefrontTest).
             'api/public/markets', 'api/public/surfaces/{key}', 'api/public/media/{name}',
             'api/public/media/{name}', 'api/partner-applications', 'api/webhooks/shipping/{provider}', 'api/public/showcase', 'api/public/marketplaces', 'api/public/storefronts', 'api/public/storefronts/{slug}', 'api/public/storefronts/{slug}/products',

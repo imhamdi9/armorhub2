@@ -12,7 +12,13 @@ class SettingsController extends Controller
 {
     public function index(Settings $settings, Request $request)
     {
-        return ['settings' => $settings->describe($request->query('group'))];
+        return ['settings' => $this->visible($settings, $settings->describe($request->query('group')))];
+    }
+
+    /** Inside a market only the settings a market may own are shown (payments, shipping, fees, installation); the rest is platform-wide. */
+    private function visible(Settings $settings, array $rows): array
+    {
+        return $settings->market() === null ? $rows : array_values(array_filter($rows, fn ($r) => $r['market_can_override']));
     }
 
     /** Save a batch of values. Blank secrets (and the mask) mean "leave unchanged". */
@@ -27,6 +33,10 @@ class SettingsController extends Controller
         foreach ($values as $key => $value) {
             if (! $registry->has($key)) {
                 $errors["values.$key"] = ['Unknown setting.'];
+                continue;
+            }
+            if ($settings->market() !== null && ! Settings::overridable($key)) {
+                $errors["values.$key"] = ['This setting is the same for every market and cannot be changed for one.'];
                 continue;
             }
 
@@ -59,7 +69,7 @@ class SettingsController extends Controller
             $settings->set($key, $value, $request->user());
         }
 
-        return ['settings' => $settings->describe($request->query('group'))];
+        return ['settings' => $this->visible($settings, $settings->describe($request->query('group')))];
     }
 
     public function reset(Request $request, Settings $settings, string $key)
@@ -68,6 +78,6 @@ class SettingsController extends Controller
 
         $settings->forget($key, $request->user());
 
-        return ['settings' => $settings->describe($request->query('group'))];
+        return ['settings' => $this->visible($settings, $settings->describe($request->query('group')))];
     }
 }

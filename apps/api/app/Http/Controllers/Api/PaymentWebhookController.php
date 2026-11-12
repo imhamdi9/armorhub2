@@ -16,10 +16,12 @@ use Illuminate\Http\Request;
  */
 class PaymentWebhookController extends Controller
 {
-    public function handle(Request $request, string $provider, PaymentProviders $providers, PaymentWebhookHandler $handler)
+    public function handle(Request $request, string $provider, PaymentProviders $providers, PaymentWebhookHandler $handler, ?int $market = null)
     {
         abort_unless($providers->has($provider), 404);
 
+        // A market with its own keys has its own address: /api/webhooks/{provider}/{market}, verified with that market's secret.
+        app(\App\Support\Settings\Settings::class)->enterMarket($market);
         $config = $providers->config($provider);
 
         try {

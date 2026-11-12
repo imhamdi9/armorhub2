@@ -66,13 +66,15 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
+Route::post('/webhooks/shipping/{provider}/{market}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
 Route::post('/webhooks/shipping/{provider}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
+Route::post('/webhooks/{provider}/{market}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
 Route::post('/webhooks/{provider}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot');
 
-Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(function () {
 
     // Session
     Route::get('/me', [AuthController::class, 'me']);
@@ -111,6 +113,23 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
     Route::get('/companies/{company}/storefront', [StorefrontController::class, 'show'])->middleware('permission:companies.update');
     Route::put('/companies/{company}/storefront', [StorefrontController::class, 'update'])->middleware('permission:companies.update');
+
+    // A market manager: the payment, shipping and fee settings of THEIR market only (never the platform-wide ones)
+    Route::middleware(['market.scope:own'])->prefix('market')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\MarketSelfController::class, 'show']);
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update']);
+        Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
+        Route::get('/shipping/providers', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'index']);
+        Route::put('/shipping/providers/{key}', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'update']);
+        Route::post('/shipping/providers/{key}/test', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'test']);
+        Route::post('/shipping/active', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'activate']);
+        Route::get('/payments/providers', [PaymentProviderController::class, 'index']);
+        Route::put('/payments/providers/{key}', [PaymentProviderController::class, 'update']);
+        Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
+        Route::post('/payments/active', [PaymentProviderController::class, 'activate']);
+        Route::get('/payments', [PaymentProviderController::class, 'payments']);
+    });
 
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {

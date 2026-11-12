@@ -50,6 +50,9 @@ function MarketCard({ m, all, onChange }: { m: MarketRow; all: Industry[]; onCha
           <Badge variant={m.status === "active" ? "default" : "secondary"}>{tr(m.status === "active" ? "Open" : "Paused")}</Badge>
           <Button size="sm" variant="outline" onClick={() => updateMarket(m.id, { status: m.status === "active" ? "paused" : "active" }).then(onChange)}>{tr(m.status === "active" ? "Pause" : "Open again")}</Button>
           <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>{tr("Edit")}</Button>
+          <Button size="sm" variant="outline" render={<Link href={`/dashboard/admin/payments?market=${m.id}`} />}>{tr("Payments")}</Button>
+          <Button size="sm" variant="outline" render={<Link href={`/dashboard/admin/shipping?market=${m.id}`} />}>{tr("Shipping")}</Button>
+          <Button size="sm" variant="outline" render={<Link href={`/dashboard/admin/settings?market=${m.id}`} />}>{tr("Fees and settings")}</Button>
         </div>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{m.country_name} · {m.currency}{m.store_slug && <> · <Link className="underline" href={`/s/${m.store_slug}`}>/s/{m.store_slug}</Link></>}</p>

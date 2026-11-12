@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { ProviderManager } from "@/components/admin/provider-manager";
+import { MarketScopeNotice } from "@/components/layout/market-scope";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { tr } from "@/lib/i18n";
 import {
@@ -28,6 +29,7 @@ export default function AdminShippingPage() {
   return (
     <div className="max-w-4xl">
       <PageHeader title="Shipping" />
+      <Suspense fallback={null}><MarketScopeNotice /></Suspense>
       <p className="mb-6 text-sm text-muted-foreground">
         {tr("Connect the carriers you ship with. Staff can pick any ready provider for each parcel. The manual provider works with any carrier: staff enter the tracking number themselves. To connect a carrier with an API, use the custom carrier and describe its API.")}
       </p>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
+import { MarketScopeNotice } from "@/components/layout/market-scope";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Settings" />
+      <Suspense fallback={null}><MarketScopeNotice /></Suspense>
       <p className="mb-6 text-sm text-muted-foreground">{tr("Changes apply immediately, with no redeploy. Every change is recorded in the audit log.")}</p>
 
       {message && <p className={`mb-4 text-sm ${message.ok ? "text-green-600" : "text-red-500"}`}>{message.text}</p>}

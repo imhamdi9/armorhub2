@@ -44,6 +44,8 @@ class RolesAndPermissionsSeeder extends Seeder
     // Staff
     'users.manage',
 
+    // The payment, shipping and fee settings of one's own market (market managers); the platform-wide ones stay with admins
+    'market.settings',
     // Platform administration (admins only: they get every permission)
     'admin.panel',
     'catalog.manage',
@@ -83,6 +85,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'platform-admin' => $permissions,
 
             'company-owner' => [
+    'market.settings',
     'companies.view',
     'companies.update',
 

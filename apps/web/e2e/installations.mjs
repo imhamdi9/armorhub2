@@ -224,8 +224,9 @@ try {
 
   // ---- 9. A second job goes to dispute (set up through the API, decided through the screens)
   const c = await api("nour.fawzy@demo.eg"); const m = await api("manager.auto2@demo.eg");
+  const auto = (await c("GET", "/me")).industries.find((i) => i.key === "automotive").id;
   const mk = async (price) => {
-    const r = await c("POST", "/installation-requests", { subject: "Honda Civic 2019", parts: ["Roof"], latitude: 30.0626, longitude: 31.2197, location_consent: true });
+    const r = await c("POST", "/installation-requests", { industry_id: auto, subject: "Honda Civic 2019", parts: ["Roof"], latitude: 30.0626, longitude: 31.2197, location_consent: true });
     await m("POST", `/partner/installation-requests/${r.id}/offer`, { price, eta_days: 2 });
     const offer = (await c("GET", `/installation-requests/${r.id}`)).offers[0].id;
     await c("POST", `/installation-requests/${r.id}/accept`, { offer_id: offer, accept_terms: true });

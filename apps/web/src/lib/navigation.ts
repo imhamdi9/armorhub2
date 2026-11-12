@@ -4,7 +4,7 @@ export interface NavItem {
   title: string;
   href: string;
   /** Items in the "admin" section are grouped under an Administration heading. */
-  section?: "admin";
+  section?: "admin" | "market";
   icon:
     | "dashboard"
     | "orders"
@@ -164,6 +164,13 @@ export function buildNavigation(user: User | null): NavItem[] {
   // Owners shape what the public sees of their store (admins reach it from the Companies page).
   if (hasRole(user, "company-owner") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Storefront", href: "/dashboard/storefront", icon: "storefront" });
+  }
+
+  // A market manager changes THEIR market's payment, shipping and fee settings (never the platform-wide ones).
+  if (hasRole(user, "company-owner") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Market payments", href: "/dashboard/market/payments", section: "market", icon: "payments" });
+    items.push({ title: "Market shipping", href: "/dashboard/market/shipping", section: "market", icon: "shipping" });
+    items.push({ title: "Market fees", href: "/dashboard/market/fees", section: "market", icon: "commissions" });
   }
 
   if (hasRole(user, "platform-admin", "company-owner", "partner-manager")) {

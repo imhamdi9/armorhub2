@@ -115,7 +115,7 @@ class InstallationJobs
         }
 
         // Providers know orders by id. A job is paid through the same providers under the negative id of its request.
-        $pseudo = new Order(['currency' => $r->currency]);
+        $pseudo = new Order(['currency' => $r->currency, 'company_id' => $r->company_id]);
         $pseudo->id = -$r->id;
         $charge = $this->gateway->charge($pseudo, (float) $r->pay_amount, $method);
 
