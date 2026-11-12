@@ -8,7 +8,7 @@ import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
 import { SiteProvider, useSiteFlag, useEditable, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { tr } from "@/lib/i18n";
-import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
+import { imageSrc, orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
 const STEPS = [
@@ -63,7 +63,7 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
                 <div className="flex items-center gap-2">
                   {s.logo_url && (
                     // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-                    <img src={s.logo_url} alt="" className="h-8 w-auto max-w-[6rem] object-contain" />
+                    <img src={imageSrc(s.logo_url) ?? ""} alt="" className="h-8 w-auto max-w-[6rem] object-contain" />
                   )}
                   <h3 className="text-xl font-bold text-obsidian">{s.name}</h3>
                 </div>

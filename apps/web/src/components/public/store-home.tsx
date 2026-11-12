@@ -1,5 +1,6 @@
 "use client";
 
+import { imageSrc } from "@/lib/surfaces";
 import Link from "next/link";
 
 import { ProductCard } from "@/components/public/product-card";
@@ -40,7 +41,7 @@ export function StoreHome({ data }: { data: PublicStore }) {
         <div className="mx-auto max-w-[1000px] px-4 pb-12">
           {store.hero_image_url ? (
             // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner
-            <img src={store.hero_image_url} alt="" className="aspect-[16/8] w-full rounded-[28px] object-cover shadow-lift" />
+            <img src={imageSrc(store.hero_image_url) ?? ""} alt="" className="aspect-[16/8] w-full rounded-[28px] object-cover shadow-lift" />
           ) : (
             <div className="rounded-[28px] bg-brand-wash p-6"><HeroArt kind={industry?.key} className="mx-auto max-h-[22rem] w-full" /></div>
           )}

@@ -18,6 +18,7 @@ import {
 } from "@/services/platform.service";
 import type { CatalogItem, PriceRule, Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { imageSrc } from "@/lib/surfaces";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,9 +34,10 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false,
+    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, images: [] as string[], highlights: "",
   });
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
+  const [newImage, setNewImage] = useState("");
 
   useEffect(() => {
     getProduct(id).then((p) => {
@@ -45,6 +47,9 @@ export default function ProductDetailPage() {
         brand: p.brand ?? "",
         category: p.category ?? "",
         base_price: String(p.base_price),
+        compare_at_price: p.compare_at_price == null ? "" : String(p.compare_at_price),
+        images: p.images ?? [],
+        highlights: ((p.attributes?.highlights as string[] | undefined) ?? []).join("\n"),
         warranty_years: p.warranty_years == null ? "" : String(p.warranty_years),
         description: p.description ?? "",
         is_active: p.is_active,
@@ -85,6 +90,9 @@ export default function ProductDetailPage() {
         brand: details.brand || null,
         category: details.category || null,
         base_price: details.base_price,
+        compare_at_price: details.compare_at_price === "" ? null : details.compare_at_price,
+        images: details.images,
+        attributes: { ...(product?.attributes ?? {}), highlights: details.highlights.split("\n").map((l) => l.trim()).filter(Boolean) },
         warranty_years: details.warranty_years === "" ? null : Number(details.warranty_years),
         description: details.description || null,
         is_active: details.is_active,
@@ -121,6 +129,7 @@ export default function ProductDetailPage() {
           <Input aria-label={tr("Category")} placeholder={tr("Category")} value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
           <Input aria-label={tr("Base price")} type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
           <Input aria-label={tr("Warranty years")} type="number" min="0" placeholder={tr("Warranty (years)")} value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
+          <Input aria-label={tr("Was price (shown struck through)")} type="number" min="0" step="0.01" placeholder={tr("Was price (shown struck through)")} value={details.compare_at_price} onChange={(e) => setDetails({ ...details, compare_at_price: e.target.value })} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
             {tr("Visible to customers")}
@@ -136,6 +145,30 @@ export default function ProductDetailPage() {
             value={details.description}
             onChange={(e) => setDetails({ ...details, description: e.target.value })}
           />
+          <textarea
+            aria-label={tr("Highlights (one per line)")}
+            placeholder={tr("Highlights (one per line)")}
+            className="col-span-2 rounded-lg border px-3 py-2"
+            rows={3}
+            value={details.highlights}
+            onChange={(e) => setDetails({ ...details, highlights: e.target.value })}
+          />
+          <div className="col-span-2 space-y-2">
+            <p className="text-sm font-medium">{tr("Images (the first is the main picture)")}</p>
+            <div className="flex flex-wrap gap-2">
+              {details.images.map((src, i) => (
+                <div key={`${src}-${i}`} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails of the seller's own images */}
+                  <img src={imageSrc(src) ?? ""} alt="" className="h-20 w-20 rounded border object-cover" />
+                  <button type="button" aria-label={tr("Remove")} className="absolute -end-1 -top-1 rounded-full bg-black px-1.5 text-xs text-white" onClick={() => setDetails({ ...details, images: details.images.filter((_, j) => j !== i) })}>×</button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input aria-label={tr("Image address (https)")} placeholder="https://" value={newImage} onChange={(e) => setNewImage(e.target.value)} />
+              <Button type="button" variant="outline" disabled={!newImage || details.images.length >= 8} onClick={() => { setDetails({ ...details, images: [...details.images, newImage] }); setNewImage(""); }}>{tr("Add image")}</Button>
+            </div>
+          </div>
           <div className="col-span-2 flex items-center gap-3">
             <Button type="submit">{tr("Save details")}</Button>
             <Button type="button" variant="outline" onClick={remove}>{tr("Delete product")}</Button>

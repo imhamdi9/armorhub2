@@ -6,7 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Icon, LogoMark } from "@/components/public/art";
 import { useSite, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { LanguageSwitcher, tr, useLocale } from "@/lib/i18n";
-import { FONT_STACKS, pickText } from "@/lib/surfaces";
+import { FONT_STACKS, imageSrc, pickText } from "@/lib/surfaces";
 import { textOn } from "@/lib/public-api";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -76,7 +76,7 @@ export function AuthLinks({ store }: { store?: ShellStore }) {
 function Logo({ store, size = "h-9" }: { store?: ShellStore; size?: string }) {
   return store?.logo_url ? (
     // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-    <img src={store.logo_url} alt="" className={`${size} w-auto max-w-[9rem] object-contain`} />
+    <img src={imageSrc(store.logo_url) ?? ""} alt="" className={`${size} w-auto max-w-[9rem] object-contain`} />
   ) : (
     <LogoMark className={size === "h-9" ? "h-9 w-9" : "h-8 w-8"} />
   );

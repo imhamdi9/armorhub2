@@ -65,6 +65,10 @@ export interface PublicProduct {
   warranty_years: number | null;
   from_price: number;
   currency: string;
+  images?: string[];
+  compare_at_price?: number | null;
+  requires_shipping?: boolean;
+  seller?: string | null;
 }
 
 export interface PublicStore {
@@ -85,6 +89,8 @@ export interface PublicProducts {
 export interface PublicProductPage {
   product: PublicProduct & {
     prices: { target_type: string; target: string; price: number; duration_minutes: number | null }[];
+    highlights?: string[];
   };
+  related?: PublicProduct[];
   store: { name: string; slug: string };
 }

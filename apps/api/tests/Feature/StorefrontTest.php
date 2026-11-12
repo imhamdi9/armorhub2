@@ -289,4 +289,32 @@ class StorefrontTest extends TestCase
         $this->store->update(['settings' => ['storefront' => ['enabled' => false]]]);
         $this->signupVia(['store' => $this->store->slug])->assertUnprocessable()->assertJsonValidationErrors('store');
     }
+
+    public function test_a_product_page_carries_a_gallery_a_was_price_highlights_and_related_products(): void
+    {
+        $this->product->update([
+            'images' => ['https://cdn.example.com/a.jpg', '/media/'.str_repeat('a', 8).'-aaaa-aaaa-aaaa-'.str_repeat('a', 12).'.png'],
+            'compare_at_price' => 9999, 'attributes' => ['highlights' => ['Fast', 'Warranted']],
+        ]);
+        $other = Product::create(['industry_id' => $this->product->industry_id, 'name' => 'Another', 'slug' => 'another-one', 'base_price' => 10, 'is_active' => true, 'category' => $this->product->category]);
+
+        $page = $this->getJson("/api/public/storefronts/{$this->store->slug}/products/{$this->product->id}")->assertOk();
+        $this->assertCount(2, $page->json('product.images'));
+        $this->assertSame(9999, (int) $page->json('product.compare_at_price'));
+        $this->assertSame(['Fast', 'Warranted'], $page->json('product.highlights'));
+        $this->assertContains($other->id, array_column($page->json('related'), 'id'));
+        $this->assertNotContains($this->product->id, array_column($page->json('related'), 'id'));
+    }
+
+    public function test_product_images_must_be_https_or_uploaded_and_never_script(): void
+    {
+        $this->actingAs($this->admin, 'sanctum');
+        $base = ['name' => 'Imaged', 'slug' => 'imaged', 'base_price' => 5];
+
+        foreach (['javascript:alert(1)', 'http://insecure.example/a.png', '/media/../../etc/passwd', 'data:image/svg+xml;base64,AAAA'] as $bad) {
+            $this->postJson('/api/products', $base + ['images' => [$bad]])->assertStatus(422);
+        }
+        $this->postJson('/api/products', $base + ['images' => array_fill(0, 9, 'https://cdn.example.com/a.jpg')])->assertStatus(422);
+        $this->postJson('/api/products', $base + ['images' => ['https://cdn.example.com/a.jpg'], 'compare_at_price' => 12, 'attributes' => ['highlights' => ['One']]])->assertCreated();
+    }
 }

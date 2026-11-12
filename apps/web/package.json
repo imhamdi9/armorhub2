@@ -19,7 +19,8 @@
     "e2e:storefront": "node e2e/storefront.mjs",
     "e2e:shipping": "node e2e/shipping.mjs",
     "e2e:partners": "node e2e/partners.mjs",
-    "e2e:sellers": "node e2e/sellers.mjs"
+    "e2e:sellers": "node e2e/sellers.mjs",
+    "e2e:egypt": "node e2e/egypt.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

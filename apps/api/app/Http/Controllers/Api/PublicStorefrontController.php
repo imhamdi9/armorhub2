@@ -96,8 +96,14 @@ class PublicStorefrontController extends Controller
         $company = $this->stores->find($slug) ?? abort(404);
         $product = $this->stores->products($company)->findOrFail($id);
 
+        // More from the same store: the same category first, then anything else, never this product.
+        $related = $this->stores->products($company)->where('id', '!=', $product->id)
+            ->orderByRaw('category = ? desc', [$product->category])->orderBy('name')->limit(4)->get()
+            ->map(fn ($p) => $this->stores->card($p, $company))->all();
+
         return $this->cached([
-            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product)],
+            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? [])],
+            'related' => $related,
             'store' => ['name' => $company->name, 'slug' => $company->slug],
         ]);
     }

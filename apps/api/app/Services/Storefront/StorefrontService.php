@@ -128,6 +128,9 @@ class StorefrontService
             'category' => $product->category,
             'description' => $product->description,
             'warranty_years' => $product->warranty_years,
+            'images' => array_values($product->images ?? []),
+            'compare_at_price' => $product->compare_at_price !== null ? round((float) $product->compare_at_price, 2) : null,
+            'requires_shipping' => (bool) $product->requires_shipping,
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
         ];

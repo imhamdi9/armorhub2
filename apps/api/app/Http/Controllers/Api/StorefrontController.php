@@ -36,8 +36,8 @@ class StorefrontController extends Controller
             // A strict colour: it is placed in a style attribute, so nothing else may get through.
             'primary_color' => ['sometimes', 'regex:/^#[0-9a-fA-F]{6}$/'],
             // Only https images; they are loaded by every visitor's browser.
-            'logo_url' => ['nullable', 'string', 'max:500', 'url:https'],
-            'hero_image_url' => ['nullable', 'string', 'max:500', 'url:https'],
+            'logo_url' => ['nullable', 'string', 'max:500', fn ($a, $v, $fail) => $v === null || \App\Support\ImageRef::valid($v) || $fail('Use an https address or an uploaded image.')],
+            'hero_image_url' => ['nullable', 'string', 'max:500', fn ($a, $v, $fail) => $v === null || \App\Support\ImageRef::valid($v) || $fail('Use an https address or an uploaded image.')],
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:50',
             'featured_product_ids' => 'sometimes|array|max:8',

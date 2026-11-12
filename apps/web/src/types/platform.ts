@@ -6,6 +6,8 @@ export interface Product {
   name: string;
   slug: string;
   description: string | null;
+  images?: string[] | null;
+  compare_at_price?: string | null;
   base_price: string;
   warranty_years: number | null;
   attributes: Record<string, unknown> | null;

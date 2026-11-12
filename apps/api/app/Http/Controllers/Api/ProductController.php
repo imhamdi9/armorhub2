@@ -150,6 +150,11 @@ class ProductController extends Controller
             'base_price' => $sometimes.'required|numeric|min:0',
             'warranty_years' => 'nullable|integer|min:0',
             'attributes' => 'nullable|array',
+            'attributes.highlights' => 'nullable|array|max:8',
+            'attributes.highlights.*' => 'string|max:120',
+            'images' => 'nullable|array|max:8',
+            'images.*' => ['string', 'max:500', fn ($attr, $value, $fail) => \App\Support\ImageRef::valid($value) || $fail('Each image must be an https address or an uploaded image.')],
+            'compare_at_price' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
             'requires_shipping' => 'boolean',
         ];

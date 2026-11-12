@@ -26,6 +26,8 @@ class Product extends Model
         'name',
         'slug',
         'description',
+        'images',
+        'compare_at_price',
         'base_price',
         'warranty_years',
         'attributes',
@@ -52,6 +54,8 @@ class Product extends Model
         'is_active'=>'boolean',
         'requires_shipping'=>'boolean',
         'attributes'=>'array',
+        'images'=>'array',
+        'compare_at_price'=>'decimal:2',
     ];
 
     public function industry(): BelongsTo
