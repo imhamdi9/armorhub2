@@ -81,13 +81,15 @@ try {
   const glass = dev.data.find((p) => /Tempered Glass/.test(p.name)) ?? fail("glass product missing");
   const charger = dev.data.find((p) => /Fast Charger/.test(p.name)) ?? fail("charger missing");
   await customer.goto(`${base}/s/cairo-devices/products/${glass.id}`);
-  await customer.waitForSelector("[data-testid=installation-offer]");
+  await customer.waitForSelector("[data-testid=buy-buttons] a");
+  if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 2) fail("a product with optional installation should offer two buy choices");
   await customer.goto(`${base}/s/cairo-devices/products/${charger.id}`);
   await customer.waitForSelector("h1");
-  if (await customer.locator("[data-testid=installation-offer]").count()) fail("a product that needs no fitting offers installation");
+  await customer.waitForSelector("[data-testid=buy-buttons] a");
+  if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 1) fail("a product that needs no fitting offers more than one buy choice");
   ok("only products that can be fitted offer installation");
   await customer.goto(`${base}/s/cairo-devices/products/${glass.id}`);
-  await customer.click("[data-testid=installation-offer] a");
+  await customer.getByRole("link", { name: "Buy now and find me a suitable installation offer" }).click();
   await customer.waitForURL("**/dashboard/installations/new**");
 
   // ---- 2. A request needs the consent and the phone's own location
