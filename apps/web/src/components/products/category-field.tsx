@@ -16,8 +16,12 @@ const NEW = "__new__";
 export function CategoryField({ value, onChange, id }: { value: string; onChange: (v: string) => void; id?: string }) {
   const [options, setOptions] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => { getProductCategories().then(setOptions).catch(() => setOptions([])); }, []);
+  useEffect(() => { getProductCategories().then(setOptions).catch(() => setOptions([])).finally(() => setLoaded(true)); }, []);
+
+  // Wait for the list before drawing the field, so it does not turn from a text box into a pick list under the person's hands.
+  if (!loaded) return <div className="h-10 animate-pulse rounded-md bg-muted" role="status" aria-label={tr("Loading...")} />;
 
   const known = options.includes(value);
   const list = value && !known && !adding ? [value, ...options] : options;
