@@ -91,8 +91,10 @@ try {
   const mgr = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await mgr.goto(`${base}/login`); await mgr.fill("input[type=email]", "owner.auto@demo.eg"); await mgr.fill("input[type=password]", "password123"); await mgr.click("button[type=submit]");
   await mgr.waitForURL("**/dashboard**");
-  const menu = (await mgr.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Market payments\|Market shipping\|Market fees/.test(menu) || /Disputes|Withdrawals|Markets\b/.test(menu.replace("Market payments", "").replace("Market shipping", "").replace("Market fees", ""))) fail(`the market manager's menu is wrong: ${menu}`);
+  await mgr.waitForSelector("[data-sidebar=menu-button]:has-text('Market payments')");
+  const menu = await mgr.locator("[data-sidebar=menu-button]").allInnerTexts();
+  for (const need of ["Market payments", "Market shipping", "Market fees"]) if (!menu.includes(need)) fail(`the market manager's menu lacks ${need}: ${menu.join("|")}`);
+  for (const bad of ["Markets", "Disputes", "Withdrawals", "Settings", "Roles"]) if (menu.includes(bad)) fail(`the market manager sees the platform's ${bad}`);
   await mgr.goto(`${base}/dashboard/market/fees`);
   await mgr.waitForSelector("[data-testid=market-scope]");
   if (!/ArmorHub Egypt/.test(await mgr.locator("[data-testid=market-scope]").innerText())) fail("the manager's page does not name their market");
