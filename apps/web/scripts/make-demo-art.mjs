@@ -76,12 +76,19 @@ const PRODUCTS = {
   "p-hydrafacial": ["faceMask", C.rose, "#8a3a52"], "p-henna-design": ["hand", "#8a3b12", "#4d1e08"], "p-keratin": ["hair", "#7a4a2a", "#3d2413"], "p-saltscrub": ["salt", "#e7a6b4", "#9a4a60"], "p-blackseed": ["bottle", "#4a2a14", "#2a170a"], "p-rosewater": ["bottle", C.rose, "#8a3a52"], "p-hennapowder": ["jar", C.green, "#244a2e"],
   "p-cleaning": ["sparkle", C.turq, "#17606a"], "p-acservice": ["ac", C.lapis, "#14286a"], "p-plumbing": ["home", C.terra, "#7a2a10"], "p-lantern": ["lantern", C.gold, "#8a5a10"], "p-towelset": ["towels", C.lapis, "#14286a"], "p-basket": ["basket", C.sandDeep, "#8a5a24"], "p-hibiscus": ["tea", "#a3203c", "#5a0f20"], "p-honey": ["jar", C.gold, "#8a5a10"], "p-papyrus": ["papyrus", C.terra, "#7a3a1a"], "p-pottery": ["vase", C.turq, "#0b4f54"],
   "p-screenfit": ["glass", C.turq, "#17606a"], "p-battery": ["phone", C.green, "#1f4a2a"], "p-skin": ["phone", C.terra, "#7a2a10"], "p-glass": ["glass", C.lapis, "#14286a"], "p-charger": ["charger", C.terra, "#7a2a10"], "p-earbuds": ["earbuds", C.lapis, "#14286a"],
+  "p-headlight": ["sparkle", C.turq, "#17606a"], "p-detailing": ["carshield", C.turq, "#17606a"], "p-vinylwrap": ["carfilm", C.rose, "#8a3a52"], "p-waterless": ["spray", C.turq, "#17606a"], "p-wheelclean": ["spray", C.lapis, "#14286a"], "p-oud": ["bottle", C.gold, "#8a5a10"], "p-leather": ["jar", C.terra, "#7a2a10"],
+  "p-manicure": ["hand", C.rose, "#8a3a52"], "p-rosefacial": ["faceMask", "#f08fa5", "#8a3a52"], "p-saltspa": ["salt", C.turq, "#17606a"], "p-pricklypear": ["bottle", C.green, "#244a2e"], "p-jasmine": ["jar", "#f3e3bd", "#8a6a2a"], "p-kohl": ["jar", C.ink, "#14213d"],
+  "p-pest": ["home", C.green, "#244a2e"], "p-painting": ["home", C.turq, "#17606a"], "p-kilim": ["towels", C.terra, "#7a2a10"], "p-bakhoor": ["lantern", C.terra, "#7a2a10"], "p-bedsheets": ["towels", C.turq, "#17606a"], "p-dates": ["jar", "#7a4a2a", "#3d2413"], "p-dukkah": ["jar", C.terra, "#7a2a10"],
+  "p-screenrepair": ["phone", C.lapis, "#14286a"], "p-waterdamage": ["phone", C.turq, "#17606a"], "p-lensfit": ["glass", C.green, "#1f4a2a"], "p-phonecase": ["phone", C.gold, "#8a5a10"], "p-powerbank": ["charger", C.lapis, "#14286a"], "p-cable": ["charger", C.green, "#1f4a2a"],
 };
 const VARIANT = { sun: ["#ffe9bf", "#f0b765"], night: ["#2b3a67", "#14213d"] };
 
 const jobs = [];
-for (const [name, fn] of Object.entries(HEROES)) jobs.push({ file: `${name}.jpg`, w: 1600, h: 900, svg: fn() });
+// ONLY="p-new1,p-new2" renders just those pictures (so unchanged ones keep their exact bytes).
+const only = process.env.ONLY ? process.env.ONLY.split(",") : null;
+for (const [name, fn] of Object.entries(HEROES)) if (!only) jobs.push({ file: `${name}.jpg`, w: 1600, h: 900, svg: fn() });
 for (const [name, [shape, c1, c2]] of Object.entries(PRODUCTS)) {
+  if (only && !only.includes(name)) continue;
   jobs.push({ file: `${name}-1.jpg`, w: 1000, h: 1000, svg: stage("#fff3d9", "#f0cf93", SHAPES[shape](c1)) });
   jobs.push({ file: `${name}-2.jpg`, w: 1000, h: 1000, svg: stage(c1, c2, SHAPES[shape](C.cream), C.cream) });
   jobs.push({ file: `${name}-3.jpg`, w: 1000, h: 1000, svg: stage(...VARIANT.night, SHAPES[shape](c1)) });

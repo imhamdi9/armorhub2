@@ -39,7 +39,7 @@ class SellerPayoutTest extends TestCase
     /** A sale of a seller's product: ordered, paid; optionally shipped and delivered. */
     private function sale(bool $deliver = false): int
     {
-        $productId = $this->actingAs($this->seller, 'sanctum')->postJson('/api/products', ['name' => 'Brake pads', 'slug' => 'brake-pads-'.uniqid(), 'base_price' => 100])->assertCreated()->json('id');
+        $productId = $this->actingAs($this->seller, 'sanctum')->postJson('/api/products', ['name' => 'Brake pads', 'slug' => 'brake-pads-'.uniqid(), 'base_price' => 100, 'category' => 'brakes'])->assertCreated()->json('id');
         $this->putJson("/api/products/{$productId}/price-rules", ['rules' => [['target_type' => 'vehicle_part', 'target_id' => $this->hood->id, 'price' => 200, 'is_active' => true]]])->assertOk();
 
         $orderId = $this->actingAs($this->customer, 'sanctum')->postJson('/api/orders', ['product_id' => $productId, 'target_type' => 'vehicle_part', 'targets' => [$this->hood->id], 'shipping_address' => $this->address])

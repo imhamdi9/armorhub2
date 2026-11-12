@@ -44,6 +44,15 @@ class ProductController extends Controller
             ->get();
     }
 
+    /** The categories already used by the products this person can see, so forms offer a tidy list instead of free typing. */
+    public function categories(Request $request)
+    {
+        return Product::query()
+            ->tap(fn ($q) => $this->visibleTo($request->user(), $q))
+            ->whereNotNull('category')->where('category', '!=', '')
+            ->distinct()->orderBy('category')->pluck('category')->values();
+    }
+
     public function store(Request $request)
     {
         $data = $this->validated($request);
@@ -138,10 +147,15 @@ class ProductController extends Controller
     {
         $sometimes = $product ? 'sometimes|' : '';
 
+        // One spelling per category ("Skin Care", "skin care" and "skin-care" are the same one), and never empty.
+        if ($request->has('category')) {
+            $request->merge(['category' => \Illuminate\Support\Str::slug((string) $request->input('category'))]);
+        }
+
         $rules = [
             'industry_id' => 'nullable|exists:industries,id',
             'market' => ['nullable', 'string', Rule::in(app(\App\Support\Markets\Markets::class)->codes())],
-            'category' => 'nullable|string|max:255',
+            'category' => $sometimes.'required|string|max:80',
             'brand' => 'nullable|string|max:255',
             'name' => $sometimes.'required|string|max:255',
             'slug' => [

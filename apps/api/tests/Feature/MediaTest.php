@@ -76,7 +76,7 @@ class MediaTest extends TestCase
         $this->actingAs($this->admin, 'sanctum');
         $this->postJson('/api/product-images', ['image' => $this->realFile('<svg xmlns="http://www.w3.org/2000/svg"/>', 'x.png')])->assertStatus(422);
         $path = $this->postJson('/api/product-images', ['image' => $this->realFile($this->png(), 'photo.png')])->assertCreated()->json('path');
-        $this->postJson('/api/products', ['name' => 'Photo product', 'slug' => 'photo-product', 'base_price' => 5, 'images' => [$path]])->assertCreated();
+        $this->postJson('/api/products', ['name' => 'Photo product', 'slug' => 'photo-product', 'base_price' => 5, 'category' => 'photos', 'images' => [$path]])->assertCreated();
     }
 
     public function test_the_bulk_import_attaches_photos_by_file_name(): void

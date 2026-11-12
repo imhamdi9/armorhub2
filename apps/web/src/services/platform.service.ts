@@ -328,3 +328,6 @@ export const uploadProductImage = async (file: File) => {
 
   return (await api.post<{ path: string }>("/product-images", form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
 };
+
+/** The categories already in use, for the product forms' pick list. */
+export const getProductCategories = async () => (await api.get<string[]>("/products/categories")).data;

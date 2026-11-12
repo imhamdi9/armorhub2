@@ -1,5 +1,6 @@
 "use client";
 
+import { CategoryField } from "@/components/products/category-field";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -90,7 +91,7 @@ export default function ProductDetailPage() {
       const updated = await updateProduct(Number(id), {
         name: details.name,
         brand: details.brand || null,
-        category: details.category || null,
+        category: details.category,
         base_price: details.base_price,
         compare_at_price: details.compare_at_price === "" ? null : details.compare_at_price,
         images: details.images,
@@ -133,7 +134,7 @@ export default function ProductDetailPage() {
         <form onSubmit={saveDetails} className="mb-8 grid grid-cols-2 gap-3 rounded-lg border p-4">
           <Input aria-label={tr("Name")} required value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
           <Input aria-label={tr("Brand")} placeholder={tr("Brand")} value={details.brand} onChange={(e) => setDetails({ ...details, brand: e.target.value })} />
-          <Input aria-label={tr("Category")} placeholder={tr("Category")} value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
+          <CategoryField value={details.category} onChange={(v) => setDetails({ ...details, category: v })} />
           <Input aria-label={tr("Base price")} type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
           <Input aria-label={tr("Warranty years")} type="number" min="0" placeholder={tr("Warranty (years)")} value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
           <Input aria-label={tr("Was price (shown struck through)")} type="number" min="0" step="0.01" placeholder={tr("Was price (shown struck through)")} value={details.compare_at_price} onChange={(e) => setDetails({ ...details, compare_at_price: e.target.value })} />

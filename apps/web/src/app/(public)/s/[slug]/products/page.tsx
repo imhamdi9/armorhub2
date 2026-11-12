@@ -35,5 +35,5 @@ export default async function ProductsPage({ params, searchParams }: Props) {
 
   if (!store) notFound();
 
-  return <Catalog store={store.store} result={result} categories={store.categories} q={q} category={category} />;
+  return <Catalog store={store.store} result={result} categories={store.categories} counts={store.category_counts} q={q} category={category} />;
 }

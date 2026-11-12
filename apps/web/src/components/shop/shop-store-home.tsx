@@ -8,6 +8,7 @@ import { ProductTile, ShopProductCard } from "@/components/shop/shop-product-car
 import { ShopSearch } from "@/components/shop/shop-search";
 import { ShopShell, SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { formatNumber, tr } from "@/lib/i18n";
+import { categoryLabel } from "@/lib/category";
 import { imageSrc } from "@/lib/surfaces";
 import type { PublicStore } from "@/types/public";
 
@@ -31,7 +32,7 @@ function Heading({ id, children, href, more }: { id?: string; children: React.Re
 
 /** A market's front page in the Shop style, in the store's own accent colour. Any industry or market uses the same layout. */
 export function ShopStoreHome({ data }: { data: PublicStore }) {
-  const { store, industry, featured, categories, partners } = data;
+  const { store, industry, featured, categories, partners, sections = [], category_counts: counts = {} } = data;
   const products = `/s/${store.slug}/products`;
   const stats = [
     { v: partners.count, l: "Vetted professionals" },
@@ -62,7 +63,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         <div className="mt-8"><ShopSearch action={products} /></div>
         {categories.length > 0 && (
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{c}</Link>)}
+            {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#787574]">{counts[c] ?? ""}</span></Link>)}
           </div>
         )}
       </header>
@@ -88,12 +89,14 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         </ul>
       )}
 
-      {featured.length > 0 && (
-        <section className="mt-16" aria-labelledby="popular">
-          <Heading id="popular" href={products} more={tr("See all")}>{tr("Popular services")}</Heading>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{featured.map((p) => <ShopProductCard key={p.id} product={p} slug={store.slug} />)}</div>
+      {sections.map((sec) => (
+        <section key={sec.category} className="mt-16" aria-labelledby={`cat-${sec.category}`}>
+          <Heading id={`cat-${sec.category}`} href={`${products}?category=${encodeURIComponent(sec.category)}`} more={sec.count > sec.products.length ? tr("See all") : undefined}>
+            {categoryLabel(sec.category)} <span className="text-sm text-[#787574]">· {sec.count}</span>
+          </Heading>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{sec.products.map((p) => <ShopProductCard key={p.id} product={p} slug={store.slug} />)}</div>
         </section>
-      )}
+      ))}
 
       <section id="how" className="mt-16 scroll-mt-6" aria-labelledby="how-h">
         <Heading id="how-h">{tr("How it works")}</Heading>

@@ -64,8 +64,16 @@ class PublicStorefrontController extends Controller
             ? $this->stores->products($company)->whereIn('id', $settings['featured_product_ids'])->get()
             : $this->stores->products($company)->orderBy('id')->limit(4)->get();
 
+        // The catalogue, organised: one block per category (biggest first, then A to Z) with a few of its products.
+        $all = $this->stores->products($company)->whereNotNull('category')->orderBy('name')->get();
+        $sections = $all->groupBy('category')
+            ->map(fn ($items, $cat) => ['category' => $cat, 'count' => $items->count(), 'products' => $items->take(4)->map(fn ($p) => $this->stores->card($p, $company))->values()])
+            ->sortBy([['count', 'desc'], ['category', 'asc']])->values();
+
         return $this->cached([
             'store' => $this->stores->branding($company),
+            'sections' => $sections,
+            'category_counts' => $all->countBy('category')->sortKeys(),
             'industry' => $this->stores->industry($company),
             'market' => $this->stores->market($company),
             'featured' => $featured->map(fn ($p) => $this->stores->card($p, $company))->values(),
@@ -84,7 +92,8 @@ class PublicStorefrontController extends Controller
                 ->where('name', 'like', '%'.addcslashes($request->q, '%_\\').'%')
                 ->orWhere('brand', 'like', '%'.addcslashes($request->q, '%_\\').'%')))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
-            ->orderBy('name')
+            // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle.
+            ->orderBy('category')->orderBy('name')
             ->paginate(12)
             ->through(fn ($p) => $this->stores->card($p, $company));
 

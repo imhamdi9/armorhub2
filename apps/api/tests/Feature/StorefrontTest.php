@@ -309,7 +309,7 @@ class StorefrontTest extends TestCase
     public function test_product_images_must_be_https_or_uploaded_and_never_script(): void
     {
         $this->actingAs($this->admin, 'sanctum');
-        $base = ['name' => 'Imaged', 'slug' => 'imaged', 'base_price' => 5];
+        $base = ['name' => 'Imaged', 'slug' => 'imaged', 'base_price' => 5, 'category' => 'misc'];
 
         foreach (['javascript:alert(1)', 'http://insecure.example/a.png', '/media/../../etc/passwd', 'data:image/svg+xml;base64,AAAA'] as $bad) {
             $this->postJson('/api/products', $base + ['images' => [$bad]])->assertStatus(422);

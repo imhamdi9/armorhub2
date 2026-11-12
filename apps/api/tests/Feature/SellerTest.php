@@ -105,7 +105,7 @@ class SellerTest extends TestCase
         // A seller of another marketplace never appears here.
         $tenant2 = Tenant::create(['name' => 'Other market', 'industry_id' => $this->product->industry_id]);
         [, $foreign] = $this->makeSeller('Foreign Parts', 'f@parts.example.org', $tenant2->id);
-        $this->actingAs($foreign, 'sanctum')->postJson('/api/products', ['name' => 'Foreign thing', 'slug' => 'foreign-thing', 'base_price' => 1])->assertCreated();
+        $this->actingAs($foreign, 'sanctum')->postJson('/api/products', ['name' => 'Foreign thing', 'slug' => 'foreign-thing', 'base_price' => 1, 'category' => 'spare-parts'])->assertCreated();
         $this->assertNotContains('Foreign thing', $names());
 
         // Suspending the seller takes its products off sale everywhere.

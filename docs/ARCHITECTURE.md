@@ -133,3 +133,6 @@ See `docs/adr/` for the reasoning behind each.
 
 ### Storefront look: SaaS home vs Shop-style markets
 The platform home (`/`) keeps its SaaS landing look (`components/public/platform-home.tsx`). Every market or industry storefront under `/s/<slug>` (home, catalogue, product page) is drawn in the Shop style by `components/shop/*`: grey canvas, icon rail, white 28px image cards, pill search, one accent that is the store's own `primary_color`. A new market gets this look automatically; nothing is configured per industry.
+
+### Product categories
+A product always has a category: required by the API, stored as one slug (`Skin Care` becomes `skin-care`), chosen in the product forms from the categories already in use (`GET /api/products/categories`) or added as a new one. Storefronts are organised by category: the home page has one band per category (biggest first, with counts), and the catalogue is ordered by category with a heading per group and category pills with counts. A migration files older products without a category under `general`.

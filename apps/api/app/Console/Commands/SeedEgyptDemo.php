@@ -130,10 +130,13 @@ class SeedEgyptDemo extends Command
         $sellers = $this->sellers($def, $tenant, $password);
         $featured = [];
 
-        foreach ($def['products'] as $p) {
+        foreach (array_merge($def['products'], $this->moreProducts()[$def['key']] ?? []) as $p) {
             $seller = isset($p['seller']) ? $sellers[$p['seller']] : null;
             $slug = 'eg-'.$p['key'];
-            $product = Product::where('slug', $slug)->first() ?? Product::create([
+            $product = Product::where('slug', $slug)->first();
+            // The catalogue's organisation can change between releases: keep existing demo products filed under the current category.
+            $product?->category !== $p['category'] && $product?->update(['category' => $p['category']]);
+            $product ??= Product::create([
                 'industry_id' => $industry->id, 'market' => 'EG', 'seller_id' => $seller?->id, 'name' => $p['name'], 'slug' => $slug, 'brand' => $p['brand'] ?? null,
                 'category' => $p['category'], 'description' => $p['desc'], 'images' => $this->pics($p['art']), 'base_price' => $p['price'], 'compare_at_price' => $p['was'] ?? null,
                 'warranty_years' => $p['warranty'] ?? null, 'requires_shipping' => $seller !== null, 'is_active' => true,
@@ -217,6 +220,77 @@ class SeedEgyptDemo extends Command
         ]);
     }
 
+    /**
+     * Extra products per store, in new categories, so each market's catalogue has 10-15 items.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function moreProducts(): array
+    {
+        return [
+            'auto' => [
+                ['key' => 'headlight', 'name' => 'Headlight Restoration', 'category' => 'coatings-and-detailing', 'art' => 'p-headlight', 'price' => 600, 'warranty' => 1, 'minutes' => 60,
+                    'desc' => "Cloudy, yellowed headlights polished back to clear and sealed against the sun.\nإعادة تلميع الكشافات الأمامية.", 'highlights' => ['Clearer night vision', 'UV sealant included'], 'rules' => ['Headlights' => 600]],
+                ['key' => 'detailing', 'name' => 'Full Interior and Exterior Detailing', 'category' => 'coatings-and-detailing', 'art' => 'p-detailing', 'price' => 1500, 'minutes' => 240,
+                    'desc' => "Clay bar, machine polish, interior steam clean and leather care in one day.\nتلميع وتنظيف شامل داخلي وخارجي.", 'highlights' => ['Machine polish', 'Steam-cleaned interior'], 'rules' => ['Whole car' => 1500]],
+                ['key' => 'vinylwrap', 'name' => 'Colour Change Vinyl Wrap', 'category' => 'protection-films', 'art' => 'p-vinylwrap', 'price' => 9000, 'warranty' => 3, 'minutes' => 480,
+                    'desc' => "Change your car's colour without paint. Gloss, satin or matt finishes.\nتغيير لون السيارة بالفينيل بدون دهان.", 'highlights' => ['Reversible', '3-year warranty', 'Gloss, satin or matt'], 'rules' => ['Hood' => 3200, 'Roof' => 3500, 'Mirrors' => 900, 'Whole car' => 18000]],
+                ['key' => 'waterless', 'seller' => 'autopro', 'name' => 'Waterless Wash and Wax Spray', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-waterless', 'price' => 260, 'was' => 330,
+                    'desc' => "Clean and shine in the shade of your own street, with almost no water.\nغسيل وتلميع بدون ماء تقريبًا.", 'highlights' => ['Safe on coatings', '750 ml']],
+                ['key' => 'wheelclean', 'seller' => 'autopro', 'name' => 'Wheel and Tyre Cleaner', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-wheelclean', 'price' => 180,
+                    'desc' => "Lifts brake dust and road tar from alloys without scrubbing.\nمنظف للجنوط والإطارات.", 'highlights' => ['pH balanced', '500 ml']],
+                ['key' => 'oud', 'seller' => 'autopro', 'name' => 'Oud Car Air Freshener', 'brand' => 'AutoPro', 'category' => 'interior-care', 'art' => 'p-oud', 'price' => 95,
+                    'desc' => "A warm oud and amber scent that lasts for weeks.\nمعطر سيارة برائحة العود والعنبر.", 'highlights' => ['Lasts up to 6 weeks', 'Spill-proof bottle']],
+                ['key' => 'leather', 'seller' => 'autopro', 'name' => 'Leather Seat Conditioner', 'brand' => 'AutoPro', 'category' => 'interior-care', 'art' => 'p-leather', 'price' => 240, 'was' => 300,
+                    'desc' => "Keeps leather soft and stops cracking in the Egyptian heat.\nمرطب لمقاعد الجلد.", 'highlights' => ['UV protection', '250 ml']],
+            ],
+            'beauty' => [
+                ['key' => 'manicure', 'name' => 'Gel Manicure and Pedicure', 'category' => 'hair-and-nails', 'art' => 'p-manicure', 'price' => 650, 'minutes' => 90,
+                    'desc' => "Long-lasting gel colour with a full care routine.\nمانيكير وباديكير بالجل.", 'highlights' => ['Up to 3 weeks wear', 'Sterilised tools'], 'rules' => ['Nails' => 650, 'Hands' => 400]],
+                ['key' => 'rosefacial', 'name' => 'Rose Glow Facial', 'category' => 'face-and-body', 'art' => 'p-rosefacial', 'price' => 800, 'minutes' => 60,
+                    'desc' => "A calming facial with Fayoum rose, for bright, hydrated skin.\nعلاج وجه بماء الورد الفيومي.", 'highlights' => ['Natural rose extracts', 'Gentle on sensitive skin'], 'rules' => ['Face' => 800]],
+                ['key' => 'saltspa', 'name' => 'Siwa Salt Body Scrub and Massage', 'category' => 'face-and-body', 'art' => 'p-saltspa', 'price' => 1800, 'minutes' => 90,
+                    'desc' => "A full-body salt scrub followed by a relaxing massage.\nتقشير بالملح وتدليك للجسم.", 'highlights' => ['Siwa salt', '90 minutes'], 'rules' => ['Full Body' => 1800]],
+                ['key' => 'pricklypear', 'seller' => 'siwa', 'name' => 'Prickly Pear Seed Oil', 'category' => 'natural-care', 'art' => 'p-pricklypear', 'price' => 420, 'was' => 520,
+                    'desc' => "A rich, light anti-ageing oil for face and neck.\nزيت بذور التين الشوكي.", 'highlights' => ['Cold pressed', '30 ml']],
+                ['key' => 'jasmine', 'seller' => 'siwa', 'name' => 'Jasmine Body Butter', 'category' => 'natural-care', 'art' => 'p-jasmine', 'price' => 170,
+                    'desc' => "Whipped shea and jasmine for soft skin all day.\nزبدة جسم بالياسمين.", 'highlights' => ['Vegan', '200 g jar']],
+                ['key' => 'kohl', 'seller' => 'siwa', 'name' => 'Natural Kohl Eyeliner', 'category' => 'natural-care', 'art' => 'p-kohl', 'price' => 70,
+                    'desc' => "Traditional kohl, made the old way and smooth to apply.\nكحل طبيعي تقليدي.", 'highlights' => ['No additives', 'Smudge resistant']],
+            ],
+            'home' => [
+                ['key' => 'pest', 'name' => 'Pest Control Visit', 'category' => 'home-services', 'art' => 'p-pest', 'price' => 700, 'warranty' => 1, 'minutes' => 90,
+                    'desc' => "Safe treatment against insects and rodents, with a follow-up visit.\nمكافحة الحشرات والقوارض.", 'highlights' => ['Family-safe products', '3-month cover'], 'rules' => ['Kitchen' => 700, 'Bathroom' => 500, 'Whole home' => 1500]],
+                ['key' => 'painting', 'name' => 'Interior Painting', 'category' => 'home-services', 'art' => 'p-painting', 'price' => 1200, 'minutes' => 480,
+                    'desc' => "Clean lines, covered furniture and a tidy finish.\nدهان داخلي بتشطيب نظيف.", 'highlights' => ['Furniture protected', 'Quality paint'], 'rules' => ['Bedroom' => 1200, 'Living Room' => 1800, 'Office' => 1500]],
+                ['key' => 'kilim', 'seller' => 'khan', 'name' => 'Hand-Woven Kilim Cushion Cover', 'category' => 'home-textiles', 'art' => 'p-kilim', 'price' => 230,
+                    'desc' => "Bright geometric weave by Egyptian artisans.\nغطاء وسادة كليم منسوج يدويًا.", 'highlights' => ['Hand woven', '45 x 45 cm']],
+                ['key' => 'bakhoor', 'seller' => 'khan', 'name' => 'Bakhoor Incense Set', 'category' => 'handicrafts', 'art' => 'p-bakhoor', 'price' => 310, 'was' => 380,
+                    'desc' => "Aromatic wood chips with a brass burner.\nطقم بخور مع مبخرة نحاسية.", 'highlights' => ['Brass burner included', 'Long-lasting scent']],
+                ['key' => 'bedsheets', 'seller' => 'delta', 'name' => 'Egyptian Cotton Bedsheet Set', 'category' => 'home-textiles', 'art' => 'p-bedsheets', 'price' => 1450, 'was' => 1800,
+                    'desc' => "Cool, crisp 400-thread-count sheets from the Nile Delta.\nطقم ملاءات قطن مصري.", 'highlights' => ['400 thread count', 'Fits double beds']],
+                ['key' => 'dates', 'seller' => 'aswan', 'name' => 'Siwa Dates (1 kg)', 'category' => 'grocery', 'art' => 'p-dates', 'price' => 140,
+                    'desc' => "Soft, sweet dates from the oasis palms.\nتمور سيوة الطازجة.", 'highlights' => ['No added sugar', '1 kg box']],
+                ['key' => 'dukkah', 'seller' => 'aswan', 'name' => 'Egyptian Dukkah Spice Mix', 'category' => 'grocery', 'art' => 'p-dukkah', 'price' => 90,
+                    'desc' => "Nuts, sesame and spices for bread, eggs and salads.\nدقة مصرية.", 'highlights' => ['Freshly ground', '200 g jar']],
+            ],
+            'devices' => [
+                ['key' => 'screenrepair', 'name' => 'Screen Replacement', 'category' => 'repairs', 'art' => 'p-screenrepair', 'price' => 1800, 'warranty' => 1, 'minutes' => 60,
+                    'desc' => "A cracked screen replaced with a tested panel.\nاستبدال شاشة الهاتف المكسورة.", 'highlights' => ['6-month to 1-year warranty', 'Same-day repair'], 'rules' => ['Screen' => 1800]],
+                ['key' => 'waterdamage', 'name' => 'Water Damage Diagnostic and Clean', 'category' => 'repairs', 'art' => 'p-waterdamage', 'price' => 400, 'minutes' => 90,
+                    'desc' => "Ultrasonic clean and testing of a phone that got wet.\nفحص وتنظيف هاتف تعرض للماء.", 'highlights' => ['Ultrasonic cleaning', 'Free if not fixable'], 'rules' => ['Whole device' => 400]],
+                ['key' => 'lensfit', 'name' => 'Camera Lens Protector Fitting', 'category' => 'protection', 'art' => 'p-lensfit', 'price' => 120, 'minutes' => 15,
+                    'desc' => "Scratch protection for your camera lenses, fitted dust-free.\nتركيب حماية عدسة الكاميرا.", 'highlights' => ['Dust-free fitting', 'Done in 15 minutes'], 'rules' => ['Camera Lens' => 120]],
+                ['key' => 'phonecase', 'seller' => 'techsouq', 'name' => 'Shockproof Phone Case', 'category' => 'accessories', 'art' => 'p-phonecase', 'price' => 210, 'was' => 280,
+                    'desc' => "Military-grade corners with a clear back.\nحافظة هاتف مقاومة للصدمات.", 'highlights' => ['Drop tested', 'Clear back']],
+                ['key' => 'powerbank', 'seller' => 'techsouq', 'name' => '20,000 mAh Power Bank', 'category' => 'accessories', 'art' => 'p-powerbank', 'price' => 780, 'was' => 950,
+                    'desc' => "Charges a phone four times, with fast-charge ports.\nباور بانك 20000 مللي أمبير.", 'highlights' => ['22.5W fast charge', '2 USB ports', '1-year warranty']],
+                ['key' => 'cable', 'seller' => 'techsouq', 'name' => 'Braided USB-C Cable (2 m)', 'category' => 'accessories', 'art' => 'p-cable', 'price' => 120,
+                    'desc' => "Tough nylon braid, rated for 100W charging.\nكابل USB-C مجدول.", 'highlights' => ['100W rated', '2 m long']],
+            ],
+        ];
+    }
+
     // ------------------------------------------------------------------ the dataset
 
     /** @return list<array{string, string, string, float, float, string}> name, email, store key, latitude, longitude, city */
@@ -246,19 +320,19 @@ class SeedEgyptDemo extends Command
                     ['Corniche Car Care', 'Alexandria', 31.2001, 29.9187, 'Alexandria\'s favourite protection and tint studio, on the Corniche.'],
                 ],
                 'products' => [
-                    ['key' => 'ppf', 'name' => 'Paint Protection Film (PPF)', 'brand' => 'XPEL', 'category' => 'paint-protection-film', 'art' => 'p-ppf', 'price' => 4500, 'warranty' => 10, 'minutes' => 180,
+                    ['key' => 'ppf', 'name' => 'Paint Protection Film (PPF)', 'brand' => 'XPEL', 'category' => 'protection-films', 'art' => 'p-ppf', 'price' => 4500, 'warranty' => 10, 'minutes' => 180,
                         'desc' => "Self-healing urethane film that shields your paint from stone chips, scratches and the Egyptian sun.\nفيلم حماية ذاتي الإصلاح يحمي الطلاء من الخدوش والحصى والشمس.",
                         'highlights' => ['10-year warranty', 'Self-healing finish', 'Installed by certified technicians'], 'rules' => ['Hood' => 9500, 'Bumper' => 7800, 'Mirrors' => 2200, 'Roof' => 8800]],
-                    ['key' => 'ceramic', 'name' => 'Nano Ceramic Coating', 'brand' => 'Gtechniq', 'category' => 'ceramic-coating', 'art' => 'p-ceramic', 'price' => 2500, 'warranty' => 5, 'minutes' => 120,
+                    ['key' => 'ceramic', 'name' => 'Nano Ceramic Coating', 'brand' => 'Gtechniq', 'category' => 'coatings-and-detailing', 'art' => 'p-ceramic', 'price' => 2500, 'warranty' => 5, 'minutes' => 120,
                         'desc' => "Deep gloss and water-beading protection that lasts for years.\nطبقة سيراميك نانو تمنح لمعانًا عميقًا وحماية تدوم لسنوات.",
                         'highlights' => ['5-year warranty', 'Hydrophobic gloss', 'Easy to wash'], 'rules' => ['Hood' => 4500, 'Bumper' => 3600, 'Roof' => 4200]],
-                    ['key' => 'tint', 'name' => 'Heat-Rejection Window Tint', 'brand' => '3M', 'category' => 'window-tint', 'art' => 'p-tint', 'price' => 1800, 'warranty' => 7, 'minutes' => 90,
+                    ['key' => 'tint', 'name' => 'Heat-Rejection Window Tint', 'brand' => '3M', 'category' => 'protection-films', 'art' => 'p-tint', 'price' => 1800, 'warranty' => 7, 'minutes' => 90,
                         'desc' => "Blocks heat and UV so your cabin stays cool through the Cairo summer.\nتظليل يعزل الحرارة والأشعة فوق البنفسجية.",
                         'highlights' => ['Rejects up to 60% of heat', '99% UV blocked', '7-year warranty'], 'rules' => ['Windshield' => 2400, 'Headlights' => 700]],
-                    ['key' => 'carkit', 'seller' => 'autopro', 'name' => 'Ceramic Care Kit', 'brand' => 'AutoPro', 'category' => 'care-kits', 'art' => 'p-carkit', 'price' => 1450, 'was' => 1900,
+                    ['key' => 'carkit', 'seller' => 'autopro', 'name' => 'Ceramic Care Kit', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-carkit', 'price' => 1450, 'was' => 1900,
                         'desc' => "Shampoo, booster spray and applicator pads to keep coated paint perfect.\nطقم عناية بالسيراميك: شامبو وبخاخ تعزيز وإسفنج.",
                         'highlights' => ['Keeps coatings glossy', 'Ships across Egypt']],
-                    ['key' => 'microfiber', 'seller' => 'autopro', 'name' => 'Premium Microfibre Detailing Set', 'brand' => 'AutoPro', 'category' => 'care-kits', 'art' => 'p-microfiber', 'price' => 320, 'was' => 420,
+                    ['key' => 'microfiber', 'seller' => 'autopro', 'name' => 'Premium Microfibre Detailing Set', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-microfiber', 'price' => 320, 'was' => 420,
                         'desc' => "Six plush towels for washing, drying and polishing without a scratch.\nست مناشف مايكروفايبر للغسيل والتجفيف والتلميع.",
                         'highlights' => ['6 towels, 400 GSM', 'Lint-free', 'Machine washable']],
                 ],
@@ -274,11 +348,11 @@ class SeedEgyptDemo extends Command
                     ['Maadi Beauty Lab', 'Cairo', 29.9602, 31.2569, 'Modern skin clinic and henna artists in Maadi.'],
                 ],
                 'products' => [
-                    ['key' => 'hydrafacial', 'name' => 'Hydrafacial Session', 'category' => 'skin-care', 'art' => 'p-hydrafacial', 'price' => 1200, 'minutes' => 60,
+                    ['key' => 'hydrafacial', 'name' => 'Hydrafacial Session', 'category' => 'face-and-body', 'art' => 'p-hydrafacial', 'price' => 1200, 'minutes' => 60,
                         'desc' => "Deep cleanse, exfoliation and hydration in one glowing session.\nجلسة تنظيف وترطيب عميق للبشرة.", 'highlights' => ['Visible glow in 60 minutes', 'Suitable for all skin types'], 'rules' => ['Face' => 1200]],
-                    ['key' => 'henna', 'name' => 'Bridal Henna Design', 'category' => 'henna', 'art' => 'p-henna-design', 'price' => 450, 'minutes' => 120,
+                    ['key' => 'henna', 'name' => 'Bridal Henna Design', 'category' => 'hair-and-nails', 'art' => 'p-henna-design', 'price' => 450, 'minutes' => 120,
                         'desc' => "Hand-drawn traditional and modern henna for brides and celebrations.\nنقش حناء يدوي للعرائس والمناسبات.", 'highlights' => ['Natural henna', 'Bridal and party designs'], 'rules' => ['Hands' => 450, 'Full Body' => 1500]],
-                    ['key' => 'keratin', 'name' => 'Keratin Smoothing Treatment', 'category' => 'hair-care', 'art' => 'p-keratin', 'price' => 2800, 'minutes' => 180,
+                    ['key' => 'keratin', 'name' => 'Keratin Smoothing Treatment', 'category' => 'hair-and-nails', 'art' => 'p-keratin', 'price' => 2800, 'minutes' => 180,
                         'desc' => "Frizz-free, silky hair that lasts for months.\nعلاج كيراتين لشعر ناعم ولامع.", 'highlights' => ['Lasts up to 4 months', 'Formaldehyde-free'], 'rules' => ['Hair' => 2800]],
                     ['key' => 'saltscrub', 'seller' => 'siwa', 'name' => 'Siwa Salt Face Scrub', 'category' => 'natural-care', 'art' => 'p-saltscrub', 'price' => 210, 'was' => 260,
                         'desc' => "Gently exfoliating scrub made with pure Siwa Oasis salt.\nمقشر لطيف من ملح واحة سيوة.", 'highlights' => ['Pure Siwa salt', 'Vegan', '100 g jar']],
@@ -301,11 +375,11 @@ class SeedEgyptDemo extends Command
                     ['Alex Cooling Experts', 'Alexandria', 31.2156, 29.9553, 'AC servicing and plumbing across Alexandria.'],
                 ],
                 'products' => [
-                    ['key' => 'cleaning', 'name' => 'Deep Home Cleaning', 'category' => 'cleaning', 'art' => 'p-cleaning', 'price' => 600, 'minutes' => 180,
+                    ['key' => 'cleaning', 'name' => 'Deep Home Cleaning', 'category' => 'home-services', 'art' => 'p-cleaning', 'price' => 600, 'minutes' => 180,
                         'desc' => "A thorough top-to-bottom clean by a vetted team.\nتنظيف شامل بواسطة فريق موثوق.", 'highlights' => ['Eco-friendly products', 'Insured teams'], 'rules' => ['Living Room' => 600, 'Bedroom' => 450, 'Kitchen' => 700, 'Bathroom' => 400, 'Office' => 800]],
-                    ['key' => 'ac', 'name' => 'AC Service and Deep Clean', 'category' => 'ac', 'art' => 'p-acservice', 'price' => 350, 'minutes' => 60,
+                    ['key' => 'ac', 'name' => 'AC Service and Deep Clean', 'category' => 'home-services', 'art' => 'p-acservice', 'price' => 350, 'minutes' => 60,
                         'desc' => "Filter wash, coil cleaning and gas check so your AC runs cold all summer.\nصيانة وتنظيف المكيفات.", 'highlights' => ['Gas pressure check', '30-day service guarantee'], 'rules' => ['Living Room' => 350, 'Bedroom' => 300, 'Office' => 400]],
-                    ['key' => 'plumbing', 'name' => 'Plumbing Visit', 'category' => 'plumbing', 'art' => 'p-plumbing', 'price' => 300, 'minutes' => 60,
+                    ['key' => 'plumbing', 'name' => 'Plumbing Visit', 'category' => 'home-services', 'art' => 'p-plumbing', 'price' => 300, 'minutes' => 60,
                         'desc' => "Leaks, blockages and fittings fixed the same day.\nإصلاح التسريبات والانسدادات في نفس اليوم.", 'highlights' => ['Same-day visits', 'Parts at cost'], 'rules' => ['Kitchen' => 300, 'Bathroom' => 350]],
                     ['key' => 'lantern', 'seller' => 'khan', 'name' => 'Khan El-Khalili Brass Lantern (Fanous)', 'category' => 'handicrafts', 'art' => 'p-lantern', 'price' => 650, 'was' => 850,
                         'desc' => "A hand-cut brass lantern made by artisans in Khan El-Khalili. Casts star-shaped light across the room.\nفانوس نحاسي مقطوع يدويًا من خان الخليلي.", 'highlights' => ['Hand-cut solid brass', 'Made in Cairo', 'Ready to hang or stand']],

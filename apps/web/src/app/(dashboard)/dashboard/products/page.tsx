@@ -1,5 +1,6 @@
 "use client";
 
+import { CategoryField } from "@/components/products/category-field";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -46,7 +47,7 @@ export default function ProductsPage() {
       const product = await createProduct({
         name,
         slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
-        category: category || null,
+        category,
         base_price: price,
         industry_id: user?.industry?.id ?? null,
       });
@@ -72,7 +73,7 @@ export default function ProductsPage() {
           </div>
           <div>
             <Label htmlFor="category">{tr("Category")}</Label>
-            <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} />
+            <CategoryField id="category" value={category} onChange={setCategory} />
           </div>
           <div>
             <Label htmlFor="price">{tr("Base price")}</Label>

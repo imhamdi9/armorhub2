@@ -77,6 +77,8 @@ export interface PublicStore {
   market: PublicMarket | null;
   featured: PublicProduct[];
   categories: string[];
+  category_counts: Record<string, number>;
+  sections: { category: string; count: number; products: PublicProduct[] }[];
   partners: { count: number; cities: string[] };
 }
 
