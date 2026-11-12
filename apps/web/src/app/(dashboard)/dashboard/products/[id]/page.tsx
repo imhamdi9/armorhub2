@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
       });
-      setProduct(updated);
+      setProduct((current) => ({ ...updated, can_edit: current?.can_edit ?? true }));
       setDetailsMsg(tr("Saved"));
     } catch (err) {
       setDetailsMsg(errorMessage(err));

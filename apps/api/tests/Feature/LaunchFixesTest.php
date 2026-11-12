@@ -78,4 +78,12 @@ class LaunchFixesTest extends TestCase
 
         $this->getJson('/api/partner/orders')->assertStatus(422)->assertJsonPath('message', 'Your account is not linked to a partner yet. Ask your company owner to assign you to one.');
     }
+
+    public function test_saving_a_product_returns_it_with_the_edit_permission_still_set(): void
+    {
+        $product = Product::first();
+
+        $this->actingAs($this->admin, 'sanctum')->putJson("/api/products/{$product->id}", ['brand' => 'Renamed'])->assertOk()
+            ->assertJsonPath('brand', 'Renamed')->assertJsonPath('can_edit', true);
+    }
 }

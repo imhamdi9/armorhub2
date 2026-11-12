@@ -82,7 +82,8 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        return $product->fresh();
+        // The same shape as show(), so a screen that replaces its copy with this one does not lose the edit permission.
+        return $product->fresh()->toArray() + ['can_edit' => true];
     }
 
     public function destroy(Request $request, Product $product)
