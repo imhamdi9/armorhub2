@@ -20,7 +20,7 @@ export function ShopHome() {
       <ShopHero />
 
       {/* partner strip */}
-      <section aria-label="Trusted partners" className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[14px] text-[#787574]">
+      <section aria-label="Trusted partners" className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[14px] text-[#5f5c5b]">
         <span>Trusted by</span>
         {PARTNERS.map((p) => (
           <span key={p} className="flex items-center gap-2"><span className="grid size-6 place-items-center rounded-full bg-white text-[10px] text-black ring-1 ring-[#ebebeb]">{p[0]}</span>{p}</span>
@@ -52,7 +52,7 @@ export function ShopHome() {
               <li key={t as string} className={card} style={{ boxShadow: SHADOW }}>
                 <span className="grid size-10 place-items-center rounded-full bg-[#f2f4f5]"><Icon className="size-5" aria-hidden /></span>
                 <p className="mt-4 text-[16px]">{n + 1}. {t as string}</p>
-                <p className="mt-1 text-[14px] text-[#787574]">{d as string}</p>
+                <p className="mt-1 text-[14px] text-[#5f5c5b]">{d as string}</p>
               </li>
             );
           })}
@@ -64,7 +64,7 @@ export function ShopHome() {
         <div className="grid gap-3 md:grid-cols-3">
           {[["Verified sellers", "Documents checked before anyone lists.", ShieldCheck], ["Held payments", "Sellers are paid after delivery.", Wallet], ["Real reviews", "Only buyers of an order can review it.", MessageSquareQuote]].map(([t, d, I]) => {
             const Icon = I as typeof Store;
-            return <div key={t as string} className={card} style={{ boxShadow: SHADOW }}><Icon className="size-5" aria-hidden /><p className="mt-3 text-[16px]">{t as string}</p><p className="mt-1 text-[14px] text-[#787574]">{d as string}</p></div>;
+            return <div key={t as string} className={card} style={{ boxShadow: SHADOW }}><Icon className="size-5" aria-hidden /><p className="mt-3 text-[16px]">{t as string}</p><p className="mt-1 text-[14px] text-[#5f5c5b]">{d as string}</p></div>;
           })}
         </div>
       </section>
@@ -78,7 +78,7 @@ export function ShopHome() {
             return (
               <a key={t as string} href="#" className="rounded-[28px] bg-white p-2" style={{ boxShadow: SHADOW }}>
                 <div className="grid h-32 place-items-center rounded-[20px]" style={{ background: c as string }}><Icon className="size-8 text-white/80" aria-hidden /></div>
-                <div className="p-4"><p className="text-[16px]">{t as string}</p><p className="text-[14px] text-[#787574]">{d as string}</p></div>
+                <div className="p-4"><p className="text-[16px]">{t as string}</p><p className="text-[14px] text-[#5f5c5b]">{d as string}</p></div>
               </a>
             );
           })}
@@ -91,7 +91,7 @@ export function ShopHome() {
           const Icon = I as typeof Store;
           return (
             <div key={t as string} className={`${card} flex items-center justify-between gap-4`} style={{ boxShadow: SHADOW }}>
-              <div><Icon className="size-5" aria-hidden /><p className="mt-3 text-[20px] tracking-[-0.05em]">{t as string}</p><p className="text-[14px] text-[#787574]">{d as string}</p></div>
+              <div><Icon className="size-5" aria-hidden /><p className="mt-3 text-[20px] tracking-[-0.05em]">{t as string}</p><p className="text-[14px] text-[#5f5c5b]">{d as string}</p></div>
               <a href="#" aria-label={t as string} className="grid size-12 shrink-0 place-items-center rounded-full text-white" style={{ background: ACCENT, boxShadow: "0 4px 24px rgba(69,36,219,.34)" }}><ChevronRight className="size-5" aria-hidden /></a>
             </div>
           );
@@ -105,7 +105,7 @@ export function ShopHome() {
           {MARKETS.map((m, i) => (
             <li key={m} className="flex items-center gap-2 rounded-full border border-[#ebebeb] bg-white py-1.5 pl-1.5 pr-4 text-[16px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.06)" }}>
               <span className="grid size-6 place-items-center rounded-full bg-[#f2f4f5]"><Globe2 className="size-3.5" aria-hidden /></span>{m}
-              <span className="text-[12px] text-[#787574]">{i === 0 ? "Open" : "Soon"}</span>
+              <span className="text-[12px] text-[#5f5c5b]">{i === 0 ? "Open" : "Soon"}</span>
             </li>
           ))}
         </ul>
@@ -118,11 +118,11 @@ export function ShopHome() {
           {FAQ.map(([q, a]) => (
             <details key={q} className="group rounded-[28px] bg-white px-6 py-4" style={{ boxShadow: SHADOW }}>
               <summary className="flex cursor-pointer list-none items-center justify-between text-[16px]">{q}<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-              <p className="mt-2 text-[14px] text-[#787574]">{a}</p>
+              <p className="mt-2 text-[14px] text-[#5f5c5b]">{a}</p>
             </details>
           ))}
         </div>
-        <p className="mt-6 flex items-center gap-1 text-[12px] text-[#787574]"><Star className="size-3" aria-hidden /> Fictional names and figures, for previewing the layout only.</p>
+        <p className="mt-6 flex items-center gap-1 text-[12px] text-[#5f5c5b]"><Star className="size-3" aria-hidden /> Fictional names and figures, for previewing the layout only.</p>
       </section>
     </ShopShell>
   );

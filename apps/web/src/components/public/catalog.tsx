@@ -43,7 +43,7 @@ export function Catalog({
         )}
 
         {!result || result.data.length === 0 ? (
-          <p className="rounded-[28px] bg-white p-10 text-center text-[#787574]">{tr("No products found.")}</p>
+          <p className="rounded-[28px] bg-white p-10 text-center text-[#5f5c5b]">{tr("No products found.")}</p>
         ) : (
           <>
             {/* The list is ordered by category, so each run of products gets its own heading. */}

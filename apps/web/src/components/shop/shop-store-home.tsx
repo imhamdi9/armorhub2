@@ -25,7 +25,7 @@ function Heading({ id, children, href, more }: { id?: string; children: React.Re
   return (
     <div className="mb-6 flex items-end justify-between gap-4">
       <h2 id={id} className="text-xl tracking-[-0.05em]">{children}</h2>
-      {href && <Link href={href} className="text-sm underline underline-offset-4">{more}</Link>}
+      {href && more && <Link href={href} className="text-sm underline underline-offset-4">{more}</Link>}
     </div>
   );
 }
@@ -55,16 +55,16 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
             ))}
           </div>
         )}
-        {industry && <p className="mt-6 text-sm text-[#787574]">{tr(industry.name)}</p>}
+        {industry && <p className="mt-6 text-sm text-[#5f5c5b]">{tr(industry.name)}</p>}
         <h1 className="mt-2 text-5xl leading-none tracking-[-0.06em] text-brand-ink md:text-[64px]">{store.name}</h1>
         <p className="mx-auto mt-4 max-w-2xl text-xl tracking-[-0.03em]">
           {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
         </p>
-        {store.subheadline && <p className="mx-auto mt-2 max-w-2xl text-base text-[#787574]">{store.subheadline}</p>}
+        {store.subheadline && <p className="mx-auto mt-2 max-w-2xl text-base text-[#5f5c5b]">{store.subheadline}</p>}
         <div className="mt-8"><ShopSearch action={products} /></div>
         {categories.length > 0 && (
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#787574]">{counts[c] ?? ""}</span></Link>)}
+            {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
           </div>
         )}
       </header>
@@ -85,7 +85,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
       {stats.length > 0 && (
         <ul className="mt-6 flex flex-wrap justify-center gap-2">
           {stats.map((s) => (
-            <li key={s.l} className={pillCls} style={pillShadow}><strong className="font-normal text-brand-ink">{formatNumber(s.v)}{s.suffix ?? ""}</strong> <span className="text-[#787574]">{tr(s.l)}</span></li>
+            <li key={s.l} className={pillCls} style={pillShadow}><strong className="font-normal text-brand-ink">{formatNumber(s.v)}{s.suffix ?? ""}</strong> <span className="text-[#5f5c5b]">{tr(s.l)}</span></li>
           ))}
         </ul>
       )}
@@ -93,7 +93,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
       {sections.map((sec) => (
         <section key={sec.category} className="mt-16" aria-labelledby={`cat-${sec.category}`}>
           <Heading id={`cat-${sec.category}`} href={`${products}?category=${encodeURIComponent(sec.category)}`} more={sec.count > sec.products.length ? tr("See all") : undefined}>
-            {categoryLabel(sec.category)} <span className="text-sm text-[#787574]">· {sec.count}</span>
+            {categoryLabel(sec.category)} <span className="text-sm text-[#5f5c5b]">· {sec.count}</span>
           </Heading>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{sec.products.map((p) => <ShopProductCard key={p.id} product={p} slug={store.slug} />)}</div>
         </section>
@@ -106,7 +106,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
             <li key={n} className={card} style={{ boxShadow: SHOP_SHADOW }}>
               <span className="grid size-10 place-items-center rounded-full bg-brand-wash text-brand-ink" aria-hidden="true">{n}</span>
               <p className="mt-4 text-base">{tr(t)}</p>
-              <p className="mt-1 text-sm text-[#787574]">{tr(d)}</p>
+              <p className="mt-1 text-sm text-[#5f5c5b]">{tr(d)}</p>
             </li>
           ))}
         </ol>
@@ -116,15 +116,15 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         <section className="mt-16" aria-labelledby="pros">
           <div className={card} style={{ boxShadow: SHOP_SHADOW }}>
             <h2 id="pros" className="text-xl tracking-[-0.05em]">{tr("Professionals near you")}</h2>
-            <p className="mt-2 text-[#787574]">{tr("{n} vetted professionals are ready to quote your job.", { n: formatNumber(partners.count) })}</p>
-            {partners.cities.length > 0 && <p className="mt-2 text-sm text-[#787574]">{tr("Available in")}: {partners.cities.join(" · ")}</p>}
+            <p className="mt-2 text-[#5f5c5b]">{tr("{n} vetted professionals are ready to quote your job.", { n: formatNumber(partners.count) })}</p>
+            {partners.cities.length > 0 && <p className="mt-2 text-sm text-[#5f5c5b]">{tr("Available in")}: {partners.cities.join(" · ")}</p>}
           </div>
         </section>
       )}
 
       {(store.about || store.contact_email || store.contact_phone) && (
         <section className="mt-16 grid gap-3 md:grid-cols-2" aria-label={tr("About us")}>
-          {store.about && <div className={card} style={{ boxShadow: SHOP_SHADOW }}><h2 className="mb-2 text-xl tracking-[-0.05em]">{tr("About us")}</h2><p className="whitespace-pre-line text-[#787574]">{store.about}</p></div>}
+          {store.about && <div className={card} style={{ boxShadow: SHOP_SHADOW }}><h2 className="mb-2 text-xl tracking-[-0.05em]">{tr("About us")}</h2><p className="whitespace-pre-line text-[#5f5c5b]">{store.about}</p></div>}
           {(store.contact_email || store.contact_phone) && (
             <div className={card} style={{ boxShadow: SHOP_SHADOW }}>
               <h2 className="mb-2 text-xl tracking-[-0.05em]">{tr("Contact")}</h2>
@@ -144,7 +144,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
                 {tr(i.q)}
                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#f2f4f5] text-lg leading-none transition group-open:rotate-45" aria-hidden="true">+</span>
               </summary>
-              <p className="mt-2 text-sm text-[#787574]">{tr(i.a)}</p>
+              <p className="mt-2 text-sm text-[#5f5c5b]">{tr(i.a)}</p>
             </details>
           ))}
         </div>

@@ -33,13 +33,13 @@ export function ShopProductCard({ product, slug, headingLevel = 3 }: { product: 
       </div>
       <div className="px-3 pb-3 pt-3">
         <Heading className="text-[14px] tracking-[-0.014em] text-black">{product.name}</Heading>
-        {(product.seller || product.brand) && <p className="mt-0.5 text-xs text-[#787574]">{product.seller ?? product.brand}</p>}
+        {(product.seller || product.brand) && <p className="mt-0.5 text-xs text-[#5f5c5b]">{product.seller ?? product.brand}</p>}
         <p className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[14px] tracking-[-0.014em]">
-          {!hasWas && <span className="text-xs text-[#787574]">{tr("From")}</span>}
+          {!hasWas && <span className="text-xs text-[#5f5c5b]">{tr("From")}</span>}
           <strong className="font-normal">{price(product)}</strong>
-          {hasWas && <s className="text-xs text-[#787574]">{formatMoney(product.compare_at_price!, product.currency, true)}</s>}
+          {hasWas && <s className="text-xs text-[#5f5c5b]">{formatMoney(product.compare_at_price!, product.currency, true)}</s>}
         </p>
-        {product.warranty_years ? <p className="mt-1 text-xs text-[#787574]">{tr("{n}-year warranty", { n: product.warranty_years })}</p> : null}
+        {product.warranty_years ? <p className="mt-1 text-xs text-[#5f5c5b]">{tr("{n}-year warranty", { n: product.warranty_years })}</p> : null}
       </div>
     </Link>
   );

@@ -53,8 +53,8 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
       </nav>
 
       <div className="md:ps-16">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-end gap-2 px-4 pt-3">
-          {store.market && <span dir="ltr" className="me-auto hidden rounded-full bg-white px-3 py-1 text-xs text-[#787574] sm:inline">{store.market.code} · {store.market.currency}</span>}
+        <header className="mx-auto flex max-w-[1200px] items-center justify-end gap-2 px-4 pt-3">
+          {store.market && <span dir="ltr" className="me-auto hidden rounded-full bg-white px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
           <LanguageSwitcher />
           {user ? (
             <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
@@ -64,7 +64,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
               <Link href={signup} className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Sign up")}</Link>
             </>
           )}
-        </div>
+        </header>
 
         <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pb-16">{children}</main>
 

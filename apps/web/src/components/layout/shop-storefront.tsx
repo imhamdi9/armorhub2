@@ -22,7 +22,7 @@ export const PILLS = [{ l: "Armour", i: Shield }, { l: "Vehicles", i: Car }, { l
 
 function Stars({ value }: { value: string }) {
   return (
-    <span className="flex items-center gap-1 text-[11px] text-[#787574]">
+    <span className="flex items-center gap-1 text-[11px] text-[#5f5c5b]">
       <Star className="size-3 fill-black text-black" aria-hidden /> {value}
     </span>
   );
@@ -37,10 +37,10 @@ export function Tile({ item, big }: { item: Item; big?: boolean }) {
       </div>
       <div className="px-3 pb-3 pt-3">
         <p className="text-[14px] tracking-[-0.014em] text-black">{item.name}</p>
-        <p className="mt-0.5 text-[12px] text-[#787574]">{item.seller}</p>
+        <p className="mt-0.5 text-[12px] text-[#5f5c5b]">{item.seller}</p>
         <p className="mt-2 flex items-baseline gap-2 text-[14px] tracking-[-0.014em] text-black">
           {item.price}
-          {item.was && <s className="text-[12px] text-[#787574]">{item.was}</s>}
+          {item.was && <s className="text-[12px] text-[#5f5c5b]">{item.was}</s>}
         </p>
         <div className="mt-1"><Stars value={item.rating} /></div>
       </div>
@@ -85,7 +85,7 @@ export function ShopHero() {
             armorhub<span className="text-black">.</span>
           </h1>
           <form role="search" className="mx-auto mt-8 flex max-w-xl items-center rounded-full border border-black/10 bg-white py-1 pl-5 pr-1">
-            <input type="search" aria-label="Search the market" placeholder="What are you looking for today?" className="h-11 min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#787574]" />
+            <input type="search" aria-label="Search the market" placeholder="What are you looking for today?" className="h-11 min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#5f5c5b]" />
             <button type="submit" aria-label="Search" className="grid size-12 shrink-0 place-items-center rounded-full text-white" style={{ background: ACCENT, boxShadow: "0 4px 24px rgba(69,36,219,.34)" }}>
               <ArrowRight className="size-5" aria-hidden />
             </button>
