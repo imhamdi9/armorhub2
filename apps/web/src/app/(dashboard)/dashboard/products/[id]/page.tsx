@@ -15,6 +15,7 @@ import {
   getProduct,
   savePriceRules,
   updateProduct,
+  uploadProductImage,
 } from "@/services/platform.service";
 import type { CatalogItem, PriceRule, Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
@@ -166,6 +167,16 @@ export default function ProductDetailPage() {
             </div>
             <div className="flex gap-2">
               <Input aria-label={tr("Image address (https)")} placeholder="https://" value={newImage} onChange={(e) => setNewImage(e.target.value)} />
+              <label className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
+                {tr("Upload a photo")}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label={tr("Upload a photo")} className="sr-only" disabled={details.images.length >= 8}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f) return;
+                    try { setDetails((d) => ({ ...d, images: [...d.images, "" ] })); const path = await uploadProductImage(f); setDetails((d) => ({ ...d, images: [...d.images.filter(Boolean), path] })); } catch (err) { setDetails((d) => ({ ...d, images: d.images.filter(Boolean) })); setDetailsMsg(errorMessage(err)); }
+                  }} />
+              </label>
               <Button type="button" variant="outline" disabled={!newImage || details.images.length >= 8} onClick={() => { setDetails({ ...details, images: [...details.images, newImage] }); setNewImage(""); }}>{tr("Add image")}</Button>
             </div>
           </div>

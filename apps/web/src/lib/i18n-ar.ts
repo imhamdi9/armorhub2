@@ -892,4 +892,5 @@ export const AR: Record<string, string> = {
   "Free cancellation before you pay": "إلغاء مجاني قبل الدفع",
   "Shipping and delivery": "الشحن والتوصيل",
   "Warranty and cancellation": "الضمان والإلغاء",
+  "Upload a photo": "رفع صورة",
 };

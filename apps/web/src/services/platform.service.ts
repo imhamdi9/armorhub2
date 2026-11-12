@@ -320,3 +320,11 @@ export const getSellerEarnings = async () =>
 /** Published admin-edited content of a surface, per language (never drafts). */
 export const getSurface = async (key: string) =>
   (await api.get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`)).data.values;
+
+/** Upload a product photo; returns the path to store in the product's images. */
+export const uploadProductImage = async (file: File) => {
+  const form = new FormData();
+  form.append("image", file);
+
+  return (await api.post<{ path: string }>("/product-images", form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
+};

@@ -66,4 +66,37 @@ class MediaTest extends TestCase
         $this->get('/api/public/media/not-a-real-name.png')->assertNotFound();
         $this->get('/api/public/media/'.str_repeat('a', 36).'.png')->assertNotFound();
     }
+
+    public function test_sellers_and_owners_upload_product_photos_but_customers_cannot(): void
+    {
+        $this->actingAs($this->customer, 'sanctum')->postJson('/api/product-images', ['image' => $this->realFile($this->png(), 'a.png')])->assertForbidden();
+        $this->actingAs($this->manager, 'sanctum');
+        $this->postJson('/api/product-images', ['image' => $this->realFile($this->png(), 'a.png')])->assertStatus(403);
+
+        $this->actingAs($this->admin, 'sanctum');
+        $this->postJson('/api/product-images', ['image' => $this->realFile('<svg xmlns="http://www.w3.org/2000/svg"/>', 'x.png')])->assertStatus(422);
+        $path = $this->postJson('/api/product-images', ['image' => $this->realFile($this->png(), 'photo.png')])->assertCreated()->json('path');
+        $this->postJson('/api/products', ['name' => 'Photo product', 'slug' => 'photo-product', 'base_price' => 5, 'images' => [$path]])->assertCreated();
+    }
+
+    public function test_the_bulk_import_attaches_photos_by_file_name(): void
+    {
+        $product = \App\Models\Product::create(['name' => 'Lamp', 'slug' => 'eg-lamp', 'base_price' => 10, 'is_active' => true]);
+        $dir = sys_get_temp_dir().'/photos-'.uniqid();
+        mkdir($dir);
+        file_put_contents("{$dir}/eg-lamp-2.png", $this->png());
+        file_put_contents("{$dir}/eg-lamp-1.png", $this->png().'x');
+        file_put_contents("{$dir}/unrelated.png", $this->png());
+
+        $this->artisan('platform:import-photos', ['directory' => $dir, '--dry-run' => true])->assertSuccessful();
+        $this->assertEmpty($product->fresh()->images);
+
+        $this->artisan('platform:import-photos', ['directory' => $dir])->assertSuccessful();
+        $images = $product->fresh()->images;
+        $this->assertCount(2, $images);
+        foreach ($images as $path) {
+            $this->assertTrue(\App\Support\ImageRef::valid($path));
+            $this->assertTrue(Storage::disk('local')->exists('media/'.basename($path)));
+        }
+    }
 }
