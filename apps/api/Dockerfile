@@ -22,7 +22,8 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && sed -ri -e 's/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/' /etc/apache2/sites-available/000-default.conf \
     && a2enconf laravel \
     && printf 'opcache.enable=1\nopcache.validate_timestamps=0\nopcache.memory_consumption=128\n' > /usr/local/etc/php/conf.d/opcache.ini \
-    && printf 'expose_php=Off\n' > /usr/local/etc/php/conf.d/hardening.ini
+    && printf 'expose_php=Off\n' > /usr/local/etc/php/conf.d/hardening.ini \
+    && printf 'upload_max_filesize=6M\npost_max_size=26M\nmax_file_uploads=12\n' > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html

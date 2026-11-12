@@ -28,6 +28,8 @@ export default function ForgotPasswordPage() {
       );
     } catch (err) {
       setError(errorMessage(err));
+    } finally {
+      human.refresh();
     }
   }
 

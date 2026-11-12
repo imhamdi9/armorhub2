@@ -35,7 +35,7 @@ try {
   await s.waitForSelector("#target option", { state: "attached" });
   await s.fill("#business_name", "Gulf Parts Brand");
   await s.fill("#registration_number", "1010999888");
-  await s.fill("#tax_number", "300000000000003");
+  await s.fill("#tax_number", "123");                // wrong on purpose: the server refuses it, and the retry must still work
   await s.fill("#contact_name", "Omar Nasser");
   await s.fill("#email", email);
   await s.fill("#phone", "0501119999");
@@ -49,6 +49,11 @@ try {
   await s.setInputFiles("#doc-id", pdf("owner-id.pdf"));
   await s.setInputFiles("#doc-commercial_registration", pdf("cr.pdf"));
   await s.setInputFiles("#doc-tax_certificate", pdf("vat.pdf"));
+  await s.click("button[type=submit]");
+  await s.waitForSelector("text=valid tax registration number");
+  // The refused attempt used up its anti-bot token; the form must hand out a fresh one rather than treat the retry as a bot.
+  await s.fill("#tax_number", "300000000000003");
+  await s.waitForSelector("button[type=submit]:not([disabled])");
   await s.click("button[type=submit]");
   await s.waitForSelector("text=Application received");
   await sctx.close();

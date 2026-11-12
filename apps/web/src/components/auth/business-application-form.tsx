@@ -123,6 +123,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
       setDone(true);
     } catch (err) {
       setError(errorMessage(err));
+      human.refresh();
     } finally {
       setBusy(false);
     }

@@ -75,6 +75,7 @@ function RegisterForm() {
       router.push(productId ? `/dashboard/orders/new?product=${encodeURIComponent(productId)}` : "/dashboard");
     } catch (err) {
       setError(errorMessage(err));
+      human.refresh();
     } finally {
       setBusy(false);
     }

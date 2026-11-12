@@ -25,6 +25,8 @@ export function useHumanCheck() {
   const [waited, setWaited] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
 
+  const [round, setRound] = useState(0);
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     getChallenge()
@@ -34,7 +36,18 @@ export function useHumanCheck() {
       })
       .catch(() => undefined);
     return () => clearTimeout(timer);
-  }, []);
+  }, [round]);
+
+  /**
+   * A token works once, even when the submission is then refused (a weak password, a taken email, a file that is too big).
+   * Call this after any failed submit so the next try has a fresh one instead of being mistaken for a bot.
+   */
+  const refresh = () => {
+    setChallenge(null);
+    setWaited(false);
+    setCaptchaToken("");
+    setRound((r) => r + 1);
+  };
 
   const needsCaptcha = !!challenge?.captcha;
 
@@ -43,6 +56,7 @@ export function useHumanCheck() {
     token: challenge?.token ?? "",
     captchaToken,
     setCaptchaToken,
+    refresh,
     /** True once the form may be submitted. */
     ready: !!challenge && waited && (!needsCaptcha || captchaToken !== ""),
     waiting: !!challenge && !waited,
