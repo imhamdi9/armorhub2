@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -118,6 +119,14 @@ function OrderDetail() {
           <p className="mt-2">{tr("Appointment")}: {formatDateTime(order.scheduled_at)}</p>
         )}
       </div>
+
+      {order.product?.installation && order.product.installation !== "none" && ["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) && (
+        <div role="note" className={`mb-6 rounded-lg border p-4 text-sm ${order.product.installation === "required" ? "border-amber-300 bg-amber-50 text-amber-900" : "border-sky-200 bg-sky-50 text-sky-900"}`} data-testid="installation-prompt">
+          <p className="font-semibold">{order.product.installation === "required" ? tr("This product needs professional installation") : tr("Want it installed by a professional?")}</p>
+          <p className="mt-1">{tr("Nearby centres send you offers without seeing your details. You choose, and pay on the platform.")}</p>
+          <Link href={`/dashboard/installations/new?product=${order.product.id}`} className="mt-2 inline-block font-semibold underline">{tr("Get installation offers")}</Link>
+        </div>
+      )}
 
       <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
 

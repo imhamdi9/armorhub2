@@ -116,6 +116,22 @@ try {
   if (await sip.locator("#g-name").count()) fail("a signed-in customer is shown the guest form");
   ok("a signed-in customer is offered to continue with their account");
 
+  // ---- 8. A product that needs installation tells the buyer, before and after paying
+  const lock = list.data.find((p) => /Smart Door Lock/.test(p.name)) ?? fail("door lock missing");
+  const g2 = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  await g2.goto(`${base}/s/beit-masr/checkout?product=${lock.id}`);
+  await g2.waitForSelector("[data-testid=installation-note]");
+  if (!/needs professional installation/.test(await g2.locator("[data-testid=installation-note]").innerText())) fail("the checkout does not say the product needs installation");
+  await g2.fill("#g-name", "Hana Guest"); await g2.fill("#g-email", `hana${Date.now()}@example.org`); await g2.fill("#g-phone", "01012345678");
+  await g2.fill("#g-line1", "3 Tahrir Square"); await g2.fill("#g-city", "Cairo");
+  await g2.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
+  await g2.getByRole("button", { name: /^Pay / }).click();
+  await g2.waitForURL(/\/track\//);
+  await g2.waitForSelector("[data-testid=installation-prompt]");
+  await g2.screenshot({ path: `${SHOTS}/guest-4-installation-prompt.png`, fullPage: true });
+  await scan(g2, "guest order with installation prompt");
+  ok("a product that needs installation says so at checkout and on the order page");
+
   if (findings.length) fail(`accessibility problems:\n  ${findings.join("\n  ")}`);
   ok("no serious accessibility problems on the guest screens");
   console.log("\nGuest checkout passed.");

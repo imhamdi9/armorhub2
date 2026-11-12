@@ -155,7 +155,7 @@ class GuestOrderController extends Controller
         return [
             'id' => $order->id, 'status' => $status, 'currency' => $order->currency, 'total' => (float) $order->total_amount, 'tax_amount' => $order->tax_amount !== null ? (float) $order->tax_amount : null,
             'created_at' => $order->created_at?->toIso8601String(), 'email' => $order->guest_email, 'name' => $order->guest_name,
-            'product' => ['name' => $order->product?->name, 'image' => $order->product?->images[0] ?? null, 'seller' => $order->product?->seller_id ? \App\Models\Company::withoutGlobalScopes()->whereKey($order->product->seller_id)->value('name') : null],
+            'product' => ['installation' => $order->product?->installation ?? 'none', 'name' => $order->product?->name, 'image' => $order->product?->images[0] ?? null, 'seller' => $order->product?->seller_id ? \App\Models\Company::withoutGlobalScopes()->whereKey($order->product->seller_id)->value('name') : null],
             'store' => ['name' => $company?->name, 'slug' => $company?->slug],
             'shipping_address' => $order->makeVisible('shipping_address')->shipping_address,
             'can_pay' => $status === OrderStatus::AwaitingPayment->value, 'can_cancel' => $order->status->isCancellable(),

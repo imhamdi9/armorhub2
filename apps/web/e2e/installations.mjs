@@ -45,6 +45,34 @@ async function scan(page, label) {
 const noOverflow = async (page, label) => { if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail(`${label}: the page scrolls sideways`); };
 
 try {
+  // ---- 0. The product form asks whether (and how) the product comes with installation
+  const owner = await login("owner.auto@demo.eg");
+  await owner.goto(`${base}/dashboard/products`);
+  await owner.getByRole("button", { name: "Add product" }).click();
+  await owner.waitForSelector("fieldset:has-text('Installation')");
+  const radios = await owner.locator("input[name=installation]").count();
+  if (radios !== 3) fail(`expected three installation choices, got ${radios}`);
+  if (!(await owner.locator("input[name=installation][value=none]").isChecked())) fail("a new product should default to 'sold on its own'");
+  await owner.fill("#name", "Roof rack kit");
+  if (await owner.locator("select#category").count()) await owner.selectOption("select#category", "__new__");
+  await owner.fill("input[aria-label='New category']", "roof-racks");
+  await owner.check("input[name=installation][value=required]");
+  await owner.fill("#price", "1200");
+  await owner.getByRole("button", { name: "Save" }).click();
+  await owner.waitForURL(/dashboard\/products\/\d+/);
+  await owner.reload();
+  await owner.waitForSelector("input[name=installation]");
+  if (!(await owner.locator("input[name=installation][value=required]").isChecked())) fail("the installation choice was not saved");
+  await owner.check("input[name=installation][value=optional]");
+  await owner.getByRole("button", { name: "Save details" }).click();
+  await owner.waitForSelector("text=Saved");
+  await owner.reload();
+  await owner.waitForSelector("input[name=installation]");
+  if (!(await owner.locator("input[name=installation][value=optional]").isChecked())) fail("changing the installation choice did not stick");
+  await owner.screenshot({ path: `${SHOTS}/inst-0-product-form.png`, fullPage: true });
+  await scan(owner, "product form");
+  ok("the product form offers three installation choices, saves and changes them");
+
   const customer = await login("nour.fawzy@demo.eg", { geo: true });
 
   // ---- 1. The product page offers installation only where it applies

@@ -112,6 +112,14 @@ export function TrackOrder({ token }: { token: string }) {
           </section>
         )}
 
+        {order.product.installation && order.product.installation !== "none" && order.status !== "awaiting_payment" && !cancelled && (
+          <section className={card} style={{ boxShadow: SHOP_SHADOW }} data-testid="installation-prompt">
+            <h2 className="text-xl tracking-[-0.05em]">{order.product.installation === "required" ? tr("This product needs professional installation") : tr("Want it installed by a professional?")}</h2>
+            <p className="mt-2 text-sm text-[#5f5c5b]">{tr("Nearby centres send you offers without seeing your details. You choose, and pay on the platform.")} {tr("To ask for offers you need an account: create one with the same e-mail.")}</p>
+            <Link href={`/register?store=${encodeURIComponent(slug)}`} className="mt-3 inline-flex h-11 items-center rounded-full border border-[#ebebeb] px-6">{tr("Create an account to get installation offers")}</Link>
+          </section>
+        )}
+
         {error && <p role="alert" className="text-center text-sm text-red-600">{error}</p>}
 
         <section className={`${card} text-center`} style={{ boxShadow: SHOP_SHADOW }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryField } from "@/components/products/category-field";
+import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -37,7 +38,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, images: [] as string[], highlights: "",
+    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, installation: "none" as InstallationMode, images: [] as string[], highlights: "",
   });
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
   const [newImage, setNewImage] = useState("");
@@ -57,6 +58,7 @@ export default function ProductDetailPage() {
         description: p.description ?? "",
         is_active: p.is_active,
         requires_shipping: !!p.requires_shipping,
+        installation: (p.installation ?? "none") as InstallationMode,
       });
       setPrices(
         Object.fromEntries(
@@ -100,6 +102,7 @@ export default function ProductDetailPage() {
         description: details.description || null,
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
+        installation: details.installation,
       });
       setProduct((current) => ({ ...updated, can_edit: current?.can_edit ?? true }));
       setDetailsMsg(tr("Saved"));
@@ -146,6 +149,7 @@ export default function ProductDetailPage() {
             <input type="checkbox" id="requires_shipping" checked={details.requires_shipping} onChange={(e) => setDetails({ ...details, requires_shipping: e.target.checked })} />
             {tr("Physical product: needs a delivery address and shipping")}
           </label>
+          <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
           <textarea
             aria-label={tr("Description")}
             placeholder={tr("Description")}

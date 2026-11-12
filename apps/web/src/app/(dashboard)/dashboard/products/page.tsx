@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryField } from "@/components/products/category-field";
+import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ export default function ProductsPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
+  const [installation, setInstallation] = useState<InstallationMode>("none");
   const [error, setError] = useState<string | null>(null);
 
   const canManage = hasRole(user, "platform-admin", "company-owner", "seller");
@@ -48,6 +50,7 @@ export default function ProductsPage() {
         name,
         slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
         category,
+        installation,
         base_price: price,
         industry_id: user?.industry?.id ?? null,
       });
@@ -75,6 +78,7 @@ export default function ProductsPage() {
             <Label htmlFor="category">{tr("Category")}</Label>
             <CategoryField id="category" value={category} onChange={setCategory} />
           </div>
+          <InstallationField value={installation} onChange={setInstallation} />
           <div>
             <Label htmlFor="price">{tr("Base price")}</Label>
             <Input id="price" type="number" min="0" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} />
