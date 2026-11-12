@@ -33,7 +33,7 @@ try {
   if (!/You do not need an account/.test(await text(page))) fail("the checkout does not say an account is optional");
   await page.screenshot({ path: `${SHOTS}/guest-1-checkout.png`, fullPage: true });
   await scan(page, "checkout");
-  ok("Order now opens a checkout with no sign-in; an account is optional");
+  ok("Buy now opens a checkout with no sign-in; an account is optional");
 
   // ---- 2. A service still goes through signup (it needs quotes)
   await page.goto(`${base}/s/beit-masr/products/${cleaning.id}`);

@@ -81,7 +81,7 @@ try {
   await phone.screenshot({ path: `${SHOTS}/egypt-product-mobile.png` });
   await phone.click("text=العربية");
   await phone.waitForFunction(() => document.documentElement.dir === "rtl");
-  await phone.waitForSelector("text=اطلب الآن");
+  await phone.waitForSelector("text=اشتري الآن");
   const rtlOverflow = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (rtlOverflow > 1) fail(`the Arabic product page scrolls sideways (${rtlOverflow}px)`);
   await phone.screenshot({ path: `${SHOTS}/egypt-product-ar.png` });
