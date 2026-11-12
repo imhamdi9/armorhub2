@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { price, ProductCard, savingPercent } from "@/components/public/product-card";
-import { PublicShell, type ShellStore } from "@/components/public/shell";
+import { price, savingPercent } from "@/components/public/product-card";
+import type { ShellStore } from "@/components/public/shell";
+import { ShopProductCard } from "@/components/shop/shop-product-card";
+import { ShopShell, SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
 import { me } from "@/services/auth.service";
@@ -110,8 +112,8 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
   }, []);
 
   return (
-    <PublicShell store={store}>
-      <div className="mx-auto max-w-[1200px] px-4 py-8">
+    <ShopShell store={store} active="products">
+      <div className="my-6 rounded-[28px] bg-white p-4 md:p-8" style={{ boxShadow: SHOP_SHADOW }}>
         <nav aria-label={tr("Breadcrumb")} className="mb-5 flex flex-wrap items-center gap-1.5 text-sm text-slate">
           <Link href={`/s/${store.slug}`} className="hover:text-forest">{store.name}</Link><span aria-hidden="true">/</span>
           <Link href={`/s/${store.slug}/products`} className="hover:text-forest">{tr("All products")}</Link>
@@ -209,14 +211,14 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
           <section className="mt-16" aria-label={tr("You may also like")}>
             <h2 className="display display-md mb-6">{tr("You may also like")}</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {data.related.map((r) => <ProductCard key={r.id} product={r} slug={store.slug} />)}
+              {data.related.map((r) => <ShopProductCard key={r.id} product={r} slug={store.slug} />)}
             </div>
           </section>
         )}
       </div>
 
       {stuck && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-fog bg-white/95 px-4 py-3 shadow-lift backdrop-blur" role="region" aria-label={tr("Quick order")}>
+        <div className="fixed inset-x-0 bottom-16 z-40 border-t md:bottom-0 md:ps-16 border-fog bg-white/95 px-4 py-3 shadow-lift backdrop-blur" role="region" aria-label={tr("Quick order")}>
           <div className="mx-auto flex max-w-[1200px] items-center gap-3">
             {p.images?.[0] && (
               // eslint-disable-next-line @next/next/no-img-element -- seller-chosen image
@@ -227,6 +229,6 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
           </div>
         </div>
       )}
-    </PublicShell>
+    </ShopShell>
   );
 }

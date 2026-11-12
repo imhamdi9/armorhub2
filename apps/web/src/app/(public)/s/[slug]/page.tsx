@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { StoreHome } from "@/components/public/store-home";
+import { ShopStoreHome } from "@/components/shop/shop-store-home";
 import { getStore } from "@/lib/public-api";
 import { absoluteImage, plain } from "@/lib/seo";
 
@@ -31,5 +31,5 @@ export default async function StorePage({ params }: Props) {
 
   if (!data) notFound();
 
-  return <StoreHome data={data} />;
+  return <ShopStoreHome data={data} />;
 }

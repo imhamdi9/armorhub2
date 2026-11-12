@@ -130,3 +130,6 @@ subscriber and enablement. It must work with zero changes under `app/Core`. Ever
 4. **Plugin = module + manifest.** The same contract serves first-party products and third-party plugins.
 
 See `docs/adr/` for the reasoning behind each.
+
+### Storefront look: SaaS home vs Shop-style markets
+The platform home (`/`) keeps its SaaS landing look (`components/public/platform-home.tsx`). Every market or industry storefront under `/s/<slug>` (home, catalogue, product page) is drawn in the Shop style by `components/shop/*`: grey canvas, icon rail, white 28px image cards, pill search, one accent that is the store's own `primary_color`. A new market gets this look automatically; nothing is configured per industry.

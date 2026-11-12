@@ -458,6 +458,8 @@ export const AR: Record<string, string> = {
   "Explore": "استكشف",
   "Countries": "الدول",
   "Account": "الحساب",
+  "Home": "الرئيسية",
+  "What are you looking for today?": "ما الذي تبحث عنه اليوم؟",
   "FAQ": "الأسئلة الشائعة",
   "Secure payments": "دفع آمن",
   "Warranty on every job": "ضمان على كل عمل",
