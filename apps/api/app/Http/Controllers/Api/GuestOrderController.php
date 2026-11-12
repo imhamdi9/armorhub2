@@ -59,6 +59,8 @@ class GuestOrderController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
+        app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
+
         // "Sold only with an installation offer": offers come from centres to a signed-in customer, so a guest cannot buy it directly.
         if ($product->installation === 'required') {
             throw ValidationException::withMessages(['product_id' => ['This product is sold together with an installation offer. Sign in or create an account to get offers first.']]);

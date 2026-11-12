@@ -76,6 +76,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
+    items.push({ title: "Warehouse", href: "/dashboard/seller-warehouse", icon: "catalog" });
     items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
 
     return items;
@@ -87,6 +88,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     if (can("orders.view")) items.push({ title: "Orders", href: "/dashboard/orders", icon: "orders" });
     if (can("products.view")) items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
     if (can("partners.view")) items.push({ title: "Partners", href: "/dashboard/partners", icon: "partners" });
+    if (can("warehouse.manage")) items.push({ title: "Warehouse", href: "/dashboard/warehouse", icon: "catalog" });
     if (can("commissions.view")) items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
 
     return items;
@@ -171,6 +173,10 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Market payments", href: "/dashboard/market/payments", section: "market", icon: "payments" });
     items.push({ title: "Market shipping", href: "/dashboard/market/shipping", section: "market", icon: "shipping" });
     items.push({ title: "Market fees", href: "/dashboard/market/fees", section: "market", icon: "commissions" });
+  }
+
+  if (hasRole(user, "platform-admin", "company-owner")) {
+    items.push({ title: "Warehouse", href: "/dashboard/warehouse", icon: "catalog" });
   }
 
   if (hasRole(user, "platform-admin", "company-owner", "partner-manager")) {

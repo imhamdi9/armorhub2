@@ -17,7 +17,27 @@ class Order extends Model
     /** The workflow that governs an order's life (declared by the ArmorHub module as data). */
     public const WORKFLOW = 'armorhub.order';
 
+    public function shipments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    /** Goods kept by ArmorHub are shipped from the market's warehouse, not by the seller. */
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            $product = Product::withoutGlobalScopes()->find($order->product_id);
+            if ($product?->fulfilment === 'armorhub' && $product->requires_shipping) {
+                $tenantId = (int) Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id');
+                $order->fulfilment = 'armorhub';
+                $order->warehouse_id = app(\App\Services\Warehouse\WarehouseService::class)->warehouseFor($tenantId)?->id;
+            }
+        });
+    }
+
     protected $fillable = [
+        'fulfilment',
+        'warehouse_id',
         'customer_id',
         'product_id',
         'subject_type',

@@ -41,6 +41,7 @@ class Product extends Model
         'carton_height_cm',
         'carton_weight_kg',
         'stock_cartons',
+        'fulfilment',
     ];
 
 

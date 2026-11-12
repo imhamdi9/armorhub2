@@ -352,3 +352,26 @@ export const getMarkets = async () => (await api.get<{ markets: MarketRow[]; ind
 export const getCountries = async () => (await api.get<{ code: string; name: string; name_ar: string; currency: string; open: boolean }[]>("/admin/countries")).data;
 export const openMarket = async (body: { country: string; name?: string; industries: number[]; slug?: string }) => (await api.post<MarketRow>("/admin/markets", body)).data;
 export const updateMarket = async (id: number, body: { name?: string; industries?: number[]; status?: "active" | "paused" }) => (await api.put<MarketRow>(`/admin/markets/${id}`, body)).data;
+
+// ---- Warehouse and fulfilment -------------------------------------------------------------------
+export interface WarehouseRow { id: number; name: string; city: string | null; address: string | null; is_active: boolean }
+export interface InboundLine { id: number; product_id: number; cartons_expected: number; cartons_received: number; product?: { id: number; name: string; sku: string | null; units_per_carton: number | null } }
+export interface InboundRow { id: number; warehouse_id: number; seller_id: number; status: "announced" | "received" | "cancelled"; carrier: string | null; tracking_number: string | null; note: string | null; created_at: string; items: InboundLine[] }
+export interface StockRow { warehouse_id: number; warehouse: string; product_id: number; name: string; sku: string | null; units_per_carton: number | null; units: number }
+export interface PackOrder { id: number; status: string; total_amount: string; currency: string; shipping_address: { name: string; line1: string; city: string; phone: string } | null; product?: { name: string; sku: string | null } }
+export interface SellerStock { warehouse: { id: number; name: string; city: string | null } | null; products: { id: number; name: string; sku: string | null; fulfilment: "seller" | "armorhub"; units_per_carton: number | null; stock_cartons: number; units: number }[] }
+
+const wp = (market?: number | null) => (market ? { market } : {});
+export const getWarehouses = async (market?: number | null) => (await api.get<WarehouseRow[]>("/warehouse/warehouses", { params: wp(market) })).data;
+export const addWarehouse = async (body: { name: string; city?: string }, market?: number | null) => (await api.post<WarehouseRow>("/warehouse/warehouses", body, { params: wp(market) })).data;
+export const getWarehouseStock = async (market?: number | null) => (await api.get<StockRow[]>("/warehouse/stock", { params: wp(market) })).data;
+export const adjustStock = async (body: { warehouse_id: number; product_id: number; units: number; note: string }, market?: number | null) => (await api.post<{ units: number }>("/warehouse/stock/adjust", body, { params: wp(market) })).data;
+export const getWarehouseInbound = async (market?: number | null) => (await api.get<InboundRow[]>("/warehouse/inbound", { params: wp(market) })).data;
+export const receiveInbound = async (id: number, items: { id: number; cartons_received: number }[], market?: number | null) => (await api.post<InboundRow>(`/warehouse/inbound/${id}/receive`, { items }, { params: wp(market) })).data;
+export const getPackOrders = async (market?: number | null) => (await api.get<PackOrder[]>("/warehouse/orders", { params: wp(market) })).data;
+export const shipPackOrder = async (id: number, body: { carrier?: string; tracking_number?: string }, market?: number | null) => (await api.post(`/warehouse/orders/${id}/ship`, body, { params: wp(market) })).data;
+
+export const getSellerStock = async () => (await api.get<SellerStock>("/seller/stock")).data;
+export const getSellerInbound = async () => (await api.get<InboundRow[]>("/seller/inbound-shipments")).data;
+export const announceInbound = async (body: { items: { product_id: number; cartons: number }[]; carrier?: string; tracking_number?: string; note?: string }) => (await api.post<InboundRow>("/seller/inbound-shipments", body)).data;
+export const cancelInbound = async (id: number) => (await api.post<InboundRow>(`/seller/inbound-shipments/${id}/cancel`)).data;

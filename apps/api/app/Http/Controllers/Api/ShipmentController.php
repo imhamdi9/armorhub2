@@ -123,7 +123,12 @@ class ShipmentController extends Controller
             return 'staff';
         }
         // The seller of the product ships it.
-        if ($user->hasRole('seller') && $order->product?->seller_id !== null && $order->product->seller_id === $user->company_id) {
+        if ($user->hasRole('seller') && $order->fulfilment !== 'armorhub' && $order->product?->seller_id !== null && $order->product->seller_id === $user->company_id) {
+            return 'staff';
+        }
+        // Goods ArmorHub keeps are shipped by the warehouse team of that market.
+        if ($order->fulfilment === 'armorhub' && $user->can('warehouse.manage')
+            && (int) $user->company?->tenant_id === (int) \App\Models\Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id')) {
             return 'staff';
         }
         if ($user->hasAnyRole(['partner-manager', 'technician']) && $user->partner_id

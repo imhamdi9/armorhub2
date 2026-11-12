@@ -71,6 +71,8 @@ export interface PublicProduct {
   installation?: "none" | "optional" | "required";
   seller?: string | null;
   seller_id?: number | null;
+  fulfilled_by_armorhub?: boolean;
+  in_stock?: boolean;
 }
 
 export interface PublicSellerPage {

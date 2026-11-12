@@ -114,6 +114,10 @@ class ProductController extends Controller
             unset($data['industry_id'], $data['market'], $data['seller_id']);
         }
 
+        // Stock kept by ArmorHub changes only through the warehouse's movements, never by editing the product.
+        if (($data['fulfilment'] ?? $product->fulfilment) === 'armorhub') {
+            unset($data['stock_cartons']);
+        }
         $product->update($data);
 
         // The same shape as show(), so a screen that replaces its copy with this one does not lose the edit permission.
@@ -213,6 +217,7 @@ class ProductController extends Controller
             'carton_height_cm' => 'nullable|numeric|min:0.1|max:1000',
             'carton_weight_kg' => 'nullable|numeric|min:0.001|max:2000',
             'stock_cartons' => 'nullable|integer|min:0|max:10000000',
+            'fulfilment' => 'sometimes|in:seller,armorhub',
             'brand' => 'nullable|string|max:255',
             'name' => $sometimes.'required|string|max:255',
             'slug' => [
@@ -241,6 +246,38 @@ class ProductController extends Controller
             $rules['industry_id'] = 'nullable|integer';
         }
 
-        return $request->validate($rules);
+        $data = $request->validate($rules);
+        $this->checkFulfilment($data, $request, $product);
+
+        return $data;
+    }
+
+    /** ArmorHub can only store and ship what it can handle: a physical product with complete carton data, in a market that has a warehouse. */
+    private function checkFulfilment(array $data, Request $request, ?Product $product): void
+    {
+        $wants = $data['fulfilment'] ?? $product?->fulfilment ?? 'seller';
+        $stock = app(\App\Services\Warehouse\WarehouseService::class);
+
+        if ($wants === 'seller') {
+            if ($product && ($data['fulfilment'] ?? null) === 'seller' && $product->fulfilment === 'armorhub' && $stock->unitsOf($product) > 0) {
+                throw ValidationException::withMessages(['fulfilment' => ['Units are still in the warehouse. Ask the warehouse to return them first.']]);
+            }
+
+            return;
+        }
+
+        $get = fn ($k) => array_key_exists($k, $data) ? $data[$k] : $product?->{$k};
+        if (! ($get('requires_shipping') ?? $request->boolean('requires_shipping', true))) {
+            throw ValidationException::withMessages(['fulfilment' => ['Only physical products can be stored by ArmorHub.']]);
+        }
+        foreach (['units_per_carton', 'carton_length_cm', 'carton_width_cm', 'carton_height_cm', 'carton_weight_kg'] as $k) {
+            if (! $get($k)) {
+                throw ValidationException::withMessages(['fulfilment' => ['Fill in the carton size, weight and units per carton first: the warehouse needs them.']]);
+            }
+        }
+        $company = $product?->seller_id ? \App\Models\Company::withoutGlobalScopes()->find($product->seller_id) : $request->user()->company;
+        if (! $company?->tenant_id || ! $stock->warehouseFor($company->tenant_id)) {
+            throw ValidationException::withMessages(['fulfilment' => ['This market has no open warehouse yet.']]);
+        }
     }
 }

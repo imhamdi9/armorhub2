@@ -214,6 +214,25 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::put('/tenants/{tenant}', [TenantController::class, 'update']);
     });
 
+    // Warehouse: the market's team receives sellers' cartons, counts stock and ships orders; sellers announce deliveries and see stock.
+    $wh = \App\Http\Controllers\Api\WarehouseController::class;
+    Route::middleware('permission:warehouse.manage')->prefix('warehouse')->group(function () use ($wh) {
+        Route::get('/warehouses', [$wh, 'index']);
+        Route::post('/warehouses', [$wh, 'store']);
+        Route::put('/warehouses/{id}', [$wh, 'update'])->whereNumber('id');
+        Route::get('/stock', [$wh, 'stockList']);
+        Route::post('/stock/adjust', [$wh, 'adjust']);
+        Route::get('/inbound', [$wh, 'inbound']);
+        Route::post('/inbound/{id}/receive', [$wh, 'receive'])->whereNumber('id');
+        Route::get('/orders', [$wh, 'orders']);
+        Route::post('/orders/{id}/ship', [$wh, 'ship'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+    $sf = \App\Http\Controllers\Api\SellerFulfilmentController::class;
+    Route::get('/seller/stock', [$sf, 'stock']);
+    Route::get('/seller/inbound-shipments', [$sf, 'index']);
+    Route::post('/seller/inbound-shipments', [$sf, 'store']);
+    Route::post('/seller/inbound-shipments/{id}/cancel', [$sf, 'cancel'])->whereNumber('id');
+
     // Products and pricing
     Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
     Route::post('/products/bulk-installation', [ProductController::class, 'bulkInstallation'])->middleware('permission:products.update');

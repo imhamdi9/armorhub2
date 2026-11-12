@@ -46,6 +46,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // The payment, shipping and fee settings of one's own market (market managers); the platform-wide ones stay with admins
     'market.settings',
+    // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
+    'warehouse.manage',
     // Platform administration (admins only: they get every permission)
     'admin.panel',
     'catalog.manage',
@@ -86,6 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'company-owner' => [
     'market.settings',
+    'warehouse.manage',
     'companies.view',
     'companies.update',
 
@@ -121,6 +124,13 @@ class RolesAndPermissionsSeeder extends Seeder
 
     'commissions.view',
 
+    'dashboard.view',
+],
+
+// The team of a market's warehouse: receives sellers' cartons, counts stock, packs and ships orders.
+'warehouse-staff' => [
+    'warehouse.manage',
+    'orders.view',
     'dashboard.view',
 ],
 

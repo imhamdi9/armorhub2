@@ -16,6 +16,7 @@ export interface Product {
   installation?: "none" | "optional" | "required";
   seller_id?: number | null;
   sku?: string | null;
+  fulfilment?: "seller" | "armorhub";
   units_per_carton?: number | null;
   carton_length_cm?: string | number | null;
   carton_width_cm?: string | number | null;

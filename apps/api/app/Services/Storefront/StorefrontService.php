@@ -148,6 +148,8 @@ class StorefrontService
             'compare_at_price' => $product->compare_at_price !== null ? round((float) $product->compare_at_price, 2) : null,
             'requires_shipping' => (bool) $product->requires_shipping,
             'installation' => $product->installation ?? 'none',
+            'fulfilled_by_armorhub' => $product->fulfilment === 'armorhub',
+            'in_stock' => $product->fulfilment !== 'armorhub' || app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product) > 0,
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
         ];

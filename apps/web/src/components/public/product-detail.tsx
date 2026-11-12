@@ -184,6 +184,13 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
               </fieldset>
             )}
 
+            {p.fulfilled_by_armorhub && (
+              <p className="mt-4 text-sm font-medium text-forest" data-testid="fulfilled-badge">
+                ✔ {tr("Fulfilled by ArmorHub: stored in the market warehouse and shipped fast.")}
+                {p.in_stock === false && <span className="ms-2 rounded-full bg-red-50 px-2 py-0.5 text-red-700">{tr("Out of stock")}</span>}
+              </p>
+            )}
+
             <div className="mt-6 grid gap-3 sm:grid-cols-1" data-testid="buy-buttons">
               {!goods && (
                 <>

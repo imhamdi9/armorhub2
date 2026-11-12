@@ -39,7 +39,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, installation: "none" as InstallationMode, images: [] as string[], highlights: "",
+    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", installation: "none" as InstallationMode, images: [] as string[], highlights: "",
   });
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
@@ -61,6 +61,7 @@ export default function ProductDetailPage() {
         is_active: p.is_active,
         requires_shipping: !!p.requires_shipping,
         installation: (p.installation ?? "none") as InstallationMode,
+        fulfilment: (p.fulfilment ?? "seller") as "seller" | "armorhub",
       });
       setCarton({
         sku: p.sku ?? "", units_per_carton: p.units_per_carton == null ? "" : String(p.units_per_carton), carton_length_cm: p.carton_length_cm == null ? "" : String(p.carton_length_cm),
@@ -110,6 +111,7 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
         installation: details.installation,
+        fulfilment: details.fulfilment,
         ...cartonPayload(carton),
       });
       setProduct((current) => ({ ...updated, can_edit: current?.can_edit ?? true }));
@@ -159,6 +161,20 @@ export default function ProductDetailPage() {
           </label>
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
           <CartonFields value={carton} onChange={setCarton} />
+          {details.requires_shipping && (
+            <fieldset className="col-span-2 space-y-2 rounded-lg border p-3">
+              <legend className="px-1 text-sm font-medium">{tr("Who stores and ships it")}</legend>
+              {(["seller", "armorhub"] as const).map((v) => (
+                <label key={v} className="flex items-start gap-2 text-sm">
+                  <input type="radio" name="fulfilment" className="mt-1" checked={details.fulfilment === v} onChange={() => setDetails({ ...details, fulfilment: v })} />
+                  <span>
+                    <strong>{tr(v === "seller" ? "I store and ship it myself" : "ArmorHub stores and ships it")}</strong>
+                    <span className="block text-muted-foreground">{tr(v === "seller" ? "You keep the stock and send each order with a carrier." : "Send cartons to the market's warehouse. ArmorHub packs and ships every order, fast. Needs the carton size and weight above.")}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
           <textarea
             aria-label={tr("Description")}
             placeholder={tr("Description")}

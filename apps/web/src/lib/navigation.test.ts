@@ -72,7 +72,7 @@ describe("buildNavigation", () => {
   });
 
   it("gives sellers only their sales and products", () => {
-    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Products", "Earnings"]);
+    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Products", "Warehouse", "Earnings"]);
   });
 
   it("gives technicians only their jobs, and customers their warranties", () => {
