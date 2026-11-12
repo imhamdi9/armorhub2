@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 // Housekeeping (needs `php artisan schedule:run` every minute, or run these commands from your host's cron).
 \Illuminate\Support\Facades\Schedule::command('audit:prune')->daily();
 \Illuminate\Support\Facades\Schedule::command('sanctum:prune-expired --hours=24')->daily();
+\Illuminate\Support\Facades\Schedule::command('surfaces:publish-due')->everyMinute();

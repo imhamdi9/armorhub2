@@ -11,7 +11,7 @@ import { tr } from "@/lib/i18n";
 import { getSettings, resetSetting, saveSettings } from "@/services/admin.service";
 import type { SettingRow } from "@/types/admin";
 
-const GROUPS: Record<string, string> = { platform: "Platform", security: "Security" };
+const GROUPS: Record<string, string> = { platform: "Platform", content: "Content", security: "Security" };
 
 /**
  * Edits every runtime setting from the schema the API describes: adding a setting in the backend

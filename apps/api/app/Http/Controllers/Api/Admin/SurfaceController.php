@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Core\Surfaces\SurfaceInvalid;
+use App\Core\Surfaces\SurfacePublications;
 use App\Core\Surfaces\SurfaceRegistry;
 use App\Core\Surfaces\SurfaceStore;
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\Settings\Settings;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -47,19 +50,66 @@ class SurfaceController extends Controller
         return ['version' => $draft->version, 'content' => $draft->content];
     }
 
-    public function publish(Request $request, string $key, SurfaceRegistry $surfaces, SurfaceStore $store)
+    /** Publishes now, or (when approval is required or a time is chosen) records a request for the Approvals list. */
+    public function publish(Request $request, string $key, SurfaceRegistry $surfaces, SurfaceStore $store, SurfacePublications $publications, Settings $settings)
     {
         abort_unless($surfaces->find($key), 404);
-        $data = $request->validate(['locale' => 'required|string', 'note' => 'nullable|string|max:200']);
+        $data = $request->validate(['locale' => 'required|string', 'note' => 'nullable|string|max:200', 'publish_at' => 'nullable|date']);
+        $needsApproval = (bool) $settings->get('content.require_approval');
 
         try {
+            if ($needsApproval || ! empty($data['publish_at'])) {
+                $p = $publications->request($key, $data['locale'], $request->user()->id, $data['note'] ?? null, $needsApproval, ! empty($data['publish_at']) ? Carbon::parse($data['publish_at']) : null);
+                Audit::record('surface.publish_requested', null, ['surface' => $key, 'locale' => $data['locale'], 'status' => $p->status, 'publish_at' => $p->publish_at?->toIso8601String()]);
+
+                return response()->json(['status' => $p->status, 'id' => $p->id, 'publish_at' => $p->publish_at?->toIso8601String()], 202);
+            }
+
             $live = $store->publish($key, $data['locale'], null, $request->user()->id, $data['note'] ?? null);
         } catch (\DomainException $e) {
             throw ValidationException::withMessages(['locale' => [$e->getMessage()]]);
         }
         Audit::record('surface.published', null, ['surface' => $key, 'locale' => $data['locale'], 'version' => $live->version, 'note' => $data['note'] ?? null]);
 
-        return ['version' => $live->version];
+        return ['version' => $live->version, 'status' => 'published'];
+    }
+
+    public function publications(SurfacePublications $publications, SurfaceRegistry $surfaces, Settings $settings)
+    {
+        $labels = collect($surfaces->all())->mapWithKeys(fn ($s) => [$s->key => $s->label]);
+        $overview = $publications->overview();
+        $names = \App\Models\User::whereIn('id', collect($overview['open'])->merge($overview['recent'])->pluck('requested_by')->filter()->unique())->pluck('name', 'id');
+        $decorate = fn (array $rows) => array_map(fn ($r) => $r + ['surface_label' => $labels[$r['surface_key']] ?? $r['surface_key'], 'requested_by_name' => $names[$r['requested_by']] ?? null], $rows);
+
+        return ['require_approval' => (bool) $settings->get('content.require_approval'), 'open' => $decorate($overview['open']), 'recent' => $decorate($overview['recent'])];
+    }
+
+    public function approve(Request $request, int $id, SurfacePublications $publications)
+    {
+        return $this->decide($request, $id, 'approve', $publications);
+    }
+
+    public function reject(Request $request, int $id, SurfacePublications $publications)
+    {
+        return $this->decide($request, $id, 'reject', $publications);
+    }
+
+    public function cancel(Request $request, int $id, SurfacePublications $publications)
+    {
+        return $this->decide($request, $id, 'cancel', $publications);
+    }
+
+    private function decide(Request $request, int $id, string $action, SurfacePublications $publications)
+    {
+
+        try {
+            $p = $publications->{$action}($id, $request->user()->id);
+        } catch (\DomainException $e) {
+            throw ValidationException::withMessages(['request' => [$e->getMessage()]]);
+        }
+        Audit::record("surface.publication_{$action}", null, ['surface' => $p->surface_key, 'locale' => $p->locale, 'status' => $p->status]);
+
+        return ['status' => $p->status];
     }
 
     public function rollback(Request $request, string $key, SurfaceRegistry $surfaces, SurfaceStore $store)

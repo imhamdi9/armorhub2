@@ -67,6 +67,14 @@ class SurfaceStore
         });
     }
 
+    /** A fingerprint of the current draft, or null when there is none. Lets a request be tied to exactly what was reviewed. */
+    public function draftHash(string $key, string $locale, ?int $tenantId = null): ?string
+    {
+        $draft = $this->latest($key, $locale, $tenantId, 'draft');
+
+        return $draft ? sha1(json_encode($draft->content)) : null;
+    }
+
     /** Makes the draft live. The previous published version is kept (archived), so it can be restored. */
     public function publish(string $key, string $locale, ?int $tenantId = null, ?int $by = null, ?string $note = null): SurfaceVersion
     {

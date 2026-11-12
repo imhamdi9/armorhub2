@@ -66,6 +66,9 @@ class SettingsRegistry
             new Definition('platform.orders_enabled', 'platform', 'New orders are accepted', 'bool', true,
                 'Turn off to pause ordering; existing orders continue normally.'),
 
+            new Definition('content.require_approval', 'content', 'Content changes need a second admin\'s approval', 'bool', false,
+                'When on, publishing site content (home page, theme, wording) is sent to another administrator to approve. Keep it off if you are the only admin.'),
+
             // ---- Security -------------------------------------------------
             new Definition('security.require_email_verification', 'security', 'Require verified email to order', 'select', 'auto',
                 '"Automatic" requires it only when real email delivery (SMTP) is configured.',

@@ -5,6 +5,7 @@ namespace App\Core;
 use App\Core\Blueprints\BlueprintApplier;
 use App\Core\Blueprints\BlueprintRegistry;
 use App\Core\Console\ProcessEvents;
+use App\Core\Console\PublishDueSurfaces;
 use App\Core\Console\ReplayEvent;
 use App\Core\Events\DeliveryProcessor;
 use App\Core\Events\EventBus;
@@ -42,7 +43,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->make(ModuleRegistry::class)->load(array_merge([CoreModule::class], (array) config('modules.modules', [])));
 
         if ($this->app->runningInConsole()) {
-            $this->commands([ProcessEvents::class, ReplayEvent::class]);
+            $this->commands([ProcessEvents::class, ReplayEvent::class, PublishDueSurfaces::class]);
         }
     }
 }

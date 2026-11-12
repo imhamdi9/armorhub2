@@ -329,6 +329,38 @@ try {
   await visitor2.close();
   ok("the theme editor previews unsaved changes live (desktop and mobile), reorders and hides sections, recolours, and publishes");
 
+  // Governed publishing: a scheduled change waits in the queue; with approval on, it needs someone else.
+  const adminToken = (await call("/login", { method: "POST", body: { email: "admin@test.com", password: "password123" } })).json.token;
+  // This script clicks far faster than a person; let the per-minute request allowance recover so the page is not throttled.
+  for (let i = 0; i < 30; i++) {
+    const r = await fetch(`${base}/api/me`, { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken}` } });
+    if (Number(r.headers.get("x-ratelimit-remaining") ?? 0) > 60) break;
+    await new Promise((res) => setTimeout(res, 4000));
+  }
+  await admin.click('a:has-text("Content")');
+  await admin.click("[role=tab]:has-text('Header menu')");
+  await admin.waitForSelector("#f-nav_faq");
+  await admin.fill("#f-nav_faq", "Questions E2E");
+  const inTwoHours = new Date(Date.now() + 2 * 3600 * 1000);
+  const local = new Date(inTwoHours.getTime() - inTwoHours.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  await admin.fill("input[type=datetime-local]", local);
+  await admin.click("button:has-text('Schedule')");
+  await admin.waitForSelector("text=Scheduled.");
+  await admin.waitForSelector("section[aria-label='Approvals and schedule'] >> text=scheduled");
+  await admin.locator("section[aria-label='Approvals and schedule'] li:has-text('Header menu') >> button:has-text('Cancel')").first().click();
+  await admin.waitForSelector("text=Nothing is waiting.");
+  await call("/admin/settings", { method: "PUT", token: adminToken, body: { values: { "content.require_approval": true } } });
+  await admin.reload();
+  await admin.click("[role=tab]:has-text('Header menu')");
+  await admin.fill("#f-nav_faq", "Questions E2E");
+  await admin.click("button:has-text('Publish')");
+  await admin.waitForSelector("text=Sent for approval.");
+  await admin.waitForSelector("section[aria-label='Approvals and schedule'] >> text=waiting for approval");
+  if (await admin.locator("section[aria-label='Approvals and schedule'] button:has-text('Approve')").count()) fail("an admin was offered to approve their own change");
+  await admin.locator("section[aria-label='Approvals and schedule'] li:has-text('Header menu') >> button:has-text('Cancel')").first().click();
+  await call("/admin/settings", { method: "PUT", token: adminToken, body: { values: { "content.require_approval": false } } });
+  ok("a scheduled change waited in the queue and was cancelled; with approval required, publishing was sent for approval and could not be self-approved");
+
   await admin.click('a:has-text("Security")');
   await admin.waitForSelector("text=Health checks");
   await admin.waitForSelector("text=Emergency");

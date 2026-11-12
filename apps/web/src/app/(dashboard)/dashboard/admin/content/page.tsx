@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { PublicationQueue } from "@/components/admin/publication-queue";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,9 @@ import {
 } from "@/services/admin.service";
 
 type Values = Record<string, unknown>;
+
+/** Not a failure: publishing was queued for approval or for later. */
+class Queued extends Error {}
 
 /** One input for one declared field. The server owns the rules; this only renders what the surface declares. */
 function FieldInput({ name, spec, value, onChange, error }: { name: string; spec: SurfaceField; value: unknown; onChange: (v: unknown) => void; error?: string }) {
@@ -67,10 +71,11 @@ function FieldInput({ name, spec, value, onChange, error }: { name: string; spec
   );
 }
 
-function Editor({ surface, locale }: { surface: SurfaceInfo; locale: string }) {
+function Editor({ surface, locale, onQueued }: { surface: SurfaceInfo; locale: string; onQueued: () => void }) {
   const [detail, setDetail] = useState<SurfaceDetail | null>(null);
   const [values, setValues] = useState<Values>({});
   const [note, setNote] = useState("");
+  const [at, setAt] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,13 +101,14 @@ function Editor({ surface, locale }: { surface: SurfaceInfo; locale: string }) {
       await load();
       setMsg(done);
     } catch (e) {
+      if (e instanceof Queued) { setMsg(e.message); await load(); return; }
       setError(errorMessage(e));
       const f = fieldErrors(e);
       setErrors(Object.fromEntries(Object.entries(f).map(([k, v]) => [k.replace(/^values\./, ""), v])));
     }
   }
 
-  if (!detail) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!detail) return error ? <p className="text-sm text-red-500" role="alert">{error}</p> : <p className="text-muted-foreground">{tr("Loading...")}</p>;
 
   // On/off switches apply to every language, so they are edited with the English content only.
   const fields = Object.entries(surface.fields).filter(([, s]) => locale === "en" || s.type !== "bool");
@@ -121,7 +127,13 @@ function Editor({ surface, locale }: { surface: SurfaceInfo; locale: string }) {
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" onClick={() => run(() => saveSurfaceDraft(surface.key, locale, values), tr("Draft saved."))}>{tr("Save draft")}</Button>
         <Input className="max-w-xs" placeholder={tr("Note (what changed)")} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
-        <Button onClick={() => run(async () => { await saveSurfaceDraft(surface.key, locale, values); await publishSurface(surface.key, locale, note); setNote(""); }, tr("Published."))}>{tr("Publish")}</Button>
+        <Input type="datetime-local" className="max-w-[13rem]" aria-label={tr("Publish at (optional)")} value={at} onChange={(e) => setAt(e.target.value)} />
+        <Button onClick={() => run(async () => {
+          await saveSurfaceDraft(surface.key, locale, values);
+          const r = await publishSurface(surface.key, locale, note, at || undefined);
+          setNote(""); setAt(""); onQueued();
+          if (r.status !== "published") throw new Queued(r.status === "pending" ? tr("Sent for approval.") : tr("Scheduled."));
+        }, tr("Published."))}>{at ? tr("Schedule") : tr("Publish")}</Button>
       </div>
 
       {detail.history.length > 0 && (
@@ -147,6 +159,7 @@ export default function ContentPage() {
   const [active, setActive] = useState<string | null>(null);
   const [locale, setLocale] = useState("en");
   const [forbidden, setForbidden] = useState(false);
+  const [queueTick, setQueueTick] = useState(0);
 
   useEffect(() => {
     getSurfaces().then((s) => { setSurfaces(s); setActive(s[0]?.key ?? null); }).catch(() => setForbidden(true));
@@ -170,7 +183,8 @@ export default function ContentPage() {
           <Button key={l} variant={l === locale ? "default" : "outline"} size="sm" onClick={() => setLocale(l)}>{l === "en" ? "English" : "العربية"}</Button>
         ))}
       </div>
-      {surface && <><p className="mb-3 text-sm">{tr(surface.description)}</p><Editor key={`${surface.key}-${locale}`} surface={surface} locale={locale} /></>}
+      {surface && <><p className="mb-3 text-sm">{tr(surface.description)}</p><Editor key={`${surface.key}-${locale}`} surface={surface} locale={locale} onQueued={() => setQueueTick((t) => t + 1)} /></>}
+      <PublicationQueue refreshKey={queueTick} />
     </div>
   );
 }

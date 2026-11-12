@@ -205,7 +205,9 @@ export interface SurfaceDetail {
 export const getSurfaces = async () => (await api.get<{ surfaces: SurfaceInfo[] }>("/admin/surfaces")).data.surfaces;
 export const getSurfaceDetail = async (key: string, locale: string) => (await api.get<SurfaceDetail>(`/admin/surfaces/${key}`, { params: { locale } })).data;
 export const saveSurfaceDraft = async (key: string, locale: string, values: Record<string, unknown>) => (await api.put(`/admin/surfaces/${key}`, { locale, values })).data;
-export const publishSurface = async (key: string, locale: string, note?: string) => (await api.post(`/admin/surfaces/${key}/publish`, { locale, note })).data;
+export interface PublishResult { status: "published" | "pending" | "scheduled"; publish_at?: string | null }
+export const publishSurface = async (key: string, locale: string, note?: string, publishAt?: string) =>
+  (await api.post<PublishResult>(`/admin/surfaces/${key}/publish`, { locale, note, ...(publishAt ? { publish_at: new Date(publishAt).toISOString() } : {}) })).data;
 export const rollbackSurface = async (key: string, locale: string, version: number) => (await api.post(`/admin/surfaces/${key}/rollback`, { locale, version })).data;
 
 export interface RoleInfo { id: number; name: string; built_in: boolean; permissions: string[]; users: number }
@@ -223,3 +225,10 @@ export const uploadImage = async (file: File) => {
 
   return (await api.post<{ path: string }>("/admin/media", form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
 };
+
+export interface Publication {
+  id: number; surface_key: string; surface_label: string; locale: string; status: string; note: string | null;
+  publish_at: string | null; requested_by: number | null; requested_by_name: string | null;
+}
+export const getPublications = async () => (await api.get<{ require_approval: boolean; open: Publication[]; recent: Publication[] }>("/admin/surface-publications")).data;
+export const decidePublication = async (id: number, action: "approve" | "reject" | "cancel") => (await api.post<{ status: string }>(`/admin/surface-publications/${id}/${action}`)).data;

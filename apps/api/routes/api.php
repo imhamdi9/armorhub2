@@ -134,6 +134,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'show'])->where('key', '[a-z0-9_.]+');
         Route::put('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'save'])->where('key', '[a-z0-9_.]+');
         Route::post('/surfaces/{key}/publish', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'publish'])->where('key', '[a-z0-9_.]+');
+        Route::get('/surface-publications', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'publications']);
+        Route::post('/surface-publications/{id}/approve', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'approve'])->whereNumber('id');
+        Route::post('/surface-publications/{id}/reject', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'reject'])->whereNumber('id');
+        Route::post('/surface-publications/{id}/cancel', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'cancel'])->whereNumber('id');
         Route::post('/surfaces/{key}/rollback', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'rollback'])->where('key', '[a-z0-9_.]+');
         Route::get('/platform/blueprints', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'index']);
         Route::get('/platform/blueprints/applications', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'history']);

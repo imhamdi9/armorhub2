@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { PublicationQueue } from "@/components/admin/publication-queue";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,9 @@ import { imageSrc } from "@/lib/surfaces";
 import { getMedia, getSurfaceDetail, publishSurface, saveSurfaceDraft, uploadImage, type MediaImage } from "@/services/admin.service";
 
 type Values = Record<string, unknown>;
+
+/** Not a failure: publishing was queued for approval or for later. */
+class Queued extends Error {}
 
 const SECTIONS: Record<SectionKey, { label: string; flag?: string }> = {
   partner_strip: { label: "Trusted partners strip", flag: "show_partner_strip" },
@@ -46,6 +50,8 @@ export default function ThemeEditorPage() {
   const [tab, setTab] = useState<"sections" | "style" | "images" | "text">("sections");
   const [device, setDevice] = useState<keyof typeof DEVICES>("desktop");
   const [note, setNote] = useState("");
+  const [at, setAt] = useState("");
+  const [queueTick, setQueueTick] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
@@ -116,7 +122,8 @@ export default function ThemeEditorPage() {
       await action();
       setMsg(done);
     } catch (e) {
-      setError(errorMessage(e));
+      if (e instanceof Queued) setMsg(e.message);
+      else setError(errorMessage(e));
     }
   }
   const saveBoth = async () => { await saveSurfaceDraft("site.home", "en", home as Values); await saveSurfaceDraft("site.brand", "en", brand); };
@@ -233,7 +240,14 @@ export default function ThemeEditorPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => run(saveBoth, tr("Draft saved."))}>{tr("Save draft")}</Button>
             <Input className="max-w-[10rem]" placeholder={tr("Note (what changed)")} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
-            <Button onClick={() => run(async () => { await saveBoth(); await publishSurface("site.home", "en", note); await publishSurface("site.brand", "en", note); setNote(""); }, tr("Published."))}>{tr("Publish")}</Button>
+            <Input type="datetime-local" className="max-w-[13rem]" aria-label={tr("Publish at (optional)")} value={at} onChange={(e) => setAt(e.target.value)} />
+            <Button onClick={() => run(async () => {
+              await saveBoth();
+              const results = [await publishSurface("site.home", "en", note, at || undefined), await publishSurface("site.brand", "en", note, at || undefined)];
+              setNote(""); setAt(""); setQueueTick((t) => t + 1);
+              const queued = results.find((r) => r.status !== "published");
+              if (queued) throw new Queued(queued.status === "pending" ? tr("Sent for approval.") : tr("Scheduled."));
+            }, tr("Published."))}>{at ? tr("Schedule") : tr("Publish")}</Button>
           </div>
           <p className="text-xs text-muted-foreground">{tr("Nothing goes live until you publish. Earlier versions can be restored under Content.")}</p>
         </div>
@@ -249,6 +263,7 @@ export default function ThemeEditorPage() {
           </div>
         </div>
       </div>
+      <PublicationQueue refreshKey={queueTick} />
     </div>
   );
 }
