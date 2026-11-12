@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 /** The customer's side of installation help. Nothing about a centre beyond an alias, its record and a rounded distance is shown here. */
 class InstallationRequestController extends Controller
 {
-    public function __construct(private InstallationMatching $matching)
+    public function __construct(private InstallationMatching $matching, private \App\Services\InstallationPresenter $presenter, private \App\Services\InstallationJobs $jobs)
     {
     }
 
@@ -55,18 +55,30 @@ class InstallationRequestController extends Controller
             'subject' => $data['subject'], 'parts' => array_values($data['parts']), 'work_type' => $data['work_type'] ?? 'install', 'notes' => $data['notes'] ?? null,
             'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'location_consent' => true,
             'city' => $user->city, 'country' => $user->country, 'status' => 'open', 'expires_at' => now()->addHours($hours),
+            'market' => ($market = app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($user->company_id)))?->code,
+            'currency' => $market?->currency() ?? (string) config('platform.currency'),
         ]);
+
+        // Tell the centres that may answer (and remember who was told: that is how "answers how often" is measured).
+        foreach ($this->matching->eligiblePartners($req) as $centre) {
+            \App\Models\InstallationInvite::firstOrCreate(['request_id' => $req->id, 'partner_id' => $centre->id]);
+            app(\App\Services\InstallationNotifier::class)->centre($centre->id, 'New installation request near you', "{$req->subject}: ".implode(', ', $req->parts), '/dashboard/centre-requests');
+        }
 
         return response()->json($this->present($req), 201);
     }
 
     public function index(Request $request)
     {
+        $this->jobs->releaseDue();
+        $this->jobs->expireOld();
+
         return InstallationRequest::where('customer_id', $request->user()->id)->latest()->get()->map(fn ($r) => $this->present($r))->values();
     }
 
     public function show(Request $request, int $id)
     {
+        $this->jobs->releaseDue();
         $req = InstallationRequest::where('customer_id', $request->user()->id)->findOrFail($id);
 
         return $this->present($req, withOffers: true);
@@ -84,10 +96,7 @@ class InstallationRequestController extends Controller
 
     private function present(InstallationRequest $r, bool $withOffers = false): array
     {
-        $out = [
-            'id' => $r->id, 'subject' => $r->subject, 'parts' => $r->parts, 'work_type' => $r->work_type, 'notes' => $r->notes, 'status' => $r->status,
-            'expires_at' => $r->expires_at?->toIso8601String(), 'created_at' => $r->created_at?->toIso8601String(), 'offer_count' => $r->offers()->where('status', 'submitted')->count(),
-        ];
+        $out = $this->presenter->forCustomer($r) + ['offer_count' => $r->offers()->where('status', 'submitted')->count()];
 
         if ($withOffers) {
             $offers = $this->matching->rank($r, $r->offers()->whereIn('status', ['submitted', 'selected'])->with('partner')->get());
@@ -96,7 +105,7 @@ class InstallationRequestController extends Controller
             $best = $offers->max(fn ($o) => (float) $o->partner->rating_avg);
 
             $out['offers'] = $offers->values()->map(fn ($o, $i) => [
-                'id' => $o->id, 'rank' => $i + 1, 'centre' => $this->alias($o->partner->id),
+                'id' => $o->id, 'rank' => $i + 1, 'centre' => $this->alias($o->partner->id), 'tier' => $o->partner->tier, 'selected' => $o->status === 'selected',
                 'rating' => $o->partner->rating_count >= 3 ? (float) $o->partner->rating_avg : null, 'rating_count' => (int) $o->partner->rating_count,
                 'completed_jobs' => (int) $o->partner->completed_jobs, 'avg_response_minutes' => $o->partner->avg_response_minutes,
                 'distance_km' => Geo::fuzzy((float) $o->distance_km), 'same_city' => $o->same_city,

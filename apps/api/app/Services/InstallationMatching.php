@@ -64,7 +64,12 @@ class InstallationMatching
         $speed = $p->avg_response_minutes === null ? 0.7 : max(0.0, 1 - max(0, $p->avg_response_minutes - 30) / (24 * 60 - 30));
         $accept = $p->acceptance_rate === null ? 0.7 : min(1.0, ((float) $p->acceptance_rate) / 100);
 
-        return round(0.5 * $rating + 0.25 * $speed + 0.25 * $accept, 4);
+        $base = 0.5 * $rating + 0.25 * $speed + 0.25 * $accept;
+        // Earned standing helps a little; lost disputes and strikes cost more than a tier gives.
+        $tier = ['gold' => 0.06, 'silver' => 0.03][$p->tier] ?? 0.0;
+        $penalty = min(0.25, 0.05 * (int) $p->disputes_lost) + 0.1 * (int) $p->strikes;
+
+        return round(max(0.0, $base + $tier - $penalty), 4);
     }
 
     private function tooPoor(Partner $p): bool

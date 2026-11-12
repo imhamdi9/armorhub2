@@ -79,6 +79,7 @@ const PRODUCTS = {
   "p-headlight": ["sparkle", C.turq, "#17606a"], "p-detailing": ["carshield", C.turq, "#17606a"], "p-vinylwrap": ["carfilm", C.rose, "#8a3a52"], "p-waterless": ["spray", C.turq, "#17606a"], "p-wheelclean": ["spray", C.lapis, "#14286a"], "p-oud": ["bottle", C.gold, "#8a5a10"], "p-leather": ["jar", C.terra, "#7a2a10"],
   "p-manicure": ["hand", C.rose, "#8a3a52"], "p-rosefacial": ["faceMask", "#f08fa5", "#8a3a52"], "p-saltspa": ["salt", C.turq, "#17606a"], "p-pricklypear": ["bottle", C.green, "#244a2e"], "p-jasmine": ["jar", "#f3e3bd", "#8a6a2a"], "p-kohl": ["jar", C.ink, "#14213d"],
   "p-pest": ["home", C.green, "#244a2e"], "p-painting": ["home", C.turq, "#17606a"], "p-kilim": ["towels", C.terra, "#7a2a10"], "p-bakhoor": ["lantern", C.terra, "#7a2a10"], "p-bedsheets": ["towels", C.turq, "#17606a"], "p-dates": ["jar", "#7a4a2a", "#3d2413"], "p-dukkah": ["jar", C.terra, "#7a2a10"],
+  "p-dashcam": ["phone", C.ink, "#14213d"], "p-doorlock": ["home", C.lapis, "#14286a"],
   "p-screenrepair": ["phone", C.lapis, "#14286a"], "p-waterdamage": ["phone", C.turq, "#17606a"], "p-lensfit": ["glass", C.green, "#1f4a2a"], "p-phonecase": ["phone", C.gold, "#8a5a10"], "p-powerbank": ["charger", C.lapis, "#14286a"], "p-cable": ["charger", C.green, "#1f4a2a"],
 };
 const VARIANT = { sun: ["#ffe9bf", "#f0b765"], night: ["#2b3a67", "#14213d"] };

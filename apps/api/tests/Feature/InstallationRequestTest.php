@@ -35,6 +35,15 @@ class InstallationRequestTest extends TestCase
         return User::where('partner_id', $partner->id)->role('partner-manager')->value('email');
     }
 
+    /** Fake history: reviews are the only way a rating exists, so the engine rebuilds it from them. */
+    private function reviews(Partner $p, int $rating, int $n): void
+    {
+        for ($i = 0; $i < $n; $i++) {
+            \App\Models\InstallationReview::create(['request_id' => 9000 + $p->id * 100 + $i, 'partner_id' => $p->id, 'customer_id' => 1, 'rating' => $rating]);
+        }
+        app(\App\Services\Reputation::class)->refresh($p);
+    }
+
     private function request(array $extra = []): array
     {
         $this->as('nour.fawzy@demo.eg');
@@ -87,7 +96,7 @@ class InstallationRequestTest extends TestCase
         $this->assertSame('Toyota Camry 2020', $list[0]['subject']);
         $this->assertSame(['Hood', 'Bumper'], $list[0]['parts']);
         $raw = json_encode($list);
-        foreach (['Nour', 'nour.fawzy', 'latitude', 'longitude', 'customer', 'phone', '30.0626'] as $leak) {
+        foreach (['Nour', 'nour.fawzy', 'latitude', 'longitude', '"customer"', '"phone"', '30.0626', 'maps_url'] as $leak) {
             $this->assertStringNotContainsString($leak, $raw, "leaked {$leak}");
         }
 
@@ -104,8 +113,8 @@ class InstallationRequestTest extends TestCase
         $zamalek = Partner::withoutGlobalScopes()->where('name', 'Zamalek Detailing Studio')->first();
         $nasr = Partner::withoutGlobalScopes()->where('name', 'Nasr City Auto Film')->first();
         // Both are in Cairo (same city, band 0): the better record comes first even though it is dearer.
-        $zamalek->forceFill(['rating_avg' => 3.4, 'rating_count' => 10, 'avg_response_minutes' => 600, 'acceptance_rate' => 50])->save();
-        $nasr->forceFill(['rating_avg' => 4.9, 'rating_count' => 40, 'avg_response_minutes' => 20, 'acceptance_rate' => 95, 'completed_jobs' => 120])->save();
+        $this->reviews($zamalek, 3, 6);
+        $this->reviews($nasr, 5, 6);
 
         $this->as($this->managerOf('Zamalek Detailing Studio'))->postJson("/api/partner/installation-requests/{$req['id']}/offer", ['price' => 7000, 'eta_days' => 3, 'note' => 'We can do it'])->assertCreated();
         $this->as($this->managerOf('Nasr City Auto Film'))->postJson("/api/partner/installation-requests/{$req['id']}/offer", ['price' => 9000, 'eta_days' => 2])->assertCreated();
@@ -119,7 +128,7 @@ class InstallationRequestTest extends TestCase
         $this->assertContains('fastest', $view['offers'][0]['badges']);
 
         $raw = json_encode($view);
-        foreach (['Zamalek', 'Nasr', 'Studio', 'partner_id', 'latitude', 'longitude', 'phone', 'address'] as $leak) {
+        foreach (['Zamalek', 'Nasr', 'Studio', 'partner_id', 'latitude', 'longitude', '"phone"', '"address"', 'maps_url', '"call"'] as $leak) {
             $this->assertStringNotContainsString($leak, $raw, "leaked {$leak}");
         }
         $this->assertMatchesRegularExpression('/^C-[0-9A-Z]{4}$/', $view['offers'][0]['centre']);
@@ -129,7 +138,7 @@ class InstallationRequestTest extends TestCase
     public function test_a_centre_with_a_clearly_poor_record_is_not_offered_the_job(): void
     {
         $req = $this->request();
-        Partner::withoutGlobalScopes()->where('name', 'Zamalek Detailing Studio')->first()->forceFill(['rating_avg' => 2.1, 'rating_count' => 12])->save();
+        $this->reviews(Partner::withoutGlobalScopes()->where('name', 'Zamalek Detailing Studio')->first(), 2, 12);
 
         $this->as($this->managerOf('Zamalek Detailing Studio'));
         $this->assertCount(0, $this->getJson('/api/partner/installation-requests')->json());

@@ -24,6 +24,13 @@ class PaymentWebhookHandler
 
     private function paid(string $provider, PaymentEvent $event): void
     {
+        // A negative id is an installation job (see InstallationJobs::pay).
+        if ($event->orderId !== null && $event->orderId < 0) {
+            app(\App\Services\InstallationJobs::class)->webhookPaid(-$event->orderId, $event->reference, $event->amountMinor, $event->amountMajor, $event->currency, $provider);
+
+            return;
+        }
+
         $order = $event->orderId ? Order::withoutGlobalScopes()->find($event->orderId) : null;
 
         if (! $order) {

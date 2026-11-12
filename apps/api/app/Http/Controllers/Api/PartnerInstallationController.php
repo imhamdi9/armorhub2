@@ -60,6 +60,8 @@ class PartnerInstallationController extends Controller
             'price' => $data['price'], 'eta_days' => $data['eta_days'], 'note' => $data['note'] ?? null, 'status' => 'submitted', 'distance_km' => $km,
         ]);
         $req->update(['status' => 'offers_received']);
+        app(\App\Services\Reputation::class)->refresh($partner);
+        app(\App\Services\InstallationNotifier::class)->user($req->customer_id, 'You received an offer', 'A centre sent an offer for your installation request.', "/dashboard/installations/{$req->id}");
 
         return response()->json(['id' => $offer->id, 'price' => (float) $offer->price, 'eta_days' => $offer->eta_days, 'note' => $offer->note, 'status' => $offer->status], 201);
     }

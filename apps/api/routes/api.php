@@ -105,6 +105,15 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
+        Route::get('/installation-disputes', [$ia, 'disputes']);
+        Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');
+        Route::post('/installation-requests/{id}/refund-paid', [$ia, 'refundPaid'])->whereNumber('id');
+        Route::get('/centre-withdrawals', [$ia, 'withdrawals']);
+        Route::post('/centre-withdrawals/{id}/pay', [$ia, 'payWithdrawal'])->whereNumber('id');
+        Route::post('/centre-withdrawals/{id}/reject', [$ia, 'rejectWithdrawal'])->whereNumber('id');
+        Route::get('/installation-violations', [$ia, 'violations']);
+        Route::post('/installation-violations/{id}/decide', [$ia, 'decideViolation'])->whereNumber('id');
         Route::get('/overview', OverviewController::class);
         Route::get('/settings', [SettingsController::class, 'index']);
         Route::put('/settings', [SettingsController::class, 'update']);
@@ -209,6 +218,28 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'store'])->middleware('throttle:10,60');
     Route::get('/installation-requests/{id}', [\App\Http\Controllers\Api\InstallationRequestController::class, 'show'])->whereNumber('id');
     Route::post('/installation-requests/{id}/cancel', [\App\Http\Controllers\Api\InstallationRequestController::class, 'cancel'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/accept', [\App\Http\Controllers\Api\InstallationFlowController::class, 'accept'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/pay', [\App\Http\Controllers\Api\InstallationFlowController::class, 'pay'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/installation-requests/{id}/confirm', [\App\Http\Controllers\Api\InstallationFlowController::class, 'confirm'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/review', [\App\Http\Controllers\Api\InstallationFlowController::class, 'review'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/disputes', [\App\Http\Controllers\Api\InstallationFlowController::class, 'dispute'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/evidence', [\App\Http\Controllers\Api\InstallationFlowController::class, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/installation-requests/{id}/report-contact', [\App\Http\Controllers\Api\InstallationFlowController::class, 'reportContact'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/loyalty', [\App\Http\Controllers\Api\InstallationFlowController::class, 'loyalty']);
+    Route::get('/installation-files/{id}', [\App\Http\Controllers\Api\InstallationFlowController::class, 'file'])->whereNumber('id');
+    Route::middleware('role:partner-manager|technician')->prefix('partner/installation-jobs')->group(function () {
+        $c = \App\Http\Controllers\Api\CentreJobController::class;
+        Route::get('/', [$c, 'index']);
+        Route::get('/{id}', [$c, 'show'])->whereNumber('id');
+        Route::post('/{id}/start', [$c, 'start'])->whereNumber('id');
+        Route::post('/{id}/proof', [$c, 'proof'])->whereNumber('id')->middleware('throttle:30,1');
+        Route::post('/{id}/disputes', [$c, 'dispute'])->whereNumber('id');
+        Route::post('/{id}/evidence', [$c, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');
+    });
+    Route::middleware('role:partner-manager|company-owner')->group(function () {
+        Route::get('/partner/wallet', [\App\Http\Controllers\Api\CentreJobController::class, 'wallet']);
+        Route::post('/partner/wallet/withdrawals', [\App\Http\Controllers\Api\CentreJobController::class, 'withdraw'])->middleware('throttle:10,1');
+    });
     Route::middleware('role:partner-manager')->group(function () {
         Route::get('/partner/installation-requests', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'index']);
         Route::post('/partner/installation-requests/{id}/offer', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'offer'])->whereNumber('id')->middleware('throttle:60,1');

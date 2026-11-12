@@ -136,10 +136,11 @@ class SeedEgyptDemo extends Command
             $product = Product::where('slug', $slug)->first();
             // The catalogue's organisation can change between releases: keep existing demo products filed under the current category.
             $product?->category !== $p['category'] && $product?->update(['category' => $p['category']]);
+            $product && $product->installation !== ($p['installation'] ?? 'none') && $product->update(['installation' => $p['installation'] ?? 'none']);
             $product ??= Product::create([
                 'industry_id' => $industry->id, 'market' => 'EG', 'seller_id' => $seller?->id, 'name' => $p['name'], 'slug' => $slug, 'brand' => $p['brand'] ?? null,
                 'category' => $p['category'], 'description' => $p['desc'], 'images' => $this->pics($p['art']), 'base_price' => $p['price'], 'compare_at_price' => $p['was'] ?? null,
-                'warranty_years' => $p['warranty'] ?? null, 'requires_shipping' => $seller !== null, 'is_active' => true,
+                'warranty_years' => $p['warranty'] ?? null, 'requires_shipping' => $seller !== null, 'is_active' => true, 'installation' => $p['installation'] ?? 'none',
                 'attributes' => ['highlights' => $p['highlights'] ?? []],
             ]);
 
@@ -239,6 +240,8 @@ class SeedEgyptDemo extends Command
                     'desc' => "Clean and shine in the shade of your own street, with almost no water.\nغسيل وتلميع بدون ماء تقريبًا.", 'highlights' => ['Safe on coatings', '750 ml']],
                 ['key' => 'wheelclean', 'seller' => 'autopro', 'name' => 'Wheel and Tyre Cleaner', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-wheelclean', 'price' => 180,
                     'desc' => "Lifts brake dust and road tar from alloys without scrubbing.\nمنظف للجنوط والإطارات.", 'highlights' => ['pH balanced', '500 ml']],
+                ['key' => 'dashcam', 'seller' => 'autopro', 'installation' => 'optional', 'name' => '4K Dash Camera with Hardwire Kit', 'brand' => 'AutoPro', 'category' => 'electronics', 'art' => 'p-dashcam', 'price' => 2400, 'was' => 2900,
+                    'desc' => "Front and rear recording with parking mode. Fit it yourself or ask a centre to hardwire it neatly.\nكاميرا سيارة 4K مع طقم توصيل مباشر.", 'highlights' => ['4K front camera', 'Parking mode', 'Installation is optional']],
                 ['key' => 'oud', 'seller' => 'autopro', 'name' => 'Oud Car Air Freshener', 'brand' => 'AutoPro', 'category' => 'interior-care', 'art' => 'p-oud', 'price' => 95,
                     'desc' => "A warm oud and amber scent that lasts for weeks.\nمعطر سيارة برائحة العود والعنبر.", 'highlights' => ['Lasts up to 6 weeks', 'Spill-proof bottle']],
                 ['key' => 'leather', 'seller' => 'autopro', 'name' => 'Leather Seat Conditioner', 'brand' => 'AutoPro', 'category' => 'interior-care', 'art' => 'p-leather', 'price' => 240, 'was' => 300,
@@ -259,6 +262,8 @@ class SeedEgyptDemo extends Command
                     'desc' => "Traditional kohl, made the old way and smooth to apply.\nكحل طبيعي تقليدي.", 'highlights' => ['No additives', 'Smudge resistant']],
             ],
             'home' => [
+                ['key' => 'doorlock', 'seller' => 'delta', 'installation' => 'required', 'name' => 'Smart Door Lock', 'brand' => 'Delta Home', 'category' => 'smart-home', 'art' => 'p-doorlock', 'price' => 3200, 'was' => 3800,
+                    'desc' => "Fingerprint, code and key. It must be fitted to your door by a professional.\nقفل ذكي بالبصمة والرمز، يحتاج تركيبًا احترافيًا.", 'highlights' => ['Fingerprint and code', 'Needs professional fitting']],
                 ['key' => 'pest', 'name' => 'Pest Control Visit', 'category' => 'home-services', 'art' => 'p-pest', 'price' => 700, 'warranty' => 1, 'minutes' => 90,
                     'desc' => "Safe treatment against insects and rodents, with a follow-up visit.\nمكافحة الحشرات والقوارض.", 'highlights' => ['Family-safe products', '3-month cover'], 'rules' => ['Kitchen' => 700, 'Bathroom' => 500, 'Whole home' => 1500]],
                 ['key' => 'painting', 'name' => 'Interior Painting', 'category' => 'home-services', 'art' => 'p-painting', 'price' => 1200, 'minutes' => 480,
@@ -414,7 +419,7 @@ class SeedEgyptDemo extends Command
                         'desc' => "A fresh high-capacity battery with a 12-month warranty.\nاستبدال البطارية مع ضمان سنة.", 'highlights' => ['12-month warranty', 'Genuine-grade cells'], 'rules' => ['Battery' => 900]],
                     ['key' => 'skin', 'name' => 'Back Cover Skin Wrap', 'category' => 'protection', 'art' => 'p-skin', 'price' => 350, 'minutes' => 30,
                         'desc' => "A premium skin wrap cut precisely for your model.\nغلاف خلفي مقصوص بدقة.", 'highlights' => ['Precision cut', 'Residue-free removal'], 'rules' => ['Back Cover' => 350]],
-                    ['key' => 'glass', 'seller' => 'techsouq', 'name' => '9H Tempered Glass Screen Protector', 'category' => 'accessories', 'art' => 'p-glass', 'price' => 190, 'was' => 250,
+                    ['key' => 'glass', 'seller' => 'techsouq', 'installation' => 'optional', 'name' => '9H Tempered Glass Screen Protector', 'category' => 'accessories', 'art' => 'p-glass', 'price' => 190, 'was' => 250,
                         'desc' => "9H hardness, oleophobic coating and an easy-fit frame.\nواقي شاشة زجاجي بصلابة 9H.", 'highlights' => ['9H hardness', 'Easy-fit frame', 'Pack of 2']],
                     ['key' => 'charger', 'seller' => 'techsouq', 'name' => '65W Fast Charger', 'category' => 'accessories', 'art' => 'p-charger', 'price' => 560, 'was' => 690,
                         'desc' => "GaN fast charger for phones, tablets and laptops.\nشاحن سريع 65 واط.", 'highlights' => ['GaN technology', 'USB-C PD', '1-year warranty']],

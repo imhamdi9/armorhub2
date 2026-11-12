@@ -35,7 +35,7 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
       'country',
       'location_enabled',
     ];
-    
+
     protected static function booted(): void
     {
         static::saving(function (self $user) {
