@@ -122,4 +122,34 @@ class NotificationsTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/notifications')->assertUnauthorized();
     }
+
+    public function test_admins_can_reword_a_notification_and_nothing_else_changes(): void
+    {
+        $this->actingAs($this->admin, 'sanctum');
+        $this->putJson('/api/admin/surfaces/app.messages', ['locale' => 'en', 'values' => ['templates' => [
+            ['kind' => 'payment_received', 'title' => 'Thanks for paying order #{order_id}', 'body' => 'We got your payment for {name}. {unknown}'],
+        ]]])->assertOk();
+        $this->postJson('/api/admin/surfaces/app.messages/publish', ['locale' => 'en'])->assertOk();
+
+        $this->order();
+
+        $payment = $this->customer->notifications()->where('data->kind', 'payment_received')->first()->data;
+        $this->assertStringStartsWith('Thanks for paying order #', $payment['title']);
+        $this->assertStringContainsString('{unknown}', $payment['body']);           // unknown placeholders are left alone
+        $this->assertStringNotContainsString('{name}', $payment['body']);
+
+        // A message nobody reworded keeps the built-in wording.
+        $this->assertContains('You received a quote', $this->titles($this->customer));
+    }
+
+    public function test_a_draft_or_invalid_wording_never_changes_messages(): void
+    {
+        $this->actingAs($this->admin, 'sanctum');
+        $this->putJson('/api/admin/surfaces/app.messages', ['locale' => 'en', 'values' => ['templates' => [['kind' => 'payment_received', 'title' => 'DRAFT']]]])->assertOk();
+        $this->putJson('/api/admin/surfaces/app.messages', ['locale' => 'en', 'values' => ['templates' => [['kind' => 'not_a_message', 'title' => 'x']]]])->assertStatus(422);
+
+        $this->order();
+
+        $this->assertContains('Payment received', $this->titles($this->customer));
+    }
 }

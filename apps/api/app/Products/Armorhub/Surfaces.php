@@ -36,6 +36,31 @@ final class Surfaces
             'banner_text' => ['type' => 'longtext', 'label' => 'Closing banner: text', 'max' => 300],
             'banner_cta' => ['type' => 'text', 'label' => 'Closing banner: button', 'max' => 40],
             'footer_blurb' => ['type' => 'longtext', 'label' => 'Footer description', 'max' => 300],
+            'quote_title' => ['type' => 'text', 'label' => 'Compare quotes: title', 'max' => 120],
+            'quote_text' => ['type' => 'longtext', 'label' => 'Compare quotes: text', 'max' => 300],
+            'quote_cta' => ['type' => 'text', 'label' => 'Compare quotes: button', 'max' => 40],
+            'biz_title' => ['type' => 'text', 'label' => 'For businesses: title', 'max' => 120],
+            'biz_text' => ['type' => 'longtext', 'label' => 'For businesses: text', 'max' => 300],
+            'biz_cta' => ['type' => 'text', 'label' => 'For businesses: button', 'max' => 40],
+            'values' => ['type' => 'list', 'label' => 'Promises (replaces the three built-in ones when not empty)', 'maxItems' => 4, 'items' => [
+                'title' => ['type' => 'text', 'label' => 'Title', 'max' => 60, 'required' => true],
+                'text' => ['type' => 'longtext', 'label' => 'Text', 'max' => 200, 'required' => true],
+            ]],
+            'usecases_title' => ['type' => 'text', 'label' => 'Use cases: title', 'max' => 80],
+            'usecases_text' => ['type' => 'longtext', 'label' => 'Use cases: text', 'max' => 250],
+            'why_title' => ['type' => 'text', 'label' => 'Why choose us: title', 'max' => 100],
+            'why_card_title' => ['type' => 'text', 'label' => 'Why choose us: card title', 'max' => 80],
+            'why_card_text' => ['type' => 'longtext', 'label' => 'Why choose us: card text', 'max' => 250],
+            'why_points' => ['type' => 'list', 'label' => 'Why choose us: bullet points (replaces built-in when not empty)', 'maxItems' => 8, 'items' => [
+                'text' => ['type' => 'text', 'label' => 'Point', 'max' => 100, 'required' => true],
+            ]],
+            'how_title' => ['type' => 'text', 'label' => 'How it works: title', 'max' => 80],
+            'how_steps' => ['type' => 'list', 'label' => 'How it works: steps (replaces built-in when not empty)', 'maxItems' => 6, 'items' => [
+                'title' => ['type' => 'text', 'label' => 'Step title', 'max' => 60, 'required' => true],
+                'text' => ['type' => 'longtext', 'label' => 'Step text', 'max' => 200, 'required' => true],
+            ]],
+            'bento_title' => ['type' => 'text', 'label' => 'Numbers band: title', 'max' => 120],
+            'markets_title' => ['type' => 'text', 'label' => 'ArmorHub Markets section: title', 'max' => 60],
             'faq' => ['type' => 'list', 'label' => 'FAQ (replaces the built-in questions when not empty)', 'maxItems' => 12, 'items' => [
                 'question' => ['type' => 'text', 'label' => 'Question', 'max' => 150, 'required' => true],
                 'answer' => ['type' => 'longtext', 'label' => 'Answer', 'max' => 600, 'required' => true],
@@ -48,6 +73,14 @@ final class Surfaces
             'nav_how' => ['type' => 'text', 'label' => 'How it works link', 'max' => 30],
             'nav_faq' => ['type' => 'text', 'label' => 'FAQ link', 'max' => 30],
         ], 'The words in the public header menu.', public: true);
+
+        $c->surface('app.messages', 'Notification wording', [
+            'templates' => ['type' => 'list', 'label' => 'Message wording (a message without an entry keeps the built-in wording)', 'maxItems' => 15, 'items' => [
+                'kind' => ['type' => 'select', 'label' => 'Message', 'options' => \App\Services\MessageTemplates::KINDS, 'required' => true],
+                'title' => ['type' => 'text', 'label' => 'Title (placeholders: {name} {order_id} {price} {partner} {tracking} {amount} {reference})', 'max' => 100],
+                'body' => ['type' => 'longtext', 'label' => 'Text (same placeholders)', 'max' => 400],
+            ]],
+        ], 'Wording of in-app and email notifications, in English. Placeholders in {braces} are filled in.', public: false);
 
         $c->surface('app.sidebar', 'Dashboard menu', [
             'labels' => ['type' => 'list', 'label' => 'Menu item names', 'maxItems' => 40, 'items' => [

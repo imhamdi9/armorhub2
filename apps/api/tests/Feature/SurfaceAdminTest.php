@@ -39,7 +39,7 @@ class SurfaceAdminTest extends TestCase
         $list = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/surfaces')->assertOk()->json('surfaces');
         $keys = array_column($list, 'key');
 
-        $this->assertEqualsCanonicalizing(['site.brand', 'site.home', 'site.navigation', 'app.sidebar'], $keys);
+        $this->assertEqualsCanonicalizing(['site.brand', 'site.home', 'site.navigation', 'app.sidebar', 'app.messages'], $keys);
         $home = collect($list)->firstWhere('key', 'site.home');
         $this->assertSame('text', $home['fields']['hero_title']['type']);
         $this->assertSame('bool', $home['fields']['show_faq']['type']);

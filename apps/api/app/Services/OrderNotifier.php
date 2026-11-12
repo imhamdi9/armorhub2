@@ -18,6 +18,10 @@ use Throwable;
  */
 class OrderNotifier
 {
+    public function __construct(private MessageTemplates $templates)
+    {
+    }
+
     public function handle(OrderEvent $event): void
     {
         try {
@@ -27,7 +31,13 @@ class OrderNotifier
                 return;
             }
 
+            $vars = [
+                'name' => $order->product?->name ?? 'your order', 'order_id' => $order->id, 'price' => $event->data['price'] ?? '',
+                'partner' => $this->partnerName($event->data['partner_id'] ?? null) ?? '', 'tracking' => $event->data['tracking_number'] ?? '',
+            ];
+
             foreach ($this->messages($event, $order) as [$users, $kind, $title, $body, $path]) {
+                [$title, $body] = $this->templates->render($kind, $title, $body, $vars);
                 $this->send($users, new OrderUpdate($order->id, $kind, $title, $body, $path), $event->user_id);
             }
         } catch (Throwable $e) {

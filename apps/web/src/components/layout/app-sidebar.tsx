@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   Banknote,
@@ -42,6 +43,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { tr, useLocale } from "@/lib/i18n";
+import { pickList } from "@/lib/surfaces";
+import { getSurface } from "@/services/platform.service";
 
 const icons: Record<NavItem["icon"], LucideIcon> = {
   dashboard: LayoutDashboard,
@@ -74,6 +77,18 @@ export function AppSidebar() {
   const pathname = usePathname();
   const locale = useLocale();
   const items = buildNavigation(user);
+  // Menu names an admin has published (Admin → Content → Dashboard menu); anything not renamed keeps the built-in name.
+  const [renames, setRenames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    getSurface("app.sidebar").then((values) => {
+      if (!live) return;
+      const rows = pickList<{ item: string; label: string }>(values, locale, "labels");
+      setRenames(Object.fromEntries(rows.map((r) => [r.item, r.label])));
+    }).catch(() => undefined);
+
+    return () => { live = false; };
+  }, [locale]);
 
   return (
     <Sidebar side={locale === "ar" ? "right" : "left"}>
@@ -109,7 +124,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton isActive={active} render={<Link href={item.href} />}>
                         <Icon className="h-4 w-4" />
-                        <span>{tr(item.title)}</span>
+                        <span>{renames[item.title] ?? tr(item.title)}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );

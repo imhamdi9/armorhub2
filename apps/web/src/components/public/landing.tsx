@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { HeroArt, Icon } from "@/components/public/art";
 import { price } from "@/components/public/product-card";
-import { useSiteText } from "@/components/public/site-content";
+import { useSiteList, useSiteText } from "@/components/public/site-content";
 import { formatNumber, tr } from "@/lib/i18n";
 import type { PublicShowcase } from "@/types/public";
 
@@ -194,6 +194,9 @@ export function IndustryTabs({ showcase }: { showcase: PublicShowcase }) {
 // ------------------------------------------------------------------ alternating feature rows
 
 export function QuoteFeature() {
+  const title = useSiteText("home", "quote_title", "Describe the job once. Get prices from experts nearby.");
+  const text = useSiteText("home", "quote_text", "Choose a service and your options. Nearby, vetted professionals send you their price. You compare, accept the one you like and pay online.");
+  const cta = useSiteText("home", "quote_cta", "Browse markets");
   return (
     <section className="bg-white py-16">
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 md:grid-cols-2">
@@ -215,9 +218,9 @@ export function QuoteFeature() {
         </div>
         <div>
           <Eyebrow>{tr("Compare quotes")}</Eyebrow>
-          <h2 className="display display-md mt-2">{tr("Describe the job once. Get prices from experts nearby.")}</h2>
-          <p className="mt-4 max-w-lg text-charcoal">{tr("Choose a service and your options. Nearby, vetted professionals send you their price. You compare, accept the one you like and pay online.")}</p>
-          <a href="#stores" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{tr("Browse markets")} <span aria-hidden="true">→</span></a>
+          <h2 className="display display-md mt-2">{title}</h2>
+          <p className="mt-4 max-w-lg text-charcoal">{text}</p>
+          <a href="#stores" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{cta} <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
@@ -225,14 +228,17 @@ export function QuoteFeature() {
 }
 
 export function DashboardFeature() {
+  const title = useSiteText("home", "biz_title", "Run your whole business from one dashboard.");
+  const text = useSiteText("home", "biz_text", "Open a branded store, receive quote requests, schedule the work, manage your team and track payouts and shipments.");
+  const cta = useSiteText("home", "biz_cta", "For businesses: sign in");
   return (
     <section className="bg-white py-16">
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 md:grid-cols-2">
         <div className="order-2 md:order-1">
           <Eyebrow>{tr("For businesses")}</Eyebrow>
-          <h2 className="display display-md mt-2">{tr("Run your whole business from one dashboard.")}</h2>
-          <p className="mt-4 max-w-lg text-charcoal">{tr("Open a branded store, receive quote requests, schedule the work, manage your team and track payouts and shipments.")}</p>
-          <Link href="/login" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{tr("For businesses: sign in")} <span aria-hidden="true">→</span></Link>
+          <h2 className="display display-md mt-2">{title}</h2>
+          <p className="mt-4 max-w-lg text-charcoal">{text}</p>
+          <Link href="/login" className="btn-brand mt-6 inline-flex items-center gap-2 px-6 py-3">{cta} <span aria-hidden="true">→</span></Link>
         </div>
         <div className="relative order-1 md:order-2">
           <div className="overflow-hidden rounded-[28px] border border-fog bg-white shadow-lift" dir="ltr">
@@ -263,14 +269,17 @@ export function ValueProps() {
     ["tag", "Clear prices", "See the price before you order. VAT is included where it applies."],
     ["lock", "Secure payment", "Pay on a secure page. We never see or store your card details."],
   ];
+  const custom = useSiteList<{ title: string; text: string }>("home", "values");
+  const icons = ["shield", "tag", "lock", "users"];
+  const shown: [string, string, string][] = custom.length > 0 ? custom.map((c, i) => [icons[i % icons.length], c.title, c.text]) : items;
   return (
     <section className="bg-white py-20">
       <div className="mx-auto grid max-w-[1200px] gap-12 px-4 md:grid-cols-3">
-        {items.map(([icon, title, text]) => (
+        {shown.map(([icon, title, text]) => (
           <div key={title}>
             <Icon name={icon} className="h-7 w-7 text-forest" />
-            <h3 className="mt-5 text-lg font-bold text-obsidian">{tr(title)}</h3>
-            <p className="mt-2 text-slate">{tr(text)}</p>
+            <h3 className="mt-5 text-lg font-bold text-obsidian">{custom.length > 0 ? title : tr(title)}</h3>
+            <p className="mt-2 text-slate">{custom.length > 0 ? text : tr(text)}</p>
           </div>
         ))}
       </div>
@@ -282,6 +291,8 @@ export function ValueProps() {
 
 export function UseCases({ showcase }: { showcase: PublicShowcase }) {
   const [open, setOpen] = useState(0);
+  const title = useSiteText("home", "usecases_title", "One platform. Many industries.");
+  const text = useSiteText("home", "usecases_text", "The same quote, payment, shipping and warranty flow works for every kind of service business.");
   if (showcase.industries.length === 0) return null;
 
   return (
@@ -290,9 +301,9 @@ export function UseCases({ showcase }: { showcase: PublicShowcase }) {
         <div className="grid gap-6 md:grid-cols-2 md:items-end">
           <div>
             <Eyebrow dark>{tr("Use cases")}</Eyebrow>
-            <h2 className="display display-lg mt-3 uppercase" style={{ color: "var(--on-dark-accent)" }}>{tr("One platform. Many industries.")}</h2>
+            <h2 className="display display-lg mt-3 uppercase" style={{ color: "var(--on-dark-accent)" }}>{title}</h2>
           </div>
-          <p className="text-white/80 md:text-end">{tr("The same quote, payment, shipping and warranty flow works for every kind of service business.")}</p>
+          <p className="text-white/80 md:text-end">{text}</p>
         </div>
 
         <ul className="mt-10 divide-y divide-white/15 border-y border-white/15">
@@ -319,19 +330,21 @@ export function UseCases({ showcase }: { showcase: PublicShowcase }) {
 // ------------------------------------------------------------------ why choose (split)
 
 export function WhySplit() {
+  const title = useSiteText("home", "why_title", "Why customers and businesses choose us");
+  const cardTitle = useSiteText("home", "why_card_title", "Built for trust, end to end");
+  const cardText = useSiteText("home", "why_card_text", "Every step is recorded, from the first quote to the warranty, so both sides know where they stand.");
+  const custom = useSiteList<{ text: string }>("home", "why_points");
+  const points = custom.length > 0 ? custom.map((c) => c.text) : ["Vetted professionals who quote on every job", "Secure payment released only when confirmed", "Delivery tracking for physical products", "Arabic and English, with local currency and VAT"].map((t) => tr(t));
   return (
     <section className="bg-white py-20">
       <div className="mx-auto max-w-[1200px] px-4">
-        <h2 className="display display-md text-center">{tr("Why customers and businesses choose us")}</h2>
+        <h2 className="display display-md text-center">{title}</h2>
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           <div className="bg-dark rounded-[28px] p-8 md:p-10">
-            <h3 className="text-2xl font-bold text-white">{tr("Built for trust, end to end")}</h3>
-            <p className="mt-3 text-white/80">{tr("Every step is recorded, from the first quote to the warranty, so both sides know where they stand.")}</p>
+            <h3 className="text-2xl font-bold text-white">{cardTitle}</h3>
+            <p className="mt-3 text-white/80">{cardText}</p>
             <ul className="mt-6 space-y-3 text-white/90">
-              <Check dark>{tr("Vetted professionals who quote on every job")}</Check>
-              <Check dark>{tr("Secure payment released only when confirmed")}</Check>
-              <Check dark>{tr("Delivery tracking for physical products")}</Check>
-              <Check dark>{tr("Arabic and English, with local currency and VAT")}</Check>
+              {points.map((t) => <Check key={t} dark>{t}</Check>)}
             </ul>
             <a href="#faq" className="mt-7 inline-block text-sm font-semibold text-on-dark-accent underline underline-offset-4">{tr("Read the FAQ")}</a>
           </div>
@@ -345,12 +358,13 @@ export function WhySplit() {
 // ------------------------------------------------------------------ bento
 
 export function Bento({ facts }: { facts: Facts }) {
+  const title = useSiteText("home", "bento_title", "Every job is covered, tracked and paid securely.");
   return (
     <section className="bg-white py-10">
       <div className="mx-auto grid max-w-[1200px] gap-4 px-4 md:grid-cols-5 md:grid-rows-2">
         <div className="relative overflow-hidden rounded-[28px] bg-lime p-8 md:col-span-3 md:row-span-2">
           <Eyebrow>{tr("Built to be trusted")}</Eyebrow>
-          <h3 className="display display-md mt-2 max-w-md text-forest">{tr("Every job is covered, tracked and paid securely.")}</h3>
+          <h3 className="display display-md mt-2 max-w-md text-forest">{title}</h3>
           <div className="mt-4 max-w-md"><HeroArt kind="home-services" className="w-full" /></div>
         </div>
         <div className="rounded-[28px] border border-fog bg-white p-7 md:col-span-2">

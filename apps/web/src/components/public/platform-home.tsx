@@ -36,6 +36,10 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
     dev: useSiteFlag("show_developers"), compat: useSiteFlag("show_compat"), markets: useSiteFlag("show_markets"), faq: useSiteFlag("show_faq"),
   };
   const faqItems = useSiteList<{ question: string; answer: string }>("home", "faq");
+  const howTitle = useSiteText("home", "how_title", "How it works");
+  const howCustom = useSiteList<{ title: string; text: string }>("home", "how_steps");
+  const steps = howCustom.length > 0 ? howCustom.map((c, i) => [String(i + 1), c.title, c.text, true] as const) : STEPS.map(([n, t, x]) => [n, tr(t), tr(x), false] as const);
+  const marketsTitle = useSiteText("home", "markets_title", "ArmorHub Markets");
   const bannerTitle = useSiteText("home", "banner_title", "Run a business? Open your own store.");
   const bannerText = useSiteText("home", "banner_text", "Get a branded storefront, receive quote requests from nearby customers and get paid securely.");
   const bannerCta = useSiteText("home", "banner_cta", "For businesses: sign in");
@@ -47,7 +51,7 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
       {on.industries && <IndustryTabs showcase={showcase} />}
 
       <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
-        <h2 className="display display-md">{tr("ArmorHub Markets")}</h2>
+        <h2 className="display display-md">{marketsTitle}</h2>
         {stores.length === 0 ? (
           <p className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate">{tr("No markets are open yet. Please check back soon.")}</p>
         ) : (
@@ -79,13 +83,13 @@ function PlatformHomeBody({ stores, showcase }: { stores: PublicStoreCard[]; sho
 
       {on.how && <section id="how" className="scroll-mt-20 bg-white py-14">
         <div className="mx-auto max-w-[1200px] px-4">
-          <h2 className="display display-md text-center">{tr("How it works")}</h2>
+          <h2 className="display display-md text-center">{howTitle}</h2>
           <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map(([n, title, text]) => (
+            {steps.map(([n, title, text]) => (
               <li key={n} className="hover-lift rounded-[20px] border border-fog bg-white p-6">
                 <span className="btn-brand inline-flex h-9 w-9 items-center justify-center text-sm font-black">{n}</span>
-                <h3 className="mt-4 font-bold text-obsidian">{tr(title)}</h3>
-                <p className="mt-1 text-sm text-slate">{tr(text)}</p>
+                <h3 className="mt-4 font-bold text-obsidian">{title}</h3>
+                <p className="mt-1 text-sm text-slate">{text}</p>
               </li>
             ))}
           </ol>

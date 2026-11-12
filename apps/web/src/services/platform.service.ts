@@ -316,3 +316,7 @@ export interface LedgerEntry {
 
 export const getSellerEarnings = async () =>
   (await api.get<{ balances: import("@/services/admin.service").Balances; entries: LedgerEntry[]; payouts: import("@/services/admin.service").Payout[] }>("/seller/earnings")).data;
+
+/** Published admin-edited content of a surface, per language (never drafts). */
+export const getSurface = async (key: string) =>
+  (await api.get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`)).data.values;
