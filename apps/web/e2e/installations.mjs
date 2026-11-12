@@ -231,7 +231,7 @@ try {
   await card.locator("input[aria-label^='Reason for the decision']").fill("Part of the film must be redone");
   await card.getByRole("button", { name: "Decide" }).click();
   await admin.waitForSelector("text=Mark refund sent");
-  await admin.locator("input[aria-label='Reference of the refund you sent']").first().fill("RF-1");
+  await admin.locator("input[placeholder='Reference of the refund you sent']").first().fill("RF-1");
   await admin.getByRole("button", { name: "Mark refund sent" }).first().click();
   await admin.waitForSelector("text=Refund sent");
   await customer.goto(`${base}/dashboard/installations/${dJob}`);
