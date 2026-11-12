@@ -58,7 +58,7 @@ class MarketLauncher
         return DB::transaction(function () use ($tenant, $name, $industryIds, $status, $by) {
             if ($name !== null) {
                 $tenant->update(['name' => $name]);
-                Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('slug')->update(['name' => $name]);
+                Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->stores()->whereNotNull('slug')->update(['name' => $name]);
             }
             if ($status !== null) {
                 $tenant->update(['status' => $status]);
@@ -78,6 +78,6 @@ class MarketLauncher
 
     public function storeOf(Tenant $tenant): ?Company
     {
-        return Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('slug')->orderBy('id')->first();
+        return Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->stores()->whereNotNull('slug')->orderBy('id')->first();
     }
 }

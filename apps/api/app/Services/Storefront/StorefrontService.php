@@ -70,7 +70,7 @@ class StorefrontService
      */
     public function marketplaces(): array
     {
-        return Company::withoutGlobalScopes()->with('tenant.industry')->whereNotNull('slug')->whereNotIn('status', self::HIDDEN_STATUSES)->get()
+        return Company::withoutGlobalScopes()->with('tenant.industry')->stores()->whereNotNull('slug')->whereNotIn('status', self::HIDDEN_STATUSES)->get()
             ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant && $c->tenant->status === 'active')
             ->unique('tenant_id')
             ->map(fn (Company $c) => ['key' => $c->tenant->uuid, 'name' => $c->tenant->name, 'industry' => $c->tenant->industry?->name,
@@ -184,7 +184,7 @@ class StorefrontService
      */
     public function showcase(): array
     {
-        $stores = Company::withoutGlobalScopes()->with('tenant.industry')->whereNotNull('slug')
+        $stores = Company::withoutGlobalScopes()->with('tenant.industry')->stores()->whereNotNull('slug')
             ->whereNotIn('status', self::HIDDEN_STATUSES)->orderBy('name')->get()
             ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant?->industry)
             ->groupBy(fn (Company $c) => $c->tenant->industry->key);

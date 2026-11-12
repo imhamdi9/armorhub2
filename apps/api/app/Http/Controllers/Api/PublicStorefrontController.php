@@ -21,7 +21,7 @@ class PublicStorefrontController extends Controller
     public function index()
     {
         $stores = Company::withoutGlobalScopes()->with('tenant.industry')
-            ->whereNotNull('slug')->whereNotIn('status', ['inactive', 'suspended'])
+            ->stores()->whereNotNull('slug')->whereNotIn('status', ['inactive', 'suspended'])
             ->get()
             ->filter(fn (Company $c) => $this->stores->settingsOf($c)['enabled'])
             ->map(fn (Company $c) => [

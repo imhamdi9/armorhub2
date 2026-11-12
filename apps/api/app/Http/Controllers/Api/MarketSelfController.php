@@ -14,7 +14,7 @@ class MarketSelfController extends Controller
     public function show(Request $request, Markets $markets)
     {
         $tenant = Tenant::findOrFail($request->user()->company->tenant_id);
-        $store = Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('slug')->orderBy('id')->first();
+        $store = Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->stores()->whereNotNull('slug')->orderBy('id')->first();
         $m = $markets->get($tenant->market);
 
         return [

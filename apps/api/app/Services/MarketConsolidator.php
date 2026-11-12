@@ -31,14 +31,14 @@ class MarketConsolidator
     private function fold($tenants): int
     {
         $primary = $tenants->first();
-        $primaryStore = Company::withoutGlobalScopes()->where('tenant_id', $primary->id)->whereNotNull('slug')->orderBy('id')->first();
+        $primaryStore = Company::withoutGlobalScopes()->where('tenant_id', $primary->id)->stores()->whereNotNull('slug')->orderBy('id')->first();
         $n = 0;
 
         foreach ($tenants->slice(1) as $other) {
             DB::transaction(function () use ($primary, $primaryStore, $other) {
                 $primary->industries()->syncWithoutDetaching($other->industryIds());
 
-                $oldStores = Company::withoutGlobalScopes()->where('tenant_id', $other->id)->whereNotNull('slug')->get();
+                $oldStores = Company::withoutGlobalScopes()->where('tenant_id', $other->id)->stores()->whereNotNull('slug')->get();
                 if ($primaryStore) {
                     // Everything that pointed at an old store (its people, orders, quotes, payments) now points at the market's store.
                     foreach (Schema::getTables() as $table) {

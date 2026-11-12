@@ -59,6 +59,12 @@ class Company extends Model
     }
 
 
+    /** The public stores (companies that have a storefront), as opposed to the seller and service-centre companies that also have an address. */
+    public function scopeStores($query)
+    {
+        return $query->where(fn ($q) => $q->whereNotNull('settings->storefront')->where('type', '!=', 'supplier'));
+    }
+
     public static function uniqueSlug(string $name): string
     {
         $base = Str::slug($name) ?: 'store';
