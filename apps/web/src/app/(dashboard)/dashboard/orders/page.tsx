@@ -16,7 +16,8 @@ import { formatMoney, tr } from "@/lib/i18n";
 export default function OrdersPage() {
   const user = useCurrentUser();
   const [result, setResult] = useState<Paginated<Order> | null>(null);
-  const [status, setStatus] = useState("");
+  // A link such as /dashboard/orders?status=quotes_received opens the list already filtered. (This screen only renders after sign-in, in the browser.)
+  const [status, setStatus] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("status") ?? ""));
   const [page, setPage] = useState(1);
 
   useEffect(() => {

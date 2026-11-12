@@ -49,7 +49,7 @@ export default function DashboardLayout({
         <SidebarProvider>
           <AppSidebar />
 
-          <SidebarInset>
+          <SidebarInset className="min-w-0 overflow-x-clip">
             <header className="flex h-16 items-center justify-between border-b px-3 sm:px-6">
               <div className="flex items-center">
                 <SidebarTrigger />

@@ -52,9 +52,13 @@ class SeedEgyptDemo extends Command
         foreach ($this->stores() as $def) {
             $stores[$def['key']] = $this->store($def, $password);
         }
-        foreach ($this->customers() as $c) {
-            $store = $stores[$c[2]];
-            $u = User::firstOrCreate(['email' => $c[1]], ['name' => $c[0], 'password' => $password, 'email_verified_at' => now(), 'company_id' => $store['company']->id]);
+        foreach ($this->customers() as [$name, $email, $key, $lat, $lng, $city]) {
+            $store = $stores[$key];
+            // Customers share their location, as a real one must before ordering a service: it is how nearby partners are found.
+            $u = User::firstOrCreate(['email' => $email], [
+                'name' => $name, 'password' => $password, 'email_verified_at' => now(), 'company_id' => $store['company']->id,
+                'latitude' => $lat, 'longitude' => $lng, 'city' => $city, 'country' => 'EG', 'location_enabled' => true,
+            ]);
             $u->assignRole('customer');
         }
 
@@ -212,13 +216,14 @@ class SeedEgyptDemo extends Command
 
     // ------------------------------------------------------------------ the dataset
 
-    /** @return list<array{string, string, string}> name, email, store key */
+    /** @return list<array{string, string, string, float, float, string}> name, email, store key, latitude, longitude, city */
     private function customers(): array
     {
         return [
-            ['Nour El-Din Fawzy', 'nour.fawzy@demo.eg', 'auto'], ['Mariam Ashraf', 'mariam.ashraf@demo.eg', 'beauty'], ['Khaled Abdelrahman', 'khaled.abdelrahman@demo.eg', 'home'],
-            ['Salma Mahmoud', 'salma.mahmoud@demo.eg', 'beauty'], ['Hesham Zaki', 'hesham.zaki@demo.eg', 'devices'], ['Dina Farouk', 'dina.farouk@demo.eg', 'home'],
-            ['Ramy Nassar', 'ramy.nassar@demo.eg', 'auto'], ['Yasmin Sherif', 'yasmin.sherif@demo.eg', 'devices'],
+            ['Nour El-Din Fawzy', 'nour.fawzy@demo.eg', 'auto', 30.0626, 31.2197, 'Cairo'], ['Mariam Ashraf', 'mariam.ashraf@demo.eg', 'beauty', 30.0916, 31.3225, 'Cairo'],
+            ['Khaled Abdelrahman', 'khaled.abdelrahman@demo.eg', 'home', 30.0131, 31.2089, 'Giza'], ['Salma Mahmoud', 'salma.mahmoud@demo.eg', 'beauty', 29.9602, 31.2569, 'Cairo'],
+            ['Hesham Zaki', 'hesham.zaki@demo.eg', 'devices', 30.0561, 31.2000, 'Giza'], ['Dina Farouk', 'dina.farouk@demo.eg', 'home', 31.2156, 29.9553, 'Alexandria'],
+            ['Ramy Nassar', 'ramy.nassar@demo.eg', 'auto', 31.2001, 29.9187, 'Alexandria'], ['Yasmin Sherif', 'yasmin.sherif@demo.eg', 'devices', 31.0409, 31.3785, 'Mansoura'],
         ];
     }
 

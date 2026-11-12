@@ -4,11 +4,13 @@ import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
+import { useCurrentUser } from "@/components/providers/current-user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { ShippingPanel } from "@/components/orders/shipping-panel";
 import { eventLabel, statusLabel } from "@/lib/orders";
+import { statusGuide } from "@/lib/next-steps";
 import {
   acceptQuote,
   cancelOrder,
@@ -30,6 +32,7 @@ export default function OrderDetailPage() {
 const MAX_CONFIRM_POLLS = 20;
 
 function OrderDetail() {
+  const user = useCurrentUser();
   const { id } = useParams<{ id: string }>();
   const checkout = useSearchParams().get("checkout");
   const [order, setOrder] = useState<Order | null>(null);
@@ -84,6 +87,7 @@ function OrderDetail() {
 
   const submitted = quotes.filter((q) => q.status !== "pending");
   const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
+  const guide = statusGuide(order.status, !!user?.roles?.includes("customer"));
   const canPay = ["partner_selected", "awaiting_payment"].includes(order.status);
   const canCancel = ["pending_quotes", "quotes_received", "partner_selected", "awaiting_payment"].includes(order.status);
 
@@ -93,6 +97,12 @@ function OrderDetail() {
         title={tr("Order #{id}", { id: order.id })}
         action={<Badge variant="secondary">{statusLabel(order.status)}</Badge>}
       />
+
+      {guide && (
+        <p role="note" className="mb-6 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm leading-relaxed text-sky-900">
+          <strong className="font-semibold">{tr("What happens next")}: </strong>{tr(guide)}
+        </p>
+      )}
 
       <div className="mb-6 rounded-lg border p-4 text-sm">
         <p className="font-semibold">{order.product?.name}</p>

@@ -20,6 +20,8 @@ export interface User {
   roles?: string[];
   permissions?: string[];
   company_id?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   email_verified?: boolean;
   email_verification_required?: boolean;
   industry?: Industry | null;

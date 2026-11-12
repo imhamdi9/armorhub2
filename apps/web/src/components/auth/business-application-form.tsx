@@ -145,7 +145,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
 
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-center text-2xl font-black tracking-tight">{isSeller ? tr("Sell on ArmorHub") : tr("Become a partner")}</CardTitle>
+          <CardTitle aria-level={1} className="text-center text-2xl font-black tracking-tight">{isSeller ? tr("Sell on ArmorHub") : tr("Become a partner")}</CardTitle>
           <p className="text-center text-sm text-muted-foreground">
             {isSeller
               ? tr("List your own products in a marketplace and sell them to its customers. We verify your business before you can sell.")

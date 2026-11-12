@@ -104,9 +104,9 @@ export function AppSidebar() {
   }, [locale]);
 
   return (
-    <Sidebar side={locale === "ar" ? "right" : "left"}>
+    <Sidebar side={locale === "ar" ? "right" : "left"} role="complementary" aria-label={tr("Sidebar")}>
       <SidebarHeader className="p-6">
-        <h1 className="text-xl font-bold">{tr("ArmorHub")}</h1>
+        <p className="text-xl font-bold">{tr("ArmorHub")}</p>
         <p className="text-sm text-muted-foreground">
           {user?.industry ? tr(user.industry.name) : tr("Service Marketplace Platform")}
         </p>
