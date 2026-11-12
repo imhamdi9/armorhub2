@@ -45,7 +45,7 @@ export default function CategoriesPage() {
       <span className="flex items-center gap-2">
         <Badge variant="outline">{tr("{n} products", { n: c.products })}</Badge>
         {!c.is_active && <Badge variant="secondary">{tr("Hidden")}</Badge>}
-        <Button size="sm" variant="outline" onClick={() => toggle(c)}>{tr(c.is_active ? "Hide" : "Show")}</Button>
+        <Button size="sm" variant="outline" disabled={c.is_active && c.products > 0} title={c.is_active && c.products > 0 ? tr("Products still use this category. Move them to another one first.") : undefined} onClick={() => toggle(c)}>{tr(c.is_active ? "Hide" : "Show")}</Button>
       </span>
     </li>
   );

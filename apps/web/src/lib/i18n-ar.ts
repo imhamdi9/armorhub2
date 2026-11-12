@@ -971,6 +971,7 @@ export const AR: Record<string, string> = {
   "New role name": "اسم الدور الجديد",
   "What this role may do": "ما يمكن لهذا الدور فعله",
   "Only platform admins and department heads can open this page.": "يمكن لمديري المنصة ورؤساء الأقسام فقط فتح هذه الصفحة.",
+  "Products still use this category. Move them to another one first.": "ما زالت منتجات تستخدم هذه الفئة. انقلها إلى فئة أخرى أولًا.",
   "Sold by": "يُباع بواسطة",
   "Your seller account belongs to this market only. To sell in another country, apply there separately with its own e-mail; it is a separate account under that market's terms.": "حساب البائع الخاص بك يتبع هذا السوق فقط. للبيع في بلد آخر قدّم طلبًا منفصلًا هناك ببريد إلكتروني خاص به؛ فهو حساب مستقل بشروط ذلك السوق.",
   "Selling on {market} since {date}": "يبيع على {market} منذ {date}",
