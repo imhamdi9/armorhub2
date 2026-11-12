@@ -17,15 +17,17 @@ try {
   ok("admin signed in");
 
   await p.click('a:has-text("Markets")');
-  await p.fill('input[placeholder="New market name"]', "My Brand");
-  await p.selectOption("select >> nth=0", { label: "Automotive" });
-  await p.click('button:has-text("Add")');
-  await p.waitForSelector("h2:has-text('My Brand')");
-  ok("market created with an industry");
+  await p.waitForSelector("#country");
+  await p.selectOption("#country", "BR");
+  const form = p.locator("form[aria-label='Open a new market']");
+  await form.getByLabel("Automotive").check();
+  await form.getByRole("button", { name: "Open the market" }).click();
+  await p.waitForSelector("[data-testid=market-card]:has-text('ArmorHub Brazil')");
+  ok("market opened for a country with an industry");
 
   await p.click('a:has-text("Companies")');
   await p.fill('input[placeholder="Company name"]', "My Store");
-  await p.selectOption("select >> nth=0", { label: "My Brand" });
+  await p.selectOption("select >> nth=0", { label: "ArmorHub Brazil" });
   await p.selectOption("select >> nth=1", { label: "Storefront / platform" });
   await p.click('button:has-text("Add company")');
   await p.waitForSelector("text=Company ID:");
