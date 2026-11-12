@@ -105,6 +105,13 @@ export function buildNavigation(user: User | null): NavItem[] {
 
   if (hasRole(user, "partner-manager", "technician")) {
     items.push({ title: "Jobs", href: "/dashboard/jobs", icon: "jobs" });
+    items.push({ title: "Installation jobs", href: "/dashboard/centre-jobs", icon: "jobs" });
+  }
+  if (hasRole(user, "partner-manager")) {
+    items.push({ title: "Installation requests", href: "/dashboard/centre-requests", icon: "requests" });
+  }
+  if (hasRole(user, "partner-manager")) {
+    items.push({ title: "Wallet", href: "/dashboard/wallet", icon: "commissions" });
   }
 
   if (technicianOnly) {
@@ -125,6 +132,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   }
 
   if (hasRole(user, "customer")) {
+    items.push({ title: "Installation requests", href: "/dashboard/installations", icon: "jobs" });
     items.push({ title: "Warranties", href: "/dashboard/warranties", icon: "warranties" });
   }
 
@@ -172,6 +180,8 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
+    items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "admin", icon: "security" });
+    items.push({ title: "Withdrawals", href: "/dashboard/admin/withdrawals", section: "admin", icon: "commissions" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });
     items.push({ title: "Roles", href: "/dashboard/admin/roles", section: "admin", icon: "users" });
     items.push({ title: "Theme editor", href: "/dashboard/admin/theme", section: "admin", icon: "settings" });

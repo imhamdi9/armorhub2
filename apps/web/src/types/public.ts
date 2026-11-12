@@ -68,6 +68,7 @@ export interface PublicProduct {
   images?: string[];
   compare_at_price?: number | null;
   requires_shipping?: boolean;
+  installation?: "none" | "optional" | "required";
   seller?: string | null;
 }
 

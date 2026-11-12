@@ -156,4 +156,13 @@ class InstallationRequestTest extends TestCase
         $this->assertNull($settings->get('installation.fee_percent.EG'));
         $this->assertSame(48, (int) $settings->get('installation.objection_hours'));
     }
+
+    public function test_an_empty_market_fee_means_use_the_default_not_zero(): void
+    {
+        $settings = app(Settings::class);
+        $settings->set('installation.fee_percent.EG', 8);
+        $this->assertEquals(8.0, (float) $settings->get('installation.fee_percent.EG'));
+        $settings->set('installation.fee_percent.EG', '');
+        $this->assertNull($settings->get('installation.fee_percent.EG'));
+    }
 }

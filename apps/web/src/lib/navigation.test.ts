@@ -76,7 +76,7 @@ describe("buildNavigation", () => {
   });
 
   it("gives technicians only their jobs, and customers their warranties", () => {
-    expect(titles(user(["technician"]))).toEqual(["Dashboard", "Jobs"]);
+    expect(titles(user(["technician"]))).toEqual(["Dashboard", "Jobs", "Installation jobs"]);
     expect(titles(user(["customer"]))).toContain("Warranties");
     expect(titles(user(["partner-manager"]))).toContain("Jobs");
   });
@@ -98,7 +98,7 @@ describe("buildNavigation", () => {
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
-      "Overview", "Settings", "Payments", "Payouts", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
+      "Overview", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
     ]);
     expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
 
@@ -116,7 +116,7 @@ describe("buildNavigation", () => {
   });
 
   it("still works without an industry or a user", () => {
-    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Products", "Warranties"]);
+    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Products", "Installation requests", "Warranties"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
   });
 

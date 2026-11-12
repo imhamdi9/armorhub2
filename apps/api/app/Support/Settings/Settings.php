@@ -51,7 +51,9 @@ class Settings
     public function set(string $key, mixed $value, ?User $by = null): void
     {
         $definition = $this->registry->get($key);
-        $value = $definition->cast($value);
+
+        // An empty box means "use the default" (casting '' first would turn a number into 0).
+        $value = $value === '' ? null : $definition->cast($value);
 
         if ($value === null || $value === '') {
             $this->forget($key, $by);

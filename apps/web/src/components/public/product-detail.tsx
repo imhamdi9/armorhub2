@@ -175,6 +175,14 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
               <p className="text-center text-xs text-slate">{goods ? tr("You pay securely online and track your delivery.") : tr("Nearby professionals send you their quote. Pay only when you accept one.")}</p>
             </div>
 
+            {goods && p.installation && p.installation !== "none" && (
+              <div className="mt-4 rounded-2xl border border-fog p-4 text-sm" data-testid="installation-offer">
+                <p className="font-semibold text-obsidian">{p.installation === "required" ? tr("This product needs professional fitting") : tr("Want it fitted by a professional?")}</p>
+                <p className="mt-1 text-slate">{tr("You can buy the product on its own. If you like, nearby centres send you offers to fit it. They never see your details until you accept one and pay on the platform.")}</p>
+                <Link href={`/dashboard/installations/new?product=${p.id}`} className="mt-3 inline-block font-semibold text-brand-ink underline underline-offset-4">{tr("Ask centres for fitting offers")}</Link>
+              </div>
+            )}
+
             <ul className="mt-6 grid gap-2 rounded-2xl bg-linen p-4 text-sm sm:grid-cols-3">
               {TRUST.map(([icon, label]) => <li key={label} className="flex items-center gap-2"><span aria-hidden="true">{icon}</span>{tr(label)}</li>)}
             </ul>
