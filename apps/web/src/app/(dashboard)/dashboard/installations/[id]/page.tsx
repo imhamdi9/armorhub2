@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -57,6 +58,24 @@ export default function InstallationDetailPage() {
       {job.notes && <p className="mb-4 text-sm text-muted-foreground">{job.notes}</p>}
       {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
       {msg && <Note tone="ok">{msg}</Note>}
+
+      {job.product && job.product.installation !== "none" && (() => {
+        const needsOffer = job.product.installation === "required";
+        const chosen = ["awaiting_payment", "paid", "in_progress", "proof_submitted", "released"].includes(job.status);
+
+        return (
+          <Section title="The product">
+            <p className="font-medium">{job.product.name}</p>
+            {job.order_id ? (
+              <p className="mt-1 text-sm text-muted-foreground">{tr("You ordered this product.")} <Link href={`/dashboard/orders/${job.order_id}`} className="underline">{tr("See the order")}</Link></p>
+            ) : needsOffer && !chosen ? (
+              <p className="mt-1 text-sm text-muted-foreground" data-testid="buy-locked">{tr("This product is sold only together with an installation offer. Choose an offer below, then you can buy the product.")}</p>
+            ) : (
+              <Button className="mt-2" render={<Link href={`/dashboard/orders/new?product=${job.product.id}&installation_request=${job.id}`} />}>{tr("Buy the product now")}</Button>
+            )}
+          </Section>
+        );
+      })()}
 
       {picking && (
         <Section title="Offers">

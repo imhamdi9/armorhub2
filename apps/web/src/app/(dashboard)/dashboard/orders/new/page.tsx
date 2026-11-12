@@ -37,7 +37,9 @@ export default function NewOrderPage() {
 function NewOrder() {
   const router = useRouter();
   // Coming from a product page on the storefront: that product is already chosen.
-  const preselected = Number(useSearchParams().get("product")) || null;
+  const search = useSearchParams();
+  const preselected = Number(search.get("product")) || null;
+  const installationRequest = Number(search.get("installation_request")) || null;
   const user = useCurrentUser();
   const industry = user?.industry;
   const targetType = industry?.targets[0] ?? "";
@@ -109,6 +111,7 @@ function NewOrder() {
         subject_id: subjectType ? subjectId : null,
         target_type: targetType,
         targets: selected,
+        ...(installationRequest ? { installation_request_id: installationRequest } : {}),
         ...(needsShipping ? { shipping_address: address } : {}),
       });
       router.push(`/dashboard/orders/${res.order.id}`);

@@ -12,6 +12,7 @@ export interface Offer {
 }
 export interface CustomerJob {
   id: number; subject: string; parts: string[]; work_type: string; notes: string | null; status: InstallationStatus; currency: string | null; created_at: string; expires_at: string | null;
+  order_id?: number | null; product?: { id: number; name: string; installation: "none" | "optional" | "required" } | null;
   price: number | null; discount: number | null; pay_amount: number | null; points_used: number; offer_count: number; offers?: Offer[];
   objection_deadline: string | null; warranty_ends_at: string | null; terms: { version: string; lines: string[] }; proofs: Proof[]; dispute: DisputeInfo | null;
   refund: { amount: number; status: string; reference: string | null } | null;

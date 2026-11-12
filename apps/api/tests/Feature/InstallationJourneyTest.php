@@ -326,4 +326,33 @@ class InstallationJourneyTest extends TestCase
         });
         $this->assertEquals(4.0, (float) InstallationRequest::find($id)->fee_percent);          // 5% less the gold discount
     }
+
+    public function test_a_product_sold_only_with_an_installation_offer_cannot_be_bought_alone(): void
+    {
+        $lock = \App\Models\Product::where('slug', 'eg-doorlock')->firstOrFail();
+        $this->assertSame('required', $lock->installation);
+        $rule = $lock->priceRules()->first();
+        $order = ['product_id' => $lock->id, 'target_type' => $rule->target_type, 'targets' => [$rule->target_id],
+            'shipping_address' => ['name' => 'Nour', 'phone' => '01012345678', 'line1' => '1 Street', 'city' => 'Giza', 'country' => 'EG']];
+
+        // Nobody can buy it directly: not a signed-in customer, not a guest.
+        $this->as('khaled.abdelrahman@demo.eg')->postJson('/api/orders', $order)->assertStatus(422)->assertJsonValidationErrors('installation');
+        $challenge = $this->getJson('/api/signup-challenge')->json();
+        $this->travel(5)->seconds();
+        $this->postJson('/api/guest-orders', ['store' => 'beit-masr', 'product_id' => $lock->id, 'name' => 'G', 'email' => 'g@example.org', 'phone' => '01012345678',
+            'address' => ['line1' => '1 St', 'city' => 'Giza'], 'signup_token' => $challenge['token']])->assertStatus(422)->assertJsonValidationErrors('product_id');
+
+        // A request for this product whose offer is only on the table (not accepted yet) is not enough either.
+        $req = $this->as('khaled.abdelrahman@demo.eg')->postJson('/api/installation-requests', ['subject' => 'Front door', 'parts' => ['Smart lock'], 'product_id' => $lock->id,
+            'latitude' => 30.0131, 'longitude' => 31.2089, 'location_consent' => true])->assertCreated()->json();
+        $this->postJson('/api/orders', $order + ['installation_request_id' => $req['id']])->assertStatus(422);
+
+        // With an accepted installation offer the product can be bought, once, and the two are linked.
+        $this->as($this->centreEmail('Giza CleanPro'))->postJson("/api/partner/installation-requests/{$req['id']}/offer", ['price' => 800, 'eta_days' => 2])->assertCreated();
+        $offer = $this->as('khaled.abdelrahman@demo.eg')->getJson("/api/installation-requests/{$req['id']}")->json('offers.0.id');
+        $this->postJson("/api/installation-requests/{$req['id']}/accept", ['offer_id' => $offer, 'accept_terms' => true])->assertOk();
+        $this->postJson('/api/orders', $order + ['installation_request_id' => $req['id']])->assertCreated();
+        $this->assertNotNull(InstallationRequest::find($req['id'])->order_id);
+        $this->postJson('/api/orders', $order + ['installation_request_id' => $req['id']])->assertStatus(422);        // one installation job, one order
+    }
 }

@@ -113,6 +113,14 @@ class OrderController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
+        // A product that is "sold only with an installation offer" needs a request of this customer, for this product, whose offer is accepted.
+        $installation = \App\Models\InstallationRequest::where('customer_id', $user->id)->where('product_id', $product->id)->whereNull('order_id')
+            ->whereIn('status', ['awaiting_payment', 'paid', 'in_progress', 'proof_submitted', 'released'])
+            ->when($request->filled('installation_request_id'), fn ($q) => $q->whereKey($request->integer('installation_request_id')))->first();
+        if ($product->installation === 'required' && ! $installation) {
+            throw ValidationException::withMessages(['installation' => ['This product is sold together with an installation offer. Get offers from nearby centres and choose one first.']]);
+        }
+
         $address = $this->shippingAddress($request, $product, $user);
 
         $this->assertSubject($data, $registry, $user->id);
@@ -141,7 +149,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'No partners available'], 422);
         }
 
-        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address, $directSale) {
+        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address, $directSale, $installation, $product) {
 
             $order = Order::create([
                 'company_id' => $user->company_id,
@@ -169,6 +177,11 @@ class OrderController extends Controller
             }
 
             OrderEvent::record($order, 'created', $user, $directSale ? ['direct_sale' => true] : ['partners_asked' => $partners->count()]);
+
+            // The goods order and the installation job belong together; one installation job is used by one order.
+            if ($installation && $product->installation !== 'none') {
+                $installation->update(['order_id' => $order->id]);
+            }
 
             return $order;
         });

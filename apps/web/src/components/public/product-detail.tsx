@@ -12,18 +12,21 @@ import { imageSrc } from "@/lib/surfaces";
 import { me } from "@/services/auth.service";
 import type { PublicProductPage } from "@/types/public";
 
-/** Takes signed-in customers straight to ordering; guests go to checkout (goods) or signup (services), keeping the product. */
-function useOrderHref(slug: string, productId: number, goods: boolean) {
+/**
+ * Where the buttons go. Signed-in customers go straight to ordering; guests go to checkout (goods) or signup (services).
+ * Finding installation offers needs an account (centres answer a signed-in customer), so a guest is sent to signup and then to the request.
+ */
+function useOrderLinks(slug: string, productId: number, goods: boolean) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     me().then(() => setSignedIn(true)).catch(() => setSignedIn(false));
   }, []);
 
-  // Goods can be bought without an account (an account is offered at checkout, never required); services need quotes, so they start with signup.
-  if (signedIn) return `/dashboard/orders/new?product=${productId}`;
+  const buy = signedIn ? `/dashboard/orders/new?product=${productId}` : goods ? `/s/${encodeURIComponent(slug)}/checkout?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}`;
+  const find = signedIn ? `/dashboard/installations/new?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}&installation=1`;
 
-  return goods ? `/s/${encodeURIComponent(slug)}/checkout?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}`;
+  return { buy, find };
 }
 
 /** Big picture with thumbnails, arrows (and the keyboard) and a hover zoom. */
@@ -92,7 +95,10 @@ const TRUST = [
 export function ProductDetail({ store, data }: { store: ShellStore; data: PublicProductPage }) {
   const p = data.product;
   const goods = !!p.requires_shipping;
-  const href = useOrderHref(store.slug, p.id, goods);
+  const links = useOrderLinks(store.slug, p.id, goods);
+  // How the product is sold: on its own, on its own with optional installation offers, or only together with an installation offer.
+  const mode = goods ? (p.installation ?? "none") : "none";
+  const href = mode === "required" ? links.find : links.buy;
   const options = p.prices.filter((r) => r.target);
   const [picked, setPicked] = useState<string | null>(null);
   const chosen = options.find((o) => `${o.target_type}:${o.target}` === picked) ?? null;
@@ -173,18 +179,33 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
               </fieldset>
             )}
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-1">
-              <Link ref={cta} href={href} className="btn-brand inline-flex items-center justify-center px-8 py-4 text-lg">{goods ? tr("Order now") : tr("Get a quote")}</Link>
-              <p className="text-center text-xs text-slate">{goods ? tr("You pay securely online and track your delivery.") : tr("Nearby professionals send you their quote. Pay only when you accept one.")}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-1" data-testid="buy-buttons">
+              {!goods && (
+                <>
+                  <Link ref={cta} href={href} className="btn-brand inline-flex items-center justify-center px-8 py-4 text-lg">{tr("Get a quote")}</Link>
+                  <p className="text-center text-xs text-slate">{tr("Nearby professionals send you their quote. Pay only when you accept one.")}</p>
+                </>
+              )}
+              {goods && mode === "none" && (
+                <>
+                  <Link ref={cta} href={links.buy} className="btn-brand inline-flex items-center justify-center px-8 py-4 text-lg">{tr("Buy now")}</Link>
+                  <p className="text-center text-xs text-slate">{tr("You pay securely online and track your delivery.")}</p>
+                </>
+              )}
+              {goods && mode === "optional" && (
+                <>
+                  <Link ref={cta} href={links.buy} className="btn-brand inline-flex items-center justify-center px-8 py-4 text-lg">{tr("Buy now without installation")}</Link>
+                  <Link href={links.find} className="inline-flex items-center justify-center rounded-full border-2 border-forest px-8 py-4 text-lg font-semibold text-forest hover:bg-linen">{tr("Buy now and find me a suitable installation offer")}</Link>
+                  <p className="text-center text-xs text-slate">{tr("Installation is your choice. Nearby centres send you offers without seeing your details, and you pay on the platform.")}</p>
+                </>
+              )}
+              {goods && mode === "required" && (
+                <>
+                  <Link ref={cta} href={links.find} className="btn-brand inline-flex items-center justify-center px-8 py-4 text-lg">{tr("Find me a suitable installation offer")}</Link>
+                  <p className="text-center text-xs text-slate" data-testid="installation-required-note">{tr("This product is sold only together with an installation offer. We ask nearby centres to send you offers first, and you can buy the product once you choose one.")}</p>
+                </>
+              )}
             </div>
-
-            {goods && p.installation && p.installation !== "none" && (
-              <div className="mt-4 rounded-2xl border border-fog p-4 text-sm" data-testid="installation-offer">
-                <p className="font-semibold text-obsidian">{p.installation === "required" ? tr("This product needs professional fitting") : tr("Want it fitted by a professional?")}</p>
-                <p className="mt-1 text-slate">{tr("You can buy the product on its own. If you like, nearby centres send you offers to fit it. They never see your details until you accept one and pay on the platform.")}</p>
-                <Link href={`/dashboard/installations/new?product=${p.id}`} className="mt-3 inline-block font-semibold text-brand-ink underline underline-offset-4">{tr("Ask centres for fitting offers")}</Link>
-              </div>
-            )}
 
             <ul className="mt-6 grid gap-2 rounded-2xl bg-linen p-4 text-sm sm:grid-cols-3">
               {TRUST.map(([icon, label]) => <li key={label} className="flex items-center gap-2"><span aria-hidden="true">{icon}</span>{tr(label)}</li>)}
@@ -236,7 +257,7 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
               <img src={imageSrc(p.images[0]) ?? ""} alt="" className="h-12 w-12 rounded-lg object-cover" />
             )}
             <div className="min-w-0 flex-1"><p className="truncate font-semibold text-obsidian">{p.name}</p><p className="text-sm text-forest">{price({ from_price: shown, currency: p.currency })}</p></div>
-            <Link href={href} className="btn-brand px-6 py-3">{goods ? tr("Order now") : tr("Get a quote")}</Link>
+            <Link href={href} className="btn-brand px-6 py-3">{!goods ? tr("Get a quote") : mode === "required" ? tr("Find me a suitable installation offer") : tr("Buy now")}</Link>
           </div>
         </div>
       )}

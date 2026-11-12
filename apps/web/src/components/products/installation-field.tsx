@@ -7,7 +7,7 @@ export type InstallationMode = "none" | "optional" | "required";
 const CHOICES: [InstallationMode, string, string][] = [
   ["none", "A finished product, sold on its own", "The customer buys it and uses it. No installation offers are shown."],
   ["optional", "Sold on its own; installation offers if the customer wants them", "The customer can buy it alone. If they like, nearby centres send them installation offers, and the choice is theirs."],
-  ["required", "Needs installation: the platform offers installation", "The product needs professional fitting. After buying, the platform asks the customer to get installation offers from nearby centres. They can still buy the product on its own."],
+  ["required", "Sold only with an installation offer: the platform finds the installer", "The product is not sold on its own: the customer first gets installation offers from nearby centres, and can buy the product once they choose one."],
 ];
 
 /** Whether (and how) a product comes with installation. The product is always sold on its own; this only decides what the customer is offered. */

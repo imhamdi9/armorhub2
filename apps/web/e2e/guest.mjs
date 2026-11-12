@@ -1,4 +1,4 @@
-// Buying goods without an account, through the real screens: product -> "Order now" -> checkout with no sign-in -> pay -> private order page ->
+// Buying goods without an account, through the real screens: product -> "Buy now" -> checkout with no sign-in -> pay -> private order page ->
 // the seller sees what to ship -> the buyer's later account picks the order up. Plus the privacy of the order link, mobile, Arabic and accessibility.
 import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
@@ -21,11 +21,11 @@ try {
   const lantern = list.data.find((p) => /Fanous/.test(p.name)) ?? fail("lantern missing");
   const cleaning = list.data.find((p) => /Deep Home Cleaning/.test(p.name)) ?? fail("cleaning service missing");
 
-  // ---- 1. "Order now" goes to checkout, never to a sign-in or signup page
+  // ---- 1. "Buy now" goes to checkout, never to a sign-in or signup page
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   await page.goto(`${base}/s/beit-masr/products/${lantern.id}`);
-  await page.getByRole("link", { name: "Order now" }).first().click();
+  await page.getByRole("link", { name: "Buy now", exact: true }).first().click();
   await page.waitForURL(`**/s/beit-masr/checkout?product=${lantern.id}`);
   if (/\/(login|register)/.test(page.url())) fail("a guest was sent to sign in");
   await page.waitForSelector("#g-name");
@@ -116,21 +116,46 @@ try {
   if (await sip.locator("#g-name").count()) fail("a signed-in customer is shown the guest form");
   ok("a signed-in customer is offered to continue with their account");
 
-  // ---- 8. A product that needs installation tells the buyer, before and after paying
+  // ---- 8. The product page offers what the seller chose: sell alone / sell alone or with installation / only with an installation offer
   const lock = list.data.find((p) => /Smart Door Lock/.test(p.name)) ?? fail("door lock missing");
+  const dev = await (await fetch(`${base}/api/public/storefronts/cairo-devices/products?per_page=50`)).json();
+  const glass = dev.data.find((p) => /Tempered Glass/.test(p.name)) ?? fail("glass missing");
+  const view = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  const buttons = async (url) => { await view.goto(base + url); await view.waitForSelector("[data-testid=buy-buttons] a"); return view.locator("[data-testid=buy-buttons] a").allInnerTexts(); };
+
+  let b = await buttons(`/s/beit-masr/products/${lantern.id}`);
+  if (b.length !== 1 || !/^Buy now$/.test(b[0].trim())) fail(`a product sold on its own should show one "Buy now" button, got ${JSON.stringify(b)}`);
+  b = await buttons(`/s/cairo-devices/products/${glass.id}`);
+  if (b.length !== 2 || !/Buy now without installation/.test(b[0]) || !/Buy now and find me a suitable installation offer/.test(b[1])) fail(`an optional-installation product should show two buttons, got ${JSON.stringify(b)}`);
+  await view.screenshot({ path: `${SHOTS}/guest-4-optional-buttons.png` });
+  b = await buttons(`/s/beit-masr/products/${lock.id}`);
+  if (b.length !== 1 || /^Buy now/.test(b[0].trim()) || !/Find me a suitable installation offer/.test(b[0])) fail(`a product sold only with installation must not offer "Buy now", got ${JSON.stringify(b)}`);
+  if (!/sold only together with an installation offer/.test(await view.locator("[data-testid=installation-required-note]").innerText())) fail("the required-installation note is missing");
+  await view.screenshot({ path: `${SHOTS}/guest-5-required-buttons.png` });
+  ok("the product page shows 'Buy now', or two buy choices, or only 'find me an installation offer', as the seller chose");
+
+  // A guest cannot buy a required-installation product at all, and the second optional button leads to signup then the installation request
+  await view.goto(`${base}/s/beit-masr/checkout?product=${lock.id}`);
+  await view.waitForSelector("[data-testid=installation-required-block]");
+  if (await view.locator("#g-name").count()) fail("the guest form is shown for a product sold only with installation");
+  await view.goto(`${base}/s/cairo-devices/products/${glass.id}`);
+  await view.getByRole("link", { name: "Buy now and find me a suitable installation offer" }).click();
+  await view.waitForURL(/\/register\?.*installation=1/);
+  ok("a guest cannot buy a product that is sold only with installation; the 'find me an installation offer' button leads to signup");
+
+  // The optional product still says so at checkout and on the order page (bought without an account)
   const g2 = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
-  await g2.goto(`${base}/s/beit-masr/checkout?product=${lock.id}`);
+  await g2.goto(`${base}/s/cairo-devices/checkout?product=${glass.id}`);
   await g2.waitForSelector("[data-testid=installation-note]");
-  if (!/needs professional installation/.test(await g2.locator("[data-testid=installation-note]").innerText())) fail("the checkout does not say the product needs installation");
   await g2.fill("#g-name", "Hana Guest"); await g2.fill("#g-email", `hana${Date.now()}@example.org`); await g2.fill("#g-phone", "01012345678");
   await g2.fill("#g-line1", "3 Tahrir Square"); await g2.fill("#g-city", "Cairo");
   await g2.waitForFunction(() => !document.querySelector("button[type=submit]")?.hasAttribute("disabled"), null, { timeout: 15000 });
   await g2.getByRole("button", { name: /^Pay / }).click();
   await g2.waitForURL(/\/track\//);
   await g2.waitForSelector("[data-testid=installation-prompt]");
-  await g2.screenshot({ path: `${SHOTS}/guest-4-installation-prompt.png`, fullPage: true });
+  await g2.screenshot({ path: `${SHOTS}/guest-6-installation-prompt.png`, fullPage: true });
   await scan(g2, "guest order with installation prompt");
-  ok("a product that needs installation says so at checkout and on the order page");
+  ok("a product with optional installation says so at checkout and on the order page");
 
   if (findings.length) fail(`accessibility problems:\n  ${findings.join("\n  ")}`);
   ok("no serious accessibility problems on the guest screens");

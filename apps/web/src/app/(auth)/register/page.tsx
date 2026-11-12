@@ -30,6 +30,7 @@ function RegisterForm() {
   const [chosenStore, setChosenStore] = useState("");
   const storeSlug = presetStore ?? (chosenStore || null);
   const productId = params.get("product");
+  const wantsInstallation = params.get("installation") === "1";
   const [storeName, setStoreName] = useState<string | null>(null);
   const [storeMissing, setStoreMissing] = useState(false);
   const [phoneHint, setPhoneHint] = useState<string | null>(null);
@@ -72,7 +73,7 @@ function RegisterForm() {
         website,
         captcha_token: human.captchaToken,
       });
-      router.push(productId ? `/dashboard/orders/new?product=${encodeURIComponent(productId)}` : "/dashboard");
+      router.push(productId ? (wantsInstallation ? `/dashboard/installations/new?product=${encodeURIComponent(productId)}` : `/dashboard/orders/new?product=${encodeURIComponent(productId)}`) : "/dashboard");
     } catch (err) {
       setError(errorMessage(err));
       human.refresh();

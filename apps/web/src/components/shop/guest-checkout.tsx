@@ -73,7 +73,13 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
           <p className="text-xl tracking-[-0.04em]" data-testid="checkout-total">{formatMoney(p.from_price, p.currency, true)}</p>
         </section>
 
-        {signedIn ? (
+        {p.installation === "required" ? (
+          <section className="rounded-[28px] bg-white p-6 text-center" style={{ boxShadow: SHOP_SHADOW }} data-testid="installation-required-block">
+            <p className="mb-2 text-lg">{tr("This product is sold only together with an installation offer.")}</p>
+            <p className="mb-4 text-sm text-[#5f5c5b]">{tr("Nearby centres send you offers first, and you can buy the product once you choose one. Offers need an account, so sign in or create one.")}</p>
+            <Link href={`/register?store=${encodeURIComponent(store.slug)}&product=${p.id}&installation=1`} className="btn-brand inline-flex h-12 items-center rounded-full px-8 text-base">{tr("Find me a suitable installation offer")}</Link>
+          </section>
+        ) : signedIn ? (
           <section className="rounded-[28px] bg-white p-6 text-center" style={{ boxShadow: SHOP_SHADOW }}>
             <p className="mb-4">{tr("You are signed in as")} <strong>{signedIn}</strong>.</p>
             <Link href={`/dashboard/orders/new?product=${p.id}`} className="btn-brand inline-flex h-12 items-center rounded-full px-8 text-base">{tr("Continue to payment")}</Link>
@@ -103,7 +109,7 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
               <Honeypot value={website} onChange={setWebsite} />
               <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
               {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-              {p.installation && p.installation !== "none" && <p className="rounded-xl bg-[#f2f4f5] p-3 text-sm" data-testid="installation-note">{p.installation === "required" ? tr("This product needs professional installation. After you pay, you can get installation offers from nearby centres.") : tr("After you pay, you can also get installation offers from nearby centres, if you want them.")}</p>}
+              {p.installation === "optional" && <p className="rounded-xl bg-[#f2f4f5] p-3 text-sm" data-testid="installation-note">{tr("After you pay, you can also get installation offers from nearby centres, if you want them.")}</p>}
               <p className="text-xs text-[#5f5c5b]">{tr("You pay securely online. The seller ships your order and you follow every step from a private link we e-mail you.")}</p>
               <Button type="submit" size="lg" disabled={busy || !human.ready} className="btn-brand h-12 w-full rounded-full text-base">{busy ? tr("Please wait...") : `${tr("Pay")} ${formatMoney(p.from_price, p.currency, true)}`}</Button>
             </form>

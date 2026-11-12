@@ -60,7 +60,8 @@ class InstallationPresenter
         $out = $this->common($r) + [
             'price' => $r->price !== null ? (float) $r->price : null, 'discount' => $r->discount_amount !== null ? (float) $r->discount_amount : null,
             'pay_amount' => $r->pay_amount !== null ? (float) $r->pay_amount : null, 'points_used' => (int) $r->points_used,
-            'expires_at' => $r->expires_at?->toIso8601String(),
+            'expires_at' => $r->expires_at?->toIso8601String(), 'order_id' => $r->order_id,
+            'product' => ($pr = $r->product_id ? \App\Models\Product::find($r->product_id, ['id', 'name', 'installation']) : null) ? ['id' => $pr->id, 'name' => $pr->name, 'installation' => $pr->installation] : null,
             'refund' => $r->refund_amount !== null ? ['amount' => (float) $r->refund_amount, 'status' => $r->refund_status, 'reference' => $r->refund_reference] : null,
             'can_confirm' => $r->status === 'proof_submitted',
             'can_dispute' => in_array($r->status, ['paid', 'in_progress'], true) || ($r->status === 'proof_submitted' && $r->objection_deadline?->isFuture()),
