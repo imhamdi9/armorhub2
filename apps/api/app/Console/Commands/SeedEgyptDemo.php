@@ -30,6 +30,9 @@ class SeedEgyptDemo extends Command
     /** @var array<string, string> demo asset file => /media path */
     private array $media = [];
 
+    /** @var list<int> the first product of each industry, shown first on the market's page */
+    private array $featured = [];
+
     public function handle(): int
     {
         if (app()->isProduction() && ! $this->option('force')) {
@@ -48,10 +51,17 @@ class SeedEgyptDemo extends Command
         $admin = User::firstOrCreate(['email' => 'admin@demo.eg'], ['name' => 'Mona Admin', 'password' => $password, 'email_verified_at' => now()]);
         $admin->assignRole('platform-admin');
 
+        // ONE market for the country (ArmorHub Egypt) running all four industries. Older per-industry demo markets are folded into it first.
+        app(\App\Services\MarketConsolidator::class)->run();
+        $market = $this->market();
+
         $stores = [];
         foreach ($this->stores() as $def) {
-            $stores[$def['key']] = $this->store($def, $password);
+            $stores[$def['key']] = $this->store($def, $password, $market);
         }
+        $settings = $market['company']->settings;
+        $settings['storefront']['featured_product_ids'] = array_slice($this->featured, 0, 8);
+        $market['company']->update(['settings' => $settings]);
         foreach ($this->customers() as [$name, $email, $key, $lat, $lng, $city]) {
             $store = $stores[$key];
             // Customers share their location, as a real one must before ordering a service: it is how nearby partners are found.
@@ -104,18 +114,37 @@ class SeedEgyptDemo extends Command
 
     // ------------------------------------------------------------------ stores
 
-    private function store(array $def, string $password): array
+    /** @return array{tenant: Tenant, company: Company} the country's one market and its public store */
+    private function market(): array
+    {
+        $industries = Industry::whereIn('key', ['automotive', 'beauty', 'home-services', 'devices'])->pluck('id')->all();
+        $tenant = Tenant::where('market', 'EG')->where('status', '!=', 'merged')->orderBy('id')->first();
+        $launcher = app(\App\Services\MarketLauncher::class);
+
+        if (! $tenant) {
+            $tenant = $launcher->open('EG', 'ArmorHub Egypt', $industries, 'armorhub-eg');
+        } else {
+            $tenant->industries()->syncWithoutDetaching($industries);
+        }
+        $company = $launcher->storeOf($tenant) ?? Company::create(['tenant_id' => $tenant->id, 'name' => $tenant->name, 'slug' => 'armorhub-eg', 'status' => 'active']);
+        $settings = $company->settings ?? [];
+        // The demo only fills the page in when the owner has not written their own (a real store of that country keeps its words).
+        $settings['storefront'] = ($settings['storefront'] ?? []) + [];
+        $settings['storefront'] = array_merge([
+            'enabled' => true, 'headline' => 'Everything Egypt needs, in one market', 'subheadline' => 'Cars, beauty, home and devices: buy goods from trusted sellers and book vetted professionals near you.',
+            'about' => "ArmorHub Egypt brings Egyptian sellers, service centres and customers together.\nسوق أرمور هب مصر: بائعون ومراكز خدمة موثوقة في مكان واحد.", 'primary_color' => '#0f766e',
+            'hero_image_url' => $this->media['hero-cairo.jpg'] ?? null, 'contact_email' => 'hello@armorhub.eg', 'contact_phone' => '+20 2 2792 0000', 'featured_product_ids' => [],
+        ], array_filter($settings['storefront'], fn ($v) => $v !== null && $v !== ''));
+        $company->update(['settings' => $settings]);
+
+        return ['tenant' => $tenant, 'company' => $company];
+    }
+
+    private function store(array $def, string $password, array $market): array
     {
         $industry = Industry::where('key', $def['industry'])->firstOrFail();
-        $tenant = Tenant::firstOrCreate(['name' => $def['tenant'], 'market' => 'EG'], ['industry_id' => $industry->id]);
-
-        $company = Company::withoutGlobalScopes()->where('slug', $def['slug'])->first() ?? Company::create([
-            'tenant_id' => $tenant->id, 'name' => $def['name'], 'slug' => $def['slug'], 'status' => 'active', 'email' => "hello@{$def['slug']}.demo.eg",
-            'settings' => ['storefront' => [
-                'enabled' => true, 'headline' => $def['headline'], 'subheadline' => $def['sub'], 'about' => $def['about'], 'primary_color' => $def['color'],
-                'hero_image_url' => $this->media[$def['hero'].'.jpg'] ?? null, 'contact_email' => "hello@{$def['slug']}.demo.eg", 'contact_phone' => '+20 2 2792 0000', 'featured_product_ids' => [],
-            ]],
-        ]);
+        $tenant = $market['tenant'];
+        $company = $market['company'];
 
         $owner = User::firstOrCreate(['email' => "owner.{$def['key']}@demo.eg"], ['name' => $def['owner'], 'password' => $password, 'email_verified_at' => now(), 'company_id' => $company->id]);
         $owner->assignRole('company-owner');
@@ -126,7 +155,7 @@ class SeedEgyptDemo extends Command
             $class::firstOrCreate(['slug' => str($entry)->slug()], ['name' => $entry]);
         }
 
-        $this->partners($def, $company, $password);
+        $this->partners($def, $company, $password, $industry);
         $sellers = $this->sellers($def, $tenant, $password);
         $featured = [];
 
@@ -156,22 +185,21 @@ class SeedEgyptDemo extends Command
             $featured[] = $product->id;
         }
 
-        $settings = $company->settings;
-        $settings['storefront']['featured_product_ids'] = array_slice($featured, 0, 4);
-        $company->update(['settings' => $settings]);
+        $this->featured = array_merge($this->featured, array_slice($featured, 0, 2));
 
         return ['company' => $company, 'tenant' => $tenant];
     }
 
-    private function partners(array $def, Company $store, string $password): void
+    private function partners(array $def, Company $store, string $password, Industry $industry): void
     {
         foreach ($def['partners'] as $i => [$name, $city, $lat, $lng, $about]) {
             $company = Company::withoutGlobalScopes()->where('tenant_id', $store->tenant_id)->where('name', $name)->first()
                 ?? Company::create(['tenant_id' => $store->tenant_id, 'name' => $name, 'type' => 'partner', 'status' => 'active']);
             $partner = Partner::withoutGlobalScopes()->where('company_id', $company->id)->first() ?? Partner::create([
-                'company_id' => $company->id, 'name' => $name, 'country' => 'EG', 'city' => $city, 'latitude' => $lat, 'longitude' => $lng,
+                'company_id' => $company->id, 'industry_id' => $industry->id, 'name' => $name, 'country' => 'EG', 'city' => $city, 'latitude' => $lat, 'longitude' => $lng,
                 'location_enabled' => true, 'public_profile' => true, 'description' => $about, 'phone' => '+20 10 0000 00'.$i.'0',
             ]);
+            $partner->industry_id === null && $partner->forceFill(['industry_id' => $industry->id])->save();
             $n = $def['key'].($i + 1);
             $manager = User::firstOrCreate(['email' => "manager.{$n}@demo.eg"], ['name' => $this->person($def['key'], $i, 'manager'), 'password' => $password, 'email_verified_at' => now(), 'company_id' => $company->id, 'partner_id' => $partner->id]);
             $manager->assignRole('partner-manager');

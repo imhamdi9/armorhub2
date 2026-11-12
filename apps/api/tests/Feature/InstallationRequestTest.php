@@ -23,6 +23,12 @@ class InstallationRequestTest extends TestCase
         $this->artisan('platform:demo-egypt')->assertSuccessful();
     }
 
+    /** The market (ArmorHub Egypt) runs several industries, so a request says which one it is for. */
+    private function auto(): int
+    {
+        return (int) \App\Models\Industry::where('key', 'automotive')->value('id');
+    }
+
     private function as(string $email): static
     {
         return $this->actingAs(User::where('email', $email)->firstOrFail(), 'sanctum');
@@ -48,7 +54,7 @@ class InstallationRequestTest extends TestCase
     {
         $this->as('nour.fawzy@demo.eg');
 
-        return $this->postJson('/api/installation-requests', $extra + [
+        return $this->postJson('/api/installation-requests', $extra + ['industry_id' => $this->auto(),
             'subject' => 'Toyota Camry 2020', 'parts' => ['Hood', 'Bumper'], 'work_type' => 'install', 'notes' => 'Self-healing film please',
             'latitude' => 30.0626, 'longitude' => 31.2197, 'location_consent' => true,
         ])->assertCreated()->json();
@@ -66,7 +72,7 @@ class InstallationRequestTest extends TestCase
     public function test_a_request_needs_the_customers_allowed_location_and_no_contact_details(): void
     {
         $this->as('nour.fawzy@demo.eg');
-        $base = ['subject' => 'Camry', 'parts' => ['Hood'], 'latitude' => 30.06, 'longitude' => 31.21];
+        $base = ['subject' => 'Camry', 'parts' => ['Hood'], 'latitude' => 30.06, 'longitude' => 31.21, 'industry_id' => $this->auto()];
 
         $this->postJson('/api/installation-requests', $base)->assertStatus(422)->assertJsonValidationErrors('location_consent');
         $this->postJson('/api/installation-requests', $base + ['location_consent' => false])->assertStatus(422);

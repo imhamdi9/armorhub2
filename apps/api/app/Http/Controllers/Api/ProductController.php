@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -85,7 +86,7 @@ class ProductController extends Controller
             $company = $user->company()->with('tenant')->first();
             $data = array_merge($data, [
                 'seller_id' => $company->id,
-                'industry_id' => $company->tenant?->industry_id,
+                'industry_id' => $this->sellerIndustry($request, $company),
                 'market' => app(\App\Support\Markets\Markets::class)->forCompany($company)?->code,
                 'requires_shipping' => $request->boolean('requires_shipping', true),
             ]);
@@ -133,6 +134,27 @@ class ProductController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
+    /** A seller's product belongs to one industry of its market: the one it chose, or the market's only industry. */
+    private function sellerIndustry(Request $request, $company): ?int
+    {
+        $allowed = $company->tenant?->industryIds() ?? [];
+
+        // A market with one industry has nothing to choose; a country market with several asks the seller which one.
+        if (count($allowed) <= 1) {
+            return $allowed[0] ?? null;
+        }
+
+        $chosen = $request->integer('industry_id') ?: null;
+        if ($chosen === null) {
+            throw ValidationException::withMessages(['industry_id' => ['Choose the industry of this product.']]);
+        }
+        if (! in_array($chosen, $allowed, true)) {
+            throw ValidationException::withMessages(['industry_id' => ['This market does not run that industry.']]);
+        }
+
+        return $chosen;
+    }
+
     /**
      * Platform admins see everything. Everyone else sees only products of their own industry
      * (or industry-less ones); hiding a product also hides it from non-managers.
@@ -151,10 +173,10 @@ class ProductController extends Controller
         // Everyone else sees the shared catalog and the products of the active sellers in their marketplace.
         $query->visibleInTenant($user->company?->tenant_id);
 
-        $industry = $user->industryId();
+        $industries = $user->industryIds();
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
 
-        $query->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
+        $query->where(fn ($q) => $q->whereNull('industry_id')->when($industries, fn ($w) => $w->orWhereIn('industry_id', $industries)));
         // A product limited to one country is only shown in that country.
         $query->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)));
 
@@ -202,7 +224,8 @@ class ProductController extends Controller
 
         // A seller cannot choose the industry or country: they come from its marketplace (set in store()).
         if ($this->isSeller($request->user())) {
-            unset($rules['industry_id'], $rules['market']);
+            unset($rules['market']);
+            $rules['industry_id'] = 'nullable|integer';
         }
 
         return $request->validate($rules);

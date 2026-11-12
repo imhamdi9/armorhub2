@@ -32,9 +32,13 @@ class EgyptDemoTest extends TestCase
 
         // The public site shows them, priced in pounds, with the gallery and the was-price.
         $stores = $this->getJson('/api/public/storefronts')->assertOk()->json('stores');
-        $this->assertCount(4, $stores);
+        $this->assertCount(1, $stores);                                                   // one market for the country...
+        $this->assertSame('ArmorHub Egypt', $stores[0]['name']);
+        $store = $this->getJson('/api/public/storefronts/armorhub-eg')->assertOk()->json();
+        $this->assertCount(4, $store['industries']);                                       // ...running four industries
+        $this->assertSame(['automotive', 'beauty', 'devices', 'home-services'], collect($store['industries'])->pluck('key')->sort()->values()->all());
         $lantern = Product::where('slug', 'eg-lantern')->firstOrFail();
-        $page = $this->getJson('/api/public/storefronts/beit-masr/products/'.$lantern->id)->assertOk();
+        $page = $this->getJson('/api/public/storefronts/armorhub-eg/products/'.$lantern->id)->assertOk();
         $this->assertSame('EGP', $page->json('product.currency'));
         $this->assertGreaterThan((float) $page->json('product.from_price'), (float) $page->json('product.compare_at_price'));
         $this->assertCount(3, $page->json('product.images'));

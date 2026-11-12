@@ -81,13 +81,13 @@ class StorefrontService
     /** @return Builder<Product> products a visitor may see: on sale, and in this store's industry */
     public function products(Company $company): Builder
     {
-        $industry = $company->tenant?->industry_id;
+        $industries = $company->tenant?->industryIds() ?? [];
         $market = $this->markets->forCompany($company)?->code;
 
         return Product::query()->where('is_active', true)
             ->visibleInTenant($company->tenant_id)
             ->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)))
-            ->where(fn ($q) => $q->whereNull('industry_id')->when($industry, fn ($w) => $w->orWhere('industry_id', $industry)));
+            ->where(fn ($q) => $q->whereNull('industry_id')->when($industries, fn ($w) => $w->orWhereIn('industry_id', $industries)));
     }
 
     /** @return array<string, mixed> */
@@ -109,12 +109,22 @@ class StorefrontService
         ];
     }
 
-    /** @return array<string, mixed> */
+    /** The industry of a single-industry market; null for a market that runs several (see industries()). @return array<string, mixed> */
     public function industry(Company $company): ?array
     {
-        $industry = $company->tenant?->industry;
+        $all = $this->industries($company);
 
-        return $industry ? ['key' => $industry->key, 'name' => $industry->name, 'description' => $industry->description] : null;
+        return count($all) === 1 ? $all[0] : null;
+    }
+
+    /** Every industry the market runs. @return list<array<string, mixed>> */
+    public function industries(Company $company): array
+    {
+        $tenant = $company->tenant;
+        $ids = $tenant?->industryIds() ?? [];
+
+        return \App\Models\Industry::whereIn('id', $ids)->orderBy('name')->get()
+            ->map(fn ($i) => ['key' => $i->key, 'name' => $i->name, 'description' => $i->description])->values()->all();
     }
 
     /** @return array<string, mixed> */

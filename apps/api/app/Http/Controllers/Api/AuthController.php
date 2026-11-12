@@ -184,27 +184,37 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        $user = $request->user()->load('company.tenant.industry');
-        $industry = $user->company?->tenant?->industry;
+        $user = $request->user()->load('company.tenant');
+        $industries = \App\Models\Industry::whereIn('id', $user->industryIds())->orderBy('name')->get();
 
         $emails = app(EmailPolicy::class);
 
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company);
+        $registry = app(\App\Modules\IndustryRegistry::class);
+        $describe = fn (\App\Models\Industry $i) => [
+            'id' => $i->id, 'key' => $i->key, 'name' => $i->name,
+            'subjects' => array_keys($i->module()?->subjectModels() ?? []),
+            // The subjects customers keep themselves (their property), as opposed to shared catalogs (vehicle models).
+            'owned_subjects' => collect($i->module()?->subjectModels() ?? [])->filter(fn ($class) => in_array('customer_id', (new $class)->getFillable(), true))->keys()->values()->all(),
+            'targets' => array_keys($i->module()?->targetModels() ?? []),
+            'catalogs' => $i->module() ? $registry->manageableAliases($i->module()) : [],
+        ];
+        $all = $industries->map($describe)->values();
+        // One industry: as before. Several (a country market): one combined description so the menus show everything the market runs.
+        $industry = $all->count() === 1 ? $all[0] : ($all->count() > 1 ? [
+            'id' => null, 'key' => 'multi', 'name' => $user->company?->tenant?->name ?? 'Market',
+            'subjects' => $all->pluck('subjects')->flatten()->unique()->values()->all(),
+            'owned_subjects' => $all->pluck('owned_subjects')->flatten()->unique()->values()->all(),
+            'targets' => $all->pluck('targets')->flatten()->unique()->values()->all(),
+            'catalogs' => $all->pluck('catalogs')->flatten()->unique()->values()->all(),
+        ] : null);
 
         return response()->json(array_merge($user->toArray(), [
             'market' => $market?->toArray(),
             'email_verified' => $user->hasVerifiedEmail(),
             'email_verification_required' => $emails->verificationRequired() && $user->hasRole('customer') && ! $user->hasVerifiedEmail(),
-            'industry' => $industry ? [
-                'id' => $industry->id,
-                'key' => $industry->key,
-                'name' => $industry->name,
-                'subjects' => array_keys($industry->module()?->subjectModels() ?? []),
-                // The subjects customers keep themselves (their property), as opposed to shared catalogs (vehicle models).
-                'owned_subjects' => collect($industry->module()?->subjectModels() ?? [])->filter(fn ($class) => in_array('customer_id', (new $class)->getFillable(), true))->keys()->values()->all(),
-                'targets' => array_keys($industry->module()?->targetModels() ?? []),
-                'catalogs' => $industry->module() ? app(\App\Modules\IndustryRegistry::class)->manageableAliases($industry->module()) : [],
-            ] : null,
+            'industry' => $industry,
+            'industries' => $all,
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
         ]));

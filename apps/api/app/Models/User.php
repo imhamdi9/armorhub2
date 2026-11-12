@@ -44,10 +44,16 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
         });
     }
 
-    /** The industry this user's tenant runs, if any. */
+    /** The first industry this user's market runs, if any (kept for code that thinks in one industry). */
     public function industryId(): ?int
     {
-        return $this->company?->tenant?->industry_id;
+        return $this->industryIds()[0] ?? null;
+    }
+
+    /** @return list<int> every industry of this user's market */
+    public function industryIds(): array
+    {
+        return $this->company?->tenant?->industryIds() ?? [];
     }
 
     public function company(): BelongsTo

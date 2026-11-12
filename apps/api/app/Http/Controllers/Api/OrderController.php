@@ -108,7 +108,7 @@ class OrderController extends Controller
         $product = \App\Models\Product::visibleInTenant($user->company?->tenant_id)->find($data['product_id'])
             ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
-        if (! $product->is_active || ($product->industry_id !== null && $product->industry_id !== $user->industryId())
+        if (! $product->is_active || ($product->industry_id !== null && ! in_array($product->industry_id, $user->industryIds(), true))
             || ($product->market !== null && $product->market !== $market)) {
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }

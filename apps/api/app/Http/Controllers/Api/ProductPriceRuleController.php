@@ -22,7 +22,7 @@ class ProductPriceRuleController extends Controller
         abort_unless(
             $request->user()->hasRole('platform-admin')
                 || ($product->seller_id !== null && $product->seller_id === $user->company_id)
-                || (($product->industry_id === null || $product->industry_id === $request->user()->industryId())
+                || (($product->industry_id === null || in_array($product->industry_id, $request->user()->industryIds(), true))
                     && ($product->is_active || $request->user()->can('products.update'))),
             404
         );

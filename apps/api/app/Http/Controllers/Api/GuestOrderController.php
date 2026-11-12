@@ -55,7 +55,7 @@ class GuestOrderController extends Controller
         $market = $markets->forCompany($company);
         $product = Product::visibleInTenant($company->tenant_id)->whereNotNull('seller_id')->where('requires_shipping', true)->find($data['product_id']);
         if (! $product || ! $product->is_active || ($product->market !== null && $product->market !== $market?->code)
-            || ($product->industry_id !== null && $product->industry_id !== $company->tenant?->industry_id)) {
+            || ($product->industry_id !== null && ! in_array($product->industry_id, $company->tenant?->industryIds() ?? [], true))) {
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 

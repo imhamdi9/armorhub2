@@ -114,6 +114,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::get('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'index']);
+        Route::get('/countries', [\App\Http\Controllers\Api\Admin\MarketController::class, 'countries']);
+        Route::post('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'store']);
+        Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
         $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
         Route::get('/installation-disputes', [$ia, 'disputes']);
         Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');

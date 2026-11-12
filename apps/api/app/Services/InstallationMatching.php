@@ -29,6 +29,8 @@ class InstallationMatching
 
         return Partner::withoutGlobalScopes()
             ->whereIn('company_id', $companyIds)->where('is_active', true)->where('location_enabled', true)
+            // A centre of one industry is not asked about another's job (a centre with no industry takes any).
+            ->when($request->industry_id, fn ($q, $industry) => $q->where(fn ($w) => $w->whereNull('industry_id')->orWhere('industry_id', $industry)))
             ->whereNotNull('latitude')->whereNotNull('longitude')->get()
             ->each(function (Partner $p) use ($request) {
                 $p->distance_km = Geo::km($request->latitude, $request->longitude, (float) $p->latitude, (float) $p->longitude);

@@ -30,6 +30,11 @@ class InstallationJourneyTest extends TestCase
         $this->artisan('platform:demo-egypt')->assertSuccessful();
     }
 
+    private function auto(): int
+    {
+        return (int) \App\Models\Industry::where('key', 'automotive')->value('id');
+    }
+
     private function as(string $email): static
     {
         return $this->actingAs(User::where('email', $email)->firstOrFail(), 'sanctum');
@@ -49,7 +54,7 @@ class InstallationJourneyTest extends TestCase
     private function accepted(float $price = 9000, array $accept = [], ?\Closure $beforeAccept = null): array
     {
         $this->as(self::CUSTOMER);
-        $id = $this->postJson('/api/installation-requests', ['subject' => 'Toyota Camry 2020', 'parts' => ['Hood'], 'latitude' => 30.0626, 'longitude' => 31.2197, 'location_consent' => true])->assertCreated()->json('id');
+        $id = $this->postJson('/api/installation-requests', ['industry_id' => $this->auto(), 'subject' => 'Toyota Camry 2020', 'parts' => ['Hood'], 'latitude' => 30.0626, 'longitude' => 31.2197, 'location_consent' => true])->assertCreated()->json('id');
         $this->as($this->centreEmail())->postJson("/api/partner/installation-requests/{$id}/offer", ['price' => $price, 'eta_days' => 2])->assertCreated();
         $beforeAccept && $beforeAccept();
         $offer = $this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}")->json('offers.0.id');
@@ -85,7 +90,7 @@ class InstallationJourneyTest extends TestCase
     public function test_the_terms_are_required_and_the_fee_comes_from_the_market(): void
     {
         $this->as(self::CUSTOMER);
-        $id = $this->postJson('/api/installation-requests', ['subject' => 'Camry', 'parts' => ['Hood'], 'latitude' => 30.06, 'longitude' => 31.21, 'location_consent' => true])->json('id');
+        $id = $this->postJson('/api/installation-requests', ['industry_id' => $this->auto(), 'subject' => 'Camry', 'parts' => ['Hood'], 'latitude' => 30.06, 'longitude' => 31.21, 'location_consent' => true])->json('id');
         $this->as($this->centreEmail())->postJson("/api/partner/installation-requests/{$id}/offer", ['price' => 1000, 'eta_days' => 1])->assertCreated();
         $offer = $this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}")->json('offers.0.id');
 
@@ -339,7 +344,7 @@ class InstallationJourneyTest extends TestCase
         $this->as('khaled.abdelrahman@demo.eg')->postJson('/api/orders', $order)->assertStatus(422)->assertJsonValidationErrors('installation');
         $challenge = $this->getJson('/api/signup-challenge')->json();
         $this->travel(5)->seconds();
-        $this->postJson('/api/guest-orders', ['store' => 'beit-masr', 'product_id' => $lock->id, 'name' => 'G', 'email' => 'g@example.org', 'phone' => '01012345678',
+        $this->postJson('/api/guest-orders', ['store' => 'armorhub-eg', 'product_id' => $lock->id, 'name' => 'G', 'email' => 'g@example.org', 'phone' => '01012345678',
             'address' => ['line1' => '1 St', 'city' => 'Giza'], 'signup_token' => $challenge['token']])->assertStatus(422)->assertJsonValidationErrors('product_id');
 
         // A request for this product whose offer is only on the table (not accepted yet) is not enough either.

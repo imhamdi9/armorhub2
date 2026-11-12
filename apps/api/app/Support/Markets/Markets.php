@@ -25,15 +25,37 @@ class Markets
         return $this->markets;
     }
 
-    /** @return list<string> */
+    /** Every country a market can be opened in (the countries of the world). @return list<string> */
     public function codes(): array
     {
-        return array_keys($this->markets);
+        return array_values(array_unique(array_merge(array_keys($this->markets), array_keys(config('countries', [])))));
     }
 
+    /** A country with its own pack uses it; any other country of the world gets a generic one (no VAT, a general phone check). */
     public function get(?string $code): ?Market
     {
-        return $code ? ($this->markets[strtoupper($code)] ?? null) : null;
+        if (! $code) {
+            return null;
+        }
+        $code = strtoupper($code);
+
+        return $this->markets[$code] ?? $this->generic($code);
+    }
+
+    private function generic(string $code): ?Market
+    {
+        $c = config("countries.{$code}");
+        if (! $c) {
+            return null;
+        }
+
+        return $this->markets[$code] = new Market($code, [
+            'name' => ['en' => $c['en'], 'ar' => $c['ar']], 'currency' => $c['currency'], 'currency_symbol' => ['en' => $c['currency'], 'ar' => $c['currency']], 'decimals' => 2,
+            'locale' => 'en', 'languages' => ['en', 'ar'], 'timezone' => 'UTC', 'weekend' => ['saturday', 'sunday'],
+            'vat' => ['rate' => 0.0, 'inclusive' => true, 'label' => ['en' => 'VAT', 'ar' => 'ضريبة القيمة المضافة'], 'id_label' => ['en' => 'Tax number', 'ar' => 'الرقم الضريبي'], 'id_pattern' => null],
+            'phone' => ['dial' => $c['dial'] ?? '', 'pattern' => '/^\d{6,12}$/', 'example' => 'XXXXXXXX'],
+            'cities' => [], 'payments' => ['stripe'], 'e_invoicing' => null,
+        ]);
     }
 
     /** The market used when a tenant has not chosen one; null means "no markets" (one global currency). */

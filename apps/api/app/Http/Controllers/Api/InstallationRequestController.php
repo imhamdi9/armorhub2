@@ -33,6 +33,7 @@ class InstallationRequestController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'location_consent' => 'required|accepted',
             'product_id' => 'nullable|integer|exists:products,id',
+            'industry_id' => 'nullable|integer',
             'order_id' => 'nullable|integer',
         ]);
 
@@ -50,8 +51,21 @@ class InstallationRequestController extends Controller
         $hours = (int) app(\App\Support\Settings\Settings::class)->get('installation.offer_hours');
         $product = ! empty($data['product_id']) ? Product::find($data['product_id']) : null;
 
+        // The kind of job decides which centres are asked: the product's industry, or the one the customer picked among their market's.
+        $allowed = $user->industryIds();
+        $industry = $product?->industry_id ?? ($data['industry_id'] ?? null);
+        if ($industry === null && count($allowed) === 1) {
+            $industry = $allowed[0];
+        }
+        if ($industry === null && count($allowed) > 1) {
+            throw ValidationException::withMessages(['industry_id' => ['Choose what kind of job this is.']]);
+        }
+        if ($industry !== null && $allowed !== [] && ! in_array((int) $industry, $allowed, true)) {
+            throw ValidationException::withMessages(['industry_id' => ['This market does not run that industry.']]);
+        }
+
         $req = InstallationRequest::create([
-            'company_id' => $user->company_id, 'customer_id' => $user->id, 'order_id' => $data['order_id'] ?? null, 'product_id' => $product?->id,
+            'company_id' => $user->company_id, 'customer_id' => $user->id, 'order_id' => $data['order_id'] ?? null, 'product_id' => $product?->id, 'industry_id' => $industry,
             'subject' => $data['subject'], 'parts' => array_values($data['parts']), 'work_type' => $data['work_type'] ?? 'install', 'notes' => $data['notes'] ?? null,
             'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'location_consent' => true,
             'city' => $user->city, 'country' => $user->country, 'status' => 'open', 'expires_at' => now()->addHours($hours),

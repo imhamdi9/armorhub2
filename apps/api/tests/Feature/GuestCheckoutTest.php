@@ -29,7 +29,7 @@ class GuestCheckoutTest extends TestCase
         $this->travel(5)->seconds();
 
         return $extra + [
-            'store' => 'beit-masr', 'product_id' => Product::where('slug', 'eg-lantern')->value('id'), 'name' => 'Salma Guest', 'email' => 'Salma.Guest@Example.org',
+            'store' => 'armorhub-eg', 'product_id' => Product::where('slug', 'eg-lantern')->value('id'), 'name' => 'Salma Guest', 'email' => 'Salma.Guest@Example.org',
             'phone' => '01012345678', 'address' => ['line1' => '12 Nile Corniche', 'city' => 'Giza'], 'signup_token' => $challenge['token'],
         ];
     }
@@ -92,8 +92,11 @@ class GuestCheckoutTest extends TestCase
     {
         $service = Product::where('slug', 'eg-cleaning')->value('id');                // a service needs quotes, so it needs an account
         $this->postJson('/api/guest-orders', $this->body(['product_id' => $service]))->assertStatus(422)->assertJsonValidationErrors('product_id');
-        $other = Product::where('slug', 'eg-glass')->value('id');                    // a Cairo Devices product is not sold at Beit Masr
-        $this->postJson('/api/guest-orders', $this->body(['product_id' => $other]))->assertStatus(422);
+        // Goods of another country's market are not sold here, but another industry of this same market is.
+        $abroad = Product::create(['name' => 'Abroad', 'slug' => 'abroad', 'base_price' => 10, 'seller_id' => Product::where('slug', 'eg-lantern')->value('seller_id'), 'market' => 'SA', 'is_active' => true, 'category' => 'x', 'requires_shipping' => true]);
+        \App\Models\ProductPriceRule::create(['product_id' => $abroad->id, 'target_type' => 'room_type', 'target_id' => 1, 'price' => 10, 'is_active' => true]);
+        $this->postJson('/api/guest-orders', $this->body(['product_id' => $abroad->id]))->assertStatus(422);
+        $this->postJson('/api/guest-orders', $this->body(['product_id' => Product::where('slug', 'eg-glass')->value('id')]))->assertCreated();
         $this->postJson('/api/guest-orders', $this->body(['store' => 'no-such-store']))->assertNotFound();
         Product::where('slug', 'eg-lantern')->update(['is_active' => false]);
         $this->postJson('/api/guest-orders', $this->body())->assertStatus(422);
@@ -126,7 +129,7 @@ class GuestCheckoutTest extends TestCase
         $o = $this->order();
         $email = 'salma.guest@example.org';
 
-        $store = \App\Models\Company::withoutGlobalScopes()->where('slug', 'beit-masr')->first();
+        $store = \App\Models\Company::withoutGlobalScopes()->where('slug', 'armorhub-eg')->first();
         $user = User::factory()->create(['email' => $email, 'email_verified_at' => null, 'company_id' => $store->id]);
         $user->assignRole('customer');
         $this->actingAs($user, 'sanctum')->getJson('/api/orders')->assertOk()->assertJsonCount(0, 'data');   // not verified: nothing is handed over

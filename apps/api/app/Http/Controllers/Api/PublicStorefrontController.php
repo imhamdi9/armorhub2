@@ -57,6 +57,12 @@ class PublicStorefrontController extends Controller
 
     public function show(string $slug)
     {
+        // An older per-industry store address forwards to the country's market store.
+        $old = \App\Models\Company::withoutGlobalScopes()->where('slug', $slug)->first();
+        if ($old && ($to = ($old->settings['merged_into'] ?? null))) {
+            return response()->json(['merged_into' => $to]);
+        }
+
         $company = $this->stores->find($slug) ?? abort(404);
         $settings = $this->stores->settingsOf($company);
 
@@ -75,6 +81,7 @@ class PublicStorefrontController extends Controller
             'sections' => $sections,
             'category_counts' => $all->countBy('category')->sortKeys(),
             'industry' => $this->stores->industry($company),
+            'industries' => $this->stores->industries($company),
             'market' => $this->stores->market($company),
             'featured' => $featured->map(fn ($p) => $this->stores->card($p, $company))->values(),
             'categories' => $this->stores->products($company)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
