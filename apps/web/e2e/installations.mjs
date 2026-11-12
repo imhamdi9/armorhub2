@@ -54,9 +54,8 @@ try {
   if (radios !== 3) fail(`expected three installation choices, got ${radios}`);
   if (!(await owner.locator("input[name=installation][value=none]").isChecked())) fail("a new product should default to 'sold on its own'");
   await owner.fill("#name", "Roof rack kit");
-  await owner.waitForSelector("select#category, input[aria-label='New category']");   // the field appears once the list of categories has loaded
-  if (await owner.locator("select#category").count()) await owner.selectOption("select#category", "__new__");
-  await owner.fill("input[aria-label='New category']", "roof-racks");
+  await owner.waitForSelector("select#category");   // the platform's category list (nobody types a category)
+  await owner.selectOption("select#category", "accessories");
   await owner.check("input[name=installation][value=required]");
   await owner.fill("#price", "1200");
   await owner.getByRole("button", { name: "Save" }).click();
