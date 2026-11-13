@@ -334,13 +334,13 @@ export const uploadProductImage = async (file: File) => {
 };
 
 /** The categories already in use, for the product forms' pick list. */
-export interface CategoryGroup { key: string; name: string; name_ar?: string | null; children: { key: string; name: string; name_ar?: string | null }[] }
+export interface CategoryGroup { key: string; name: string; name_ar?: string | null; children: CategoryGroup[] }
 export const getProductCategories = async () => (await api.get<CategoryGroup[]>("/products/categories")).data;
 
 export interface CategoryRow { id: number; key: string; name_en: string; name_ar: string | null; parent_id: number | null; position: number; is_active: boolean; products: number; children?: CategoryRow[] }
 export const getAdminCategories = async () => (await api.get<CategoryRow[]>("/admin/categories")).data;
-export const createCategory = async (body: { key: string; name_en: string; name_ar: string; parent_id?: number | null }) => (await api.post<CategoryRow | Proposed>("/admin/categories", body)).data;
-export const updateCategory = async (id: number, body: Partial<Pick<CategoryRow, "name_en" | "name_ar" | "is_active">>) => (await api.put<CategoryRow | Proposed>(`/admin/categories/${id}`, body)).data;
+export const createCategory = async (body: { key?: string; name_en: string; name_ar: string; parent_id?: number | null }) => (await api.post<CategoryRow | Proposed>("/admin/categories", body)).data;
+export const updateCategory = async (id: number, body: Partial<Pick<CategoryRow, "name_en" | "name_ar" | "is_active" | "parent_id">>) => (await api.put<CategoryRow | Proposed>(`/admin/categories/${id}`, body)).data;
 
 export interface CatalogChangeRow { id: number; target: string; action: string; summary: string | null; status: "pending" | "approved" | "rejected"; note: string | null; market: string | null; requested_by: string | null; created_at: string }
 export const getCatalogChanges = async (status?: string) => (await api.get<CatalogChangeRow[]>("/admin/catalog-changes", { params: status ? { status } : {} })).data;

@@ -48,12 +48,13 @@ class ProductController extends Controller
     /** The platform's category tree (groups with their categories), so forms offer a fixed list and nobody types a category. */
     public function categories(Request $request)
     {
-        $all = \App\Models\ProductCategory::where('is_active', true)->orderBy('position')->orderBy('name_en')->get();
+        $rows = \App\Models\ProductCategory::where('is_active', true)->orderBy('position')->orderBy('name_en')->get()->groupBy(fn ($c) => $c->parent_id ?? 0);
 
-        return $all->whereNull('parent_id')->map(fn ($g) => [
-            'key' => $g->key, 'name' => $g->name_en, 'name_ar' => $g->name_ar,
-            'children' => $all->where('parent_id', $g->id)->values()->map(fn ($c) => ['key' => $c->key, 'name' => $c->name_en, 'name_ar' => $c->name_ar]),
-        ])->values();
+        $build = function ($parent) use (&$build, $rows) {
+            return ($rows[$parent] ?? collect())->values()->map(fn ($c) => ['key' => $c->key, 'name' => $c->name_en, 'name_ar' => $c->name_ar, 'children' => $build($c->id)])->all();
+        };
+
+        return $build(0);
     }
 
     /**

@@ -29,9 +29,20 @@ try {
   await admin.waitForSelector("[data-testid=category-list]");
   const list = await text(admin);
   for (const need of ["Automotive", "السيارات", "Beauty and care", "Devices and electronics"]) if (!list.includes(need)) fail(`the category list lacks ${need}`);
-  await admin.fill("#cat-key", "tyres"); await admin.fill("#cat-en", "Tyres"); await admin.fill("#cat-ar", "الإطارات"); await admin.selectOption("#cat-parent", { label: "Automotive" });
+  await admin.fill("#cat-en", "Tyres"); await admin.fill("#cat-ar", "الإطارات"); await admin.selectOption("#cat-parent", { label: "Automotive" });
   await admin.getByRole("button", { name: "Add category" }).click();
   await admin.getByText("Tyres", { exact: false }).first().waitFor();
+  // A sub-category UNDER the new one (any depth), then rename it.
+  const tyres = admin.locator("[data-testid=category-list] li", { hasText: "Tyres" }).first();
+  await tyres.getByRole("button", { name: "Add sub-category" }).first().click();
+  await admin.fill("input[id^=sen-]", "Winter tyres"); await admin.fill("input[id^=sar-]", "إطارات شتوية");
+  await admin.locator("form:has(input[id^=sen-])").getByRole("button", { name: "Add sub-category" }).click();
+  await admin.getByText("Winter tyres").first().waitFor();
+  const row = admin.locator("[data-testid=category-list] li", { hasText: "Winter tyres" }).last();
+  await row.getByRole("button", { name: "Rename or move" }).first().click();
+  await admin.fill("input[id^=en-]", "Snow tyres");
+  await admin.locator("form:has(input[id^=en-])").getByRole("button", { name: "Save" }).click();
+  await admin.getByText("Snow tyres").first().waitFor();
   await admin.screenshot({ path: `${SHOTS}/fulfil-1-categories.png`, fullPage: true });
   await scan(admin, "categories page");
   ok("the platform category list shows groups with Arabic names and an admin can add a category");

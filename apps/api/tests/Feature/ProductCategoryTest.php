@@ -108,4 +108,34 @@ class ProductCategoryTest extends TestCase
         $this->assertSame('required', $own->fresh()->installation);
         $this->assertSame(['optional'], Product::whereIn('id', $ids)->pluck('installation')->unique()->values()->all());
     }
+
+    public function test_the_platform_admin_builds_any_depth_renames_and_moves_categories(): void
+    {
+        $this->admin();
+        $auto = \App\Models\ProductCategory::where('key', 'automotive')->value('id');
+
+        // A new top-level group, a category under an existing one, and a sub-category under THAT one (the key is made from the name).
+        $top = $this->postJson('/api/admin/categories', ['name_en' => 'Marine', 'name_ar' => 'بحري'])->assertCreated()->json();
+        $this->assertSame('marine', $top['key']);
+        $wipers = $this->postJson('/api/admin/categories', ['name_en' => 'Wipers', 'name_ar' => 'مساحات', 'parent_id' => $auto])->assertCreated()->json();
+        $blades = $this->postJson('/api/admin/categories', ['name_en' => 'Blades', 'name_ar' => 'شفرات', 'parent_id' => $wipers['id']])->assertCreated()->json();
+        $same = $this->postJson('/api/admin/categories', ['name_en' => 'Blades', 'name_ar' => 'شفرات', 'parent_id' => $wipers['id']])->assertCreated()->json();
+        $this->assertSame('blades-2', $same['key']);
+
+        // Products can be filed under the deepest level, and the public tree nests all levels.
+        $this->postJson('/api/products', ['name' => 'Blade', 'slug' => 'blade', 'base_price' => 5, 'category' => 'blades'])->assertCreated();
+        $tree = collect($this->getJson('/api/products/categories')->assertOk()->json())->firstWhere('key', 'automotive');
+        $w = collect($tree['children'])->firstWhere('key', 'wipers');
+        $this->assertSame(['blades', 'blades-2'], array_column($w['children'], 'key'));
+
+        // Rename (English and Arabic) keeps the key; moving changes the place; a category cannot go under its own branch.
+        $this->putJson("/api/admin/categories/{$wipers['id']}", ['name_en' => 'Wiper systems', 'name_ar' => 'أنظمة المساحات'])->assertOk()->assertJsonPath('name_en', 'Wiper systems')->assertJsonPath('key', 'wipers');
+        $this->putJson("/api/admin/categories/{$wipers['id']}", ['parent_id' => $blades['id']])->assertStatus(422)->assertJsonValidationErrors('parent_id');
+        $this->putJson("/api/admin/categories/{$wipers['id']}", ['parent_id' => $top['id']])->assertOk()->assertJsonPath('parent_id', $top['id']);
+        $this->putJson("/api/admin/categories/{$wipers['id']}", ['parent_id' => null])->assertOk()->assertJsonPath('parent_id', null);
+
+        $admin = collect($this->getJson('/api/admin/categories')->assertOk()->json());
+        $this->assertNotNull($admin->firstWhere('key', 'wipers'));                              // now a top-level group of its own
+        $this->assertSame(2, count($admin->firstWhere('key', 'wipers')['children']));
+    }
 }
