@@ -170,7 +170,7 @@ try {
   ok("the audit log recorded the changes, without any secret");
 
   // The platform core: ArmorHub is just a module; its events are catalogued, delivered and replayable.
-  await admin.click('a:has-text("Platform")');
+  await admin.click('a[href="/dashboard/admin/platform"]');
   await admin.waitForSelector("text=v1.0.0");
   await admin.waitForSelector("text=order.paid");
   await admin.click("[role=tab]:has-text('Event catalog')");
