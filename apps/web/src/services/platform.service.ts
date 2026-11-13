@@ -350,6 +350,7 @@ export interface MarketRow {
 }
 export const getMarkets = async () => (await api.get<{ markets: MarketRow[]; industries: { id: number; key: string; name: string }[] }>("/admin/markets")).data;
 export const getCountries = async () => (await api.get<{ code: string; name: string; name_ar: string; currency: string; open: boolean }[]>("/admin/countries")).data;
+export const consolidateMarkets = async () => (await api.post<{ folded: number }>("/admin/markets/consolidate")).data;
 export const openMarket = async (body: { country: string; name?: string; industries: number[]; slug?: string }) => (await api.post<MarketRow>("/admin/markets", body)).data;
 export const updateMarket = async (id: number, body: { name?: string; industries?: number[]; status?: "active" | "paused" }) => (await api.put<MarketRow>(`/admin/markets/${id}`, body)).data;
 

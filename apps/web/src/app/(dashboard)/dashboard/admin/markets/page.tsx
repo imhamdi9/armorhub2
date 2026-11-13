@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr, useLocale } from "@/lib/i18n";
-import { getCountries, getMarkets, openMarket, updateMarket, type MarketRow } from "@/services/platform.service";
+import { consolidateMarkets, getCountries, getMarkets, openMarket, updateMarket, type MarketRow } from "@/services/platform.service";
 
 /** A flag from the two-letter country code (regional indicator symbols). */
 const flag = (code: string) => String.fromCodePoint(...code.toUpperCase().split("").map((c) => 127397 + c.charCodeAt(0)));
@@ -108,6 +108,13 @@ export default function MarketsPage() {
     } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
   }
 
+  const reload = () => getMarkets().then((r) => { setMarkets(r.markets); setIndustries(r.industries); });
+  async function merge() {
+    setError(null); setBusy(true);
+    try { const r = await consolidateMarkets(); await reload(); setError(tr("Merged {n} older markets into their country's market.", { n: r.folded })); } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
+  }
+  const duplicated = (markets ?? []).some((m, i, all) => all.findIndex((x) => x.country === m.country) !== i);
+
   if (forbidden) return <EmptyState>{tr("Only platform admins can open this page.")}</EmptyState>;
   if (!markets) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
 
@@ -115,6 +122,14 @@ export default function MarketsPage() {
     <div className="max-w-4xl">
       <PageHeader title="Markets" />
       <p className="mb-6 text-sm text-muted-foreground">{tr("ArmorHub runs one market in each country, for example ArmorHub Egypt or ArmorHub Brazil. A market runs the industries you choose, has its own sellers, service centres, customers, payment and shipping settings, and one public store.")}</p>
+
+      {duplicated && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">
+          <p>{tr("Some countries have more than one market. Merge them into one market per country (nothing is deleted: industries, people, sellers and orders move over, and old store addresses forward).")}</p>
+          <Button className="mt-2" size="sm" onClick={merge} disabled={busy}>{tr("Merge into one market per country")}</Button>
+        </div>
+      )}
+      {error && <p className="mb-3 text-sm" role="status">{error}</p>}
 
       <div className="space-y-4">
         {markets.length === 0 ? <EmptyState>{tr("No markets yet. Open the first one below.")}</EmptyState> : markets.map((m) => (

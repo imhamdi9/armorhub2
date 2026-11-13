@@ -39,8 +39,20 @@ class MarketController extends Controller
 
     public function index()
     {
-        return ['markets' => Tenant::whereNotNull('market')->orderBy('name')->get()->map(fn ($t) => $this->row($t))->values(),
+        return ['markets' => Tenant::whereNotNull('market')->where('status', '!=', 'merged')->orderBy('name')->get()->map(fn ($t) => $this->row($t))->values(),
             'industries' => Industry::orderBy('name')->get(['id', 'key', 'name'])];
+    }
+
+    /** Folds older per-industry markets of a country into one (the same thing the deploy does), and says exactly what went wrong if it cannot. */
+    public function consolidate(\App\Services\MarketConsolidator $consolidator)
+    {
+        try {
+            return ['folded' => $consolidator->run()];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Merging failed: '.$e->getMessage()], 500);
+        }
     }
 
     /** Every country of the world, with whether ArmorHub already runs a market there. */

@@ -114,4 +114,31 @@ class CountryMarketTest extends TestCase
         $khan->update(['status' => 'suspended']);
         $this->getJson("/api/public/storefronts/armorhub-eg/sellers/{$khan->id}")->assertNotFound();
     }
+
+    public function test_older_per_industry_markets_of_a_country_are_merged_from_the_admin_screen(): void
+    {
+        $this->seed([\Database\Seeders\IndustrySeeder::class, \Database\Seeders\RolesAndPermissionsSeeder::class]);
+        [$a, $b] = Industry::orderBy('id')->take(2)->get();
+        $mk = function (string $name, Industry $i, string $slug) {
+            $t = Tenant::create(['name' => $name, 'industry_id' => $i->id, 'market' => 'EG']);
+            $t->industries()->attach($i->id);
+            $c = Company::create(['tenant_id' => $t->id, 'name' => $name, 'type' => 'partner', 'status' => 'active', 'slug' => $slug, 'settings' => ['storefront' => ['enabled' => true]]]);
+
+            return [$t, $c];
+        };
+        [$t1] = $mk('Pharaoh Auto', $a, 'pharaoh-auto');
+        [$t2, $c2] = $mk('Beit Masr', $b, 'beit-masr');
+        $user = User::factory()->create(['company_id' => $c2->id]);
+        $admin = User::factory()->create();
+        $admin->assignRole('platform-admin');
+
+        $this->actingAs($admin, 'sanctum')->postJson('/api/admin/markets/consolidate')->assertOk()->assertJson(['folded' => 1]);
+        $this->postJson('/api/admin/markets/consolidate')->assertOk()->assertJson(['folded' => 0]);   // safe to run again
+
+        $markets = $this->getJson('/api/admin/markets')->assertOk()->json('markets');
+        $this->assertCount(1, $markets);
+        $this->assertCount(2, $markets[0]['industries']);
+        $this->getJson('/api/public/storefronts/beit-masr')->assertOk()->assertJson(['merged_into' => 'pharaoh-auto']);
+        $this->assertSame(Company::withoutGlobalScopes()->where('slug', 'pharaoh-auto')->value('id'), $user->fresh()->company_id);
+    }
 }

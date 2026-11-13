@@ -139,6 +139,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'index']);
         Route::get('/countries', [\App\Http\Controllers\Api\Admin\MarketController::class, 'countries']);
         Route::post('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'store']);
+        Route::post('/markets/consolidate', [\App\Http\Controllers\Api\Admin\MarketController::class, 'consolidate']);
         Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
         Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
         Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
