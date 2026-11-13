@@ -134,6 +134,23 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
     });
 
+    // Disputes, withdrawals, payouts and the audit log: the platform admin for everything, a market admin for their own market only.
+    Route::middleware('permission:market.settings')->prefix('admin')->group(function () {
+        $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
+        Route::get('/installation-disputes', [$ia, 'disputes']);
+        Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');
+        Route::post('/installation-requests/{id}/refund-paid', [$ia, 'refundPaid'])->whereNumber('id');
+        Route::get('/centre-withdrawals', [$ia, 'withdrawals']);
+        Route::post('/centre-withdrawals/{id}/pay', [$ia, 'payWithdrawal'])->whereNumber('id');
+        Route::post('/centre-withdrawals/{id}/reject', [$ia, 'rejectWithdrawal'])->whereNumber('id');
+        Route::get('/installation-violations', [$ia, 'violations']);
+        Route::post('/installation-violations/{id}/decide', [$ia, 'decideViolation'])->whereNumber('id');
+        Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
+        Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
+        Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    });
+
     // Platform administration (settings, audit log)
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
         Route::get('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'index']);
@@ -147,20 +164,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
         Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
         Route::put('/categories/{category}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update'])->whereNumber('category');
-        $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
-        Route::get('/installation-disputes', [$ia, 'disputes']);
-        Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');
-        Route::post('/installation-requests/{id}/refund-paid', [$ia, 'refundPaid'])->whereNumber('id');
-        Route::get('/centre-withdrawals', [$ia, 'withdrawals']);
-        Route::post('/centre-withdrawals/{id}/pay', [$ia, 'payWithdrawal'])->whereNumber('id');
-        Route::post('/centre-withdrawals/{id}/reject', [$ia, 'rejectWithdrawal'])->whereNumber('id');
-        Route::get('/installation-violations', [$ia, 'violations']);
-        Route::post('/installation-violations/{id}/decide', [$ia, 'decideViolation'])->whereNumber('id');
         Route::get('/overview', OverviewController::class);
         Route::get('/settings', [SettingsController::class, 'index']);
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
-        Route::get('/audit-logs', [AuditLogController::class, 'index']);
         Route::get('/shipping/providers', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'index']);
         Route::put('/shipping/providers/{key}', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'update']);
         Route::post('/shipping/providers/{key}/test', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'test']);
@@ -178,9 +185,6 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::post('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store']);
         Route::put('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->whereNumber('id');
         Route::delete('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->whereNumber('id');
-        Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
-        Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
-        Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
         Route::get('/surfaces', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'index']);
         Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'show'])->where('key', '[a-z0-9_.]+');
         Route::put('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'save'])->where('key', '[a-z0-9_.]+');
@@ -229,6 +233,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     $dp = \App\Http\Controllers\Api\DepartmentController::class;
     Route::get('/departments', [$dp, 'index']);
     Route::post('/departments', [$dp, 'store']);
+    Route::post('/departments/open', [$dp, 'open']);
     Route::put('/departments/{id}', [$dp, 'update'])->whereNumber('id');
     Route::get('/departments/{id}/members', [$dp, 'members'])->whereNumber('id');
     Route::put('/departments/{id}/members/{userId}', [$dp, 'updateMember'])->whereNumber(['id', 'userId']);

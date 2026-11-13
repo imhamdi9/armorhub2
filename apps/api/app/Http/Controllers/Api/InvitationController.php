@@ -59,8 +59,8 @@ class InvitationController extends Controller
         if (! in_array($data['role'], $this->delegation->roles($actor, $dept), true)) {
             throw ValidationException::withMessages(['role' => ['You cannot invite people into this role.']]);
         }
-        if (! empty($data['as_head']) && (! $dept || ! $actor->hasRole('platform-admin'))) {
-            throw ValidationException::withMessages(['as_head' => ['Only a platform admin names a department head.']]);
+        if (! empty($data['as_head']) && (! $dept || ! $this->delegation->runs($actor, $dept))) {
+            throw ValidationException::withMessages(['as_head' => ['Only a platform admin or the market admin names a department head.']]);
         }
         if (! empty($data['as_head']) && ! str_starts_with($data['role'], $dept->rolePrefix())) {
             throw ValidationException::withMessages(['role' => ['A department head holds one of the department\'s own roles. Create it first.']]);

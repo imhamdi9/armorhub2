@@ -217,7 +217,7 @@ class StorefrontTest extends TestCase
         foreach (['Bad Slug', 'ab', 'x_y', '-bad-', 'api', 'admin', '../etc', 'a'.str_repeat('b', 80)] as $bad) {
             $put(['slug' => $bad])->assertUnprocessable()->assertJsonValidationErrors('slug');
         }
-        $other = Company::create(['tenant_id' => $this->store->tenant_id, 'name' => 'Other']);
+        $other = Company::create(['tenant_id' => \App\Models\Tenant::create(['name' => 'T2'])->id, 'name' => 'Other']);
         $put(['slug' => $other->slug])->assertUnprocessable();
 
         $put(['headline' => str_repeat('x', 121)])->assertUnprocessable();
@@ -242,7 +242,7 @@ class StorefrontTest extends TestCase
 
     public function test_only_the_companys_own_owner_or_an_admin_can_edit_a_storefront(): void
     {
-        $otherCompany = Company::create(['tenant_id' => $this->store->tenant_id, 'name' => 'Rival Store']);
+        $otherCompany = Company::create(['tenant_id' => \App\Models\Tenant::create(['name' => 'T3'])->id, 'name' => 'Rival Store']);
         $rival = User::factory()->create(['company_id' => $otherCompany->id]);
         $rival->assignRole('company-owner');
 

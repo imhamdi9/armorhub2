@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useCurrentUser } from "@/components/providers/current-user";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr, useLocale } from "@/lib/i18n";
 import {
-  createDepartmentRole, getDepartmentMembers, getDepartmentRoles, getDepartments, setDepartmentHead, updateDepartmentMember,
+  createDepartmentRole, getDepartmentMembers, openMarketDepartments, getDepartmentRoles, getDepartments, setDepartmentHead, updateDepartmentMember,
   type DepartmentMember, type DepartmentRole, type DepartmentRow,
 } from "@/services/platform.service";
 
@@ -37,7 +38,7 @@ function Department({ d, isAdmin, onChanged }: { d: DepartmentRow; isAdmin: bool
   return (
     <section className="rounded-xl border p-4" aria-label={d.name_en} data-testid="department">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">{locale === "ar" && d.name_ar ? d.name_ar : d.name_en}</h2>
+        <h2 className="text-lg font-semibold">{locale === "ar" && d.name_ar ? d.name_ar : d.name_en}{d.market ? <span className="ms-2 text-sm font-normal text-muted-foreground">· {d.market}</span> : null}</h2>
         <Badge variant="outline">{d.head ? tr("Head: {name}", { name: d.head.name }) : tr("No head yet")}</Badge>
       </div>
       {msg && <p className="mt-2 text-sm text-red-600" role="alert">{msg}</p>}
@@ -80,6 +81,8 @@ function Department({ d, isAdmin, onChanged }: { d: DepartmentRow; isAdmin: bool
 export default function DepartmentsPage() {
   const [rows, setRows] = useState<DepartmentRow[] | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const user = useCurrentUser();
+  const isMarketAdmin = !!user?.roles?.includes("company-owner") && !isAdmin;
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -94,7 +97,12 @@ export default function DepartmentsPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Departments" />
-      {rows.length === 0 ? <EmptyState>{tr("Only platform admins and department heads can open this page.")}</EmptyState> : rows.map((d) => <Department key={d.id} d={d} isAdmin={isAdmin} onChanged={() => setTick((t) => t + 1)} />)}
+      {rows.length === 0 && isMarketAdmin ? (
+        <div className="rounded-xl border p-4">
+          <p className="mb-3 text-sm">{tr("Your market has no departments yet. Open the standard ones (customer service, procurement, sales, warehouse, disputes and more), then name a head for each.")}</p>
+          <Button onClick={() => openMarketDepartments().then(() => setTick((t) => t + 1))}>{tr("Open the departments of my market")}</Button>
+        </div>
+      ) : rows.length === 0 ? <EmptyState>{tr("Only platform admins and department heads can open this page.")}</EmptyState> : rows.map((d) => <Department key={d.id} d={d} isAdmin={isAdmin} onChanged={() => setTick((t) => t + 1)} />)}
     </div>
   );
 }

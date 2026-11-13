@@ -21,10 +21,14 @@ class Departments
         'document-verification' => ['Document verification', 'التحقق من المستندات', ['dashboard.view', 'companies.view', 'partners.view']],
     ];
 
-    public static function ensureDefault(): void
+    public static function ensureDefault(?int $tenantId = null): void
     {
         foreach (self::DEFAULT as $key => [$en, $ar, $scope]) {
-            Department::firstOrCreate(['key' => $key], ['name_en' => $en, 'name_ar' => $ar, 'scope' => $scope]);
+            // A market's departments never need platform-wide permissions.
+            $scope = $tenantId ? array_values(array_diff($scope, ['market.settings'])) : $scope;
+            // (The column arrives in a later migration: on a fresh database the platform's departments are made first without it.)
+            $where = \Illuminate\Support\Facades\Schema::hasColumn('departments', 'tenant_id') ? ['key' => $key, 'tenant_id' => $tenantId] : ['key' => $key];
+            Department::firstOrCreate($where, ['name_en' => $en, 'name_ar' => $ar, 'scope' => $scope]);
         }
     }
 }

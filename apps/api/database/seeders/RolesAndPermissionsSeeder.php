@@ -173,6 +173,9 @@ class RolesAndPermissionsSeeder extends Seeder
 ],
 ]; // 
 
+        // The market admin holds every permission except the platform-level ones (markets, platform settings); the data is limited to their market.
+        $roles['company-owner'] = array_values(array_unique(array_merge($roles['company-owner'], array_diff($permissions, ['tenants.manage', 'admin.panel', 'companies.create', 'companies.delete']))));
+
         foreach ($roles as $role => $abilities) {
 
             $newRole = Role::firstOrCreate([

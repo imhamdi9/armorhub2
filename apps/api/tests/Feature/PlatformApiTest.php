@@ -118,7 +118,7 @@ class PlatformApiTest extends TestCase
     {
         $tenant = Tenant::create(['name' => 'T']);
         $mine = Company::create(['tenant_id' => $tenant->id, 'name' => 'Mine']);
-        Company::create(['tenant_id' => $tenant->id, 'name' => 'Other']);
+        Company::create(['tenant_id' => Tenant::create(['name' => 'T2'])->id, 'name' => 'Other']);   // another market
 
         $owner = $this->user('company-owner', $mine);
 

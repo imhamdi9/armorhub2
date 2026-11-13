@@ -70,7 +70,8 @@ class SettingsAndAuditTest extends TestCase
         foreach (['customer', 'company-owner', 'partner-manager', 'technician'] as $role) {
             $this->actingAs($this->user($role), 'sanctum')->getJson('/api/admin/settings')->assertForbidden();
             $this->putJson('/api/admin/settings', ['values' => ['platform.currency' => 'EUR']])->assertForbidden();
-            $this->getJson('/api/admin/audit-logs')->assertForbidden();
+            // A market admin reads the log of their own market's people; nobody else but the platform admin reads it.
+            $role === 'company-owner' ? $this->getJson('/api/admin/audit-logs')->assertOk() : $this->getJson('/api/admin/audit-logs')->assertForbidden();
         }
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/admin/settings')->assertUnauthorized();

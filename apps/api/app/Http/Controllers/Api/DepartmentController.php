@@ -18,14 +18,26 @@ class DepartmentController extends Controller
     {
         $u = $request->user();
 
-        return $u->hasRole('platform-admin') || ($u->is_department_head && $u->department_id === $d->id);
+        return app(\App\Services\Delegation::class)->runs($u, $d) || ($u->is_department_head && $u->department_id === $d->id);
+    }
+
+    /** The people who run departments (admin of the platform, admin of the market): they name heads and create departments. */
+    private function runsAny(Request $request, ?int $tenantId): bool
+    {
+        $u = $request->user();
+
+        return $u->hasRole('platform-admin') || ($u->hasRole('company-owner') && $tenantId && $tenantId === \App\Support\MarketScope::tenantId($u));
     }
 
     public function index(Request $request)
     {
         $u = $request->user();
-        $q = Department::query()->orderBy('name_en');
-        if (! $u->hasRole('platform-admin')) {
+        $q = Department::query()->orderBy('tenant_id')->orderBy('name_en');
+        if ($u->hasRole('platform-admin')) {
+            // all
+        } elseif ($u->hasRole('company-owner') && ($tenant = \App\Support\MarketScope::tenantId($u))) {
+            $q->where('tenant_id', $tenant);
+        } else {
             abort_unless($u->is_department_head && $u->department_id, 403);
             $q->whereKey($u->department_id);
         }
@@ -33,11 +45,26 @@ class DepartmentController extends Controller
         return $q->get()->map(fn (Department $d) => $this->row($d));
     }
 
+    /** A market admin opens the standard departments for their market (the platform admin names the market with ?market=ID). */
+    public function open(Request $request)
+    {
+        $u = $request->user();
+        $tenant = $u->hasRole('platform-admin') ? (int) $request->validate(['market' => 'required|integer|exists:tenants,id'])['market'] : \App\Support\MarketScope::tenantId($u);
+        abort_unless($this->runsAny($request, $tenant), 403);
+        \App\Support\Departments::ensureDefault($tenant);
+        \App\Support\Audit::record('department.market_opened', null, ['market' => $tenant], $u);
+
+        return Department::where('tenant_id', $tenant)->orderBy('name_en')->get()->map(fn (Department $d) => $this->row($d));
+    }
+
     public function store(Request $request)
     {
-        abort_unless($request->user()->hasRole('platform-admin'), 403);
+        $tenantId = $request->user()->hasRole('platform-admin') ? ($request->integer('tenant_id') ?: null) : \App\Support\MarketScope::tenantId($request->user());
+        abort_unless($request->user()->hasRole('platform-admin') || $this->runsAny($request, $tenantId), 403);
+        $request->merge(['tenant_id' => $tenantId]);
         $data = $request->validate([
-            'key' => ['required', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', 'max:40', Rule::unique('departments', 'key')],
+            'tenant_id' => 'nullable|integer|exists:tenants,id',
+            'key' => ['required', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', 'max:40', Rule::unique('departments', 'key')->where('tenant_id', $tenantId)],
             'name_en' => 'required|string|max:120', 'name_ar' => 'required|string|max:120',
             'scope' => 'required|array|min:1', 'scope.*' => ['string', Rule::in(\App\Http\Controllers\Api\Admin\RoleController::GRANTABLE)],
         ]);
@@ -50,15 +77,16 @@ class DepartmentController extends Controller
     /** Admin: rename and choose the head (a member of the department, or anyone who becomes a member). */
     public function update(Request $request, int $id)
     {
-        abort_unless($request->user()->hasRole('platform-admin'), 403);
         $d = Department::findOrFail($id);
+        abort_unless($this->runsAny($request, $d->tenant_id) || $request->user()->hasRole('platform-admin'), 403);
         $data = $request->validate(['name_en' => 'sometimes|required|string|max:120', 'name_ar' => 'sometimes|required|string|max:120', 'head_user_id' => 'nullable|integer|exists:users,id']);
 
         if (array_key_exists('head_user_id', $data)) {
             User::where('department_id', $d->id)->update(['is_department_head' => false]);
             if ($data['head_user_id']) {
                 $head = User::findOrFail($data['head_user_id']);
-                if ($head->hasAnyRole(['customer', 'seller']) || ! $head->company_id) {
+                if ($head->hasAnyRole(['customer', 'seller']) || ! $head->company_id
+                    || ($d->tenant_id && \App\Support\MarketScope::tenantId($head) !== $d->tenant_id)) {
                     throw ValidationException::withMessages(['head_user_id' => ['A department head must be a member of ArmorHub staff.']]);
                 }
                 $head->update(['department_id' => $d->id, 'is_department_head' => true]);
@@ -143,7 +171,7 @@ class DepartmentController extends Controller
 
     private function row(Department $d): array
     {
-        return ['id' => $d->id, 'key' => $d->key, 'name_en' => $d->name_en, 'name_ar' => $d->name_ar, 'scope' => $d->scope,
+        return ['id' => $d->id, 'tenant_id' => $d->tenant_id, 'market' => $d->tenant_id ? \App\Models\Tenant::whereKey($d->tenant_id)->value('name') : null, 'key' => $d->key, 'name_en' => $d->name_en, 'name_ar' => $d->name_ar, 'scope' => $d->scope,
             'head' => User::where('department_id', $d->id)->where('is_department_head', true)->first(['id', 'name', 'email']),
             'members' => User::where('department_id', $d->id)->count()];
     }

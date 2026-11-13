@@ -29,6 +29,17 @@ class CompanyScope implements Scope
             return;
         }
 
+        // A market admin reaches every company of their own market (sellers, centres, the store): everything in the market, nothing outside it.
+        $tenantId = $user->hasRole('company-owner')
+            ? \App\Models\Company::withoutGlobalScopes()->whereKey($user->company_id)->value('tenant_id')
+            : null;
+        if ($tenantId) {
+            $column = $model instanceof \App\Models\Company ? 'id' : 'company_id';
+            $builder->whereIn($model->getTable().'.'.$column, \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $tenantId)->select('id'));
+
+            return;
+        }
+
         // باقي المستخدمين يرون شركتهم فقط
         if ($user->company_id) {
             // A company is scoped by its own id; everything else by company_id.

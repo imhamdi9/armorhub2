@@ -12,7 +12,10 @@ class AuditLogController extends Controller
     {
         $request->validate(['per_page' => 'nullable|integer|min:1|max:100']);
 
+        $ids = \App\Support\MarketScope::companyIds($request->user());
+
         return AuditLog::with('user:id,name,email')
+            ->when($ids !== null, fn ($q) => $q->whereIn('user_id', \App\Models\User::whereIn('company_id', $ids)->select('id')))
             ->when($request->filled('action'), fn ($q) => $q->where('action', 'like', $request->action.'%'))
             ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', $request->user_id))
             ->when($request->filled('ip'), fn ($q) => $q->where('ip', $request->ip))

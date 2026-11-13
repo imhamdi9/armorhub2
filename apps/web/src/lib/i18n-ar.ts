@@ -985,6 +985,8 @@ export const AR: Record<string, string> = {
   "No market admin yet.": "لا يوجد مدير سوق بعد.",
   "Added as a market admin.": "تمت إضافته مديرًا للسوق.",
   "Add market admin": "إضافة مدير سوق",
+  "Your market has no departments yet. Open the standard ones (customer service, procurement, sales, warehouse, disputes and more), then name a head for each.": "ليس لسوقك أقسام بعد. افتح الأقسام القياسية (خدمة العملاء، المشتريات، المبيعات، المستودع، النزاعات وغيرها) ثم عيّن رئيسًا لكل قسم.",
+  "Open the departments of my market": "فتح أقسام سوقي",
   "Sold by": "يُباع بواسطة",
   "Your seller account belongs to this market only. To sell in another country, apply there separately with its own e-mail; it is a separate account under that market's terms.": "حساب البائع الخاص بك يتبع هذا السوق فقط. للبيع في بلد آخر قدّم طلبًا منفصلًا هناك ببريد إلكتروني خاص به؛ فهو حساب مستقل بشروط ذلك السوق.",
   "Selling on {market} since {date}": "يبيع على {market} منذ {date}",

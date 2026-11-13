@@ -380,7 +380,7 @@ export const cancelInbound = async (id: number) => (await api.post<InboundRow>(`
 // ---- Invitations and departments ----------------------------------------------------------------
 export interface InviteOptions { roles: string[]; departments: { id: number; key: string; name: string; name_ar: string | null; roles: string[] }[] }
 export interface InvitationRow { id: number; email: string; role: string; department_id: number | null; status: "pending" | "accepted" | "expired"; expires_at: string }
-export interface DepartmentRow { id: number; key: string; name_en: string; name_ar: string | null; scope: string[]; head: { id: number; name: string; email: string } | null; members: number }
+export interface DepartmentRow { id: number; tenant_id?: number | null; market?: string | null; key: string; name_en: string; name_ar: string | null; scope: string[]; head: { id: number; name: string; email: string } | null; members: number }
 export interface DepartmentMember { id: number; name: string; email: string; is_head: boolean; is_active: boolean; roles: string[] }
 export interface DepartmentRole { id: number; name: string; label: string; permissions: string[] }
 
@@ -403,3 +403,4 @@ export interface MarketAdmin { id: number; name: string; email: string; is_activ
 export const getMarketAdmins = async (marketId: number) => (await api.get<MarketAdmin[]>(`/admin/markets/${marketId}/admins`)).data;
 export const addMarketAdmin = async (marketId: number, email: string) => (await api.post<{ invited: boolean }>(`/admin/markets/${marketId}/admins`, { email })).data;
 export const removeMarketAdmin = async (marketId: number, userId: number) => { await api.delete(`/admin/markets/${marketId}/admins/${userId}`); };
+export const openMarketDepartments = async (market?: number) => (await api.post<DepartmentRow[]>("/departments/open", null, { params: market ? { market } : {} })).data;

@@ -28,7 +28,7 @@ class UserController extends Controller
     private function platformTeam($q): void
     {
         $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['platform-admin', 'company-owner', 'warehouse-staff']))
-            ->orWhereNotNull('department_id')
+            ->orWhere(fn ($d) => $d->whereNotNull('department_id')->whereIn('department_id', \App\Models\Department::whereNull('tenant_id')->select('id')))
             ->orWhereHas('company', fn ($c) => $c->withoutGlobalScopes()->where('type', 'platform'));
     }
 

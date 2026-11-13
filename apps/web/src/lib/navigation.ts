@@ -76,7 +76,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   const mayInvite = hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager") || !!user?.is_department_head;
   const withInvites = (list: NavItem[]) => {
     if (mayInvite) list.push({ title: "Invitations", href: "/dashboard/invitations", icon: "users" });
-    if (hasRole(user, "platform-admin") || user?.is_department_head) list.push({ title: "Departments", href: "/dashboard/departments", icon: "companies" });
+    if (hasRole(user, "platform-admin", "company-owner") || user?.is_department_head) list.push({ title: "Departments", href: "/dashboard/departments", icon: "companies" });
 
     return list;
   };
@@ -182,6 +182,11 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Market payments", href: "/dashboard/market/payments", section: "market", icon: "payments" });
     items.push({ title: "Market shipping", href: "/dashboard/market/shipping", section: "market", icon: "shipping" });
     items.push({ title: "Market fees", href: "/dashboard/market/fees", section: "market", icon: "commissions" });
+    // Everything the platform admin does for money and disputes, for this market only.
+    items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "market", icon: "commissions" });
+    items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "market", icon: "security" });
+    items.push({ title: "Withdrawals", href: "/dashboard/admin/withdrawals", section: "market", icon: "commissions" });
+    items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "market", icon: "audit" });
   }
 
   if (hasRole(user, "platform-admin", "company-owner")) {

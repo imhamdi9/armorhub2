@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Department extends Model
 {
-    protected $fillable = ['key', 'name_en', 'name_ar', 'scope'];
+    protected $fillable = ['key', 'name_en', 'name_ar', 'scope', 'tenant_id'];
 
     protected $casts = ['scope' => 'array'];
 
@@ -16,9 +16,9 @@ class Department extends Model
         return $this->hasMany(User::class);
     }
 
-    /** Roles of this department are named "dept-<key>-<role>". */
+    /** Roles of this department are named "dept-<key>-<role>" (market departments: "dept-t<market>-<key>-<role>"). */
     public function rolePrefix(): string
     {
-        return "dept-{$this->key}-";
+        return $this->tenant_id ? "dept-t{$this->tenant_id}-{$this->key}-" : "dept-{$this->key}-";
     }
 }

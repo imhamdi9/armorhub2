@@ -24,6 +24,19 @@ class InstallationAdminController extends Controller
     {
     }
 
+    /** A market admin reaches only the jobs, centres and withdrawals of their own market. */
+    private function mine(Request $request): ?array
+    {
+        return \App\Support\MarketScope::companyIds($request->user());
+    }
+
+    private function jobOf(Request $request, int $requestId): InstallationRequest
+    {
+        $ids = $this->mine($request);
+
+        return InstallationRequest::withoutGlobalScopes()->when($ids !== null, fn ($q) => $q->whereIn('company_id', $ids))->findOrFail($requestId);
+    }
+
     private function disputeRow(InstallationDispute $d): array
     {
         $r = InstallationRequest::findOrFail($d->request_id);
@@ -41,12 +54,16 @@ class InstallationAdminController extends Controller
 
     public function disputes(Request $request)
     {
-        return InstallationDispute::latest('id')->limit(100)->get()->map(fn ($d) => $this->disputeRow($d))->values();
+        $ids = $this->mine($request);
+
+        return InstallationDispute::latest('id')->when($ids !== null, fn ($q) => $q->whereIn('request_id', InstallationRequest::withoutGlobalScopes()->whereIn('company_id', $ids)->select('id')))
+            ->limit(100)->get()->map(fn ($d) => $this->disputeRow($d))->values();
     }
 
     public function decide(Request $request, int $id)
     {
         $d = InstallationDispute::findOrFail($id);
+        $this->jobOf($request, $d->request_id);
         $data = $request->validate(['decision' => 'required|in:release,refund_full,refund_partial', 'refund_amount' => 'nullable|numeric|min:0', 'note' => 'required|string|min:5|max:1000']);
         $this->jobs->resolveDispute($d, $request->user(), $data['decision'], isset($data['refund_amount']) ? (float) $data['refund_amount'] : null, $data['note']);
 
@@ -56,7 +73,7 @@ class InstallationAdminController extends Controller
     /** The refund is sent by bank or through the provider; the admin records that it was done. */
     public function refundPaid(Request $request, int $id)
     {
-        $r = InstallationRequest::findOrFail($id);
+        $r = $this->jobOf($request, $id);
         $data = $request->validate(['reference' => 'required|string|max:120']);
         abort_unless($r->refund_status === 'pending', 422, 'There is no pending refund for this job.');
         $r->update(['refund_status' => 'refunded', 'refund_reference' => $data['reference']]);
@@ -67,7 +84,9 @@ class InstallationAdminController extends Controller
 
     public function withdrawals(Request $request)
     {
-        return CentreWithdrawal::latest('id')->limit(100)->get()->map(fn ($w) => [
+        $ids = $this->mine($request);
+
+        return CentreWithdrawal::latest('id')->when($ids !== null, fn ($q) => $q->whereIn('company_id', $ids))->limit(100)->get()->map(fn ($w) => [
             'id' => $w->id, 'company' => \App\Models\Company::withoutGlobalScopes()->whereKey($w->company_id)->value('name'), 'amount' => (float) $w->amount, 'currency' => $w->currency,
             'method' => $w->method, 'account_name' => $w->account_name, 'account_number' => $w->account_number, 'bank_name' => $w->bank_name, 'status' => $w->status,
             'reference' => $w->reference, 'note' => $w->note, 'created_at' => $w->created_at?->toIso8601String(),
@@ -76,7 +95,7 @@ class InstallationAdminController extends Controller
 
     public function payWithdrawal(Request $request, int $id)
     {
-        $w = CentreWithdrawal::findOrFail($id);
+        $w = CentreWithdrawal::when($this->mine($request) !== null, fn ($q) => $q->whereIn('company_id', $this->mine($request)))->findOrFail($id);
         $data = $request->validate(['reference' => 'required|string|max:120']);
         abort_unless($w->status === 'requested', 422, 'Already processed.');
 
@@ -91,7 +110,7 @@ class InstallationAdminController extends Controller
 
     public function rejectWithdrawal(Request $request, int $id)
     {
-        $w = CentreWithdrawal::findOrFail($id);
+        $w = CentreWithdrawal::when($this->mine($request) !== null, fn ($q) => $q->whereIn('company_id', $this->mine($request)))->findOrFail($id);
         $data = $request->validate(['note' => 'required|string|max:300']);
         abort_unless($w->status === 'requested', 422, 'Already processed.');
 
@@ -111,7 +130,9 @@ class InstallationAdminController extends Controller
 
     public function violations(Request $request)
     {
-        return InstallationViolation::latest('id')->limit(100)->get()->map(function ($v) {
+        $ids = $this->mine($request);
+
+        return InstallationViolation::latest('id')->when($ids !== null, fn ($q) => $q->whereIn('partner_id', Partner::withoutGlobalScopes()->whereIn('company_id', $ids)->select('id')))->limit(100)->get()->map(function ($v) {
             $p = Partner::withoutGlobalScopes()->find($v->partner_id);
 
             return ['id' => $v->id, 'request_id' => $v->request_id, 'centre' => $p?->name, 'strikes' => (int) $p?->strikes, 'note' => $v->note, 'status' => $v->status, 'created_at' => $v->created_at?->toIso8601String()];
@@ -122,6 +143,9 @@ class InstallationAdminController extends Controller
     public function decideViolation(Request $request, int $id)
     {
         $v = InstallationViolation::findOrFail($id);
+        if ($this->mine($request) !== null) {
+            Partner::withoutGlobalScopes()->whereIn('company_id', $this->mine($request))->findOrFail($v->partner_id);
+        }
         $data = $request->validate(['decision' => 'required|in:confirmed,dismissed']);
         abort_unless($v->status === 'open', 422, 'Already decided.');
         $v->update(['status' => $data['decision'], 'decided_by' => $request->user()->id]);

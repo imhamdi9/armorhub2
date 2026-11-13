@@ -73,7 +73,9 @@ class DashboardTest extends TestCase
         $this->order();
         $owner = User::factory()->create(['company_id' => $this->customer->company_id]);
         $owner->assignRole('company-owner');
-        $outsider = User::factory()->create(['company_id' => $this->manager->company_id]);
+        // The owner of a company in ANOTHER market sees nothing of it.
+        $foreign = \App\Models\Company::create(['tenant_id' => \App\Models\Tenant::create(['name' => 'Elsewhere'])->id, 'name' => 'Elsewhere Co']);
+        $outsider = User::factory()->create(['company_id' => $foreign->id]);
         $outsider->assignRole('company-owner');
 
         $this->assertEquals(1, $this->cards($owner)['orders']);
