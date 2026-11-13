@@ -19,10 +19,8 @@ return new class extends Migration
             $t->timestamps();
         });
 
-        Schema::table('users', function (Blueprint $t) {
-            $t->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
-            $t->boolean('is_department_head')->default(false);
-        });
+        Schema::table('users', fn (Blueprint $t) => $t->unsignedBigInteger('department_id')->nullable()->index());
+        Schema::table('users', fn (Blueprint $t) => $t->boolean('is_department_head')->default(false));
 
         Schema::create('invitations', function (Blueprint $t) {
             $t->id();
@@ -45,8 +43,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('invitations');
-        Schema::table('users', fn (Blueprint $t) => $t->dropConstrainedForeignId('department_id'));
         Schema::table('users', fn (Blueprint $t) => $t->dropColumn('is_department_head'));
+        Schema::table('users', fn (Blueprint $t) => $t->dropColumn('department_id'));
         Schema::dropIfExists('departments');
     }
 };

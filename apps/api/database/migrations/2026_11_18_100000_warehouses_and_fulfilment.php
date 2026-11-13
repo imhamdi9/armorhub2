@@ -18,15 +18,10 @@ return new class extends Migration
             $t->timestamps();
         });
 
-        Schema::table('products', function (Blueprint $t) {
-            // seller: the seller stores and ships it; armorhub: it is stored in a market warehouse and ArmorHub ships it.
-            $t->string('fulfilment', 12)->default('seller');
-        });
-
-        Schema::table('orders', function (Blueprint $t) {
-            $t->string('fulfilment', 12)->default('seller');
-            $t->foreignId('warehouse_id')->nullable()->constrained('warehouses')->nullOnDelete();
-        });
+        // seller: the seller stores and ships it; armorhub: it is stored in a market warehouse and ArmorHub ships it.
+        Schema::table('products', fn (Blueprint $t) => $t->string('fulfilment', 12)->default('seller'));
+        Schema::table('orders', fn (Blueprint $t) => $t->string('fulfilment', 12)->default('seller'));
+        Schema::table('orders', fn (Blueprint $t) => $t->unsignedBigInteger('warehouse_id')->nullable());
 
         Schema::create('inbound_shipments', function (Blueprint $t) {
             $t->id();
@@ -79,7 +74,7 @@ return new class extends Migration
         Schema::dropIfExists('warehouse_stock');
         Schema::dropIfExists('inbound_shipment_items');
         Schema::dropIfExists('inbound_shipments');
-        Schema::table('orders', fn (Blueprint $t) => $t->dropConstrainedForeignId('warehouse_id'));
+        Schema::table('orders', fn (Blueprint $t) => $t->dropColumn('warehouse_id'));
         Schema::table('orders', fn (Blueprint $t) => $t->dropColumn('fulfilment'));
         Schema::table('products', fn (Blueprint $t) => $t->dropColumn('fulfilment'));
         Schema::dropIfExists('warehouses');

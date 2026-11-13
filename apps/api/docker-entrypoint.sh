@@ -20,7 +20,7 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     php artisan db:seed --class=IndustrySeeder --force
     php artisan db:seed --class=RolesAndPermissionsSeeder --force
     # One market per country: fold older per-industry markets into it (does nothing when already done).
-    php artisan markets:consolidate
+    php artisan markets:consolidate || echo "WARNING: markets:consolidate failed; continuing."
 
     if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
         php artisan platform:create-admin "$ADMIN_EMAIL" --name="${ADMIN_NAME:-Administrator}" \

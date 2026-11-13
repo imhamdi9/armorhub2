@@ -18,9 +18,13 @@ return new class extends Migration
             $t->unique(['tenant_id', 'industry_id']);
         });
 
-        Schema::table('tenants', function (Blueprint $t) {
-            $t->unsignedBigInteger('industry_id')->nullable()->change();
-        });
+        // TiDB and MySQL refuse to change a column that a foreign key uses: drop the key (the column stays indexed), then allow empty.
+        try {
+            Schema::table('tenants', fn (Blueprint $t) => $t->dropForeign(['industry_id']));
+        } catch (\Throwable) {
+            // no such key (already dropped, or the database never made one)
+        }
+        Schema::table('tenants', fn (Blueprint $t) => $t->unsignedBigInteger('industry_id')->nullable()->change());
 
         // Every existing tenant keeps its industry as the first industry of its market.
         foreach (DB::table('tenants')->whereNotNull('industry_id')->get(['id', 'industry_id']) as $row) {

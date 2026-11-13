@@ -22,7 +22,13 @@ class ScopeMarketSettings
         $user = $request->user();
         $own = $user?->company?->tenant_id;
 
-        if ($mode === 'own') {
+        if ($mode === 'own' && $user?->hasRole('platform-admin')) {
+            // A platform admin may do everything a market manager can, in the market they name.
+            $asked = $request->integer('market') ?: null;
+            abort_unless($asked && Tenant::whereKey($asked)->exists(), 422, 'Say which market with ?market=<id>.');
+            $settings->enterMarket($asked);
+            $request->attributes->set('market_tenant_id', $asked);
+        } elseif ($mode === 'own') {
             abort_unless($own && $user->can('market.settings'), 403, 'You do not manage a market.');
             $settings->enterMarket((int) $own);
         } elseif ($user?->hasRole('platform-admin')) {

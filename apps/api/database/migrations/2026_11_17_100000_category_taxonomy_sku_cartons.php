@@ -21,15 +21,15 @@ return new class extends Migration
             $t->timestamps();
         });
 
-        Schema::table('products', function (Blueprint $t) {
-            $t->string('sku', 40)->nullable()->unique();
-            $t->unsignedInteger('units_per_carton')->nullable();
-            $t->decimal('carton_length_cm', 8, 2)->nullable();
-            $t->decimal('carton_width_cm', 8, 2)->nullable();
-            $t->decimal('carton_height_cm', 8, 2)->nullable();
-            $t->decimal('carton_weight_kg', 8, 3)->nullable();
-            $t->unsignedInteger('stock_cartons')->default(0);
-        });
+        // One change per statement: TiDB does not accept several mixed changes in one ALTER.
+        Schema::table('products', fn (Blueprint $t) => $t->string('sku', 40)->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->unique('sku'));
+        Schema::table('products', fn (Blueprint $t) => $t->unsignedInteger('units_per_carton')->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->decimal('carton_length_cm', 8, 2)->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->decimal('carton_width_cm', 8, 2)->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->decimal('carton_height_cm', 8, 2)->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->decimal('carton_weight_kg', 8, 3)->nullable());
+        Schema::table('products', fn (Blueprint $t) => $t->unsignedInteger('stock_cartons')->default(0));
 
         CategoryTaxonomy::ensureDefault();
 

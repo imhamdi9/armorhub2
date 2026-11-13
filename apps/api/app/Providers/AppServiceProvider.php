@@ -75,6 +75,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // The platform admin holds every permission, including ones added later.
+        Gate::before(fn ($user) => $user->hasRole('platform-admin') ? true : null);
+
         Gate::policy(Company::class, CompanyPolicy::class);
 
         Gate::policy(Partner::class, PartnerPolicy::class);
