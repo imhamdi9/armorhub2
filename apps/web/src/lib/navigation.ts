@@ -188,7 +188,11 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Warehouse", href: "/dashboard/warehouse", icon: "catalog" });
   }
 
-  if (hasRole(user, "platform-admin", "company-owner", "partner-manager")) {
+  if (hasRole(user, "platform-admin")) {
+    items.push({ title: "Platform team", href: "/dashboard/platform-team", icon: "users" });
+    items.push({ title: "Users", href: "/dashboard/users", icon: "users" });
+    items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
+  } else if (hasRole(user, "company-owner", "partner-manager")) {
     items.push({ title: "Team", href: "/dashboard/users", icon: "users" });
     items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
   }

@@ -176,6 +176,8 @@ export const AR: Record<string, string> = {
   "Storefront / platform": "واجهة المتجر / المنصة",
   "Supplier": "مورّد",
   "Team": "الفريق",
+  "Platform team": "فريق المنصة",
+  "Users": "المستخدمون",
   "Team members": "أعضاء الفريق",
   "Technician": "فنّي",
   "Temporary password (min 8)": "كلمة مرور مؤقتة (8 أحرف على الأقل)",

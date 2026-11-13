@@ -21,7 +21,7 @@ async function login(email, password = "password123") {
 try {
   const a = await login("admin@test.com");
   await a.waitForSelector("text=Welcome");
-  await a.click('a:has-text("Team")');
+  await a.click('a[href="/dashboard/users"]');
   await a.click('button:has-text("Add member")');
   await a.fill('input[placeholder="Full name"]', "Mona Manager");
   await a.fill('input[placeholder="Email"]', manager);

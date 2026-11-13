@@ -23,9 +23,21 @@ class UserController extends Controller
         'partner-manager' => ['technician'],
     ];
 
+    /** ArmorHub's own people: admins, market managers, warehouse staff, department members, and anyone in the platform company. */
+    private function platformTeam($q): void
+    {
+        $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['platform-admin', 'company-owner', 'warehouse-staff']))
+            ->orWhereNotNull('department_id')
+            ->orWhereHas('company', fn ($c) => $c->withoutGlobalScopes()->where('type', 'platform'));
+    }
+
     public function index(Request $request)
     {
+        $scope = $request->user()->hasRole('platform-admin') ? $request->query('scope') : null;
+
         return $this->visible($request->user())
+            ->when($scope === 'platform', fn ($q) => $q->where(fn ($w) => $this->platformTeam($w)))
+            ->when($scope === 'users', fn ($q) => $q->whereNot(fn ($w) => $this->platformTeam($w)))
             ->with(['roles:id,name', 'company:id,name', 'partner:id,name'])
             ->when($request->filled('search'), fn ($q) => $q->where(
                 fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%")

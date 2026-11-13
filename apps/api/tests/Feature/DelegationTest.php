@@ -162,4 +162,24 @@ class DelegationTest extends TestCase
         Invitation::where('email', 'late@x.test')->update(['expires_at' => now()->subMinute()]);
         $this->getJson("/api/public/invitations/{$t2}")->assertNotFound();
     }
+
+    public function test_the_admin_sees_the_platform_team_and_all_other_users_in_separate_lists(): void
+    {
+        $dept = Department::where('key', 'sales')->first();
+        $staff = User::factory()->create(['company_id' => $this->hq->id, 'department_id' => $dept->id]);
+        $mm = User::factory()->create(['company_id' => $this->hq->id]);
+        $mm->assignRole('company-owner');
+        $seller = User::factory()->create();
+        $seller->assignRole('seller');
+        $customer = User::factory()->create();
+        $customer->assignRole('customer');
+
+        $this->actingAs($this->admin, 'sanctum');
+        $team = collect($this->getJson('/api/users?scope=platform')->assertOk()->json('data'))->pluck('id')->all();
+        $users = collect($this->getJson('/api/users?scope=users')->assertOk()->json('data'))->pluck('id')->all();
+
+        $this->assertEqualsCanonicalizing([$this->admin->id, $staff->id, $mm->id], $team);
+        $this->assertEqualsCanonicalizing([$seller->id, $customer->id], $users);
+        $this->assertCount(5, $this->getJson('/api/users')->json('data')); // unfiltered stays everyone
+    }
 }

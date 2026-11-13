@@ -167,8 +167,8 @@ export const createCompany = async (data: {
   type?: string;
 }) => (await api.post<Company>("/companies", data)).data;
 
-export const getUsers = async (search?: string) =>
-  (await api.get<Paginated<StaffUser>>("/users", { params: search ? { search } : {} })).data;
+export const getUsers = async (search?: string, scope?: "platform" | "users") =>
+  (await api.get<Paginated<StaffUser>>("/users", { params: { ...(search ? { search } : {}), ...(scope ? { scope } : {}) } })).data;
 
 export const createUser = async (data: {
   name: string;
