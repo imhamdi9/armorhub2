@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { aliasLabel, aliasSingular } from "@/lib/navigation";
 import {
   createCatalogItem,
+  isProposed,
   deleteCatalogItem,
   getCatalog,
   getCatalogSchema,
@@ -31,6 +32,7 @@ export default function CatalogPage() {
   const [parents, setParents] = useState<{ field: string; alias: string; options: CatalogItem[] }[]>([]);
   const [parentValues, setParentValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     getCatalog(alias).then((rows) => setItems(rows as Item[])).catch(() => setFailed(true));
@@ -49,13 +51,18 @@ export default function CatalogPage() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     try {
       const created = await createCatalogItem(alias, {
         name,
         slug: slugify(name),
         ...Object.fromEntries(parents.map((p) => [p.field, Number(parentValues[p.field])])),
       });
-      setItems((prev) => [...(prev ?? []), created as Item]);
+      if (isProposed(created)) {
+        setNotice(tr("Sent to the platform admin for approval. It goes live once approved."));
+      } else {
+        setItems((prev) => [...(prev ?? []), created as Item]);
+      }
       setName("");
     } catch (err) {
       setError(errorMessage(err, "Could not add this item."));
@@ -65,8 +72,9 @@ export default function CatalogPage() {
   async function remove(id: number) {
     setError(null);
     try {
-      await deleteCatalogItem(alias, id);
-      setItems((prev) => prev?.filter((i) => i.id !== id) ?? null);
+      const r = await deleteCatalogItem(alias, id);
+      if (isProposed(r)) setNotice(tr("Sent to the platform admin for approval. It goes live once approved."));
+      else setItems((prev) => prev?.filter((i) => i.id !== id) ?? null);
     } catch (err) {
       setError(errorMessage(err, "This item is in use and cannot be deleted."));
     }
@@ -104,6 +112,7 @@ export default function CatalogPage() {
         </form>
       )}
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {notice && <p className="mb-4 text-sm text-amber-700" role="status">{notice}</p>}
 
       {failed ? (
         <EmptyState>{tr("This catalog is not available.")}</EmptyState>

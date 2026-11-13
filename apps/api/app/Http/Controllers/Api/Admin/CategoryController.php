@@ -32,6 +32,9 @@ class CategoryController extends Controller
             'parent_id' => ['nullable', Rule::exists('product_categories', 'id')->whereNull('parent_id')],
             'position' => 'nullable|integer|min:0|max:10000',
         ]);
+        if (app(\App\Services\CatalogChanges::class)->mustWait($request->user())) {
+            return $this->proposed(app(\App\Services\CatalogChanges::class)->propose($request->user(), 'category', 'create', null, $data, "Add category \"{$data['name_en']}\""));
+        }
         $category = ProductCategory::create($data);
         Audit::record('category.created', $category, ['key' => $category->key], $request->user());
 
@@ -51,10 +54,18 @@ class CategoryController extends Controller
         if (($data['is_active'] ?? true) === false && Product::withoutGlobalScopes()->where('category', $category->key)->exists()) {
             throw ValidationException::withMessages(['is_active' => ['Products still use this category. Move them to another one first.']]);
         }
+        if (app(\App\Services\CatalogChanges::class)->mustWait($request->user())) {
+            return $this->proposed(app(\App\Services\CatalogChanges::class)->propose($request->user(), 'category', 'update', $category->id, $data, "Change category \"{$category->name_en}\""));
+        }
         $category->update($data);
         Audit::record('category.updated', $category, $data, $request->user());
 
         return $this->row($category->fresh(), collect());
+    }
+
+    private function proposed(\App\Models\CatalogChange $c)
+    {
+        return response()->json(['pending' => true, 'change_id' => $c->id, 'message' => 'Sent to the platform admin for approval. It goes live once approved.'], 202);
     }
 
     private function row(ProductCategory $c, $counts): array

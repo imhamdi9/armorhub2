@@ -10,6 +10,15 @@ use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
 {
+    public function __construct(private \App\Services\CatalogChanges $changes)
+    {
+    }
+
+    private function proposed(\App\Models\CatalogChange $c)
+    {
+        return response()->json(['pending' => true, 'change_id' => $c->id, 'message' => 'Sent to the platform admin for approval. It goes live once approved.'], 202);
+    }
+
     /**
      * Active records of any registered shared catalog by morph alias
      * (vehicle_part, room_type, device_model...), so one screen can
@@ -40,25 +49,37 @@ class CatalogController extends Controller
     {
         $class = $this->resolve($alias, $registry);
         $model = new $class;
+        $data = $this->validated($request, $model);
 
-        $record = $class::create($this->validated($request, $model));
+        // A market admin only proposes: it goes live when the platform admin approves.
+        if ($this->changes->mustWait($request->user())) {
+            return $this->proposed($this->changes->propose($request->user(), "catalog:{$alias}", 'create', null, $data, "Add \"{$data['name']}\" to {$alias}"));
+        }
 
-        return response()->json($record, 201);
+        return response()->json($class::create($data), 201);
     }
 
     public function update(Request $request, string $alias, int $id, IndustryRegistry $registry)
     {
         $class = $this->resolve($alias, $registry);
         $record = $class::findOrFail($id);
+        $data = $this->validated($request, $record, true);
 
-        $record->update($this->validated($request, $record, true));
+        if ($this->changes->mustWait($request->user())) {
+            return $this->proposed($this->changes->propose($request->user(), "catalog:{$alias}", 'update', $id, $data, "Change \"{$record->name}\" in {$alias}"));
+        }
+        $record->update($data);
 
         return $record->fresh();
     }
 
-    public function destroy(string $alias, int $id, IndustryRegistry $registry)
+    public function destroy(Request $request, string $alias, int $id, IndustryRegistry $registry)
     {
         $record = $this->resolve($alias, $registry)::findOrFail($id);
+
+        if ($this->changes->mustWait($request->user())) {
+            return $this->proposed($this->changes->propose($request->user(), "catalog:{$alias}", 'delete', $id, [], "Delete \"{$record->name}\" from {$alias}"));
+        }
 
         // A subject (vehicle model, device model...) that orders point at is part of their history.
         if (isset($registry->subjectModels()[$alias])

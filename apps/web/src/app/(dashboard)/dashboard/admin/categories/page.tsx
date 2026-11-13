@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { createCategory, getAdminCategories, updateCategory, type CategoryRow } from "@/services/platform.service";
+import { createCategory, getAdminCategories, isProposed, updateCategory, type CategoryRow } from "@/services/platform.service";
 
 /** The platform's product taxonomy: every seller files products under these (English and Arabic names). */
 export default function CategoriesPage() {
@@ -25,15 +25,20 @@ export default function CategoriesPage() {
     e.preventDefault();
     setError(null);
     try {
-      await createCategory({ key: form.key, name_en: form.name_en, name_ar: form.name_ar, parent_id: form.parent_id ? Number(form.parent_id) : null });
+      const r = await createCategory({ key: form.key, name_en: form.name_en, name_ar: form.name_ar, parent_id: form.parent_id ? Number(form.parent_id) : null });
       setForm({ key: "", name_en: "", name_ar: "", parent_id: "" });
+      if (isProposed(r)) setError(tr("Sent to the platform admin for approval. It goes live once approved."));
       await load();
     } catch (err) { setError(errorMessage(err)); }
   }
 
   async function toggle(c: CategoryRow) {
     setError(null);
-    try { await updateCategory(c.id, { is_active: !c.is_active }); await load(); } catch (err) { setError(errorMessage(err)); }
+    try {
+      const r = await updateCategory(c.id, { is_active: !c.is_active });
+      if (isProposed(r)) setError(tr("Sent to the platform admin for approval. It goes live once approved."));
+      await load();
+    } catch (err) { setError(errorMessage(err)); }
   }
 
   if (forbidden) return <EmptyState>{tr("Only platform admins can open this page.")}</EmptyState>;

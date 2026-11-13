@@ -67,7 +67,7 @@ async function signIn(context, email) {
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Markets\|Categories\|Settings\|Payments\|Payouts\|Disputes\|Withdrawals\|Shipping\|Roles\|Theme editor\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  if (!/Overview\|Markets\|Categories\|Catalog requests\|Settings\|Payments\|Payouts\|Disputes\|Withdrawals\|Shipping\|Roles\|Theme editor\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
   ok("admin sees the Administration section");
 
   // ---- Overview

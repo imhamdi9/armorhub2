@@ -134,6 +134,18 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/payments', [PaymentProviderController::class, 'payments']);
     });
 
+    // Categories and catalogs: the platform admin changes them at once; a market admin only proposes (the change waits for approval).
+    Route::middleware('permission:catalog.manage')->prefix('admin')->group(function () {
+        Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
+        Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
+        Route::put('/categories/{category}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update'])->whereNumber('category');
+        Route::get('/catalog-changes', [\App\Http\Controllers\Api\CatalogChangeController::class, 'index']);
+    });
+    Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::post('/catalog-changes/{id}/approve', [\App\Http\Controllers\Api\CatalogChangeController::class, 'approve'])->whereNumber('id');
+        Route::post('/catalog-changes/{id}/reject', [\App\Http\Controllers\Api\CatalogChangeController::class, 'reject'])->whereNumber('id');
+    });
+
     // Disputes, withdrawals, payouts and the audit log: the platform admin for everything, a market admin for their own market only.
     Route::middleware('permission:market.settings')->prefix('admin')->group(function () {
         $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
@@ -161,9 +173,6 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::delete('/markets/{tenant}/admins/{userId}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'removeAdmin'])->whereNumber(['tenant', 'userId']);
         Route::post('/markets/consolidate', [\App\Http\Controllers\Api\Admin\MarketController::class, 'consolidate']);
         Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
-        Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
-        Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
-        Route::put('/categories/{category}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update'])->whereNumber('category');
         Route::get('/overview', OverviewController::class);
         Route::get('/settings', [SettingsController::class, 'index']);
         Route::put('/settings', [SettingsController::class, 'update']);

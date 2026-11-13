@@ -94,7 +94,9 @@ try {
   await mgr.waitForSelector("[data-sidebar=menu-button]:has-text('Market payments')");
   const menu = await mgr.locator("[data-sidebar=menu-button]").allInnerTexts();
   for (const need of ["Market payments", "Market shipping", "Market fees"]) if (!menu.includes(need)) fail(`the market manager's menu lacks ${need}: ${menu.join("|")}`);
-  for (const bad of ["Markets", "Disputes", "Withdrawals", "Settings", "Roles"]) if (menu.includes(bad)) fail(`the market manager sees the platform's ${bad}`);
+  // A market admin runs everything of their market (money, disputes, catalog requests, departments) but not the platform's own screens.
+  for (const need of ["Payouts", "Disputes", "Withdrawals", "Categories", "Catalog requests", "Departments"]) if (!menu.includes(need)) fail(`the market admin's menu lacks ${need}: ${menu.join("|")}`);
+  for (const bad of ["Markets", "Settings", "Roles", "Theme editor", "Platform", "Security", "Platform team"]) if (menu.includes(bad)) fail(`the market admin sees the platform's ${bad}`);
   await mgr.goto(`${base}/dashboard/market/fees`);
   await mgr.waitForSelector("[data-testid=market-scope]");
   if (!/ArmorHub Egypt/.test(await mgr.locator("[data-testid=market-scope]").innerText())) fail("the manager's page does not name their market");

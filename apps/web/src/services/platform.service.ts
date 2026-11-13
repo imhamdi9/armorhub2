@@ -114,13 +114,17 @@ export const createPartner = async (data: Partial<Partner>) =>
 export const deletePartner = async (id: number) =>
   (await api.delete(`/partners/${id}`)).data;
 
+/** A market admin's change is only a proposal: the answer then says so (`pending`) instead of returning the new item. */
+export type Proposed = { pending: true; change_id: number; message: string };
+export const isProposed = (r: unknown): r is Proposed => !!r && typeof r === "object" && (r as { pending?: boolean }).pending === true;
+
 export const createCatalogItem = async (
   alias: string,
   data: Record<string, unknown>,
-) => (await api.post<CatalogItem>(`/catalog/${alias}`, data)).data;
+) => (await api.post<CatalogItem | Proposed>(`/catalog/${alias}`, data)).data;
 
 export const deleteCatalogItem = async (alias: string, id: number) =>
-  (await api.delete(`/catalog/${alias}/${id}`)).data;
+  (await api.delete<{ message: string } | Proposed>(`/catalog/${alias}/${id}`)).data;
 
 export const getMyItems = async (alias: string) =>
   (await api.get<Record<string, unknown>[]>(`/my-items/${alias}`)).data;
@@ -335,8 +339,13 @@ export const getProductCategories = async () => (await api.get<CategoryGroup[]>(
 
 export interface CategoryRow { id: number; key: string; name_en: string; name_ar: string | null; parent_id: number | null; position: number; is_active: boolean; products: number; children?: CategoryRow[] }
 export const getAdminCategories = async () => (await api.get<CategoryRow[]>("/admin/categories")).data;
-export const createCategory = async (body: { key: string; name_en: string; name_ar: string; parent_id?: number | null }) => (await api.post<CategoryRow>("/admin/categories", body)).data;
-export const updateCategory = async (id: number, body: Partial<Pick<CategoryRow, "name_en" | "name_ar" | "is_active">>) => (await api.put<CategoryRow>(`/admin/categories/${id}`, body)).data;
+export const createCategory = async (body: { key: string; name_en: string; name_ar: string; parent_id?: number | null }) => (await api.post<CategoryRow | Proposed>("/admin/categories", body)).data;
+export const updateCategory = async (id: number, body: Partial<Pick<CategoryRow, "name_en" | "name_ar" | "is_active">>) => (await api.put<CategoryRow | Proposed>(`/admin/categories/${id}`, body)).data;
+
+export interface CatalogChangeRow { id: number; target: string; action: string; summary: string | null; status: "pending" | "approved" | "rejected"; note: string | null; market: string | null; requested_by: string | null; created_at: string }
+export const getCatalogChanges = async (status?: string) => (await api.get<CatalogChangeRow[]>("/admin/catalog-changes", { params: status ? { status } : {} })).data;
+export const approveCatalogChange = async (id: number) => (await api.post(`/admin/catalog-changes/${id}/approve`)).data;
+export const rejectCatalogChange = async (id: number, note: string) => (await api.post(`/admin/catalog-changes/${id}/reject`, { note })).data;
 
 /** Sets installation (none / optional / required) for many products at once. */
 export const bulkSetInstallation = async (ids: number[], installation: "none" | "optional" | "required") =>

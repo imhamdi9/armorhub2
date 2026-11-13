@@ -182,6 +182,9 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Market payments", href: "/dashboard/market/payments", section: "market", icon: "payments" });
     items.push({ title: "Market shipping", href: "/dashboard/market/shipping", section: "market", icon: "shipping" });
     items.push({ title: "Market fees", href: "/dashboard/market/fees", section: "market", icon: "commissions" });
+    // Catalogs and categories: proposed here, live once the platform admin approves.
+    items.push({ title: "Categories", href: "/dashboard/admin/categories", section: "market", icon: "products" });
+    items.push({ title: "Catalog requests", href: "/dashboard/admin/catalog-changes", section: "market", icon: "applications" });
     // Everything the platform admin does for money and disputes, for this market only.
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "market", icon: "commissions" });
     items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "market", icon: "security" });
@@ -209,6 +212,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Overview", href: "/dashboard/admin", section: "admin", icon: "admin" });
     items.push({ title: "Markets", href: "/dashboard/admin/markets", section: "admin", icon: "tenants" });
     items.push({ title: "Categories", href: "/dashboard/admin/categories", section: "admin", icon: "products" });
+    items.push({ title: "Catalog requests", href: "/dashboard/admin/catalog-changes", section: "admin", icon: "applications" });
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
