@@ -64,10 +64,15 @@ class CustomRoleTest extends TestCase
         $this->assertEqualsCanonicalizing(['orders.view', 'products.view'], $roles->firstWhere('name', 'orders-reader')['permissions']);
         $this->assertTrue($roles->firstWhere('name', 'platform-admin')['built_in']);
 
-        // Built-in roles are untouchable.
+        // Built-in roles can be tuned by the platform admin (and the change survives a re-seed), but never deleted; the platform admin's own role is fixed.
         $builtIn = $roles->firstWhere('name', 'technician')['id'];
-        $this->putJson("/api/admin/roles/{$builtIn}", ['permissions' => ['products.update']])->assertForbidden();
+        $this->putJson("/api/admin/roles/{$builtIn}", ['permissions' => ['orders.view', 'products.update']])->assertOk();
+        $this->putJson("/api/admin/roles/{$builtIn}", ['permissions' => ['admin.panel']])->assertStatus(422);   // platform-level powers are not handed out
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->assertEqualsCanonicalizing(['orders.view', 'products.update'], \Spatie\Permission\Models\Role::where("id", $builtIn)->first()->permissions->pluck('name')->all());
         $this->deleteJson("/api/admin/roles/{$builtIn}")->assertForbidden();
+        $adminRole = $roles->firstWhere('name', 'platform-admin')['id'];
+        $this->putJson("/api/admin/roles/{$adminRole}", ['permissions' => []])->assertForbidden();
 
         // A role in use cannot be deleted; an unused one can.
         $company = $this->manager->company_id;

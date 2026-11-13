@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr, useLocale } from "@/lib/i18n";
 import {
-  createDepartmentRole, getDepartmentMembers, openMarketDepartments, getDepartmentRoles, getDepartments, setDepartmentHead, updateDepartmentMember,
+  createDepartmentRole, deleteDepartmentRole, getDepartmentMembers, openMarketDepartments, updateDepartmentRole, updateDepartmentScope, getDepartmentRoles, getDepartments, setDepartmentHead, updateDepartmentMember,
   type DepartmentMember, type DepartmentRole, type DepartmentRow,
 } from "@/services/platform.service";
 
@@ -22,6 +22,8 @@ function Department({ d, isAdmin, onChanged }: { d: DepartmentRow; isAdmin: bool
   const [tick, setTick] = useState(0);
   const [name, setName] = useState("");
   const [perms, setPerms] = useState<string[]>([]);
+  const [roleEdits, setRoleEdits] = useState<Record<number, string[]>>({});
+  const [scopeDraft, setScopeDraft] = useState<string[] | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,8 +65,39 @@ function Department({ d, isAdmin, onChanged }: { d: DepartmentRow; isAdmin: bool
         </ul>
       )}
 
+      {d.can_edit_scope && (
+        <>
+          <h3 className="mt-4 text-sm font-semibold">{tr("What this department covers")}</h3>
+          <p className="text-xs text-muted-foreground">{tr("Roles of this department can only be built from these permissions. Change them whenever the work changes.")}</p>
+          <fieldset className="mt-2 flex flex-wrap gap-3 text-sm">
+            <legend className="sr-only">{tr("What this department covers")}</legend>
+            {(d.ceiling ?? []).map((p) => {
+              const cur = scopeDraft ?? d.scope;
+              return <label key={p} className="flex items-center gap-1"><input type="checkbox" checked={cur.includes(p)} onChange={(e) => setScopeDraft(e.target.checked ? [...cur, p] : cur.filter((x) => x !== p))} />{p}</label>;
+            })}
+          </fieldset>
+          <Button size="sm" className="mt-2" onClick={() => run(async () => { await updateDepartmentScope(d.id, scopeDraft ?? d.scope); setScopeDraft(null); })}>{tr("Save what this department covers")}</Button>
+        </>
+      )}
+
       <h3 className="mt-4 text-sm font-semibold">{tr("Roles in this department")}</h3>
-      <ul className="mb-3 space-y-1 text-sm">{roles.map((r) => <li key={r.id}><strong>{r.label}</strong> <span className="text-muted-foreground">{r.permissions.join(", ")}</span></li>)}</ul>
+      <ul className="mb-3 space-y-3 text-sm">
+        {roles.map((r) => (
+          <li key={r.id} className="rounded-lg border p-2">
+            <strong>{r.label}</strong>
+            <div className="mt-1 flex flex-wrap gap-3">
+              {d.scope.map((p) => {
+                const cur = roleEdits[r.id] ?? r.permissions;
+                return <label key={p} className="flex items-center gap-1"><input type="checkbox" checked={cur.includes(p)} onChange={(e) => setRoleEdits({ ...roleEdits, [r.id]: e.target.checked ? [...cur, p] : cur.filter((x) => x !== p) })} />{p}</label>;
+              })}
+            </div>
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" onClick={() => run(async () => { await updateDepartmentRole(d.id, r.id, roleEdits[r.id] ?? r.permissions); setRoleEdits({}); })}>{tr("Save")}</Button>
+              <Button size="sm" variant="outline" onClick={() => run(() => deleteDepartmentRole(d.id, r.id))}>{tr("Delete")}</Button>
+            </div>
+          </li>
+        ))}
+      </ul>
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); run(async () => { await createDepartmentRole(d.id, { name: name.trim().toLowerCase().replace(/\s+/g, "-"), permissions: perms }); setName(""); setPerms([]); }); }}>
         <div><Label htmlFor={`rn-${d.id}`}>{tr("New role name")}</Label><Input id={`rn-${d.id}`} required value={name} onChange={(e) => setName(e.target.value)} /></div>
         <fieldset className="flex flex-wrap gap-3 text-sm">

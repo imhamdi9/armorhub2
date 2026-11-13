@@ -246,6 +246,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::put('/departments/{id}', [$dp, 'update'])->whereNumber('id');
     Route::get('/departments/{id}/members', [$dp, 'members'])->whereNumber('id');
     Route::put('/departments/{id}/members/{userId}', [$dp, 'updateMember'])->whereNumber(['id', 'userId']);
+    Route::put('/departments/{id}/scope', [$dp, 'updateScope'])->whereNumber('id');
+    Route::delete('/departments/{id}/roles/{roleId}', [$dp, 'deleteRole'])->whereNumber(['id', 'roleId']);
     Route::get('/departments/{id}/roles', [$dp, 'roles'])->whereNumber('id');
     Route::post('/departments/{id}/roles', [$dp, 'createRole'])->whereNumber('id');
     Route::put('/departments/{id}/roles/{roleId}', [$dp, 'updateRole'])->whereNumber(['id', 'roleId']);

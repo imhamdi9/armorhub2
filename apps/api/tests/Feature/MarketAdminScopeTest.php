@@ -77,4 +77,33 @@ class MarketAdminScopeTest extends TestCase
         $this->putJson("/api/departments/{$platform->id}", ['name_en' => 'Hijack'])->assertForbidden();
         $this->assertCount(10, $this->getJson('/api/departments')->json());
     }
+
+    public function test_department_permissions_are_edited_in_the_panel_within_what_the_editor_holds(): void
+    {
+        $this->seed([IndustrySeeder::class, RolesAndPermissionsSeeder::class]);
+        $eg = Tenant::create(['name' => 'ArmorHub Egypt', 'industry_id' => Industry::first()->id, 'market' => 'EG']);
+        $store = Company::create(['tenant_id' => $eg->id, 'name' => 'EG Store', 'type' => 'partner', 'status' => 'active']);
+        $admin = User::factory()->create(['company_id' => $store->id]);
+        $admin->assignRole('company-owner');
+        $this->actingAs($admin, 'sanctum');
+        $this->postJson('/api/departments/open')->assertOk();
+        $sales = \App\Models\Department::where('tenant_id', $eg->id)->where('key', 'sales')->first();
+
+        // The department's area starts from a default and is then changed in the panel; a role is built from it.
+        $this->postJson("/api/departments/{$sales->id}/roles", ['name' => 'rep', 'permissions' => ['orders.view', 'orders.create']])->assertCreated();
+        $row = $this->putJson("/api/departments/{$sales->id}/scope", ['scope' => ['orders.view', 'products.view', 'products.update']])->assertOk()->json();
+        $this->assertTrue($row['can_edit_scope']);
+        $this->assertEqualsCanonicalizing(['orders.view', 'products.view', 'products.update'], $sales->fresh()->scope);
+        // The role lost what the department no longer covers.
+        $role = \Spatie\Permission\Models\Role::where('name', "dept-t{$eg->id}-sales-rep")->first();
+        $this->assertSame(['orders.view'], $role->permissions->pluck('name')->all());
+
+        // A market admin cannot hand out platform-level powers, and cannot edit a platform department.
+        $this->putJson("/api/departments/{$sales->id}/scope", ['scope' => ['tenants.manage']])->assertUnprocessable();
+        $platformDept = \App\Models\Department::whereNull('tenant_id')->where('key', 'sales')->first();
+        $this->putJson("/api/departments/{$platformDept->id}/scope", ['scope' => ['orders.view']])->assertForbidden();
+
+        // A role can be removed when nobody holds it.
+        $this->deleteJson("/api/departments/{$sales->id}/roles/{$role->id}")->assertNoContent();
+    }
 }

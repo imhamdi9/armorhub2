@@ -99,6 +99,46 @@ class DepartmentController extends Controller
         return $this->row($d->fresh());
     }
 
+    /** What this person may hand to a department's roles: the platform admin anything assignable; a market admin what they hold themselves. */
+    private function ceiling(Request $request): array
+    {
+        $u = $request->user();
+        $all = \App\Http\Controllers\Api\Admin\RoleController::assignable();
+
+        return $u->hasRole('platform-admin') ? $all : array_values(array_intersect($all, $u->getAllPermissions()->pluck('name')->all()));
+    }
+
+    /** The area of work of a department: which permissions its roles can be built from. Set by the platform admin or the market admin, not in code. */
+    public function updateScope(Request $request, int $id)
+    {
+        $d = Department::findOrFail($id);
+        abort_unless(app(\App\Services\Delegation::class)->runs($request->user(), $d), 403);
+        $data = $request->validate(['scope' => 'present|array|max:60', 'scope.*' => ['string', Rule::in($this->ceiling($request))]]);
+        $d->update(['scope' => array_values(array_unique($data['scope']))]);
+
+        // Roles of the department can never keep what the department no longer covers.
+        foreach (Role::where('name', 'like', $d->rolePrefix().'%')->get() as $role) {
+            $role->syncPermissions(array_values(array_intersect($role->permissions->pluck('name')->all(), $d->scope)));
+        }
+        Audit::record('department.scope_updated', $d, ['scope' => $d->scope], $request->user());
+
+        return $this->row($d->fresh());
+    }
+
+    public function deleteRole(Request $request, int $id, int $roleId)
+    {
+        $d = Department::findOrFail($id);
+        abort_unless($this->mayManage($request, $d), 403);
+        $role = Role::where('name', 'like', $d->rolePrefix().'%')->findOrFail($roleId);
+        if (\Illuminate\Support\Facades\DB::table('model_has_roles')->where('role_id', $role->id)->exists()) {
+            throw ValidationException::withMessages(['role' => ['Move the people with this role to another role first.']]);
+        }
+        $role->delete();
+        Audit::record('department.role_deleted', $d, ['role' => $role->name], $request->user());
+
+        return response()->noContent();
+    }
+
     public function members(Request $request, int $id)
     {
         $d = Department::findOrFail($id);
@@ -171,7 +211,9 @@ class DepartmentController extends Controller
 
     private function row(Department $d): array
     {
-        return ['id' => $d->id, 'tenant_id' => $d->tenant_id, 'market' => $d->tenant_id ? \App\Models\Tenant::whereKey($d->tenant_id)->value('name') : null, 'key' => $d->key, 'name_en' => $d->name_en, 'name_ar' => $d->name_ar, 'scope' => $d->scope,
+        return [
+            'can_edit_scope' => (bool) (request()->user() && app(\App\Services\Delegation::class)->runs(request()->user(), $d)),
+            'ceiling' => request()->user() && app(\App\Services\Delegation::class)->runs(request()->user(), $d) ? $this->ceiling(request()) : [],'id' => $d->id, 'tenant_id' => $d->tenant_id, 'market' => $d->tenant_id ? \App\Models\Tenant::whereKey($d->tenant_id)->value('name') : null, 'key' => $d->key, 'name_en' => $d->name_en, 'name_ar' => $d->name_ar, 'scope' => $d->scope,
             'head' => User::where('department_id', $d->id)->where('is_department_head', true)->first(['id', 'name', 'email']),
             'members' => User::where('department_id', $d->id)->count()];
     }

@@ -73,11 +73,16 @@ class RolesAndPermissionsSeeder extends Seeder
 ];
 
 
+        // Permissions that did not exist before this run (a release added them): only those are handed to the default roles below.
+        $added = [];
         foreach ($permissions as $permission) {
 
-            Permission::firstOrCreate([
+            $p = Permission::firstOrCreate([
                 'name' => $permission,
             ]);
+            if ($p->wasRecentlyCreated) {
+                $added[] = $permission;
+            }
 
         }
 
@@ -182,8 +187,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'name' => $role,
             ]);
 
-
-            $newRole->syncPermissions($abilities);
+            // What each role may do is edited in the admin panel and kept across deploys: the defaults here are only the starting point of a NEW
+            // role, plus any brand-new permission a release introduces. The platform admin always holds everything.
+            if ($role === 'platform-admin' || $newRole->wasRecentlyCreated) {
+                $newRole->syncPermissions($abilities);
+            } else {
+                $newRole->givePermissionTo(array_values(array_intersect($abilities, $added)));
+            }
 
         }
     }

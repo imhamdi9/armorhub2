@@ -24,14 +24,21 @@ class RoleController extends Controller
         'companies.view', 'commissions.view', 'pricing.calculate', 'vehicle-makes.view',
     ];
 
+    /** Everything a platform admin may hand to a role, except the two platform-level powers (running markets and the platform panel). */
+    public static function assignable(): array
+    {
+        return \Spatie\Permission\Models\Permission::whereNotIn('name', ['admin.panel', 'tenants.manage'])->orderBy('name')->pluck('name')->all();
+    }
+
     public function index()
     {
         $counts = DB::table('model_has_roles')->selectRaw('role_id, count(*) as n')->groupBy('role_id')->pluck('n', 'role_id');
 
         return [
             'grantable' => self::GRANTABLE,
+            'assignable' => self::assignable(),
             'roles' => Role::with('permissions:id,name')->orderBy('name')->get()->map(fn (Role $r) => [
-                'id' => $r->id, 'name' => $r->name, 'built_in' => in_array($r->name, self::BUILT_IN, true),
+                'id' => $r->id, 'name' => $r->name, 'built_in' => in_array($r->name, self::BUILT_IN, true), 'editable' => $r->name !== 'platform-admin',
                 'permissions' => $r->permissions->pluck('name')->sort()->values(), 'users' => (int) ($counts[$r->id] ?? 0),
             ])->values(),
         ];
@@ -54,8 +61,11 @@ class RoleController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $role = $this->custom($id);
-        $data = $request->validate(['permissions' => 'present|array|max:20', 'permissions.*' => ['string', Rule::in(self::GRANTABLE)]]);
+        $role = Role::findOrFail($id);
+        abort_if($role->name === 'platform-admin', 403, 'The platform admin always holds every permission.');
+        // Built-in roles can be tuned too (everything except the platform-level powers); custom roles stay within the everyday allow-list.
+        $allowed = in_array($role->name, self::BUILT_IN, true) ? self::assignable() : self::GRANTABLE;
+        $data = $request->validate(['permissions' => 'present|array|max:60', 'permissions.*' => ['string', Rule::in($allowed)]]);
 
         $role->syncPermissions($data['permissions']);
         Audit::record('role.updated', null, ['role' => $role->name, 'permissions' => $data['permissions']]);

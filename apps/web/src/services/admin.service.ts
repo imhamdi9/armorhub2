@@ -210,9 +210,9 @@ export const publishSurface = async (key: string, locale: string, note?: string,
   (await api.post<PublishResult>(`/admin/surfaces/${key}/publish`, { locale, note, ...(publishAt ? { publish_at: new Date(publishAt).toISOString() } : {}) })).data;
 export const rollbackSurface = async (key: string, locale: string, version: number) => (await api.post(`/admin/surfaces/${key}/rollback`, { locale, version })).data;
 
-export interface RoleInfo { id: number; name: string; built_in: boolean; permissions: string[]; users: number }
+export interface RoleInfo { id: number; name: string; built_in: boolean; editable?: boolean; permissions: string[]; users: number }
 
-export const getRoles = async () => (await api.get<{ roles: RoleInfo[]; grantable: string[] }>("/admin/roles")).data;
+export const getRoles = async () => (await api.get<{ roles: RoleInfo[]; grantable: string[]; assignable: string[] }>("/admin/roles")).data;
 export const createRole = async (name: string, permissions: string[]) => (await api.post("/admin/roles", { name, permissions })).data;
 export const updateRole = async (id: number, permissions: string[]) => (await api.put(`/admin/roles/${id}`, { permissions })).data;
 export const deleteRole = async (id: number) => (await api.delete(`/admin/roles/${id}`)).data;

@@ -33,6 +33,7 @@ function PermissionPicker({ grantable, value, onChange }: { grantable: string[];
 export default function RolesPage() {
   const [roles, setRoles] = useState<RoleInfo[] | null>(null);
   const [grantable, setGrantable] = useState<string[]>([]);
+  const [assignable, setAssignable] = useState<string[]>([]);
   const [forbidden, setForbidden] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -41,7 +42,7 @@ export default function RolesPage() {
   const [edits, setEdits] = useState<Record<number, string[]>>({});
 
   useEffect(() => {
-    getRoles().then((r) => { setRoles(r.roles); setGrantable(r.grantable); setEdits({}); }).catch(() => setForbidden(true));
+    getRoles().then((r) => { setRoles(r.roles); setGrantable(r.grantable); setAssignable(r.assignable ?? r.grantable); setEdits({}); }).catch(() => setForbidden(true));
   }, [tick]);
 
   async function run(action: () => Promise<unknown>) {
@@ -60,7 +61,7 @@ export default function RolesPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Roles" />
-      <p className="mb-4 text-sm text-muted-foreground">{tr("Create your own roles for company staff and choose what each may do. Built-in roles cannot be changed, and administrator, delete and payment powers cannot be given to a custom role.")}</p>
+      <p className="mb-4 text-sm text-muted-foreground">{tr("Choose what each role may do. Built-in roles can be tuned here too (your changes stay across updates); only the platform-level powers (running markets and this panel) are never handed out.")}</p>
       {error && <p className="mb-4 text-sm text-red-500" role="alert">{error}</p>}
 
       <form onSubmit={(e) => { e.preventDefault(); run(async () => { await createRole(name, perms); setName(""); setPerms([]); }); }} className="mb-6 space-y-3 rounded-xl border p-5">
@@ -77,14 +78,14 @@ export default function RolesPage() {
               <h2 className="font-bold">{r.name} {r.built_in && <Badge variant="outline">{tr("Built-in")}</Badge>}</h2>
               <span className="text-xs text-muted-foreground">{r.users} {tr("people")}</span>
             </div>
-            {r.built_in ? (
-              <p className="mt-2 text-sm text-muted-foreground">{r.permissions.length} {tr("permissions")}</p>
+            {r.editable === false ? (
+              <p className="mt-2 text-sm text-muted-foreground">{tr("The platform admin always holds every permission.")}</p>
             ) : (
               <div className="mt-3 space-y-3">
-                <PermissionPicker grantable={grantable} value={edits[r.id] ?? r.permissions} onChange={(v) => setEdits((e) => ({ ...e, [r.id]: v }))} />
+                <PermissionPicker grantable={r.built_in ? assignable : grantable} value={edits[r.id] ?? r.permissions} onChange={(v) => setEdits((e) => ({ ...e, [r.id]: v }))} />
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => run(() => updateRole(r.id, edits[r.id] ?? r.permissions))}>{tr("Save")}</Button>
-                  <Button size="sm" variant="outline" onClick={() => run(() => deleteRole(r.id))}>{tr("Delete")}</Button>
+                  {!r.built_in && <Button size="sm" variant="outline" onClick={() => run(() => deleteRole(r.id))}>{tr("Delete")}</Button>}
                 </div>
               </div>
             )}
