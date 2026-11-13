@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr, useLocale } from "@/lib/i18n";
-import { consolidateMarkets, getCountries, getMarkets, openMarket, updateMarket, type MarketRow } from "@/services/platform.service";
+import { addMarketAdmin, consolidateMarkets, getMarketAdmins, removeMarketAdmin, type MarketAdmin, getCountries, getMarkets, openMarket, updateMarket, type MarketRow } from "@/services/platform.service";
 
 /** A flag from the two-letter country code (regional indicator symbols). */
 const flag = (code: string) => String.fromCodePoint(...code.toUpperCase().split("").map((c) => 127397 + c.charCodeAt(0)));
@@ -28,6 +28,52 @@ function IndustryChecks({ all, value, onChange }: { all: Industry[]; value: numb
         </label>
       ))}
     </fieldset>
+  );
+}
+
+/** The market's admins: the people who run this one market with every permission inside it (and nothing outside it). */
+function MarketAdmins({ m }: { m: MarketRow }) {
+  const [admins, setAdmins] = useState<MarketAdmin[]>([]);
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    getMarketAdmins(m.id).then((a) => { if (live) setAdmins(a); }).catch(() => undefined);
+    return () => { live = false; };
+  }, [m.id, tick]);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    try {
+      const r = await addMarketAdmin(m.id, email);
+      setEmail(""); setTick((t) => t + 1);
+      setMsg(r.invited ? tr("Invitation sent. The link works for 7 days.") : tr("Added as a market admin."));
+    } catch (err) { setMsg(errorMessage(err)); }
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border p-3" data-testid="market-admins">
+      <h3 className="text-sm font-semibold">{tr("{country} Market Admins", { country: m.country_name ?? m.name })}</h3>
+      <p className="text-xs text-muted-foreground">{tr("They run this market with every permission inside it only. You can name as many as you need.")}</p>
+      {admins.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">{tr("No market admin yet.")}</p> : (
+        <ul className="mt-2 divide-y text-sm">
+          {admins.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-2 py-1.5">
+              <span>{a.name} <span className="text-muted-foreground">{a.email}</span></span>
+              <Button size="sm" variant="outline" onClick={() => removeMarketAdmin(m.id, a.id).then(() => setTick((t) => t + 1)).catch((err) => setMsg(errorMessage(err)))}>{tr("Remove")}</Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={add} className="mt-2 flex flex-wrap items-end gap-2">
+        <div><Label htmlFor={`ma-${m.id}`}>{tr("Email")}</Label><Input id={`ma-${m.id}`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+        <Button size="sm" type="submit">{tr("Add market admin")}</Button>
+      </form>
+      {msg && <p className="mt-2 text-sm" role="status">{msg}</p>}
+    </div>
   );
 }
 
@@ -62,6 +108,7 @@ function MarketCard({ m, all, onChange }: { m: MarketRow; all: Industry[]; onCha
           <div key={k} className="rounded-lg bg-muted p-2"><dt className="text-xs text-muted-foreground">{tr(label)}</dt><dd className="text-lg font-bold">{m.stats[k]}</dd></div>
         ))}
       </dl>
+      <MarketAdmins m={m} />
       {editing && (
         <div className="mt-4 space-y-3 rounded-lg border p-3">
           <div><Label htmlFor={`n-${m.id}`}>{tr("Market name")}</Label><Input id={`n-${m.id}`} value={name} onChange={(e) => setName(e.target.value)} /></div>

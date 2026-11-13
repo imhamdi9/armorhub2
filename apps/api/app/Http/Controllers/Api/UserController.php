@@ -18,8 +18,9 @@ use Illuminate\Validation\ValidationException;
 class UserController extends Controller
 {
     private const ROLES_BY_MANAGER = [
-        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller'],
-        'company-owner' => ['company-owner', 'partner-manager', 'technician'],
+        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller', 'warehouse-staff'],
+        // A market admin brings in the people of their market. Only the platform owner makes other market admins.
+        'company-owner' => ['partner-manager', 'technician', 'warehouse-staff'],
         'partner-manager' => ['technician'],
     ];
 
@@ -147,8 +148,13 @@ class UserController extends Controller
             return $query;
         }
 
+        // A market admin sees everyone in their market (its companies, sellers, centres and customers), and nothing of other markets.
         if ($actor->hasRole('company-owner') && $actor->company_id) {
-            return $query->where('company_id', $actor->company_id);
+            $tenantId = $actor->company?->tenant_id;
+
+            return $tenantId
+                ? $query->whereIn('company_id', \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $tenantId)->select('id'))
+                : $query->where('company_id', $actor->company_id);
         }
 
         if ($actor->hasRole('partner-manager') && $actor->partner_id) {
@@ -182,7 +188,15 @@ class UserController extends Controller
             return [$actor->company_id, $actor->partner_id];
         }
 
-        // company-owner: own company; a partner must belong to it (Partner is company-scoped).
+        // market admin: a company of their own market (their own by default); a partner must belong to it (Partner is company-scoped).
+        if ($companyId !== null && $companyId !== $actor->company_id) {
+            $sameMarket = \App\Models\Company::withoutGlobalScopes()->whereKey($companyId)->where('tenant_id', $actor->company?->tenant_id)->exists();
+            if (! $sameMarket) {
+                throw ValidationException::withMessages(['company_id' => ['That company is not in your market.']]);
+            }
+
+            return [$companyId, $partnerId];
+        }
         if ($partnerId !== null && ! Partner::whereKey($partnerId)->exists()) {
             throw ValidationException::withMessages(['partner_id' => ['That partner is not in your company.']]);
         }

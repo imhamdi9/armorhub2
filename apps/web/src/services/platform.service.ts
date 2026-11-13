@@ -397,3 +397,9 @@ export const updateDepartmentMember = async (id: number, userId: number, body: {
 export const getDepartmentRoles = async (id: number) => (await api.get<DepartmentRole[]>(`/departments/${id}/roles`)).data;
 export const createDepartmentRole = async (id: number, body: { name: string; permissions: string[] }) => (await api.post(`/departments/${id}/roles`, body)).data;
 export const setDepartmentHead = async (id: number, headUserId: number | null) => (await api.put<DepartmentRow>(`/departments/${id}`, { head_user_id: headUserId })).data;
+
+// ---- Market admins ("Egypt Market Admin": several people per market, each limited to it) ---------
+export interface MarketAdmin { id: number; name: string; email: string; is_active: boolean; market: string }
+export const getMarketAdmins = async (marketId: number) => (await api.get<MarketAdmin[]>(`/admin/markets/${marketId}/admins`)).data;
+export const addMarketAdmin = async (marketId: number, email: string) => (await api.post<{ invited: boolean }>(`/admin/markets/${marketId}/admins`, { email })).data;
+export const removeMarketAdmin = async (marketId: number, userId: number) => { await api.delete(`/admin/markets/${marketId}/admins/${userId}`); };

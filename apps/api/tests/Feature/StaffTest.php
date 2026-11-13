@@ -29,7 +29,8 @@ class StaffTest extends TestCase
 
         $tenant = Tenant::create(['name' => 'T']);
         $this->acme = Company::create(['tenant_id' => $tenant->id, 'name' => 'Acme']);
-        $this->other = Company::create(['tenant_id' => $tenant->id, 'name' => 'Other']);
+        // Another market altogether: a market admin never reaches it.
+        $this->other = Company::create(['tenant_id' => Tenant::create(['name' => 'T2'])->id, 'name' => 'Other']);
         $this->shop = Partner::create(['company_id' => $this->acme->id, 'name' => 'Shop', 'city' => 'X', 'country' => 'SA']);
     }
 
@@ -64,8 +65,9 @@ class StaffTest extends TestCase
         $owner = $this->user('company-owner', $this->acme);
         $this->actingAs($owner, 'sanctum');
 
-        // Creates staff in their own company, regardless of what company_id they send.
-        $id = $this->postJson('/api/users', $this->payload('technician', ['company_id' => $this->other->id]))
+        // A company of another market is refused; without one the staff member joins their own company.
+        $this->postJson('/api/users', $this->payload('technician', ['company_id' => $this->other->id]))->assertUnprocessable()->assertJsonValidationErrors('company_id');
+        $id = $this->postJson('/api/users', $this->payload('technician'))
             ->assertCreated()->assertJsonPath('company.id', $this->acme->id)->json('id');
         $this->assertSame($this->acme->id, User::find($id)->company_id);
 
@@ -117,8 +119,8 @@ class StaffTest extends TestCase
         $this->putJson("/api/users/{$admin->id}", ['name' => 'x'])->assertForbidden();
         $this->deleteJson("/api/users/{$admin->id}")->assertForbidden();
 
-        // Peers are manageable.
-        $this->putJson("/api/users/{$peer->id}", ['role' => 'technician', 'name' => 'Peer'])->assertOk()->assertJsonPath('role', 'technician');
+        // Other market admins are not theirs to change: only the platform owner makes and removes market admins.
+        $this->putJson("/api/users/{$peer->id}", ['role' => 'technician', 'name' => 'Peer'])->assertForbidden();
     }
 
     public function test_deactivating_blocks_login_and_revokes_tokens(): void

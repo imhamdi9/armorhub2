@@ -24,11 +24,12 @@ import { getRoles } from "@/services/admin.service";
 
 const ROLE_LABELS: Record<string, string> = {
   "platform-admin": "Platform admin",
-  "company-owner": "Company owner",
+  "company-owner": "Market admin",
   "partner-manager": "Partner manager",
   technician: "Technician",
   customer: "Customer",
-  seller: "Seller",
+  seller: "Company owner (seller)",
+  "warehouse-staff": "Warehouse staff",
 };
 
 /** The people list. For a platform admin it is split: "platform" is ArmorHub's own team, "users" is everyone else. */

@@ -43,6 +43,59 @@ class MarketController extends Controller
             'industries' => Industry::orderBy('name')->get(['id', 'key', 'name'])];
     }
 
+    private function marketCompany(Tenant $tenant): Company
+    {
+        return $this->launcher->storeOf($tenant) ?? abort(422, 'This market has no store company yet.');
+    }
+
+    /** The market's admins ("Egypt Market Admin"): several people can hold it, each limited to this market. */
+    public function admins(Tenant $tenant)
+    {
+        $company = $this->marketCompany($tenant);
+
+        return \App\Models\User::role('company-owner')->whereIn('company_id', Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->select('id'))
+            ->orderBy('name')->get(['id', 'name', 'email', 'is_active'])->map(fn ($u) => $u->only(['id', 'name', 'email', 'is_active']) + ['market' => $tenant->name]);
+    }
+
+    /** Gives the market-admin role of one market to an existing person, or invites a new one. */
+    public function addAdmin(Request $request, Tenant $tenant)
+    {
+        $company = $this->marketCompany($tenant);
+        $email = mb_strtolower(trim($request->validate(['email' => 'required|email|max:255'])['email']));
+        $user = \App\Models\User::where('email', $email)->first();
+
+        if (! $user) {
+            $token = \Illuminate\Support\Str::random(48);
+            \App\Models\Invitation::create(['token_hash' => hash('sha256', $token), 'email' => $email, 'role' => 'company-owner', 'invited_by' => $request->user()->id,
+                'company_id' => $company->id, 'expires_at' => now()->addDays(7)]);
+            \Illuminate\Support\Facades\Notification::route('mail', $email)->notify(new \App\Notifications\InvitationSent($request->user()->name, $token));
+            \App\Support\Audit::record('market.admin_invited', $tenant, ['email' => $email], $request->user());
+
+            return response()->json(['invited' => true, 'email' => $email], 201);
+        }
+        if ($user->hasAnyRole(['platform-admin', 'customer', 'seller', 'partner-manager', 'technician'])) {
+            abort(422, 'This person already works in another role. Invite a different e-mail address.');
+        }
+        if ($user->hasRole('company-owner') && ! in_array($user->company_id, Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->pluck('id')->all(), true)) {
+            abort(422, 'This person is already an admin of another market.');
+        }
+        $user->update(['company_id' => $company->id, 'is_active' => true]);
+        $user->syncRoles(['company-owner']);
+        \App\Support\Audit::record('market.admin_added', $tenant, ['user' => $user->id], $request->user());
+
+        return response()->json(['invited' => false, 'id' => $user->id], 201);
+    }
+
+    public function removeAdmin(Request $request, Tenant $tenant, int $userId)
+    {
+        $user = \App\Models\User::role('company-owner')->whereIn('company_id', Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->select('id'))->findOrFail($userId);
+        $user->removeRole('company-owner');
+        $user->update(['is_active' => false]);
+        \App\Support\Audit::record('market.admin_removed', $tenant, ['user' => $user->id], $request->user());
+
+        return response()->noContent();
+    }
+
     /** Folds older per-industry markets of a country into one (the same thing the deploy does), and says exactly what went wrong if it cannot. */
     public function consolidate(\App\Services\MarketConsolidator $consolidator)
     {

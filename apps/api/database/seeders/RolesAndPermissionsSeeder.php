@@ -97,12 +97,20 @@ class RolesAndPermissionsSeeder extends Seeder
     'products.view',
     'products.create',
     'products.update',
+    'products.delete',
 
     'catalog.manage',
+
+    'partners.view',
+    'partners.create',
+    'partners.update',
 
     'users.manage',
 
     'orders.view',
+    'orders.update',
+
+    'pricing.calculate',
 
     'commissions.view',
 

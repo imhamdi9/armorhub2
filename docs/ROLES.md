@@ -7,8 +7,8 @@
 |---|---|---|
 | **Platform** | The whole system and its staff, organised in **departments**. | ArmorHub |
 | **Market** (tenant) | One country: currency, VAT, phone rules, its industries, its payment/shipping/fee settings and its public store. Opened by the platform admin. | ArmorHub Egypt (EG, 4 industries) |
-| **Market manager** (`company-owner`) | Runs one market: its settings, storefront, catalogue, warehouse and team. Cannot touch other markets or platform-wide settings. | `owner.auto@demo.eg` |
-| **Seller** (`seller`) | A verified business with an **account inside one market** (Amazon-style: no store of its own). Registering in another country's market is a separate, independent account under that market's terms. | Khan El-Khalili Crafts |
+| **Market Admin** (`company-owner`, e.g. *Egypt Market Admin*) | The chief executive of one market: every permission **inside that market only** (settings, storefront, catalogue, sellers, centres, warehouse, people). Named by the platform owner, who can name **several** per market (Markets screen → "Market Admins"). Cannot touch other markets, platform-wide settings or other market admins. | `owner.auto@demo.eg` |
+| **Seller / company owner** (`seller`) | A verified business whose owner is a *company owner*: an ordinary user who distributes roles **inside their own company only**. Has an **account inside one market** (Amazon-style: no store of its own). Registering in another country's market is a separate, independent account under that market's terms. | Khan El-Khalili Crafts |
 | **Centre / partner** | A workshop or service business (installs, repairs, cleans) with its own team (manager + technicians). | Zamalek Detailing Studio |
 | **Customer** | A buyer of a market (or a guest at checkout). | Nour El-Din Fawzy |
 | **Warehouse team** (`warehouse-staff`) | Receives sellers' cartons, counts stock, packs and ships orders of products ArmorHub stores. One market only. | — |
@@ -24,7 +24,7 @@ Nobody can hand out more than their own area. Invitations are e-mailed links val
 | Who | May invite | Into |
 |---|---|---|
 | Platform admin | Any role; names department heads; creates/renames departments and roles | Anywhere |
-| Market manager | Warehouse staff, co-managers | Their own market company only |
+| Market admin | Warehouse staff, partner managers, technicians | Their own market only (never other market admins: only the platform owner names those) |
 | Department head | The roles of **their own department** (which they create from the department's permission area) | Their own department only |
 | Seller | Teammates (role `seller`) | Their own seller company only |
 | Centre manager | Managers and technicians | Their own centre only |

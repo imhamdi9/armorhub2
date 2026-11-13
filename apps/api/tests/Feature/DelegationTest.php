@@ -182,4 +182,40 @@ class DelegationTest extends TestCase
         $this->assertEqualsCanonicalizing([$seller->id, $customer->id], $users);
         $this->assertCount(5, $this->getJson('/api/users')->json('data')); // unfiltered stays everyone
     }
+
+    public function test_the_platform_owner_names_several_admins_for_one_market_and_each_is_limited_to_it(): void
+    {
+        $egypt = \App\Models\Tenant::create(['name' => 'ArmorHub Egypt', 'industry_id' => \App\Models\Industry::first()->id, 'market' => 'EG']);
+        $egyptCo = Company::create(['tenant_id' => $egypt->id, 'name' => 'ArmorHub Egypt', 'type' => 'partner', 'status' => 'active', 'slug' => 'armorhub-eg', 'settings' => ['storefront' => ['enabled' => true]]]);
+        $ksa = \App\Models\Tenant::create(['name' => 'ArmorHub Saudi', 'industry_id' => \App\Models\Industry::first()->id, 'market' => 'SA']);
+        $ksaCo = Company::create(['tenant_id' => $ksa->id, 'name' => 'ArmorHub Saudi', 'type' => 'partner', 'status' => 'active', 'slug' => 'armorhub-sa', 'settings' => ['storefront' => ['enabled' => true]]]);
+        $ksaSeller = User::factory()->create(['company_id' => $ksaCo->id]);
+        $ksaSeller->assignRole('seller');
+
+        // Existing person -> becomes a market admin of Egypt at once; a new e-mail gets an invitation. Several people can hold it.
+        $existing = User::factory()->create();
+        $existing->assignRole('customer');
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/markets/{$egypt->id}/admins", ['email' => $existing->email])->assertStatus(422); // a customer must use another e-mail
+        $staffer = User::factory()->create(['company_id' => $this->hq->id]);
+        $this->postJson("/api/admin/markets/{$egypt->id}/admins", ['email' => $staffer->email])->assertCreated();
+        Notification::fake();
+        $this->postJson("/api/admin/markets/{$egypt->id}/admins", ['email' => 'second@egypt.test'])->assertCreated()->assertJson(['invited' => true]);
+        $this->assertSame($egyptCo->id, $staffer->fresh()->company_id);
+        $this->assertTrue($staffer->fresh()->hasRole('company-owner'));
+        $this->getJson("/api/admin/markets/{$egypt->id}/admins")->assertOk()->assertJsonCount(1);
+
+        // An Egypt market admin sees Egypt's people only, cannot reach Saudi's, and cannot make other market admins.
+        $this->actingAs($staffer->fresh(), 'sanctum');
+        $ids = collect($this->getJson('/api/users')->assertOk()->json('data'))->pluck('id');
+        $this->assertFalse($ids->contains($ksaSeller->id));
+        $this->putJson("/api/users/{$ksaSeller->id}", ['name' => 'x'])->assertNotFound();
+        $this->postJson('/api/users', ['name' => 'N', 'email' => 'n@x.test', 'password' => 'longenough1', 'role' => 'company-owner'])->assertUnprocessable();
+        [$r] = $this->invite($staffer->fresh(), ['email' => 'co@egypt.test', 'role' => 'company-owner']);
+        $r->assertStatus(422);
+        $this->getJson("/api/admin/markets/{$egypt->id}/admins")->assertForbidden();
+
+        // The platform owner can take the role away again.
+        $this->actingAs($this->admin, 'sanctum')->deleteJson("/api/admin/markets/{$egypt->id}/admins/{$staffer->id}")->assertNoContent();
+        $this->assertFalse($staffer->fresh()->hasRole('company-owner'));
+    }
 }

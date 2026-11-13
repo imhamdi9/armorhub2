@@ -586,7 +586,7 @@ class SecurityTest extends TestCase
         $owner = User::factory()->create(['company_id' => $this->tech->company_id]);
         $owner->assignRole('company-owner');
         $this->actingAs($owner, 'sanctum')->postJson("/api/users/{$this->tech->id}/revoke-sessions")->assertOk();
-        $this->postJson("/api/users/{$this->customer->id}/revoke-sessions")->assertNotFound();
+        $this->postJson("/api/users/{$this->customer->id}/revoke-sessions")->assertStatus(in_array($this->customer->company?->tenant_id, [null, $owner->company?->tenant_id], true) && $this->customer->company_id ? 403 : 404);
         $this->postJson("/api/users/{$this->admin->id}/revoke-sessions")->assertNotFound();
         $outsider = User::factory()->create();
         $outsider->assignRole('technician');

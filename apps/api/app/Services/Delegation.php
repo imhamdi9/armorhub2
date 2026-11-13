@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Role;
 /**
  * Who may bring in whom. Nobody can hand out more than their own area:
  *  - platform admin: any role, anywhere (and names department heads)
- *  - market manager: warehouse staff and co-managers of their own market company
+ *  - market admin: warehouse staff of their own market (only the platform owner makes other market admins)
  *  - department head: the roles of their own department, inside that department only
  *  - seller: teammates of their own seller company
  *  - centre manager: managers and technicians of their own centre
@@ -31,7 +31,7 @@ class Delegation
             return [];
         }
         if ($actor->hasRole('company-owner') && $actor->company_id) {
-            return ['warehouse-staff', 'company-owner'];
+            return ['warehouse-staff'];
         }
         if ($actor->hasRole('seller') && $actor->company_id) {
             return ['seller'];
