@@ -58,6 +58,8 @@ export interface PublicBranding {
 
 export interface PublicProduct {
   id: number;
+  /** fixed: bought at its price; quote: the customer asks sellers for a price first. */
+  sale_mode?: "fixed" | "quote";
   name: string;
   brand: string | null;
   category: string | null;

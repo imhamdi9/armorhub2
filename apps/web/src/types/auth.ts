@@ -31,6 +31,8 @@ export interface User {
   industry?: Industry | null;
   phone?: string | null;
   market?: { code: string; currency: string } | null;
+  /** The store the account belongs to: where a customer goes shopping. */
+  store_slug?: string | null;
 }
 
 export interface LoginRequest {

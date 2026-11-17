@@ -75,7 +75,7 @@ class QuoteRequestController extends Controller
 
         return [
             'id' => $r->id, 'number' => $r->number, 'title' => $r->title, 'category' => $r->category, 'quantity' => $r->quantity, 'status' => $r->status === 'open' && $r->expires_at->isPast() ? 'expired' : $r->status,
-            'notes' => $r->notes, 'expires_at' => $r->expires_at->toIso8601String(), 'product_id' => $r->product_id,
+            'notes' => $r->notes, 'expires_at' => $r->expires_at->toIso8601String(), 'product_id' => $r->product_id, 'currency' => app(\App\Support\Markets\Markets::class)->currencyFor(\App\Models\Company::withoutGlobalScopes()->find($r->company_id)),
             // Quotes are shown cheapest first, each with what the customer needs to compare: price, time, condition, warranty and how long it holds.
             'quotes' => $r->quotes()->whereIn('status', ['submitted', 'accepted'])->orderBy('unit_price')->get()->map(fn ($q) => [
                 'id' => $q->id, 'number' => $q->number, 'unit_price' => (float) $q->unit_price, 'total' => round((float) $q->unit_price * $r->quantity, 2), 'lead_days' => $q->lead_days,

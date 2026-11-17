@@ -315,6 +315,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
 
     // Orders, quotes, payments
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
     Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
     // The cart, and buying it: one purchase (an order group), paid once, one order per line.
     // The customer's cars.

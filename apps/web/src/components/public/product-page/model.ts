@@ -23,7 +23,9 @@ export function useOrderLinks(slug: string, productId: number, goods: boolean, p
   const buy = signedIn ? `/dashboard/orders/new?product=${productId}${withParts}` : goods ? `/s/${encodeURIComponent(slug)}/checkout?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}${withParts}`;
   const find = signedIn ? `/dashboard/installations/new?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}&installation=1`;
 
-  return { buy, find, signedIn };
+  const quote = signedIn ? `/dashboard/quotes?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}`;
+
+  return { buy, find, quote, signedIn };
 }
 
 export type ProductModel = ReturnType<typeof useProductModel>;
@@ -36,7 +38,7 @@ export function useProductModel(store: ShellStore, data: PublicProductPage) {
   const links = useOrderLinks(store.slug, p.id, goods, parts);
   // How the product is sold: on its own, on its own with optional installation offers, or only together with an installation offer.
   const mode = goods ? (p.installation ?? "none") : "none";
-  const href = mode === "required" ? links.find : links.buy;
+  const href = p.sale_mode === "quote" ? links.quote : mode === "required" ? links.find : links.buy;
   const options = p.prices.filter((r) => r.target);
   const [picked, setPickedRaw] = useState<string | null>(null);
   // Picking an option also remembers its part, so the order form can open with it ticked.

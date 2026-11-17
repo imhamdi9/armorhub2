@@ -21,7 +21,11 @@ export default function CartPage() {
   const user = useCurrentUser();
   const router = useRouter();
   const [cart, setCart] = useState<CartView | null>(null);
-  const [form, setForm] = useState({ name: user?.name ?? "", phone: "", line1: "", city: "" });
+  // The last delivery address used on this device comes back ready, so a repeat buyer does not retype it.
+  const [form, setForm] = useState(() => {
+    const base = { name: user?.name ?? "", phone: "", line1: "", city: "" };
+    try { return { ...base, ...(JSON.parse(localStorage.getItem("last-address") ?? "{}") as Partial<typeof base>) }; } catch { return base; }
+  });
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -45,6 +49,7 @@ export default function CartPage() {
     setFields({});
     try {
       const purchase = await checkoutCart(form);
+      try { localStorage.setItem("last-address", JSON.stringify(form)); } catch { /* storage unavailable */ }
       const paid = await payPurchase(purchase.id);
       if (paid.checkout_url) {
         window.location.href = paid.checkout_url;

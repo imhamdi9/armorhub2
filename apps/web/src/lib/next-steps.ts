@@ -59,7 +59,9 @@ export function nextSteps(user: User, stats: DashboardStats): NextStep[] {
 }
 
 /** Plain-English "what happens next" for an order, for the person looking at it. */
-export function statusGuide(statusKey: string, forCustomer: boolean): string | null {
+export function statusGuide(statusKey: string, forCustomer: boolean, goods = false): string | null {
+  // Goods are packed and shipped; only services have appointments.
+  if (goods && forCustomer && statusKey === "paid") return "Payment received. The seller is preparing your order, and you will be notified when it ships.";
   const customer: Record<string, string> = {
     pending_quotes: "Nearby professionals are preparing their prices. You will get a notification when the first quote arrives, usually within a few hours.",
     quotes_received: "Quotes are in. Compare them and accept the one you like. You only pay after you accept.",

@@ -41,7 +41,7 @@ const cspFor = (frameAncestors: string) => [
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   // Stores may show a logo hosted elsewhere (https only; the editor refuses anything else).
-  "img-src 'self' data: blob: https:",
+  `img-src 'self' data: blob: https: ${apiOrigin()}`,   // the API's own origin too: product photos are served from it (plain http in development)
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}${isProd ? "" : " ws: wss:"}`,
   `frame-src 'self' ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,

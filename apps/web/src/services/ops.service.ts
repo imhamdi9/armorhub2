@@ -35,11 +35,11 @@ export const addMaterial = async (id: number, body: { name: string; quantity: nu
 export const removeMaterial = async (id: number, materialId: number) => (await api.delete(`/partner/installation-jobs/${id}/materials/${materialId}`)).data;
 
 export interface Quote { id: number; number: string; unit_price: number; total: number; lead_days: number | null; condition: string | null; warranty_days: number | null; note: string | null; valid_until: string; expired: boolean; status: string; seller: string }
-export interface QuoteRequest { id: number; number: string; title: string | null; category: string | null; quantity: number; status: string; notes: string | null; expires_at: string; quotes: Quote[] }
+export interface QuoteRequest { currency: string; id: number; number: string; title: string | null; category: string | null; quantity: number; status: string; notes: string | null; expires_at: string; quotes: Quote[] }
 export const getQuoteRequests = async () => (await api.get<QuoteRequest[]>("/quote-requests")).data;
-export const createQuoteRequest = async (body: { title: string; quantity: number; notes?: string; vehicle_id?: number }) => (await api.post<QuoteRequest>("/quote-requests", body)).data;
+export const createQuoteRequest = async (body: { title: string; quantity: number; notes?: string; vehicle_id?: number; product_id?: number; category?: string }) => (await api.post<QuoteRequest>("/quote-requests", body)).data;
 export const closeQuoteRequest = async (id: number) => (await api.post(`/quote-requests/${id}/close`)).data;
-export const acceptQuote = async (id: number, quote_id: number, shipping_address: Record<string, string>) => (await api.post(`/quote-requests/${id}/accept`, { quote_id, shipping_address })).data;
+export const acceptQuote = async (id: number, quote_id: number, shipping_address: Record<string, string>) => (await api.post<{ order_group_id: number; payable_amount: number; currency: string }>(`/quote-requests/${id}/accept`, { quote_id, shipping_address })).data;
 
 export interface SellerRequest { id: number; number: string; title: string | null; category: string | null; quantity: number; notes: string | null; expires_at: string; my_quote: { number: string; unit_price: number; status: string; valid_until: string } | null }
 export const getSellerRequests = async () => (await api.get<SellerRequest[]>("/seller/quote-requests")).data;

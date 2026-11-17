@@ -144,18 +144,11 @@ export function buildNavigation(user: User | null): NavItem[] {
     return items;
   }
 
-  items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
+  // A customer shops in the store itself; the product list here is the catalogue screen for the people who manage it.
+  const shopper = hasRole(user, "customer") && !hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager", "technician");
+  items.push(shopper ? { title: "Shop", href: user?.store_slug ? `/s/${user.store_slug}/products` : "/", icon: "products" } : { title: "Products", href: "/dashboard/products", icon: "products" });
 
-  // What a customer brings (their property, device, vehicle...).
-  if (hasRole(user, "customer")) {
-    for (const alias of user?.industry?.owned_subjects ?? []) {
-      items.push({
-        title: `My ${aliasLabel(alias)}`,
-        href: `/dashboard/items/${alias}`,
-        icon: "items",
-      });
-    }
-  }
+  // (A customer's cars live in the Garage; the old per-industry "My ..." lists no longer appear: a market sells several industries.)
 
   if (hasRole(user, "customer")) {
     items.push({ title: "Installation requests", href: "/dashboard/installations", icon: "jobs" });

@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasRole } from "@/lib/navigation";
 import { STATUS_LABELS, statusLabel } from "@/lib/orders";
+import { api } from "@/services/api";
+import { resendVerification } from "@/services/auth.service";
 import { getOrders } from "@/services/platform.service";
 import type { Order, Paginated } from "@/types/platform";
 import { formatMoney, tr } from "@/lib/i18n";
@@ -20,6 +22,10 @@ export default function OrdersPage() {
   const [status, setStatus] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("status") ?? ""));
   const [page, setPage] = useState(1);
 
+  const [waiting, setWaiting] = useState(0);
+  const [sent, setSent] = useState(false);
+  useEffect(() => { api.get<{ count: number }>("/orders/waiting-for-verification").then((r) => setWaiting(r.data.count)).catch(() => {}); }, []);
+
   useEffect(() => {
     getOrders({ page, ...(status ? { status } : {}) })
       .then(setResult)
@@ -28,6 +34,12 @@ export default function OrdersPage() {
 
   return (
     <div>
+      {waiting > 0 && (
+        <div role="note" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" data-testid="waiting-orders">
+          <span>{tr("You have {n} earlier purchase(s) made with this e-mail. Verify your e-mail and they will appear here.", { n: waiting })}</span>
+          <Button size="sm" disabled={sent} onClick={() => resendVerification().then(() => setSent(true))}>{sent ? tr("Link sent") : tr("Send verification link")}</Button>
+        </div>
+      )}
       <PageHeader
         title={tr("Orders")}
         action={

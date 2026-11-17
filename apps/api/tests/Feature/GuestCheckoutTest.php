@@ -133,9 +133,11 @@ class GuestCheckoutTest extends TestCase
         $user = User::factory()->create(['email' => $email, 'email_verified_at' => null, 'company_id' => $store->id]);
         $user->assignRole('customer');
         $this->actingAs($user, 'sanctum')->getJson('/api/orders')->assertOk()->assertJsonCount(0, 'data');   // not verified: nothing is handed over
+        $this->getJson("/api/orders/waiting-for-verification")->assertOk()->assertJsonPath("count", 1);                // told about it instead of left wondering
         $this->assertNull(Order::withoutGlobalScopes()->find($o['id'])->customer_id);
 
         $user->forceFill(['email_verified_at' => now()])->save();
+        $this->getJson("/api/orders/waiting-for-verification")->assertOk()->assertJsonPath("count", 0);
         $this->getJson('/api/orders')->assertOk()->assertJsonCount(1, 'data');
         $claimed = Order::withoutGlobalScopes()->find($o['id']);
         $this->assertSame($user->id, $claimed->customer_id);

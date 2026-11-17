@@ -120,7 +120,7 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
               {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
               {p.installation === "optional" && <p className="rounded-xl bg-[#f2f4f5] p-3 text-sm" data-testid="installation-note">{tr("After you pay, you can also get installation offers from nearby centres, if you want them.")}</p>}
               <p className="text-xs text-[#5f5c5b]">{tr("You pay securely online. The seller ships your order and you follow every step from a private link we e-mail you.")}</p>
-              <Button type="submit" size="lg" disabled={busy || !human.ready} className="btn-brand h-12 w-full rounded-full text-base">{busy ? tr("Please wait...") : `${tr("Pay")} ${formatMoney(p.from_price, p.currency, true)}`}</Button>
+              <Button type="submit" size="lg" disabled={busy || !human.ready} className="btn-brand h-12 w-full rounded-full text-base">{busy ? tr("Please wait...") : `${tr("Pay")} ${formatMoney(p.from_price + Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}`}</Button>
             </form>
           </>
         )}

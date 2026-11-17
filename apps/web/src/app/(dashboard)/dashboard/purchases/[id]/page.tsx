@@ -63,7 +63,7 @@ export default function PurchasePage() {
       <dl className="mt-4 max-w-sm space-y-1 text-sm">
         <div className="flex justify-between"><dt>{tr("Items")}</dt><dd>{formatMoney(purchase.items_amount, purchase.currency)}</dd></div>
         {purchase.service_fee_amount > 0 && <div className="flex justify-between"><dt>{tr("Platform fee")}</dt><dd>{formatMoney(purchase.service_fee_amount, purchase.currency)}</dd></div>}
-        <div className="flex justify-between text-base font-bold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(purchase.payable_amount, purchase.currency)}</dd></div>
+        <div className="flex justify-between text-base font-bold"><dt>{tr(purchase.status === "paid" ? "Total paid" : "Total to pay")}</dt><dd>{formatMoney(purchase.payable_amount, purchase.currency)}</dd></div>
       </dl>
 
       {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}

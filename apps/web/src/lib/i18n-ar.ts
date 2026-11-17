@@ -1779,4 +1779,13 @@ export const AR: Record<string, string> = {
   "Unit": "الوحدة",
   "Batch": "الدفعة",
   "Add material": "إضافة مادة",
+  "You have {n} earlier purchase(s) made with this e-mail. Verify your e-mail and they will appear here.": "لديك {n} مشتريات سابقة بهذا البريد. فعّل بريدك الإلكتروني وستظهر هنا.",
+  "Send verification link": "إرسال رابط التفعيل",
+  "Link sent": "تم إرسال الرابط",
+  "Request a price": "اطلب سعراً",
+  "Sellers send you their price. You compare, accept one and pay only then.": "يرسل لك البائعون أسعارهم. تقارن وتقبل عرضاً ولا تدفع إلا حينها.",
+  "Shop": "تسوّق",
+  "Payment received. The seller is preparing your order, and you will be notified when it ships.": "تم استلام الدفع. يجهّز البائع طلبك وسيصلك إشعار عند شحنه.",
+  "Total paid": "الإجمالي المدفوع",
 };
+

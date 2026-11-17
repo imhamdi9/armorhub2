@@ -89,7 +89,7 @@ function OrderDetail() {
 
   const submitted = quotes.filter((q) => q.status !== "pending");
   const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
-  const guide = statusGuide(order.status, !!user?.roles?.includes("customer"));
+  const guide = statusGuide(order.status, !!user?.roles?.includes("customer"), !!order.product?.requires_shipping);
   const canPay = ["partner_selected", "awaiting_payment"].includes(order.status);
   const canCancel = ["pending_quotes", "quotes_received", "partner_selected", "awaiting_payment"].includes(order.status);
 
@@ -109,13 +109,13 @@ function OrderDetail() {
       <div className="mb-6 rounded-lg border p-4 text-sm">
         <p className="font-semibold">{order.product?.name}</p>
         <p>{tr("Product")}: {formatMoney(order.product_amount, order.currency)}</p>
-        <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>
+        {Number(order.service_amount) > 0 && <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>}
         <div className="my-2"><OrderStatusStrip statuses={order.statuses} /></div>
         <p className="mt-1 font-semibold">{tr("Invoice")}: {formatMoney(order.total_amount, order.currency)}</p>
         {Number(order.service_fee_amount) > 0 && (
           <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>
         )}
-        <p className="mt-1 text-base font-bold">{tr("Total to pay")}: {formatMoney(order.payable_amount ?? order.total_amount, order.currency)}</p>
+        <p className="mt-1 text-base font-bold">{tr(["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) ? "Total paid" : "Total to pay")}: {formatMoney(order.payable_amount ?? order.total_amount, order.currency)}</p>
         {Number(order.tax_rate) > 0 && (
           <p className="text-muted-foreground">
             {tr("Includes VAT ({rate}%)", { rate: Number(order.tax_rate) })}: {formatMoney(order.tax_amount ?? 0, order.currency)}

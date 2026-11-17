@@ -53,7 +53,7 @@ function greeting(name: string) {
 type RoleView = { chip: string; actions: [string, string][] };
 
 /** Role label and the two quick actions that matter most to that person. Only existing screens are linked. */
-function roleView(user: { roles?: string[] }): RoleView {
+function roleView(user: { roles?: string[]; store_slug?: string | null }): RoleView {
   const has = (...r: string[]) => !!user.roles?.some((x) => r.includes(x));
 
   if (has("platform-admin")) return { chip: "Platform admin", actions: [["Review what needs attention", "/dashboard/admin"], ["Partner applications", "/dashboard/partner-applications"]] };
@@ -61,7 +61,7 @@ function roleView(user: { roles?: string[] }): RoleView {
   if (has("partner-manager", "technician")) return { chip: "Partner", actions: [["Quote requests", "/dashboard/requests"], ["Jobs", "/dashboard/jobs"]] };
   if (has("company-owner")) return { chip: "Company owner", actions: [["Orders", "/dashboard/orders"], ["Storefront", "/dashboard/storefront"]] };
 
-  return { chip: "Customer", actions: [["New order", "/dashboard/orders/new"], ["My orders", "/dashboard/orders"]] };
+  return { chip: "Customer", actions: [["Shop", user.store_slug ? `/s/${user.store_slug}/products` : "/"], ["My orders", "/dashboard/orders"]] };
 }
 
 const STAGE_COLORS = ["#0b1b3a", "#2f6bff", "#8db8ff", "#cfe0ff", "#e6ecf7", "#b4bfd6"];

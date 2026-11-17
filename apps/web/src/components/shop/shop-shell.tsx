@@ -73,8 +73,11 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
           {store.market && <span dir="ltr" className="hidden rounded-full bg-fog px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
           <LanguageSwitcher />
           {user ? (
-            <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
-          ) : (
+            <>
+              <Link href="/dashboard/cart" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold" data-testid="shop-cart">{tr("Cart")}</Link>
+              <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
+            </>
+          ) : user === undefined ? null : (
             <>
               <Link href="/login" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold">{tr("Sign in")}</Link>
               <Link href={signup} className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Sign up")}</Link>

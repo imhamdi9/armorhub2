@@ -56,9 +56,10 @@ describe("hasRole", () => {
 });
 
 describe("buildNavigation", () => {
-  it("shows a customer their own items, not catalogs or admin screens", () => {
+  it("shows a customer their shopping screens, not catalogs, admin screens or per-industry lists", () => {
     const nav = titles(user(["customer"]));
-    expect(nav).toContain("My Properties");
+    expect(nav).toContain("Garage");
+    expect(nav).not.toContain("My Properties");
     expect(nav).not.toContain("Room Types");
     expect(nav).not.toContain("Markets");
     expect(nav).not.toContain("Commissions");
@@ -116,7 +117,7 @@ describe("buildNavigation", () => {
   });
 
   it("still works without an industry or a user", () => {
-    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Garage", "Price requests", "Products", "Installation requests", "Warranties"]);
+    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Garage", "Price requests", "Shop", "Installation requests", "Warranties"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
   });
 

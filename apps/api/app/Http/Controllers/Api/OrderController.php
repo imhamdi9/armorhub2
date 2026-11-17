@@ -28,6 +28,15 @@ class OrderController extends Controller
         return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
     }
 
+    /** Purchases made without an account with this e-mail: they join the account once the e-mail is verified, so say so instead of hiding them. */
+    public function waitingForVerification(Request $request)
+    {
+        $user = $request->user();
+        $count = $user->hasVerifiedEmail() || ! $user->company_id ? 0 : Order::withoutGlobalScopes()->where('company_id', $user->company_id)->whereNull('customer_id')->whereNotNull('guest_token')->where('guest_email', strtolower((string) $user->email))->count();
+
+        return ['count' => $count];
+    }
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', Order::class);

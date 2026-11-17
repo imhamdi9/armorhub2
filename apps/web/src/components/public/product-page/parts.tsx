@@ -193,6 +193,15 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
   const cls = big ? BIG : "btn-brand inline-flex items-center justify-center px-6 py-3 text-base";
   const second = big ? "inline-flex items-center justify-center rounded-full border-2 border-obsidian px-8 py-4 text-lg font-semibold text-obsidian hover:bg-fog" : "inline-flex items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog";
 
+  if (m.p.sale_mode === "quote") {
+    return (
+      <div className="grid gap-3" data-testid="buy-buttons">
+        <Link ref={cta} href={links.quote} className={cls} data-testid="request-price">{tr("Request a price")}</Link>
+        <p className="text-center text-xs text-slate">{tr("Sellers send you their price. You compare, accept one and pay only then.")}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3" data-testid="buy-buttons">
       {m.whatsapp && (
@@ -257,6 +266,7 @@ export function AddToCart({ m }: { m: ProductModel }) {
 }
 
 export function ctaLabel(m: ProductModel) {
+  if (m.p.sale_mode === "quote") return tr("Request a price");
   return !m.goods ? tr("Get a quote") : m.mode === "required" ? tr("Find me a suitable installation offer") : tr("Buy now");
 }
 
