@@ -89,8 +89,9 @@ class SocialIdentity
             throw new \InvalidArgumentException('bad signature');
         }
 
-        $audience = config("services.{$provider}.client_id");
-        if (! in_array($claims['iss'] ?? '', self::ISSUERS[$provider], true) || ! in_array($audience, (array) ($claims['aud'] ?? []), true) || ($claims['exp'] ?? 0) < time()) {
+        // The website's id, and the ids of the phone apps (they are separate clients with their own audience).
+        $audiences = array_filter([config("services.{$provider}.client_id"), ...array_map('trim', explode(',', (string) config("services.{$provider}.mobile_client_ids")))]);
+        if (! in_array($claims['iss'] ?? '', self::ISSUERS[$provider], true) || array_intersect($audiences, (array) ($claims['aud'] ?? [])) === [] || ($claims['exp'] ?? 0) < time()) {
             throw new \InvalidArgumentException('wrong issuer, audience or expired');
         }
 

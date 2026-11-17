@@ -26,7 +26,9 @@ class AdminHasAllPowersTest extends TestCase
         $allowed403 = ['api/email/verify/{id}/{hash}', 'api/admin/roles/{id}'];
         $forbidden = [];
         foreach (Route::getRoutes() as $route) {
-            if (! str_starts_with($route->uri(), 'api/') || in_array($route->uri(), $allowed403, true)) {
+            // The versioned copy (api/v1/...) follows the same rules as the plain one.
+            $plain = str_starts_with($route->uri(), 'api/v1/') ? 'api/'.substr($route->uri(), 7) : $route->uri();
+            if (! str_starts_with($route->uri(), 'api/') || in_array($plain, $allowed403, true)) {
                 continue;
             }
             $path = '/'.preg_replace('/\{[^}]+\}/', '1', $route->uri()).(str_starts_with($route->uri(), 'api/market') ? '?market='.$tenant->id : '');

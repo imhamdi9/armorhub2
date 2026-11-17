@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "ArmorHub",
+    "slug": "armorhub",
+    "scheme": "armorhub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.armorhub.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.armorhub.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1b3a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "color": "#2f6bff"
+        }
+      ],
+      "expo-image"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

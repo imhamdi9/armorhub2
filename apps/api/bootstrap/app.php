@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // The mobile apps call a versioned address (/api/v1/...) that never changes under them: the same routes, kept stable for old app versions.
+        then: function () {
+            \Illuminate\Support\Facades\Route::middleware('api')->prefix('api/v1')->group(base_path('routes/api.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
 

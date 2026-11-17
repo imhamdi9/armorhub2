@@ -131,4 +131,12 @@ class SocialLoginTest extends TestCase
     {
         $this->postJson('/api/auth/social', ['provider' => 'apple', 'credential' => 'x', 'store' => $this->slug])->assertUnprocessable();
     }
+
+    public function test_a_token_issued_to_the_phone_app_is_accepted_but_a_stranger_app_is_not(): void
+    {
+        config(['services.google.mobile_client_ids' => 'ios-app-id, android-app-id']);
+
+        $this->postJson('/api/auth/social', ['provider' => 'google', 'credential' => $this->token(['aud' => 'android-app-id']), 'store' => $this->slug])->assertOk();
+        $this->postJson('/api/auth/social', ['provider' => 'google', 'credential' => $this->token(['aud' => 'other-app', 'sub' => 'g-2', 'email' => 'x@example.org']), 'store' => $this->slug])->assertUnprocessable();
+    }
 }

@@ -525,7 +525,9 @@ class SecurityTest extends TestCase
         $checked = 0;
         foreach (app('router')->getRoutes() as $route) {
             $uri = $route->uri();
-            if (! str_starts_with($uri, 'api/') || in_array($uri, $public, true)) {
+            // The versioned copy (api/v1/...) has the same rules as the plain one.
+            $plain = str_starts_with($uri, 'api/v1/') ? 'api/'.substr($uri, 7) : $uri;
+            if (! str_starts_with($uri, 'api/') || in_array($plain, $public, true)) {
                 continue;
             }
 

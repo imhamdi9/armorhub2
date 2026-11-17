@@ -87,6 +87,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    // The mobile app: where to send this phone's push notifications, and deleting the account from inside the app.
+    Route::post('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store'])->middleware('throttle:30,1');
+    Route::delete('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'destroy']);
+    Route::delete('/me', [\App\Http\Controllers\Api\AccountController::class, 'destroy'])->middleware('throttle:5,1');
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:resend');
 
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

@@ -75,6 +75,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Every notification kept in the app's inbox is also pushed to the person's phones (a notification already says what to show and where to go).
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSent::class, function ($event) {
+            if ($event->channel !== 'database' || ! $event->notifiable instanceof \App\Models\User) {
+                return;
+            }
+            $data = method_exists($event->notification, 'toDatabase') ? $event->notification->toDatabase($event->notifiable) : [];
+            if (! empty($data['title'])) {
+                app(\App\Services\Push\PushSender::class)->toUser($event->notifiable, (string) $data['title'], (string) ($data['body'] ?? ''), ['path' => $data['path'] ?? '/dashboard']);
+            }
+        });
+
         // The platform admin holds every permission, including ones added later.
         Gate::before(fn ($user) => $user->hasRole('platform-admin') ? true : null);
 

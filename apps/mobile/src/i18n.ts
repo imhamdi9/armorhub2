@@ -1,0 +1,45 @@
+import { getLocales } from "expo-localization";
+import { I18nManager } from "react-native";
+
+/** The app speaks the phone's language: Arabic (right to left) or English. */
+export const isArabic = () => (getLocales()[0]?.languageCode ?? "en") === "ar";
+
+// The phone's own setting decides the direction; the OS applies it at launch.
+I18nManager.allowRTL(true);
+
+const AR: Record<string, string> = {
+  "Stores": "المتاجر", "Orders": "طلباتي", "Account": "حسابي", "Search": "بحث", "No products found.": "لا توجد منتجات.",
+  "Sign in": "تسجيل الدخول", "Sign out": "تسجيل الخروج", "Email": "البريد الإلكتروني", "Password": "كلمة المرور",
+  "Create an account": "إنشاء حساب", "Forgot your password?": "نسيت كلمة المرور؟", "Or": "أو",
+  "Continue with Google": "المتابعة باستخدام جوجل", "Continue with Apple": "المتابعة باستخدام آبل",
+  "Sign in to see your orders": "سجّل الدخول لترى طلباتك", "No orders yet.": "لا توجد طلبات بعد.",
+  "Buy": "اشترِ", "Request a quote": "اطلب عرض سعر", "From": "من", "Description": "الوصف", "Highlights": "المميزات",
+  "Specifications": "المواصفات", "Questions": "أسئلة", "Choose an option": "اختر خيارًا", "Warranty": "الضمان", "year warranty": "سنة ضمان",
+  "A platform fee of {n}% is added at payment.": "تُضاف رسوم منصة {n}% عند الدفع.",
+  "Delivery address": "عنوان التوصيل", "Full name": "الاسم الكامل", "Phone": "الجوال", "Address": "العنوان", "City": "المدينة",
+  "Invoice": "الفاتورة", "Platform fee": "رسوم المنصة", "Total to pay": "الإجمالي المطلوب", "Place order": "تأكيد الطلب", "Pay now": "ادفع الآن",
+  "Order": "الطلب", "Status": "الحالة", "Loading...": "جارٍ التحميل...", "Try again": "حاول مرة أخرى",
+  "You are offline. Check your connection.": "لا يوجد اتصال. تحقق من الإنترنت.", "Something went wrong.": "حدث خطأ ما.",
+  "Delete my account": "حذف حسابي", "Type DELETE to confirm": "اكتب DELETE للتأكيد", "Cancel": "إلغاء", "Delete": "حذف",
+  "This removes your personal details for good. Your past orders stay as records without your name.": "يحذف هذا بياناتك الشخصية نهائيًا. تبقى طلباتك السابقة سجلات بلا اسمك.",
+  "Your order is placed.": "تم تسجيل طلبك.", "Payment opens in your browser.": "يفتح الدفع في المتصفح.",
+  "Notifications": "الإشعارات", "Allow notifications to hear when your order moves.": "فعّل الإشعارات لتعرف عند تقدّم طلبك.",
+  "Track an order": "تتبّع طلبًا", "Shipped": "تم الشحن", "Paid": "مدفوع", "Ordered": "تم الطلب", "Delivered": "تم التسليم",
+  "Waiting for payment": "بانتظار الدفع", "Completed": "مكتمل", "Cancelled": "ملغى", "In progress": "قيد التنفيذ",
+  "Free": "مجاني", "Not signed in": "غير مسجّل", "Open the website": "فتح الموقع",
+};
+
+/** Translates a phrase. `{n}`-style holes are filled from `vars`. */
+export function t(text: string, vars?: Record<string, string | number>): string {
+  const base = isArabic() ? (AR[text] ?? text) : text;
+  return vars ? base.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? "")) : base;
+}
+
+export function money(value: number | string, currency: string): string {
+  const n = Number(value);
+  try {
+    return new Intl.NumberFormat(isArabic() ? "ar" : "en", { style: "currency", currency, maximumFractionDigits: 2 }).format(n);
+  } catch {
+    return `${n.toFixed(2)} ${currency}`;
+  }
+}
