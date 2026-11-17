@@ -153,6 +153,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   if (hasRole(user, "customer")) {
     items.push({ title: "Installation requests", href: "/dashboard/installations", icon: "jobs" });
     items.push({ title: "Warranties", href: "/dashboard/warranties", icon: "warranties" });
+    items.push({ title: "Account", href: "/dashboard/account", icon: "users" });
   }
 
   // Platform admins manage every industry's lists from one index page.

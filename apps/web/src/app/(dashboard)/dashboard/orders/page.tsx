@@ -13,7 +13,7 @@ import { api } from "@/services/api";
 import { resendVerification } from "@/services/auth.service";
 import { getOrders } from "@/services/platform.service";
 import type { Order, Paginated } from "@/types/platform";
-import { formatMoney, tr } from "@/lib/i18n";
+import { formatDate, formatMoney, tr } from "@/lib/i18n";
 
 export default function OrdersPage() {
   const user = useCurrentUser();
@@ -83,10 +83,10 @@ export default function OrdersPage() {
                 className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted"
               >
                 <div>
-                  <h2 className="font-semibold">{tr("Order #{id}", { id: o.id })}{o.product ? ` · ${o.product.name}` : ""}</h2>
-                  <p className="text-sm text-muted-foreground">{formatMoney(o.total_amount, o.currency)}</p>
+                  <h2 className="font-semibold">{tr("Order #{id}", { id: o.id })}{o.product ? ` · ${o.product.name}` : ""}{(o.quantity ?? 1) > 1 ? ` × ${o.quantity}` : ""}</h2>
+                  <p className="text-sm text-muted-foreground">{formatMoney(o.total_amount, o.currency)}{o.created_at ? ` · ${formatDate(o.created_at)}` : ""}</p>
                 </div>
-                <Badge variant="secondary">{statusLabel(o.status)}</Badge>
+                <Badge variant="secondary">{o.refund_status ? tr("Refunded") : statusLabel(o.status)}</Badge>
               </Link>
             ))}
           </div>
@@ -96,7 +96,7 @@ export default function OrdersPage() {
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 {tr("Previous")}
               </Button>
-              <span className="text-sm">Page {result.current_page} of {result.last_page}</span>
+              <span className="text-sm">{tr("Page {page} of {last}", { page: result.current_page, last: result.last_page })}</span>
               <Button variant="outline" size="sm" disabled={page >= result.last_page} onClick={() => setPage((p) => p + 1)}>
                 {tr("Next")}
               </Button>

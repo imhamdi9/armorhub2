@@ -49,6 +49,9 @@ export interface CatalogItem {
 export interface Order {
   id: number;
   status: string;
+  created_at?: string;
+  quantity?: number;
+  refund_status?: "pending" | "refunded" | null;
   product_id: number;
   subject_type: string | null;
   subject_id: number | null;

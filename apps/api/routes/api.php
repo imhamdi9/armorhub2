@@ -87,6 +87,12 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     // Session
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
+    Route::put('/me/profile', [\App\Http\Controllers\Api\ProfileController::class, 'update'])->middleware('throttle:30,1');
+    Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
+    Route::get('/addresses', [\App\Http\Controllers\Api\AddressController::class, 'index']);
+    Route::post('/addresses', [\App\Http\Controllers\Api\AddressController::class, 'store'])->middleware('throttle:30,1');
+    Route::put('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'update'])->whereNumber('id');
+    Route::delete('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'destroy'])->whereNumber('id');
     Route::post('/logout', [AuthController::class, 'logout']);
     // The mobile app: where to send this phone's push notifications, and deleting the account from inside the app.
     Route::post('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store'])->middleware('throttle:30,1');

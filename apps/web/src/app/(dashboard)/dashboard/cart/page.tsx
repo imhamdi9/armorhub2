@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage, fieldErrors } from "@/lib/errors";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
+import { addAddress, getAddresses, type Address } from "@/services/ops.service";
 import { checkoutCart, getCart, payPurchase, removeCartItem, setCartQuantity, type CartView } from "@/services/cart.service";
 
 const MAX = 50;
@@ -27,6 +28,15 @@ export default function CartPage() {
     try { return { ...base, ...(JSON.parse(localStorage.getItem("last-address") ?? "{}") as Partial<typeof base>) }; } catch { return base; }
   });
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<Address[]>([]);
+  const [saveIt, setSaveIt] = useState(true);
+  useEffect(() => {
+    getAddresses().then((list) => {
+      setSaved(list);
+      const d = list.find((a) => a.is_default);
+      if (d) setForm({ name: d.name, phone: d.phone, line1: d.line1, city: d.city });
+    }).catch(() => {});
+  }, []);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -50,6 +60,7 @@ export default function CartPage() {
     try {
       const purchase = await checkoutCart(form);
       try { localStorage.setItem("last-address", JSON.stringify(form)); } catch { /* storage unavailable */ }
+      if (saveIt && !saved.some((a) => a.line1 === form.line1 && a.city === form.city)) addAddress({ ...form, label: null }).catch(() => {});
       const paid = await payPurchase(purchase.id);
       if (paid.checkout_url) {
         window.location.href = paid.checkout_url;
@@ -101,6 +112,12 @@ export default function CartPage() {
 
           <form onSubmit={placeOrder} className="space-y-4 rounded-2xl border p-4 lg:sticky lg:top-4 lg:self-start" data-testid="checkout-form">
             <h2 className="text-lg font-bold">{tr("Delivery address")}</h2>
+            {saved.length > 0 && (
+              <select className="mt-2 h-10 w-full rounded-[10px] border px-2 text-sm" aria-label={tr("Saved addresses")} data-testid="saved-address" defaultValue={saved.find((a) => a.is_default)?.id ?? ""} onChange={(e) => { const a = saved.find((x) => String(x.id) === e.target.value); if (a) setForm({ name: a.name, phone: a.phone, line1: a.line1, city: a.city }); }}>
+                <option value="">{tr("New address")}</option>
+                {saved.map((a) => <option key={a.id} value={a.id}>{a.label || a.name} · {a.line1}</option>)}
+              </select>
+            )}
             <div><Label htmlFor="c-name">{tr("Full name")}</Label><Input id="c-name" required value={form.name} onChange={set("name")} />{err("name")}</div>
             <div><Label htmlFor="c-phone">{tr("Mobile number")}</Label><Input id="c-phone" required inputMode="tel" value={form.phone} onChange={set("phone")} />{err("phone")}</div>
             <div><Label htmlFor="c-line1">{tr("Address")}</Label><Input id="c-line1" required value={form.line1} onChange={set("line1")} />{err("line1")}</div>
@@ -112,6 +129,7 @@ export default function CartPage() {
               <div className="flex justify-between text-base font-bold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(cart.payable_amount, cart.currency ?? "")}</dd></div>
             </dl>
             {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saveIt} onChange={(e) => setSaveIt(e.target.checked)} />{tr("Save this address for next time")}</label>
             <Button type="submit" className="w-full" disabled={busy || !cart.can_checkout}>{tr("Place order and pay")}</Button>
             {!cart.can_checkout && <p className="text-xs text-muted-foreground">{tr("Remove the items that cannot be bought to continue.")}</p>}
           </form>

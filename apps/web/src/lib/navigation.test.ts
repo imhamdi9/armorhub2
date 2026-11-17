@@ -117,7 +117,7 @@ describe("buildNavigation", () => {
   });
 
   it("still works without an industry or a user", () => {
-    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Garage", "Price requests", "Shop", "Installation requests", "Warranties"]);
+    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Garage", "Price requests", "Shop", "Installation requests", "Warranties", "Account"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
   });
 

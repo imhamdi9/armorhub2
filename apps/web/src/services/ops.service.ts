@@ -91,3 +91,12 @@ export const getBooking = async (jobId: number) => (await api.get<{ booking: Boo
 export const getSlots = async (jobId: number) => (await api.get<SlotsView>(`/installation-requests/${jobId}/slots`)).data;
 export const bookSlot = async (jobId: number, starts_at: string) => (await api.post(`/installation-requests/${jobId}/booking`, { starts_at })).data;
 export const rescheduleSlot = async (jobId: number, starts_at: string) => (await api.put(`/installation-requests/${jobId}/booking`, { starts_at })).data;
+
+export interface Address { id: number; label: string | null; name: string; phone: string; line1: string; line2: string | null; city: string; region: string | null; postal_code: string | null; is_default: boolean }
+export const getAddresses = async () => (await api.get<Address[]>("/addresses")).data;
+export const addAddress = async (body: Partial<Address>) => (await api.post<Address>("/addresses", body)).data;
+export const updateAddress = async (id: number, body: Partial<Address>) => (await api.put<Address>(`/addresses/${id}`, body)).data;
+export const removeAddress = async (id: number) => (await api.delete(`/addresses/${id}`)).data;
+export const saveProfile = async (body: { name?: string; phone?: string | null }) => (await api.put<{ name: string; phone: string | null }>("/me/profile", body)).data;
+export const changePassword = async (body: { current_password: string; password: string; password_confirmation: string }) => (await api.put<{ message: string }>("/me/password", body)).data;
+export const deleteAccount = async (body: { password?: string; confirm?: string }) => (await api.delete("/me", { data: body })).data;
