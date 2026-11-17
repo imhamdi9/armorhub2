@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit, COUNTRY_NAMES } from "@/components/public/landing";
 import { Faq } from "@/components/public/faq";
+import { MarketRedirect } from "@/components/public/market-redirect";
 import { PartnersShowcase } from "@/components/public/showcase";
 import { PublicShell } from "@/components/public/shell";
 import { SiteProvider, useSiteFlag, useEditable, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
@@ -42,6 +43,7 @@ const STEPS = [
 export function PlatformHome({ stores, showcase, site, editing = false, unavailable = false }: { stores: PublicStoreCard[]; showcase: PublicShowcase; site?: SiteContent; editing?: boolean; unavailable?: boolean }) {
   return (
     <SiteProvider content={site ?? { home: {}, brand: {}, nav: {} }} editing={editing}>
+      {!editing && <Suspense fallback={null}><MarketRedirect stores={stores} /></Suspense>}
       <PlatformHomeBody stores={stores} showcase={showcase} unavailable={unavailable} />
     </SiteProvider>
   );

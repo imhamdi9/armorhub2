@@ -6,9 +6,11 @@ import { Platform } from "react-native";
 import { api } from "@/api";
 
 // While the app is open a notification still shows as a banner.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldPlaySound: false, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }),
-});
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({ shouldPlaySound: false, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }),
+  });
+}
 
 let registered: string | null = null;
 
@@ -18,7 +20,7 @@ let registered: string | null = null;
  */
 export async function registerForPush(): Promise<void> {
   try {
-    if (!Device.isDevice) return;
+    if (Platform.OS === "web" || !Device.isDevice) return;
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     if (!projectId) return;
 

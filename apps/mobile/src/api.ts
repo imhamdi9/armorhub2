@@ -1,22 +1,20 @@
-import * as SecureStore from "expo-secure-store";
-
 import { API_URL } from "@/config";
+import { storeGet, storeRemove, storeSet } from "@/storage";
 
 const TOKEN_KEY = "armorhub.token";
 
 let token: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
-/** The sign-in token lives only in the phone's secure storage (Keychain / Keystore), never in plain files. */
 export async function loadToken() {
-  token = await SecureStore.getItemAsync(TOKEN_KEY);
+  token = await storeGet(TOKEN_KEY);
   return token;
 }
 
 export async function saveToken(value: string | null) {
   token = value;
-  if (value) await SecureStore.setItemAsync(TOKEN_KEY, value);
-  else await SecureStore.deleteItemAsync(TOKEN_KEY);
+  if (value) await storeSet(TOKEN_KEY, value);
+  else await storeRemove(TOKEN_KEY);
 }
 
 export const hasToken = () => token !== null;

@@ -2,6 +2,9 @@ import * as WebBrowser from "expo-web-browser";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Picture, Price } from "@/components/brand";
 
 import { api } from "@/api";
 import { Button, Card, Field, Loading, Problem, messageOf } from "@/components/ui";
@@ -86,38 +89,68 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-      <Text style={s.title}>{p.name}</Text>
+    <View style={{ flex: 1, backgroundColor: color.bone }}>
+      <View style={s.steps}>
+        {[t("Address"), t("Review"), t("Pay")].map((label, i) => (
+          <View key={label} style={{ flex: 1, gap: 6 }}>
+            <View style={[s.stepBar, i === 0 && { backgroundColor: color.blue }]} />
+            <Text style={[s.stepText, i === 0 && { color: color.navy }]}>{label}</Text>
+          </View>
+        ))}
+      </View>
+      <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+        {goods && (
+          <Card style={{ gap: 12 }}>
+            <Text style={s.section}>{t("Delivering to {name}", { name: form.name || user.name })}</Text>
+            <Field label={t("Full name")} value={form.name} onChangeText={set("name")} error={err("name")} autoComplete="name" />
+            <Field label={t("Phone")} value={form.phone} onChangeText={set("phone")} error={err("phone")} keyboardType="phone-pad" autoComplete="tel" />
+            <Field label={t("Address")} value={form.line1} onChangeText={set("line1")} error={err("line1")} autoComplete="street-address" />
+            <Field label={t("City")} value={form.city} onChangeText={set("city")} error={err("city")} />
+          </Card>
+        )}
 
-      {goods && (
-        <View style={{ gap: 12 }}>
-          <Text style={s.section}>{t("Delivery address")}</Text>
-          <Field label={t("Full name")} value={form.name} onChangeText={set("name")} error={err("name")} autoComplete="name" />
-          <Field label={t("Phone")} value={form.phone} onChangeText={set("phone")} error={err("phone")} keyboardType="phone-pad" autoComplete="tel" />
-          <Field label={t("Address")} value={form.line1} onChangeText={set("line1")} error={err("line1")} autoComplete="street-address" />
-          <Field label={t("City")} value={form.city} onChangeText={set("city")} error={err("city")} />
-        </View>
-      )}
+        <Card style={{ gap: 10 }}>
+          <Text style={s.section}>{t("Your item")}</Text>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+            <Picture product={p} style={{ width: 68, height: 68 }} letterSize={28} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={s.itemName} numberOfLines={2}>{p.name}{chosen && options.length > 1 ? ` · ${chosen.target}` : ""}</Text>
+              <Price amount={price} was={p.compare_at_price} currency={p.currency} />
+            </View>
+          </View>
+        </Card>
 
-      <Card style={{ gap: 8 }}>
-        <View style={s.row}><Text style={s.key}>{t("Invoice")}</Text><Text style={s.val}>{money(price, p.currency)}</Text></View>
-        {fee > 0 && <View style={s.row}><Text style={s.key}>{t("Platform fee")} ({data.customer_fee_percentage}%)</Text><Text style={s.val}>{money(fee, p.currency)}</Text></View>}
-        {goods && <View style={s.row}><Text style={[s.key, s.total]}>{t("Total to pay")}</Text><Text style={[s.val, s.total]}>{money(price + fee, p.currency)}</Text></View>}
-      </Card>
+        <Card style={{ gap: 8 }}>
+          <Text style={s.section}>{t("Order summary")}</Text>
+          <View style={s.row}><Text style={s.key}>{t("Items")}</Text><Text style={s.val}>{money(price, p.currency)}</Text></View>
+          {goods && <View style={s.row}><Text style={s.key}>{t("Delivery")}</Text><Text style={[s.val, { color: color.green }]}>{t("Free")}</Text></View>}
+          {fee > 0 && <View style={s.row}><Text style={s.key}>{t("Platform fee")} ({data.customer_fee_percentage}%)</Text><Text style={s.val}>{money(fee, p.currency)}</Text></View>}
+          {goods && <View style={[s.row, s.totalRow]}><Text style={s.total}>{t("Total")}</Text><Text style={s.total}>{money(price + fee, p.currency)}</Text></View>}
+        </Card>
+        {message ? <Text style={s.message} accessibilityRole="alert">{message}</Text> : null}
+      </ScrollView>
 
-      {message ? <Text style={s.message} accessibilityRole="alert">{message}</Text> : null}
-      <Button title={goods ? t("Place order") : t("Request a quote")} busy={busy} disabled={!chosen?.target_id || (goods && (!form.name || !form.phone || !form.line1 || !form.city))} onPress={place} />
-    </ScrollView>
+      <SafeAreaView edges={["bottom"]} style={s.bar}>
+        <Button title={goods ? t("Place order") : t("Request a quote")} busy={busy} disabled={!chosen?.target_id || (goods && (!form.name || !form.phone || !form.line1 || !form.city))} onPress={place} style={{ alignSelf: "stretch" }} />
+        {goods && <Text style={s.hint}>{t("Card payment opens in the secure browser")}</Text>}
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { padding: 16, gap: 16 },
-  title: { fontSize: 22, fontWeight: "800", color: color.navy },
+  steps: { flexDirection: "row", gap: 6, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12, backgroundColor: "#fff" },
+  stepBar: { height: 5, borderRadius: 3, backgroundColor: color.fog },
+  stepText: { fontSize: 12, fontWeight: "600", color: color.slate },
+  wrap: { padding: 14, gap: 12, paddingBottom: 130 },
   section: { fontSize: 16, fontWeight: "800", color: color.navy },
+  itemName: { fontSize: 14, fontWeight: "600", color: color.navy },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  key: { color: color.slate, fontSize: 15 },
-  val: { color: color.ink, fontSize: 15, fontWeight: "600" },
-  total: { color: color.navy, fontWeight: "800", fontSize: 17 },
+  key: { color: "#33415f", fontSize: 14 },
+  val: { color: color.ink, fontSize: 14, fontWeight: "600" },
+  totalRow: { borderTopWidth: 1, borderTopColor: color.fog, paddingTop: 10, marginTop: 4 },
+  total: { color: color.navy, fontWeight: "800", fontSize: 18 },
   message: { color: color.red, fontSize: 14 },
+  bar: { position: "absolute", bottom: 0, start: 0, end: 0, paddingHorizontal: 14, paddingTop: 10, backgroundColor: "#fff", borderTopWidth: 1, borderColor: color.fog, gap: 6 },
+  hint: { textAlign: "center", fontSize: 11, color: color.slate, paddingBottom: 4 },
 });

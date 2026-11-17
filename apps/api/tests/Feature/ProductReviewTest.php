@@ -64,4 +64,15 @@ class ProductReviewTest extends TestCase
         // The public page is cached for a minute in browsers, not on the server, so it updates at once here.
         $this->assertSame(0, $this->getJson($page)->json('reviews.count'));
     }
+
+    public function test_product_cards_carry_the_stars_for_the_listing(): void
+    {
+        $list = fn () => $this->getJson("/api/public/storefronts/{$this->customer->company->slug}/products")->assertOk()->json('data.0.rating');
+        $this->assertSame(['count' => 0, 'average' => null], $list());
+
+        $this->completeOrder();
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/products/{$this->product->id}/review", ['rating' => 4, 'comment' => 'Solid'])->assertCreated();
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->assertEquals(['count' => 1, 'average' => 4.0], $list());
+    }
 }

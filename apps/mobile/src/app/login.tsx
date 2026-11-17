@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api } from "@/api";
+import { Logo } from "@/components/brand";
 import { Button, Field, messageOf } from "@/components/ui";
 import { GOOGLE, WEB_URL } from "@/config";
 import { t } from "@/i18n";
@@ -77,7 +78,8 @@ export default function LoginScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-      <Text style={s.title}>{t("Sign in")}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><Logo size={34} /><Text style={s.brand}>ArmorHub</Text></View>
+      <Text style={s.title}>{t("Welcome back")}</Text>
       <Field label={t("Email")} value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
       <Field label={t("Password")} value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" textContentType="password" error={error ?? undefined} />
       <Button title={t("Sign in")} busy={busy} disabled={!email || !password} onPress={submit} />
@@ -98,6 +100,7 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   wrap: { padding: 20, gap: 16 },
-  title: { fontSize: 30, fontWeight: "800", color: color.navy },
+  brand: { fontSize: 20, fontWeight: "800", color: color.navy },
+  title: { fontSize: 30, fontWeight: "800", color: color.navy, letterSpacing: -0.8 },
   or: { textAlign: "center", color: color.slate },
 });

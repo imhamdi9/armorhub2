@@ -1,17 +1,18 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
 
+import { TabIcon } from "@/components/brand";
 import { t } from "@/i18n";
 import { color } from "@/theme";
 
-const icon = (glyph: string) => ({ focused }: { focused: boolean }) => <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.55 }}>{glyph}</Text>;
-
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: color.blue, tabBarInactiveTintColor: color.slate, headerTitleStyle: { color: color.navy, fontWeight: "800" }, headerShadowVisible: false }}>
-      <Tabs.Screen name="index" options={{ title: t("Stores"), tabBarIcon: icon("🛍️") }} />
-      <Tabs.Screen name="orders" options={{ title: t("Orders"), tabBarIcon: icon("📦") }} />
-      <Tabs.Screen name="account" options={{ title: t("Account"), tabBarIcon: icon("👤") }} />
+    <Tabs screenOptions={{
+      headerShown: false, tabBarActiveTintColor: color.blue, tabBarInactiveTintColor: color.slate,
+      tabBarLabelStyle: { fontSize: 11, fontWeight: "600" }, tabBarStyle: { height: 64, paddingTop: 6, borderTopColor: color.fog, backgroundColor: "#fff" },
+    }}>
+      <Tabs.Screen name="index" options={{ title: t("Home"), tabBarIcon: ({ focused }) => <TabIcon name="home" active={focused} /> }} />
+      <Tabs.Screen name="orders" options={{ title: t("Orders"), tabBarIcon: ({ focused }) => <TabIcon name="orders" active={focused} /> }} />
+      <Tabs.Screen name="account" options={{ title: t("Account"), tabBarIcon: ({ focused }) => <TabIcon name="account" active={focused} /> }} />
     </Tabs>
   );
 }

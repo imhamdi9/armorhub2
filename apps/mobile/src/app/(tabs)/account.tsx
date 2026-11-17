@@ -2,6 +2,7 @@ import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, Card, Field, messageOf } from "@/components/ui";
 import { WEB_URL } from "@/config";
@@ -18,10 +19,13 @@ export default function AccountScreen() {
 
   if (!user) {
     return (
-      <View style={s.center}>
-        <Text style={s.muted}>{t("Not signed in")}</Text>
-        <Button title={t("Sign in")} onPress={() => router.push("/login")} style={{ marginTop: 16, alignSelf: "stretch" }} />
-      </View>
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#fff" }}>
+        <Text style={s.title}>{t("Account")}</Text>
+        <View style={s.center}>
+          <Text style={s.muted}>{t("Not signed in")}</Text>
+          <Button title={t("Sign in")} onPress={() => router.push("/login")} style={{ marginTop: 16, alignSelf: "stretch" }} />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -39,7 +43,9 @@ export default function AccountScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#fff" }}>
+    <Text style={s.title}>{t("Account")}</Text>
+    <ScrollView style={{ backgroundColor: color.bone }} contentContainerStyle={{ padding: 14, gap: 14 }}>
       <Card style={{ gap: 4 }}>
         <Text style={s.name}>{user.name}</Text>
         <Text style={s.muted}>{user.email}</Text>
@@ -59,10 +65,12 @@ export default function AccountScreen() {
         </Card>
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
+  title: { fontSize: 26, fontWeight: "800", color: color.navy, letterSpacing: -0.6, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   name: { fontSize: 20, fontWeight: "800", color: color.navy },
   muted: { fontSize: 14, color: color.slate },

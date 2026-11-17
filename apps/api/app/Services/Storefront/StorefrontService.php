@@ -152,7 +152,17 @@ class StorefrontService
             'in_stock' => $product->fulfilment !== 'armorhub' || app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product) > 0,
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
+            'rating' => $this->rating($product),
         ];
+    }
+
+    /** The stars shown on a product card: the average of the published reviews and how many there are (null average while there are none). */
+    private function rating(Product $product): array
+    {
+        $row = \App\Models\ProductReview::where('product_id', $product->id)->published()->selectRaw('count(*) as c, avg(rating) as a')->first();
+        $count = (int) ($row?->c ?? 0);
+
+        return ['count' => $count, 'average' => $count > 0 ? round((float) $row->a, 1) : null];
     }
 
     /** The lowest public price: the cheapest rule, or the base price when no rules exist. */

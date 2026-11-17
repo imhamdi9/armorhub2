@@ -9,7 +9,7 @@ export function Button({ title, onPress, kind = "primary", busy, disabled, style
   return (
     <Pressable accessibilityRole="button" onPress={onPress} disabled={off}
       style={({ pressed }) => [s.button, kind === "primary" && s.primary, kind === "outline" && s.outline, kind === "danger" && s.danger, off && { opacity: 0.55 }, pressed && { transform: [{ scale: 0.98 }] }, style]}>
-      {busy ? <ActivityIndicator color={kind === "outline" ? color.blue : "#fff"} /> : <Text style={[s.buttonText, kind === "outline" && { color: color.blue }]}>{title}</Text>}
+      {busy ? <ActivityIndicator color={kind === "outline" ? color.navy : "#fff"} /> : <Text style={[s.buttonText, kind === "outline" && { color: color.navy }]}>{title}</Text>}
     </Pressable>
   );
 }
@@ -56,13 +56,13 @@ export function messageOf(error: unknown): string {
 const s = StyleSheet.create({
   button: { minHeight: 52, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
   primary: { backgroundColor: color.blue },
-  outline: { borderWidth: 2, borderColor: color.blue, backgroundColor: "#fff" },
+  outline: { borderWidth: 2, borderColor: color.navy, backgroundColor: "#fff" },
   danger: { backgroundColor: color.red },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   label: { fontSize: 13, fontWeight: "600", color: color.slate },
   input: { minHeight: 50, borderWidth: 1.5, borderColor: color.fog, borderRadius: radius.field, paddingHorizontal: 14, fontSize: 16, color: color.ink, backgroundColor: "#fff" },
   error: { color: color.red, fontSize: 12 },
-  card: { backgroundColor: "#fff", borderRadius: radius.card, borderWidth: 1, borderColor: color.fog, padding: 16 },
+  card: { backgroundColor: "#fff", borderRadius: radius.big - 2, borderWidth: 1, borderColor: color.fog, padding: 16 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   problem: { fontSize: 16, color: color.slate, textAlign: "center" },
 });

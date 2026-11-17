@@ -2,25 +2,27 @@ import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/api";
+import { Picture, Price, SaveTag, Stars, savingPercent } from "@/components/brand";
 import { Button, Card, Loading, Problem } from "@/components/ui";
 import { WEB_URL, imageUrl } from "@/config";
 import { money, t } from "@/i18n";
 import { useSession } from "@/session";
-import { color } from "@/theme";
+import { color, radius } from "@/theme";
 import type { ProductPage } from "@/types";
 
-const WIDTH = Dimensions.get("window").width;
-
-/** A product: pictures, price, what it offers and what the seller wrote. Buying needs an account (the same one as on the website). */
+/** A product, laid out for buying: pictures, price, options, what is promised, and a bar that stays at the bottom with the total and the buy button. */
 export default function ProductScreen() {
   const { slug, id } = useLocalSearchParams<{ slug: string; id: string }>();
   const { user } = useSession();
+  const { width } = useWindowDimensions();
   const [data, setData] = useState<ProductPage | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [picked, setPicked] = useState<number | null>(null);
+  const [slide, setSlide] = useState(0);
 
   const load = useCallback(() => {
     setError(null);
@@ -36,90 +38,118 @@ export default function ProductScreen() {
   const shown = picked !== null ? (options[picked]?.price ?? p.from_price) : p.from_price;
   const goods = !!p.requires_shipping;
   const page = p.page ?? {};
-  // Buying together with an installation offer is chosen on the website in this version.
   const onWebOnly = goods && p.installation === "required";
   const fee = data.customer_fee_percentage ?? 0;
+  const save = savingPercent(shown, p.compare_at_price);
+  const photos = p.images?.length ? p.images : [null];
+  const galleryWidth = width - 28;
+  const stock = p.in_stock !== false;
 
   function buy() {
     if (!user) return router.push("/login");
     router.push({ pathname: "/checkout/[slug]/[id]", params: { slug, id: String(p.id), option: picked !== null ? String(picked) : "" } });
   }
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => setSlide(Math.round(e.nativeEvent.contentOffset.x / galleryWidth));
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-          {(p.images?.length ? p.images : [null]).map((src, i) => (
-            imageUrl(src) ? <Image key={i} source={imageUrl(src)} style={{ width: WIDTH, height: WIDTH }} contentFit="cover" /> : <View key={i} style={[{ width: WIDTH, height: WIDTH }, s.noImg]}><Text style={s.letter}>{p.name.slice(0, 1)}</Text></View>
-          ))}
-        </ScrollView>
+    <View style={{ flex: 1, backgroundColor: color.bone }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }}>
+        <View style={[s.gallery, { width: galleryWidth }]}>
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
+            {photos.map((src, i) => (
+              imageUrl(src) ? <Image key={i} source={imageUrl(src)} style={{ width: galleryWidth, height: 300 }} contentFit="cover" /> : <Picture key={i} product={p} style={{ width: galleryWidth, height: 300, borderRadius: 0 }} letterSize={96} />
+            ))}
+          </ScrollView>
+          <SaveTag percent={save} style={{ position: "absolute", top: 14, start: 14 }} />
+          {photos.length > 1 && <View style={s.dots}>{photos.map((_, i) => <View key={i} style={[s.dot, i === slide && s.dotOn]} />)}</View>}
+        </View>
 
-        <View style={{ padding: 16, gap: 14 }}>
-          <Text style={s.name}>{p.name}</Text>
-          {(page.headline || p.brand) ? <Text style={s.muted}>{page.headline ?? p.brand}</Text> : null}
-          <Text style={s.price}>{!goods && options.length > 0 && picked === null ? `${t("From")} ` : ""}{money(shown, p.currency)}</Text>
-          {fee > 0 && <Text style={s.muted}>{t("A platform fee of {n}% is added at payment.", { n: fee })}</Text>}
+        <View style={s.box}>
+          {(p.seller || p.brand) ? <Text style={s.by}>{[p.brand, p.seller].filter(Boolean).join(" · ")}</Text> : null}
+          <Text style={s.title}>{page.headline ? `${p.name}: ${page.headline}` : p.name}</Text>
+          <Stars average={p.rating?.average} count={p.rating?.count} />
+          <View style={{ marginTop: 6 }}><Price amount={shown} was={p.compare_at_price} currency={p.currency} size={32} /></View>
+          <Text style={s.note}>{t("Includes VAT")}{fee > 0 ? ` · ${t("A platform fee of {n}% is added at payment.", { n: fee })}` : ""}</Text>
 
           {options.length > 1 && (
-            <View style={{ gap: 8 }}>
-              <Text style={s.section}>{t("Choose an option")}</Text>
-              <View style={s.pills}>
-                {options.map((o, i) => (
-                  <Button key={o.target} title={o.target} kind={picked === i ? "primary" : "outline"} onPress={() => setPicked(picked === i ? null : i)} style={{ minHeight: 42, paddingHorizontal: 16 }} />
-                ))}
-              </View>
+            <View style={s.opts}>
+              {options.map((o, i) => (
+                <Button key={o.target} title={o.target} kind="outline" onPress={() => setPicked(picked === i ? null : i)}
+                  style={[s.opt, picked === i && s.optOn] as never} />
+              ))}
             </View>
           )}
 
-          {p.highlights && p.highlights.length > 0 && (
-            <Card style={{ gap: 6 }}>
-              <Text style={s.section}>{t("Highlights")}</Text>
-              {p.highlights.map((h) => <Text key={h} style={s.body}>✓ {h}</Text>)}
-              {p.warranty_years ? <Text style={s.body}>🛡 {p.warranty_years} {t("year warranty")}</Text> : null}
-            </Card>
-          )}
-
-          {p.description ? <View style={{ gap: 6 }}><Text style={s.section}>{t("Description")}</Text><Text style={s.body}>{p.description}</Text></View> : null}
-
-          {page.specs && page.specs.length > 0 && (
-            <View style={{ gap: 6 }}>
-              <Text style={s.section}>{t("Specifications")}</Text>
-              {page.specs.map((r) => <View key={r.label} style={s.row}><Text style={s.rowKey}>{r.label}</Text><Text style={s.rowVal}>{r.value}</Text></View>)}
-            </View>
-          )}
-
-          {page.faqs && page.faqs.length > 0 && (
-            <View style={{ gap: 10 }}>
-              <Text style={s.section}>{t("Questions")}</Text>
-              {page.faqs.map((f) => <View key={f.q} style={{ gap: 2 }}><Text style={s.q}>{f.q}</Text><Text style={s.body}>{f.a}</Text></View>)}
-            </View>
-          )}
+          <Text style={[s.stock, !stock && { color: color.red }]}>{stock ? t("In stock") : t("Out of stock")}{goods && stock ? ` · ${t("Free delivery")}` : ""}</Text>
+          <View style={s.trust}>
+            <Trust icon="🔒" text={t("Secure payment")} />
+            <Trust icon="↩" text={t("Cancel before you pay")} />
+            {p.warranty_years ? <Trust icon="🛡" text={`${p.warranty_years} ${t("year warranty")}`} /> : null}
+          </View>
         </View>
+
+        {p.highlights && p.highlights.length > 0 && (
+          <Card style={s.block}>
+            <Text style={s.h}>{t("Highlights")}</Text>
+            {p.highlights.map((h) => <Text key={h} style={s.body}>✓  {h}</Text>)}
+          </Card>
+        )}
+        {p.description ? <Card style={s.block}><Text style={s.h}>{t("Description")}</Text><Text style={s.body}>{p.description}</Text></Card> : null}
+        {page.specs && page.specs.length > 0 && (
+          <Card style={s.block}>
+            <Text style={s.h}>{t("Specifications")}</Text>
+            {page.specs.map((r) => <View key={r.label} style={s.spec}><Text style={s.specKey}>{r.label}</Text><Text style={s.specVal}>{r.value}</Text></View>)}
+          </Card>
+        )}
+        {page.faqs && page.faqs.length > 0 && (
+          <Card style={s.block}>
+            <Text style={s.h}>{t("Questions")}</Text>
+            {page.faqs.map((f) => <View key={f.q} style={{ gap: 2, marginBottom: 8 }}><Text style={s.q}>{f.q}</Text><Text style={s.body}>{f.a}</Text></View>)}
+          </Card>
+        )}
       </ScrollView>
 
-      <View style={s.bar}>
-        <Text style={s.barPrice}>{money(shown, p.currency)}</Text>
+      <SafeAreaView edges={["bottom"]} style={s.bar}>
+        <View>
+          <Text style={s.barLabel}>{t("Total")}</Text>
+          <Text style={s.barTotal}>{money(shown, p.currency)}</Text>
+        </View>
         {onWebOnly
           ? <Button title={t("Open the website")} kind="outline" onPress={() => Linking.openURL(`${WEB_URL}/s/${slug}/products/${p.id}`)} style={{ flex: 1 }} />
-          : <Button title={goods ? t("Buy") : t("Request a quote")} onPress={buy} disabled={p.in_stock === false} style={{ flex: 1 }} />}
-      </View>
+          : <Button title={goods ? t("Buy now") : t("Request a quote")} onPress={buy} disabled={!stock} style={{ flex: 1 }} />}
+      </SafeAreaView>
     </View>
   );
 }
 
+function Trust({ icon, text }: { icon: string; text: string }) {
+  return <View style={s.trustItem}><Text style={{ fontSize: 18 }}>{icon}</Text><Text style={s.trustText}>{text}</Text></View>;
+}
+
 const s = StyleSheet.create({
-  noImg: { backgroundColor: color.wash, alignItems: "center", justifyContent: "center" },
-  letter: { fontSize: 72, color: color.blue, fontWeight: "800" },
-  name: { fontSize: 24, fontWeight: "800", color: color.navy },
-  muted: { fontSize: 14, color: color.slate },
-  price: { fontSize: 26, fontWeight: "800", color: color.blue },
-  section: { fontSize: 16, fontWeight: "800", color: color.navy },
+  gallery: { alignSelf: "center", marginTop: 8, borderRadius: radius.big, overflow: "hidden", borderWidth: 1, borderColor: color.fog, backgroundColor: color.wash },
+  dots: { position: "absolute", bottom: 12, alignSelf: "center", flexDirection: "row", gap: 5 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#c4d0ea" },
+  dotOn: { width: 20, backgroundColor: color.navy },
+  box: { backgroundColor: "#fff", borderRadius: radius.big, borderWidth: 1, borderColor: color.fog, padding: 16, marginHorizontal: 14, marginTop: 10, gap: 6 },
+  by: { color: color.blue, fontWeight: "700", fontSize: 12 },
+  title: { fontSize: 19, fontWeight: "800", color: color.navy, lineHeight: 24, letterSpacing: -0.3 },
+  note: { fontSize: 12, color: color.slate },
+  opts: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  opt: { minHeight: 38, paddingHorizontal: 14, borderWidth: 1.5, borderColor: color.fog },
+  optOn: { borderColor: color.blue, backgroundColor: color.wash },
+  stock: { color: color.green, fontWeight: "700", fontSize: 14, marginTop: 8 },
+  trust: { flexDirection: "row", gap: 6, marginTop: 8 },
+  trustItem: { flex: 1, backgroundColor: color.bone, borderWidth: 1, borderColor: color.fog, borderRadius: 16, paddingVertical: 9, paddingHorizontal: 4, alignItems: "center", gap: 2 },
+  trustText: { fontSize: 11, fontWeight: "600", color: "#33415f", textAlign: "center" },
+  block: { marginHorizontal: 14, marginTop: 10, gap: 6 },
+  h: { fontSize: 16, fontWeight: "800", color: color.navy },
   body: { fontSize: 15, color: color.ink, lineHeight: 22 },
   q: { fontSize: 15, fontWeight: "700", color: color.navy },
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  row: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderColor: color.fog, paddingVertical: 8 },
-  rowKey: { color: color.slate, fontSize: 14, flex: 1 },
-  rowVal: { color: color.ink, fontSize: 14, fontWeight: "600", flex: 1, textAlign: "right" },
-  bar: { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", gap: 14, padding: 16, backgroundColor: "#fff", borderTopWidth: 1, borderColor: color.fog },
-  barPrice: { fontSize: 18, fontWeight: "800", color: color.navy },
+  spec: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderColor: color.fog, paddingVertical: 8 },
+  specKey: { color: color.slate, fontSize: 14, flex: 1 },
+  specVal: { color: color.ink, fontSize: 14, fontWeight: "600", flex: 1, textAlign: "right" },
+  bar: { position: "absolute", bottom: 0, start: 0, end: 0, flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 14, paddingTop: 10, backgroundColor: "#fff", borderTopWidth: 1, borderColor: color.fog },
+  barLabel: { fontSize: 12, color: color.slate },
+  barTotal: { fontSize: 20, fontWeight: "800", color: color.navy, letterSpacing: -0.5 },
 });

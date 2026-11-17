@@ -4,6 +4,7 @@ export type Product = {
   id: number; name: string; brand: string | null; category: string | null; description: string | null; warranty_years: number | null;
   from_price: number; currency: string; images?: string[]; compare_at_price?: number | null; requires_shipping?: boolean;
   installation?: "none" | "optional" | "required"; seller?: string | null; in_stock?: boolean;
+  rating?: { count: number; average: number | null };
 };
 
 export type PageContent = {
@@ -35,3 +36,5 @@ export const STATUS_TEXT: Record<string, string> = {
   awaiting_payment: "Waiting for payment", paid: "Paid", completed: "Completed", cancelled: "Cancelled",
   service_in_progress: "In progress", appointment_scheduled: "In progress", pending_quotes: "In progress", quotes_received: "In progress", partner_selected: "In progress",
 };
+
+export type Showcase = { industries: { industry: { key: string; name: string }; stores: { name: string; slug: string; primary_color: string; market: string | null; products: Product[] }[] }[] };
