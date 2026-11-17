@@ -168,6 +168,7 @@ class InstallationJobs
 
             $r->update(['status' => 'paid', 'paid_at' => now(), 'proxy_extension' => $this->extension(), 'proxy_expires_at' => now()->addDays(60)]);
             CentreWalletEntry::create(['company_id' => $centre->company_id, 'partner_id' => $centre->id, 'request_id' => $r->id, 'amount' => $r->centre_amount, 'currency' => $r->currency, 'status' => 'held']);
+            app(\App\Services\Ledger\LedgerPostings::class)->installationPaid($r, (int) $centre->company_id);
             if ($r->points_used > 0) {
                 $this->reputation->earn($r->customer_id, -$r->points_used, 'redeemed', $r->id);
             }
@@ -275,6 +276,7 @@ class InstallationJobs
             $days = (int) $this->settings->get('installation.warranty_days');
             $r->update(['status' => 'released', 'released_at' => now(), 'warranty_ends_at' => now()->addDays($days)]);
             CentreWalletEntry::where('request_id', $r->id)->where('status', 'held')->update(['status' => 'available']);
+            app(\App\Services\Ledger\LedgerPostings::class)->installationReleased($r, (int) $this->centreOf($r)->company_id);
             $this->reputation->earn($r->customer_id, $this->reputation->pointsForPayment((float) $r->pay_amount), 'job', $r->id);
 
             $centre = $this->centreOf($r);
@@ -369,19 +371,27 @@ class InstallationJobs
             if ($decision === 'release') {
                 $this->release($r);
             } elseif ($decision === 'refund_full') {
+                $was = CentreWalletEntry::where('request_id', $r->id)->where('amount', '>', 0)->whereIn('status', ['held', 'available'])->first();
                 CentreWalletEntry::where('request_id', $r->id)->whereIn('status', ['held', 'available'])->update(['status' => 'void']);
+                if ($was) {
+                    app(\App\Services\Ledger\LedgerPostings::class)->installationRefunded($r, (int) $centre->company_id, (float) $was->amount, $was->status, 0.0, $pay);
+                }
                 $r->update(['status' => 'refunded', 'refund_amount' => $pay, 'refund_status' => 'pending']);
                 if ($r->points_used > 0) {
                     $this->reputation->earn($r->customer_id, $r->points_used, 'refund_reversal', $r->id);
                 }
                 $centre->forceFill(['disputes_lost' => $centre->disputes_lost + 1])->save();
             } else {
+                $was = CentreWalletEntry::where('request_id', $r->id)->where('amount', '>', 0)->whereIn('status', ['held', 'available'])->first();
                 $remaining = round((float) $r->price - $refund, 2);
                 $fee = round($remaining * (float) $r->fee_percent / 100, 2);
                 $centreAmount = round($remaining - $fee, 2);
                 $r->update(['status' => 'released', 'released_at' => now(), 'warranty_ends_at' => now()->addDays((int) $this->settings->get('installation.warranty_days')),
                     'refund_amount' => $refund, 'refund_status' => 'pending', 'fee_amount' => $fee, 'centre_amount' => $centreAmount]);
                 CentreWalletEntry::where('request_id', $r->id)->whereIn('status', ['held', 'available'])->update(['status' => 'available', 'amount' => $centreAmount]);
+                if ($was) {
+                    app(\App\Services\Ledger\LedgerPostings::class)->installationRefunded($r, (int) $centre->company_id, (float) $was->amount, $was->status, $centreAmount, (float) $refund);
+                }
                 $centre->forceFill(['disputes_lost' => $centre->disputes_lost + 1])->save();
             }
 

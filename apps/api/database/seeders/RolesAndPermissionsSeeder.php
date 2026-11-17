@@ -46,6 +46,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // The payment, shipping and fee settings of one's own market (market managers); the platform-wide ones stay with admins
     'market.settings',
+    // Running the day-to-day of a market: watching orders and requests, the business numbers (operations agents)
+    'operations.manage',
     // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
     'warehouse.manage',
     // Platform administration (admins only: they get every permission)
@@ -144,6 +146,19 @@ class RolesAndPermissionsSeeder extends Seeder
 'warehouse-staff' => [
     'warehouse.manage',
     'orders.view',
+    'dashboard.view',
+],
+
+// ArmorHub's operations agent: watches the market's orders, sellers and centres and the business numbers; cannot change settings or money.
+'operations-agent' => [
+    'operations.manage',
+    'orders.view',
+    'orders.update',
+    'partners.view',
+    'partners.update',
+    'companies.view',
+    'products.view',
+    'commissions.view',
     'dashboard.view',
 ],
 

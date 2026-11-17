@@ -93,6 +93,7 @@ class PaymentFinalizer
 
             $locked->update(['status' => OrderStatus::Paid]);
             OrderEvent::record($locked, 'paid', $by, ['amount' => (string) $locked->payable_amount]);
+            app(\App\Services\Ledger\LedgerPostings::class)->orderPaid($locked->loadMissing('product'), $commission, $partner);
 
             return [$payment, $commission];
         });

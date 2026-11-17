@@ -171,10 +171,12 @@ class SubscriptionService
         $to = $from->copy()->addMonth();
 
         // The payment provider in use charges the business; the simulated one records a simulated charge. A real provider plugs in here.
-        SubscriptionInvoice::create([
+        $invoice = SubscriptionInvoice::create([
             'subscription_id' => $sub->id, 'plan_key' => $plan->key, 'amount' => $plan->price_monthly, 'currency' => $plan->currency, 'status' => 'paid',
             'period_start' => $from->toDateString(), 'period_end' => $to->toDateString(), 'reference' => $paidReference ?? 'simulated-'.bin2hex(random_bytes(4)), 'paid_at' => now(),
         ]);
+
+        app(\App\Services\Ledger\LedgerPostings::class)->subscriptionCharged($invoice);
 
         $sub->update(['plan_key' => $plan->key, 'status' => 'active', 'period_start' => $from->toDateString(), 'period_end' => $to->toDateString(), 'auto_renew' => true]);
     }

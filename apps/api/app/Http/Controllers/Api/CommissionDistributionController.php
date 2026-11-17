@@ -68,6 +68,10 @@ class CommissionDistributionController extends Controller
             'status' => 'paid',
             'paid_at' => now(),
         ]);
+        $currency = \App\Models\Order::withoutGlobalScopes()->whereKey(\App\Models\Commission::whereKey($commissionDistribution->commission_id)->value('order_id'))->value('currency');
+        if ($currency) {
+            app(\App\Services\Ledger\LedgerPostings::class)->commissionSharePaid($commissionDistribution, $currency);
+        }
 
         return response()->json([
             'message' => 'Commission paid successfully',

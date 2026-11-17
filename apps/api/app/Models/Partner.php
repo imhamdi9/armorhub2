@@ -25,12 +25,21 @@ class Partner extends Model
      'public_profile',
      'description',
      'logo_url',
+     'service_radius_km',
+     'daily_capacity',
+     'bays',
+     'job_hours',
+     'min_job_price',
+     'accepts_requests',
+     'work_types',
     ];
 
 
     protected $casts = [
         'is_active'=>'boolean',
         'public_profile'=>'boolean',
+        'accepts_requests'=>'boolean',
+        'work_types'=>'array',
     ];
 
 

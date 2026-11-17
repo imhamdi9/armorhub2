@@ -153,6 +153,7 @@ class StorefrontService
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
             'rating' => $this->rating($product),
+            'sale_mode' => $product->sale_mode ?? 'fixed',
         ];
     }
 

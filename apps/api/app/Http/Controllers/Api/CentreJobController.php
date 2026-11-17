@@ -34,7 +34,7 @@ class CentreJobController extends Controller
         $this->jobs->releaseDue();
         $offers = InstallationOffer::where('partner_id', $this->partnerId($request))->pluck('id');
 
-        return InstallationRequest::whereIn('selected_offer_id', $offers)->findOrFail($id);
+        return InstallationRequest::whereIn('selected_offer_id', $offers)->when(! $request->user()->hasRole('partner-manager'), fn ($q) => $q->where('technician_id', $request->user()->id))->findOrFail($id);
     }
 
     public function index(Request $request)
@@ -42,7 +42,8 @@ class CentreJobController extends Controller
         $this->jobs->releaseDue();
         $offers = InstallationOffer::where('partner_id', $this->partnerId($request))->pluck('id');
 
-        return InstallationRequest::whereIn('selected_offer_id', $offers)->latest('id')->limit(100)->get()->map(fn ($r) => $this->present->forCentre($r))->values();
+        // A technician sees only the jobs given to them.
+        return InstallationRequest::whereIn('selected_offer_id', $offers)->when(! $request->user()->hasRole('partner-manager'), fn ($q) => $q->where('technician_id', $request->user()->id))->latest('id')->limit(100)->get()->map(fn ($r) => $this->present->forCentre($r))->values();
     }
 
     public function show(Request $request, int $id)
@@ -158,6 +159,7 @@ class CentreJobController extends Controller
             $w = CentreWithdrawal::create(['company_id' => $company, 'requested_by' => $request->user()->id, 'amount' => $data['amount'], 'currency' => $currency, 'method' => $data['method'],
                 'account_name' => $data['account_name'], 'account_number' => $data['account_number'], 'bank_name' => $data['bank_name'] ?? null]);
             CentreWalletEntry::create(['company_id' => $company, 'amount' => -1 * (float) $data['amount'], 'currency' => $currency, 'status' => 'in_withdrawal', 'withdrawal_id' => $w->id]);
+            app(\App\Services\Ledger\LedgerPostings::class)->withdrawalRequested($w);
             app(\App\Services\InstallationNotifier::class)->admins('A centre asked to withdraw money', "{$data['amount']} {$currency}", '/dashboard/admin/withdrawals');
 
             return response()->json(['id' => $w->id, 'status' => $w->status], 201);

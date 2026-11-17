@@ -24,9 +24,9 @@ class WarehouseService
     }
 
     /** A product kept by ArmorHub can only be bought while the warehouse holds some. */
-    public function assertInStock(Product $product): void
+    public function assertInStock(Product $product, int $quantity = 1): void
     {
-        if ($product->fulfilment === 'armorhub' && $this->unitsOf($product) < 1) {
+        if ($product->fulfilment === 'armorhub' && $this->unitsOf($product) < max(1, $quantity)) {
             throw ValidationException::withMessages(['product_id' => ['This product is out of stock.']]);
         }
     }
@@ -57,6 +57,6 @@ class WarehouseService
     {
         $warehouseId = $order->warehouse_id ?? $this->warehouseFor((int) \App\Models\Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id'))?->id;
         abort_unless($warehouseId, 422, 'This market has no open warehouse.');
-        $this->move($warehouseId, $order->product_id, -1, 'shipped', $by, 'order', $order->id);
+        $this->move($warehouseId, $order->product_id, -max(1, (int) $order->quantity), 'shipped', $by, 'order', $order->id);
     }
 }

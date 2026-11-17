@@ -44,7 +44,7 @@ class Delegation
             return [];
         }
         if ($actor->hasRole('company-owner') && $actor->company_id) {
-            return ['warehouse-staff'];
+            return ['warehouse-staff', 'operations-agent'];
         }
         if ($actor->hasRole('seller') && $actor->company_id) {
             return ['seller'];

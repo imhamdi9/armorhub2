@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { price } from "@/components/public/product-card";
 import type { ProductModel } from "@/components/public/product-page/model";
 import { ProductTile } from "@/components/shop/shop-product-card";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
+import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
+import { addToCart } from "@/services/cart.service";
 import { getMyReview, saveReview } from "@/services/platform.service";
 import { imageSrc } from "@/lib/surfaces";
 import type { PublicProduct } from "@/types/public";
@@ -204,6 +207,7 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
       {goods && mode === "none" && (
         <>
           <Link ref={cta} href={links.buy} className={cls}>{tr("Buy now")}</Link>
+          <AddToCart m={m} />
           <p className="text-center text-xs text-slate">{tr("You pay securely online and track your delivery.")}</p>
         </>
       )}
@@ -211,6 +215,7 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
         <>
           <Link ref={cta} href={links.buy} className={cls}>{tr("Buy now without installation")}</Link>
           <Link href={links.find} className={second}>{tr("Buy now and find me a suitable installation offer")}</Link>
+          <AddToCart m={m} />
           <p className="text-center text-xs text-slate">{tr("Installation is your choice. Nearby centres send you offers without seeing your details, and you pay on the platform.")}</p>
         </>
       )}
@@ -220,6 +225,33 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
           <p className="text-center text-xs text-slate" data-testid="installation-required-note">{tr("This product is sold only together with an installation offer. We ask nearby centres to send you offers first, and you can buy the product once you choose one.")}</p>
         </>
       )}
+    </div>
+  );
+}
+
+/** Puts the product (with the option chosen on the page) in the customer's cart, then opens the cart. Signed-in customers only: a guest buys it now. */
+export function AddToCart({ m }: { m: ProductModel }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!m.goods || m.mode === "required" || !m.links.signedIn) return null;
+
+  async function add() {
+    setBusy(true);
+    setError(null);
+    try {
+      await addToCart(m.p.id, m.chosen?.target_id);
+      router.push("/dashboard/cart");
+    } catch (e) {
+      setError(errorMessage(e));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <button type="button" onClick={add} disabled={busy} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
+      {error && <p role="alert" className="mt-1 text-center text-sm text-red-600">{error}</p>}
     </div>
   );
 }

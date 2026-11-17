@@ -21,6 +21,7 @@ import {
 } from "@/services/platform.service";
 import type { Order, PartnerQuote } from "@/types/platform";
 import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
+import { OrderStatusStrip } from "@/components/orders/status-strip";
 
 export default function OrderDetailPage() {
   return (
@@ -109,6 +110,7 @@ function OrderDetail() {
         <p className="font-semibold">{order.product?.name}</p>
         <p>{tr("Product")}: {formatMoney(order.product_amount, order.currency)}</p>
         <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>
+        <div className="my-2"><OrderStatusStrip statuses={order.statuses} /></div>
         <p className="mt-1 font-semibold">{tr("Invoice")}: {formatMoney(order.total_amount, order.currency)}</p>
         {Number(order.service_fee_amount) > 0 && (
           <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>

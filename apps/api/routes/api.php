@@ -46,6 +46,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/media/{name}', [\App\Http\Controllers\Api\MediaReadController::class, 'show']);
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
+    Route::get('/zones', [PublicStorefrontController::class, 'zones']);
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
     Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
@@ -281,6 +282,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
 
     // Products and pricing
     Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
+    Route::post('/products/import', [\App\Http\Controllers\Api\ProductImportController::class, 'store'])->middleware(['permission:products.create', 'throttle:10,1']);
     Route::post('/products/bulk-installation', [ProductController::class, 'bulkInstallation'])->middleware('permission:products.update');
     Route::post('/products/bulk-page-template', [ProductController::class, 'bulkPageTemplate'])->middleware('permission:products.update');
     // Reviews: a customer who received a product can rate it; a platform administrator can hide a review.
@@ -295,6 +297,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete');
     Route::get('/products/{product}/price-rules', [ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
     Route::put('/products/{product}/price-rules', [ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
+    Route::put('/products/{product}/fitments', [ProductController::class, 'syncFitments'])->middleware('permission:products.update');
     Route::post('/pricing/calculate', [PricingController::class, 'calculate'])->middleware('permission:pricing.calculate');
 
     // Partner applications: reviewed by platform admins and the store's owners
@@ -313,12 +316,59 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     // Orders, quotes, payments
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
+    // The cart, and buying it: one purchase (an order group), paid once, one order per line.
+    // The customer's cars.
+    Route::get('/garage', [\App\Http\Controllers\Api\GarageController::class, 'index']);
+    Route::post('/garage', [\App\Http\Controllers\Api\GarageController::class, 'store'])->middleware('throttle:30,1');
+    Route::put('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'update'])->whereNumber('id');
+    Route::delete('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'destroy'])->whereNumber('id');
+    // Asking for a price and answering with a quote.
+    Route::post('/quote-requests', [\App\Http\Controllers\Api\QuoteRequestController::class, 'store'])->middleware('throttle:20,1');
+    Route::get('/quote-requests', [\App\Http\Controllers\Api\QuoteRequestController::class, 'index']);
+    Route::get('/quote-requests/{id}', [\App\Http\Controllers\Api\QuoteRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/quote-requests/{id}/accept', [\App\Http\Controllers\Api\QuoteRequestController::class, 'accept'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/quote-requests/{id}/close', [\App\Http\Controllers\Api\QuoteRequestController::class, 'close'])->whereNumber('id');
+    Route::middleware('role:seller')->prefix('seller/quote-requests')->group(function () {
+        $q = \App\Http\Controllers\Api\QuoteRequestController::class;
+        Route::get('/', [$q, 'sellerIndex']);
+        Route::post('/{id}/quote', [$q, 'sellerQuote'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}/quote', [$q, 'sellerWithdraw'])->whereNumber('id');
+    });
+    Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'show']);
+    Route::post('/cart/items', [\App\Http\Controllers\Api\CartController::class, 'add'])->middleware('throttle:60,1');
+    Route::put('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'update'])->whereNumber('id');
+    Route::delete('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->whereNumber('id');
+    Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear']);
+    Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'checkout'])->middleware('throttle:orders');
+    Route::get('/order-groups', [\App\Http\Controllers\Api\CheckoutController::class, 'index']);
+    Route::get('/order-groups/{id}', [\App\Http\Controllers\Api\CheckoutController::class, 'show'])->whereNumber('id');
+    Route::post('/order-groups/{id}/payments', [\App\Http\Controllers\Api\CheckoutController::class, 'pay'])->whereNumber('id')->middleware(['permission:payments.create', 'idempotent']);
+    Route::post('/order-groups/{id}/cancel', [\App\Http\Controllers\Api\CheckoutController::class, 'cancel'])->whereNumber('id');
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::get('/orders/{order}/partner-quotes', [PartnerQuoteController::class, 'index']);
     Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);
     Route::post('/orders/{id}/cancel', [OrderLifecycleController::class, 'cancel']);
     Route::get('/warranties', [WarrantyController::class, 'index']);
-    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('permission:payments.create');
+    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
+
+    Route::middleware('role:platform-admin')->prefix('admin/orders')->group(function () {
+        $r = \App\Http\Controllers\Api\Admin\OrderRefundController::class;
+        Route::post('/{id}/refund', [$r, 'refund'])->whereNumber('id');
+        Route::post('/{id}/refund-sent', [$r, 'sent'])->whereNumber('id');
+    });
+
+    // The numbers that say whether the business works (platform administrators).
+    Route::middleware('role_or_permission:platform-admin|operations.manage')->get('/admin/kpis', [\App\Http\Controllers\Api\Admin\KpiController::class, 'show']);
+
+    // Where a market is open (platform administrators).
+    Route::middleware('role:platform-admin')->prefix('admin/zones')->group(function () {
+        $z = \App\Http\Controllers\Api\Admin\ZoneController::class;
+        Route::get('/', [$z, 'index']);
+        Route::post('/', [$z, 'store']);
+        Route::get('/demand', [$z, 'demand']);
+        Route::put('/{id}', [$z, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [$z, 'destroy'])->whereNumber('id');
+    });
 
     // Installation help: customers ask for it; centres answer without ever seeing who asks
     Route::get('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'index']);
@@ -327,6 +377,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/installation-requests/{id}/cancel', [\App\Http\Controllers\Api\InstallationRequestController::class, 'cancel'])->whereNumber('id');
     Route::post('/installation-requests/{id}/accept', [\App\Http\Controllers\Api\InstallationFlowController::class, 'accept'])->whereNumber('id');
     Route::post('/installation-requests/{id}/pay', [\App\Http\Controllers\Api\InstallationFlowController::class, 'pay'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::get('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'show'])->whereNumber('id');
+    Route::get('/installation-requests/{id}/slots', [\App\Http\Controllers\Api\InstallationBookingController::class, 'slots'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'book'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::put('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'reschedule'])->whereNumber('id')->middleware('throttle:20,1');
     Route::post('/installation-requests/{id}/confirm', [\App\Http\Controllers\Api\InstallationFlowController::class, 'confirm'])->whereNumber('id');
     Route::post('/installation-requests/{id}/review', [\App\Http\Controllers\Api\InstallationFlowController::class, 'review'])->whereNumber('id');
     Route::post('/installation-requests/{id}/disputes', [\App\Http\Controllers\Api\InstallationFlowController::class, 'dispute'])->whereNumber('id');
@@ -334,11 +388,27 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/installation-requests/{id}/report-contact', [\App\Http\Controllers\Api\InstallationFlowController::class, 'reportContact'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/loyalty', [\App\Http\Controllers\Api\InstallationFlowController::class, 'loyalty']);
     Route::get('/installation-files/{id}', [\App\Http\Controllers\Api\InstallationFlowController::class, 'file'])->whereNumber('id');
+    // A centre's own rules, hours, days off and calendar.
+    Route::middleware('role:partner-manager')->prefix('partner')->group(function () {
+        $cs = \App\Http\Controllers\Api\CentreSettingsController::class;
+        Route::get('/settings', [$cs, 'show']);
+        Route::put('/settings', [$cs, 'update']);
+        Route::put('/hours', [$cs, 'hours']);
+        Route::post('/time-off', [$cs, 'addTimeOff'])->middleware('throttle:30,1');
+        Route::delete('/time-off/{id}', [$cs, 'removeTimeOff'])->whereNumber('id');
+        Route::get('/calendar', [$cs, 'calendar']);
+        Route::post('/installation-jobs/{id}/booking/cancel', [$cs, 'cancelBooking'])->whereNumber('id');
+        Route::get('/technicians', [\App\Http\Controllers\Api\WorkOrderController::class, 'technicians']);
+        Route::post('/installation-jobs/{id}/assign', [\App\Http\Controllers\Api\WorkOrderController::class, 'assign'])->whereNumber('id');
+    });
     Route::middleware('role:partner-manager|technician')->prefix('partner/installation-jobs')->group(function () {
         $c = \App\Http\Controllers\Api\CentreJobController::class;
         Route::get('/', [$c, 'index']);
         Route::get('/{id}', [$c, 'show'])->whereNumber('id');
         Route::post('/{id}/start', [$c, 'start'])->whereNumber('id');
+        Route::get('/{id}/work-order', [\App\Http\Controllers\Api\WorkOrderController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/materials', [\App\Http\Controllers\Api\WorkOrderController::class, 'addMaterial'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}/materials/{materialId}', [\App\Http\Controllers\Api\WorkOrderController::class, 'removeMaterial'])->whereNumber(['id', 'materialId']);
         Route::post('/{id}/proof', [$c, 'proof'])->whereNumber('id')->middleware('throttle:30,1');
         Route::post('/{id}/disputes', [$c, 'dispute'])->whereNumber('id');
         Route::post('/{id}/evidence', [$c, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');

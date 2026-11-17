@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Company;
+use App\Models\InstallationInvite;
 use App\Models\InstallationOffer;
 use App\Models\InstallationRequest;
 use App\Models\Partner;
@@ -19,6 +20,12 @@ use Illuminate\Support\Collection;
 class InstallationMatching
 {
     public const RADIUS_KM = 100;
+    /** A request goes to this many of the best centres first. */
+    public const WAVE_SIZE = 5;
+    /** If fewer than this many offers arrive within WIDEN_AFTER_HOURS, the next centres are asked too (up to MAX_WAVES waves). */
+    public const MIN_OFFERS = 2;
+    public const WIDEN_AFTER_HOURS = 2;
+    public const MAX_WAVES = 4;
     public const BANDS_KM = [10, 25, 50, 100];
 
     /** @return Collection<int, Partner> eligible centres of the request's market, each with `distance_km` and `same_city` set */
@@ -36,13 +43,78 @@ class InstallationMatching
                 $p->distance_km = Geo::km($request->latitude, $request->longitude, (float) $p->latitude, (float) $p->longitude);
                 $p->same_city = $request->city && $p->city && mb_strtolower($request->city) === mb_strtolower($p->city);
             })
-            ->filter(fn (Partner $p) => ($p->same_city || $p->distance_km <= self::RADIUS_KM) && ! $this->tooPoor($p))
+            ->filter(fn (Partner $p) => $this->willAnswer($p, $request) && $this->inRange($p) && ! $this->tooPoor($p))
             ->values();
     }
 
+    /**
+     * Within the centre's reach. A centre that left its radius at the default is asked for its whole city and up to 100 km; one that set a shorter radius
+     * is asked only inside it, even in its own city.
+     */
+    private function inRange(Partner $p): bool
+    {
+        $radius = (int) ($p->service_radius_km ?: self::RADIUS_KM);
+
+        return $radius < self::RADIUS_KM ? $p->distance_km <= $radius : ($p->same_city || $p->distance_km <= self::RADIUS_KM);
+    }
+
+    /** A centre that is full or away, or does not do this kind of work, is not asked. */
+    private function willAnswer(Partner $p, InstallationRequest $request): bool
+    {
+        if (! $p->accepts_requests) {
+            return false;
+        }
+
+        return empty($p->work_types) || in_array($request->work_type ?: 'install', $p->work_types, true);
+    }
+
+    /** A centre may see and answer a request once it was invited (it is among the best centres asked so far) and still qualifies. */
     public function eligible(InstallationRequest $request, Partner $partner): bool
     {
-        return $this->eligiblePartners($request)->contains('id', $partner->id);
+        return InstallationInvite::where('request_id', $request->id)->where('partner_id', $partner->id)->exists()
+            && $this->eligiblePartners($request)->contains('id', $partner->id);
+    }
+
+    /** Everyone who qualifies, best first: nearest distance band, then the better centre, then the nearer. @return Collection<int, Partner> */
+    public function ranked(InstallationRequest $request): Collection
+    {
+        return $this->eligiblePartners($request)->sort(function (Partner $a, Partner $b) {
+            return [$this->band($a->distance_km, (bool) $a->same_city), -$this->quality($a), $a->distance_km] <=> [$this->band($b->distance_km, (bool) $b->same_city), -$this->quality($b), $b->distance_km];
+        })->values();
+    }
+
+    /** Asks the next best centres that have not been asked yet. @return Collection<int, Partner> those invited */
+    public function inviteNext(InstallationRequest $request, int $wave): Collection
+    {
+        $asked = InstallationInvite::where('request_id', $request->id)->pluck('partner_id');
+        $next = $this->ranked($request)->reject(fn (Partner $p) => $asked->contains($p->id))->take(self::WAVE_SIZE)->values();
+
+        foreach ($next as $centre) {
+            InstallationInvite::firstOrCreate(['request_id' => $request->id, 'partner_id' => $centre->id], ['wave' => $wave]);
+            app(InstallationNotifier::class)->centre($centre->id, 'New installation request near you', "{$request->subject}: ".implode(', ', (array) $request->parts), '/dashboard/centre-requests');
+        }
+        $request->update(['invite_wave' => $wave]);
+
+        return $next;
+    }
+
+    /** Widens every open request that is not getting enough answers. Returns how many were widened. */
+    public function widenDue(): int
+    {
+        $widened = 0;
+        InstallationRequest::whereIn('status', ['open', 'offers_received'])->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where('invite_wave', '<', self::MAX_WAVES)->get()->each(function (InstallationRequest $r) use (&$widened) {
+                $last = InstallationInvite::where('request_id', $r->id)->max('created_at');
+                $offers = InstallationOffer::where('request_id', $r->id)->whereIn('status', ['submitted', 'selected'])->count();
+                if ($offers >= self::MIN_OFFERS || ! $last || \Illuminate\Support\Carbon::parse($last)->gt(now()->subHours(self::WIDEN_AFTER_HOURS))) {
+                    return;
+                }
+                if ($this->inviteNext($r, (int) $r->invite_wave + 1)->isNotEmpty()) {
+                    $widened++;
+                }
+            });
+
+        return $widened;
     }
 
     public function band(float $km, bool $sameCity): int

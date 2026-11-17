@@ -43,5 +43,6 @@ class SellerLedgerSubscriber implements EventSubscriber
         }
 
         SellerLedgerEntry::where('order_id', $order->id)->where('status', 'held')->update(['status' => 'available', 'available_at' => now()]);
+        app(\App\Services\Ledger\LedgerPostings::class)->sellerReleased($order);
     }
 }

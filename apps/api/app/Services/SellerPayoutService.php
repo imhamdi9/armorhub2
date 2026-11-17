@@ -52,6 +52,7 @@ class SellerPayoutService
 
             $payout = SellerPayout::create(['company_id' => $seller->id, 'amount' => $total, 'currency' => $currency, 'status' => 'pending', 'created_by' => $by->id]);
             SellerLedgerEntry::whereIn('id', $entries->pluck('id'))->update(['payout_id' => $payout->id]);
+            app(\App\Services\Ledger\LedgerPostings::class)->payoutCreated($payout);
 
             $this->events->publish(new Event('payout.created', ['payout_id' => $payout->id, 'company_id' => $seller->id, 'amount' => $total, 'currency' => $currency],
                 $seller->tenant_id, 'payout', $payout->id, 'user', $by->id));
@@ -71,6 +72,7 @@ class SellerPayoutService
 
             $locked->update(['status' => 'paid', 'reference' => $reference, 'paid_by' => $by->id, 'paid_at' => now()]);
             SellerLedgerEntry::where('payout_id', $locked->id)->update(['status' => 'paid']);
+            app(\App\Services\Ledger\LedgerPostings::class)->payoutPaid($locked);
 
             $this->events->publish(new Event('payout.paid', ['payout_id' => $locked->id, 'company_id' => $locked->company_id, 'amount' => (float) $locked->amount, 'currency' => $locked->currency, 'reference' => $reference],
                 $locked->company->tenant_id, 'payout', $locked->id, 'user', $by->id));

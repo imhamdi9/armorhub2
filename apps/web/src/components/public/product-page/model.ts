@@ -23,7 +23,7 @@ export function useOrderLinks(slug: string, productId: number, goods: boolean, p
   const buy = signedIn ? `/dashboard/orders/new?product=${productId}${withParts}` : goods ? `/s/${encodeURIComponent(slug)}/checkout?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}${withParts}`;
   const find = signedIn ? `/dashboard/installations/new?product=${productId}` : `/register?store=${encodeURIComponent(slug)}&product=${productId}&installation=1`;
 
-  return { buy, find };
+  return { buy, find, signedIn };
 }
 
 export type ProductModel = ReturnType<typeof useProductModel>;

@@ -49,7 +49,12 @@ class PartnerInstallationController extends Controller
         $req = InstallationRequest::findOrFail($id);
         abort_unless($req->isOpen() && $this->matching->eligible($req, $partner), 404);
 
-        $data = $request->validate(['price' => 'required|numeric|min:1|max:10000000', 'eta_days' => 'required|integer|min:0|max:60', 'note' => 'nullable|string|max:300']);
+        $data = $request->validate(['price' => 'required|numeric|min:1|max:10000000', 'eta_days' => 'required|integer|min:0|max:60', 'note' => 'nullable|string|max:300',
+            'warranty_days' => 'nullable|integer|min:0|max:3650', 'earliest_date' => 'nullable|date|after_or_equal:today']);
+
+        if ($partner->min_job_price !== null && (float) $data['price'] < (float) $partner->min_job_price) {
+            throw ValidationException::withMessages(['price' => ['Your minimum price for a job is '.(float) $partner->min_job_price.'. Change it in your settings or offer more.']]);
+        }
 
         if (ContactGuard::contains($data['note'] ?? null)) {
             throw ValidationException::withMessages(['note' => ['Please do not put phone numbers, links or contact details in an offer. They are shared after the customer accepts and pays.']]);
@@ -58,6 +63,9 @@ class PartnerInstallationController extends Controller
         $km = Geo::km($req->latitude, $req->longitude, (float) $partner->latitude, (float) $partner->longitude);
         $offer = InstallationOffer::updateOrCreate(['request_id' => $req->id, 'partner_id' => $partner->id], [
             'price' => $data['price'], 'eta_days' => $data['eta_days'], 'note' => $data['note'] ?? null, 'status' => 'submitted', 'distance_km' => $km,
+            // A numbered quote that holds while the request is open, with the warranty the centre gives and the first day it can start.
+            'number' => InstallationOffer::where('request_id', $req->id)->where('partner_id', $partner->id)->value('number') ?? app(\App\Services\DocumentNumbers::class)->next('QT'),
+            'valid_until' => $req->expires_at, 'warranty_days' => $data['warranty_days'] ?? null, 'earliest_date' => $data['earliest_date'] ?? null,
         ]);
         $req->update(['status' => 'offers_received']);
         app(\App\Services\Reputation::class)->refresh($partner);

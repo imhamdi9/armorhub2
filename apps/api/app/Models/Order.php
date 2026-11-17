@@ -39,6 +39,8 @@ class Order extends Model
         'fulfilment',
         'warehouse_id',
         'customer_id',
+        'group_id',
+        'quantity',
         'product_id',
         'subject_type',
         'subject_id',

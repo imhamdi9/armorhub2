@@ -46,8 +46,16 @@ class Product extends Model
         'carton_weight_kg',
         'stock_cartons',
         'fulfilment',
+        'fitment_required',
+        'sale_mode',
     ];
 
+
+    /** Which cars it fits (none = fits everything, unless fitment is required). */
+    public function fitments(): HasMany
+    {
+        return $this->hasMany(ProductFitment::class);
+    }
 
     /** The company that sells this product, or null for the shared catalog. */
     public function seller()
@@ -73,6 +81,7 @@ class Product extends Model
         'carton_width_cm'=>'decimal:2',
         'carton_height_cm'=>'decimal:2',
         'carton_weight_kg'=>'decimal:3',
+        'fitment_required'=>'boolean',
     ];
 
     /** Every product has a SKU: the seller's own code, or one made from the country and the product number. */

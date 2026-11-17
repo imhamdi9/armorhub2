@@ -24,7 +24,8 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty']));
+        // `statuses` answers five questions separately: the order, the payment, the goods, the service and the settlement.
+        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
     }
 
     public function index(Request $request)
@@ -108,6 +109,9 @@ class OrderController extends Controller
         $product = \App\Models\Product::visibleInTenant($user->company?->tenant_id)->find($data['product_id'])
             ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        if (($product->sale_mode ?? 'fixed') === 'quote') {
+            throw ValidationException::withMessages(['product_id' => ['This product is sold on request: ask the seller for a quote.']]);
+        }
         app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
 
         // A seller's plan serves a number of customers a month.

@@ -24,6 +24,13 @@ class PaymentWebhookHandler
 
     private function paid(string $provider, PaymentEvent $event): void
     {
+        // A very negative id is a whole cart purchase (see OrderGroup::paymentId).
+        if ($event->orderId !== null && ($groupId = \App\Models\OrderGroup::fromPaymentId($event->orderId)) !== null) {
+            app(GroupPayments::class)->webhookPaid($groupId, $event->reference, $event->amountMinor, $event->amountMajor, $event->currency, $provider);
+
+            return;
+        }
+
         // A negative id is an installation job (see InstallationJobs::pay).
         if ($event->orderId !== null && $event->orderId < 0) {
             app(\App\Services\InstallationJobs::class)->webhookPaid(-$event->orderId, $event->reference, $event->amountMinor, $event->amountMajor, $event->currency, $provider);

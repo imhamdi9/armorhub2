@@ -50,6 +50,15 @@ class PublicStorefrontController extends Controller
     }
 
     /** Home page: partners and products, one block per industry. */
+    /** Where a market is open: shown so a visitor knows whether they are covered. */
+    public function zones(\Illuminate\Http\Request $request)
+    {
+        $request->validate(['market' => 'nullable|string|size:2']);
+
+        return $this->cached(['zones' => \App\Models\ServiceZone::where('is_active', true)->when($request->query('market'), fn ($q, $m) => $q->where('market', strtoupper((string) $m)))->orderBy('position')
+            ->get(['market', 'key', 'name_en', 'name_ar', 'city'])]);
+    }
+
     public function showcase()
     {
         return $this->cached(['industries' => $this->stores->showcase()]);
@@ -109,8 +118,10 @@ class PublicStorefrontController extends Controller
             ->when($request->input('sort') === 'price_desc', fn ($q) => $q->orderByRaw("$lowest desc")->orderBy('name'))
             ->when($request->input('sort') === 'name', fn ($q) => $q->orderBy('name'))
             ->when(! in_array($request->input('sort'), ['price_asc', 'price_desc', 'name'], true), fn ($q) => $q->orderBy('category')->orderBy('name'))
+            // "Only what fits my car" (and what fits everything), for a make/model and year.
+            ->when($request->filled('vehicle_model_id') && $request->filled('year') && $request->boolean('compatible'), fn ($q) => app(\App\Services\Fitment\FitmentService::class)->scopeFitting($q, (int) $request->input('vehicle_model_id'), (int) $request->input('year')))
             ->paginate((int) $request->input('per_page', 12))
-            ->through(fn ($p) => $this->stores->card($p, $company));
+            ->through(fn ($p) => $this->stores->card($p, $company) + $this->fits($p, $request));
 
         return $this->cached($page);
     }
@@ -147,7 +158,17 @@ class PublicStorefrontController extends Controller
         return $this->stores->products($company)->whereIn('id', $ids)->where('id', '!=', $product->id)->limit(4)->get()->map(fn ($p) => $this->stores->card($p, $company))->all();
     }
 
-    public function product(string $slug, int $id)
+    /** Whether the product fits the car named in the request (?vehicle_model_id=&year=), when one is named. @return array<string, string> */
+    private function fits(\App\Models\Product $product, \Illuminate\Http\Request $request): array
+    {
+        if (! $request->filled('vehicle_model_id') || ! $request->filled('year')) {
+            return [];
+        }
+
+        return ['fits' => app(\App\Services\Fitment\FitmentService::class)->check($product, (int) $request->input('vehicle_model_id'), (int) $request->input('year'))];
+    }
+
+    public function product(\Illuminate\Http\Request $request, string $slug, int $id)
     {
         $company = $this->stores->find($slug) ?? abort(404);
         $product = $this->stores->products($company)->findOrFail($id);
@@ -158,7 +179,7 @@ class PublicStorefrontController extends Controller
             ->map(fn ($p) => $this->stores->card($p, $company))->all();
 
         return $this->cached([
-            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
+            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'fitment_required' => (bool) $product->fitment_required, 'fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product) + [], 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
             'related' => $related,
             'reviews' => $this->reviews($product->id),
             'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),

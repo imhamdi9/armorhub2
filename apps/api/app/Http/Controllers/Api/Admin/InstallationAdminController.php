@@ -77,6 +77,7 @@ class InstallationAdminController extends Controller
         $data = $request->validate(['reference' => 'required|string|max:120']);
         abort_unless($r->refund_status === 'pending', 422, 'There is no pending refund for this job.');
         $r->update(['refund_status' => 'refunded', 'refund_reference' => $data['reference']]);
+        app(\App\Services\Ledger\LedgerPostings::class)->installationRefundPaid($r);
         app(InstallationNotifier::class)->user($r->customer_id, 'Refund sent', "{$r->refund_amount} {$r->currency} was refunded (reference {$data['reference']}).", "/dashboard/installations/{$r->id}");
 
         return ['id' => $r->id, 'refund_status' => 'refunded'];
@@ -102,6 +103,7 @@ class InstallationAdminController extends Controller
         DB::transaction(function () use ($w, $request, $data) {
             $w->update(['status' => 'paid', 'reference' => $data['reference'], 'processed_by' => $request->user()->id, 'processed_at' => now()]);
             CentreWalletEntry::where('withdrawal_id', $w->id)->update(['status' => 'paid']);
+            app(\App\Services\Ledger\LedgerPostings::class)->withdrawalPaid($w->fresh());
         });
         $this->tellCompany($w, 'Withdrawal paid', "{$w->amount} {$w->currency} was sent (reference {$data['reference']}).");
 
@@ -117,6 +119,7 @@ class InstallationAdminController extends Controller
         DB::transaction(function () use ($w, $request, $data) {
             $w->update(['status' => 'rejected', 'note' => $data['note'], 'processed_by' => $request->user()->id, 'processed_at' => now()]);
             CentreWalletEntry::where('withdrawal_id', $w->id)->update(['status' => 'void']); // the money is available again
+            app(\App\Services\Ledger\LedgerPostings::class)->withdrawalRejected($w->fresh());
         });
         $this->tellCompany($w, 'Withdrawal not paid', $data['note']);
 

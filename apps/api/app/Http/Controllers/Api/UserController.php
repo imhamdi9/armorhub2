@@ -18,16 +18,16 @@ use Illuminate\Validation\ValidationException;
 class UserController extends Controller
 {
     private const ROLES_BY_MANAGER = [
-        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller', 'warehouse-staff'],
+        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller', 'warehouse-staff', 'operations-agent'],
         // A market admin brings in the people of their market. Only the platform owner makes other market admins.
-        'company-owner' => ['partner-manager', 'technician', 'warehouse-staff'],
+        'company-owner' => ['partner-manager', 'technician', 'warehouse-staff', 'operations-agent'],
         'partner-manager' => ['technician'],
     ];
 
     /** ArmorHub's own people: admins, market managers, warehouse staff, department members, and anyone in the platform company. */
     private function platformTeam($q): void
     {
-        $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['platform-admin', 'company-owner', 'warehouse-staff']))
+        $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['platform-admin', 'company-owner', 'warehouse-staff', 'operations-agent']))
             ->orWhere(fn ($d) => $d->whereNotNull('department_id')->whereIn('department_id', \App\Models\Department::whereNull('tenant_id')->select('id')))
             ->orWhereHas('company', fn ($c) => $c->withoutGlobalScopes()->where('type', 'platform'));
     }

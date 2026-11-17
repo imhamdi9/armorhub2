@@ -23,7 +23,9 @@ class InstallationRequestController extends Controller
     {
         $user = $request->user();
         $data = $request->validate([
-            'subject' => 'required|string|max:160',
+            // Either one of the customer's own cars (exact) or a description (a phone, a boat...).
+            'vehicle_id' => 'nullable|integer',
+            'subject' => 'required_without:vehicle_id|nullable|string|max:160',
             'parts' => 'required|array|min:1|max:10',
             'parts.*' => 'required|string|max:80',
             'work_type' => 'nullable|in:install,repair,maintenance',
@@ -37,7 +39,13 @@ class InstallationRequestController extends Controller
             'order_id' => 'nullable|integer',
         ]);
 
-        foreach ([$data['subject'], $data['notes'] ?? '', ...$data['parts']] as $text) {
+        // A car from the customer's garage names the job exactly; otherwise the description they typed is used.
+        $vehicle = ! empty($data['vehicle_id'])
+            ? (\App\Models\CustomerVehicle::where('customer_id', $user->id)->find($data['vehicle_id']) ?? throw ValidationException::withMessages(['vehicle_id' => ['This car is not in your garage.']]))
+            : null;
+        $subject = $vehicle?->label() ?? $data['subject'];
+
+        foreach ([$data['subject'] ?? '', $data['notes'] ?? '', ...$data['parts']] as $text) {
             if (ContactGuard::contains($text)) {
                 throw ValidationException::withMessages(['notes' => ['Please do not put phone numbers, links or contact details here. They are shared safely after you accept an offer.']]);
             }
@@ -64,20 +72,23 @@ class InstallationRequestController extends Controller
             throw ValidationException::withMessages(['industry_id' => ['This market does not run that industry.']]);
         }
 
+        // A market that is open in zones serves only inside them; outside, the customer is told and the demand is noted.
+        $zone = app(\App\Services\ServiceZones::class)->assertServed(
+            app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($user->company_id))?->code,
+            (float) $data['latitude'], (float) $data['longitude'], $user, $user->city,
+        );
+
         $req = InstallationRequest::create([
-            'company_id' => $user->company_id, 'customer_id' => $user->id, 'order_id' => $data['order_id'] ?? null, 'product_id' => $product?->id, 'industry_id' => $industry,
-            'subject' => $data['subject'], 'parts' => array_values($data['parts']), 'work_type' => $data['work_type'] ?? 'install', 'notes' => $data['notes'] ?? null,
+            'zone_id' => $zone?->id, 'company_id' => $user->company_id, 'customer_id' => $user->id, 'order_id' => $data['order_id'] ?? null, 'product_id' => $product?->id, 'industry_id' => $industry,
+            'subject' => $subject, 'customer_vehicle_id' => $vehicle?->id, 'parts' => array_values($data['parts']), 'work_type' => $data['work_type'] ?? 'install', 'notes' => $data['notes'] ?? null,
             'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'location_consent' => true,
             'city' => $user->city, 'country' => $user->country, 'status' => 'open', 'expires_at' => now()->addHours($hours),
             'market' => ($market = app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($user->company_id)))?->code,
             'currency' => $market?->currency() ?? (string) config('platform.currency'),
         ]);
 
-        // Tell the centres that may answer (and remember who was told: that is how "answers how often" is measured).
-        foreach ($this->matching->eligiblePartners($req) as $centre) {
-            \App\Models\InstallationInvite::firstOrCreate(['request_id' => $req->id, 'partner_id' => $centre->id]);
-            app(\App\Services\InstallationNotifier::class)->centre($centre->id, 'New installation request near you', "{$req->subject}: ".implode(', ', $req->parts), '/dashboard/centre-requests');
-        }
+        // Ask the best few centres first (and remember who was asked: that is how "answers how often" is measured). If too few answer, the next few are asked.
+        $this->matching->inviteNext($req, 1);
 
         return response()->json($this->present($req), 201);
     }
@@ -86,6 +97,7 @@ class InstallationRequestController extends Controller
     {
         $this->jobs->releaseDue();
         $this->jobs->expireOld();
+        $this->matching->widenDue();     // no scheduler on a free host: requests are widened as people look
 
         return InstallationRequest::where('customer_id', $request->user()->id)->latest()->get()->map(fn ($r) => $this->present($r))->values();
     }
@@ -123,7 +135,8 @@ class InstallationRequestController extends Controller
                 'rating' => $o->partner->rating_count >= 3 ? (float) $o->partner->rating_avg : null, 'rating_count' => (int) $o->partner->rating_count,
                 'completed_jobs' => (int) $o->partner->completed_jobs, 'avg_response_minutes' => $o->partner->avg_response_minutes,
                 'distance_km' => Geo::fuzzy((float) $o->distance_km), 'same_city' => $o->same_city,
-                'price' => (float) $o->price, 'eta_days' => $o->eta_days, 'note' => $o->note,
+                'price' => (float) $o->price, 'eta_days' => $o->eta_days, 'note' => $o->note, 'quote_number' => $o->number, 'valid_until' => $o->valid_until ? \Carbon\Carbon::parse($o->valid_until)->toIso8601String() : null,
+                'warranty_days' => $o->warranty_days, 'earliest_date' => $o->earliest_date ? \Carbon\Carbon::parse($o->earliest_date)->toDateString() : null,
                 'badges' => array_values(array_filter([
                     $o->distance_km == $closest ? 'closest' : null,
                     $o->eta_days == $quickest ? 'fastest' : null,

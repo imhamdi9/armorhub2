@@ -115,7 +115,7 @@ class ProductController extends Controller
         abort_unless($this->visibleTo($request->user(), Product::whereKey($product->id))->exists(), 404);
 
         // Whether the signed-in person may change it: the screen shows an editor only to those who can, instead of buttons that fail.
-        return $product->load('priceRules')->toArray() + ['can_edit' => $request->user()->can('products.update') && $this->mayChange($request->user(), $product)];
+        return $product->load('priceRules')->toArray() + ['fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product), 'can_edit' => $request->user()->can('products.update') && $this->mayChange($request->user(), $product)];
     }
 
     public function update(Request $request, Product $product)
@@ -135,6 +135,40 @@ class ProductController extends Controller
 
         // The same shape as show(), so a screen that replaces its copy with this one does not lose the edit permission.
         return $product->fresh()->toArray() + ['can_edit' => true];
+    }
+
+    /** Which cars the product fits. An empty list means every car (unless the product requires a fit, then it fits none). */
+    public function syncFitments(Request $request, Product $product)
+    {
+        abort_unless($this->mayChange($request->user(), $product), 404);
+        $data = $request->validate([
+            'fitment_required' => 'sometimes|boolean',
+            'rows' => 'present|array|max:200',
+            'rows.*.vehicle_make_id' => 'nullable|integer|exists:vehicle_makes,id',
+            'rows.*.vehicle_model_id' => 'nullable|integer|exists:vehicle_models,id',
+            'rows.*.year_from' => 'nullable|integer|min:1980|max:2100',
+            'rows.*.year_to' => 'nullable|integer|min:1980|max:2100|gte:rows.*.year_from',
+            'rows.*.note' => 'nullable|string|max:160',
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($product, $data) {
+            $product->fitments()->delete();
+            foreach ($data['rows'] as $row) {
+                // A model belongs to one make: if both are given they must agree.
+                if (! empty($row['vehicle_model_id']) && ! empty($row['vehicle_make_id'])
+                    && (int) \App\Modules\Automotive\Models\VehicleModel::whereKey($row['vehicle_model_id'])->value('vehicle_make_id') !== (int) $row['vehicle_make_id']) {
+                    throw ValidationException::withMessages(['rows' => ['A model does not belong to that make.']]);
+                }
+                $product->fitments()->create(['vehicle_make_id' => $row['vehicle_make_id'] ?? null, 'vehicle_model_id' => $row['vehicle_model_id'] ?? null,
+                    'year_from' => $row['year_from'] ?? null, 'year_to' => $row['year_to'] ?? null, 'note' => isset($row['note']) ? trim(strip_tags($row['note'])) : null]);
+            }
+            if (array_key_exists('fitment_required', $data)) {
+                $product->update(['fitment_required' => $data['fitment_required']]);
+            }
+        });
+        \App\Support\Audit::record('products.fitments_changed', $product, ['rows' => count($data['rows'])], $request->user());
+
+        return ['fitment_required' => (bool) $product->fresh()->fitment_required, 'fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product)];
     }
 
     public function destroy(Request $request, Product $product)
@@ -274,6 +308,9 @@ class ProductController extends Controller
             'images.*' => ['string', 'max:500', fn ($attr, $value, $fail) => \App\Support\ImageRef::valid($value) || $fail('Each image must be an https address or an uploaded image.')],
             'compare_at_price' => 'nullable|numeric|min:0|max:9999999999',
             'is_active' => 'boolean',
+            'fitment_required' => 'sometimes|boolean',
+            // fixed: bought at its price; quote: bought only against a seller's quote (the customer asks first).
+            'sale_mode' => 'sometimes|in:fixed,quote',
             'requires_shipping' => 'boolean',
             // Whether the buyer may need a centre to fit it: none, optional or required. The product is always sold on its own.
             'installation' => 'sometimes|in:none,optional,required',

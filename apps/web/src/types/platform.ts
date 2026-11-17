@@ -66,6 +66,8 @@ export interface Order {
   completed_at?: string | null;
   cancelled_at?: string | null;
   events?: OrderEvent[];
+  /** The order, the payment, the goods, the service and (for staff) the settlement, each with its own status. */
+  statuses?: { order: string; payment: string; product?: string | null; service?: string | null; settlement?: string | null };
   warranty?: Warranty | null;
   customer?: { id: number; name: string; city: string | null; country: string | null };
   subject?: Record<string, unknown> | null;

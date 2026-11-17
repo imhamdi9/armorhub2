@@ -17,3 +17,6 @@ Artisan::command('inspire', function () {
 
 // Monthly plans: renew paid ones, end the cancelled ones.
 \Illuminate\Support\Facades\Schedule::command('subscriptions:renew')->daily();
+
+// Installation requests that get too few answers are widened to the next best centres.
+\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\InstallationMatching::class)->widenDue())->everyThirtyMinutes()->name('installations:widen')->withoutOverlapping();

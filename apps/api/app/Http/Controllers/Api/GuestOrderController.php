@@ -59,6 +59,9 @@ class GuestOrderController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
+        if (($product->sale_mode ?? 'fixed') === 'quote') {
+            throw ValidationException::withMessages(['product_id' => ['This product is sold on request: ask the seller for a quote.']]);
+        }
         app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
 
         // A seller's plan serves a number of customers a month.
