@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+body{overflow:hidden}
+.app{display:grid;grid-template-columns:268px 1fr;height:900px}
+.side{background:var(--forest);color:#fff;padding:18px 14px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.side .brandlink{display:block;padding:10px 12px 18px;border-radius:14px}
+.side .brand{color:#fff}
+.side .sub{font-size:12.5px;color:rgba(255,255,255,.55);margin:4px 0 0 44px}
+.grp{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.4);padding:16px 14px 6px;letter-spacing:.04em}
+.it{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;font-size:14.5px;color:rgba(255,255,255,.78)}
+.it svg{opacity:.8}
+.it.on{background:var(--lime);color:var(--forest);font-weight:600}
+.it .n{margin-left:auto;font-size:12px;background:rgba(255,255,255,.14);padding:1px 8px;border-radius:99px}
+.main{padding:0 40px 30px;overflow:hidden}
+.bar{height:76px;display:flex;align-items:center;justify-content:space-between}
+.search{display:flex;align-items:center;gap:10px;width:380px;height:44px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 16px;color:var(--mute);font-size:14.5px}
+.me{display:flex;align-items:center;gap:14px}
+.bell{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;position:relative}
+.bell i{position:absolute;top:10px;right:11px;width:9px;height:9px;border-radius:50%;background:var(--rose);border:2px solid #fff}
+.ava{display:flex;align-items:center;gap:10px;padding:4px 14px 4px 4px;background:#fff;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600}
+.ava b{width:36px;height:36px;border-radius:50%;background:var(--lime);display:grid;place-items:center;color:var(--forest)}
+h1{font-size:40px;margin:4px 0 4px}
+.sub2{color:var(--mute);margin-bottom:22px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}.grid .pn:first-child{min-height:0}
+.kpi{padding:18px 20px}
+.kpi small{color:var(--mute);font-size:13.5px}
+.kpi .v{font-family:'Bricolage Grotesque';font-size:34px;font-weight:700;letter-spacing:-.02em;margin:6px 0 2px;line-height:1.1}
+.kpi .d{font-size:12.5px;font-weight:600}
+.up{color:#2B7A16}.dn{color:var(--rose)}
+.kpi.hot{background:var(--forest);color:#fff;border-color:var(--forest)}
+.kpi.hot small{color:rgba(255,255,255,.65)}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+.pn{padding:22px}
+.pn h3{font-size:20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.pn h3 a{font-family:'DM Sans';font-size:13.5px;font-weight:600;color:var(--moss)}
+.att{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line);font-size:14.5px}
+.att:first-of-type{border-top:0}.pn .att:nth-of-type(1){border-top:0}
+.att i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none}
+.att small{display:block;color:var(--mute);font-size:13px}
+.att .go{margin-left:auto;font-size:13px;font-weight:600;padding:6px 14px;border-radius:99px;background:var(--sand)}
+.bars{display:flex;align-items:flex-end;gap:10px;height:150px;margin-top:6px}
+.bars div{flex:1;border-radius:8px 8px 3px 3px;background:var(--sand)}
+.bars div.a{background:var(--lime-d)}
+.lbl{display:flex;gap:10px;margin-top:8px;font-size:12px;color:var(--mute)}.lbl span{flex:1;text-align:center}
+.pipe{display:flex;height:14px;border-radius:99px;overflow:hidden;margin:16px 0 14px;gap:3px}
+.leg{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13.5px}
+.leg span{display:flex;align-items:center;gap:8px}.leg i{width:10px;height:10px;border-radius:3px}
+</style></head><body><div class="app">
+ <aside class="side">
+  <a class="brandlink" href="#"><div class="brand"><svg class="mark" viewBox="0 0 34 34"><rect width="34" height="34" rx="10" fill="#B5F36B"/><path d="M17 6.5 8.5 9.8v6.2c0 5.3 3.6 8.6 8.5 10.2 4.9-1.6 8.5-4.9 8.5-10.2V9.8L17 6.5Z" fill="#0E2B1F"/><path d="m12.8 16.6 3 3 5.4-6" fill="none" stroke="#B5F36B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>ArmorHub</div><div class="sub">Service Marketplace Platform</div></a>
+  <div class="it on"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Dashboard</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.5 11h11l2-8H6"/></svg>Orders<span class="n">12</span></div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4ZM4 7l8 4 8-4M12 11v10"/></svg>Products</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.6-.6-.6-2.6 2.6-2.2Z"/></svg>Partners</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M21 20c0-2.6-1.6-4.800-4-5.600"/></svg>Users</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>Commissions</div>
+  <div class="grp">ADMINISTRATION</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Markets</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>Payments</div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.500 3 7.500 7 9 4-1.500 7-4.500 7-9V6l-7-3Z"/></svg>Security<span class="n" style="background:var(--amber);color:#3a2605">6</span></div>
+  <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.200l2-1.500-2-3.400-2.300.9a7 7 0 0 0-2-1.200L14 3h-4l-.6 2.600a7 7 0 0 0-2 1.200l-2.300-.9-2 3.400 2 1.500A7 7 0 0 0 5 12c0 .4 0 .8.100 1.200l-2 1.500 2 3.400 2.300-.9a7 7 0 0 0 2 1.200L10 21h4l.6-2.600a7 7 0 0 0 2-1.200l2.300.9 2-3.400-2-1.500c.1-.4.100-.8.100-1.200Z"/></svg>Settings</div>
+ </aside>
+ <section class="main">
+  <div class="bar"><div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.500-3.500"/></svg>Search orders, partners, users</div>
+   <div class="me"><span class="lang">العربية</span><div class="bell"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0"/></svg><i></i></div><div class="ava"><b>A</b>Admin</div></div></div>
+  <h1>Good evening, Admin</h1><p class="sub2">Here is what needs you today across all markets.</p>
+  <div class="kpis">
+   <div class="card kpi hot"><small>Revenue this month</small><div class="v">SAR 48,200</div><div class="d" style="color:var(--lime)">▲ 12% vs last month</div></div>
+   <div class="card kpi"><small>Orders</small><div class="v">128</div><div class="d up">▲ 9 new today</div></div>
+   <div class="card kpi"><small>Active partners</small><div class="v">14</div><div class="d" style="color:var(--mute)">2 applications waiting</div></div>
+   <div class="card kpi"><small>Failed sign-ins (24h)</small><div class="v">7</div><div class="d dn">▲ above usual</div></div>
+  </div>
+  <div class="grid">
+   <div class="card pn"><h3>Needs attention <a>View all</a></h3>
+    <div class="att"><i style="background:#FBEBCF;color:#8A5A0B"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.500 3 7.500 7 9 4-1.500 7-4.500 7-9V6l-7-3ZM12 9v4M12 16.500v.01"/></svg></i><div><b>6 security warnings</b><small>Debug mode is on, and the site is not on HTTPS</small></div><span class="go">Review</span></div>
+    <div class="att"><i style="background:#E3F4D3;color:#2B5E16"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5"/></svg></i><div><b>2 partner applications</b><small>Documents are ready to check</small></div><span class="go">Open</span></div>
+    <div class="att"><i style="background:#E8EBE0;color:var(--forest)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.500"/><circle cx="18" cy="20" r="1.500"/><path d="M3 4h2l2.500 11h11l2-8H6"/></svg></i><div><b>4 orders waiting for quotes</b><small>Oldest request is 6 hours old</small></div><span class="go">Open</span></div>
+   </div>
+   <div class="card pn"><h3>Orders by stage</h3>
+    <div class="pipe"><div style="flex:4;background:var(--forest)"></div><div style="flex:3;background:var(--moss)"></div><div style="flex:3;background:var(--lime-d)"></div><div style="flex:2;background:var(--lime)"></div><div style="flex:1;background:var(--sand)"></div></div>
+    <div class="leg"><span><i style="background:var(--forest)"></i>Waiting for quotes · 4</span><span><i style="background:var(--moss)"></i>Awaiting payment · 3</span><span><i style="background:var(--lime-d)"></i>In progress · 3</span><span><i style="background:var(--lime)"></i>Completed · 2</span></div>
+    <h3 style="margin-top:24px;margin-bottom:0">Revenue, last 7 days</h3>
+    <div class="bars"><div style="height:40%"></div><div style="height:55%"></div><div style="height:35%"></div><div style="height:70%"></div><div style="height:60%"></div><div style="height:85%" class="a"></div><div style="height:50%"></div></div>
+    <div class="lbl"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+   </div>
+  </div>
+  <div class="card pn" style="margin-top:16px;padding:18px 22px"><h3 style="margin-bottom:6px">Latest activity <a>Open audit log</a></h3>
+   <div class="att"><i style="background:#E3F4D3;color:#2B5E16">●</i><div><b>Admin signed in</b><small>admin@test.com · 127.0.0.1</small></div><small style="margin-left:auto">Just now</small></div>
+   <div class="att"><i style="background:#FBEBCF;color:#8A5A0B">●</i><div><b>Failed sign-in</b><small>admin@test.com · 127.0.0.1</small></div><small style="margin-left:auto">8 min ago</small></div>
+  </div>
+ </section></div></body></html>

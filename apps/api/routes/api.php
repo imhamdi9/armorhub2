@@ -42,6 +42,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
     Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
     Route::get('/markets', [PublicStorefrontController::class, 'markets']);
+    Route::get('/terms', [PublicStorefrontController::class, 'terms']);
     Route::get('/media/{name}', [\App\Http\Controllers\Api\MediaReadController::class, 'show']);
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
@@ -65,7 +66,10 @@ Route::get('/public/invitations/{token}', [\App\Http\Controllers\Api\InvitationC
 Route::post('/public/invitations/{token}/accept', [\App\Http\Controllers\Api\InvitationController::class, 'accept'])->middleware('throttle:register');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
+Route::post('/partner-applications/{id}/pay-plan', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'payPlan'])->whereNumber('id')->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::get('/auth/social/providers', [\App\Http\Controllers\Api\SocialAuthController::class, 'providers']);
+Route::post('/auth/social', [\App\Http\Controllers\Api\SocialAuthController::class, 'login'])->middleware('throttle:login');
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
@@ -274,6 +278,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     // Products and pricing
     Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
     Route::post('/products/bulk-installation', [ProductController::class, 'bulkInstallation'])->middleware('permission:products.update');
+    Route::post('/products/bulk-page-template', [ProductController::class, 'bulkPageTemplate'])->middleware('permission:products.update');
+    // Reviews: a customer who received a product can rate it; a platform administrator can hide a review.
+    Route::get('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'mine'])->whereNumber('id');
+    Route::post('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/reviews/{id}/moderate', [\App\Http\Controllers\Api\ProductReviewController::class, 'moderate'])->whereNumber('id');
     Route::get('/products/categories', [ProductController::class, 'categories'])->middleware('permission:products.view');
     Route::post('/product-images', [\App\Http\Controllers\Api\ProductImageController::class, 'store'])->middleware(['permission:products.update', 'throttle:30,1']);
     Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create');
@@ -368,6 +377,13 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/partner/orders', [PartnerOrderController::class, 'index']);
         Route::patch('/partner-quotes/{id}', [PartnerOrderController::class, 'submitQuote']);
     });
+
+    // Plans for partners and sellers: see mine, choose, stop renewing. A platform administrator edits the plans.
+    Route::get('/subscription', [\App\Http\Controllers\Api\SubscriptionController::class, 'show']);
+    Route::post('/subscription', [\App\Http\Controllers\Api\SubscriptionController::class, 'choose'])->middleware('throttle:20,1');
+    Route::post('/subscription/cancel', [\App\Http\Controllers\Api\SubscriptionController::class, 'cancel']);
+    Route::get('/admin/subscription-plans', [\App\Http\Controllers\Api\SubscriptionController::class, 'plans'])->middleware('permission:admin.panel');
+    Route::put('/admin/subscription-plans/{id}', [\App\Http\Controllers\Api\SubscriptionController::class, 'update'])->middleware('permission:admin.panel')->whereNumber('id');
 
     // Commissions
     Route::get('/commissions', [CommissionController::class, 'index'])->middleware('permission:commissions.view');

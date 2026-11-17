@@ -6,6 +6,7 @@ import { HeroArt } from "@/components/public/art";
 import { FAQS } from "@/components/public/faq";
 import { ProductTile, ShopProductCard } from "@/components/shop/shop-product-card";
 import { ShopSearch } from "@/components/shop/shop-search";
+import { price } from "@/components/public/product-card";
 import { ShopShell, SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { formatNumber, tr } from "@/lib/i18n";
 import { categoryLabel } from "@/lib/category";
@@ -44,53 +45,55 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
 
   return (
     <ShopShell store={{ ...store, market: data.market }} active="home">
-      <header className="overflow-x-clip pt-10 text-center md:pt-14">
-        {floating.length > 0 && (
-          <div className="relative mx-auto h-44 max-w-xl" aria-hidden="true">
-            {floating.map((p, i) => (
-              <div key={p.id} className="absolute w-[20%] min-w-24 rounded-[28px] bg-white p-1.5" style={{ insetInlineStart: `${[4, 28, 52, 74][i]}%`, top: [18, 0, 24, 6][i], rotate: `${[-6, 3, -3, 6][i]}deg`, boxShadow: SHOP_SHADOW }}>
-                <div className="aspect-square"><ProductTile product={p} /></div>
-                <p className="truncate px-1.5 pb-1.5 pt-1.5 text-start text-xs">{p.seller ?? p.name}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        {industry && <p className="mt-6 text-sm text-[#5f5c5b]">{tr(industry.name)}</p>}
-        {industries.length > 1 && (
-          <ul className="mt-6 flex flex-wrap justify-center gap-2" aria-label={tr("Industries")} data-testid="market-industries">
-            {industries.map((i) => (
-              <li key={i.key}><Link href={`${products}?industry=${encodeURIComponent(i.key)}`} className="rounded-full bg-white px-4 py-1.5 text-sm text-[#5f5c5b]" style={pillShadow}>{tr(i.name)}</Link></li>
-            ))}
-          </ul>
-        )}
-        <h1 className="mt-2 text-5xl leading-none tracking-[-0.06em] text-brand-ink md:text-[64px]">{store.name}</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-xl tracking-[-0.03em]">
-          {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
-        </p>
-        {store.subheadline && <p className="mx-auto mt-2 max-w-2xl text-base text-[#5f5c5b]">{store.subheadline}</p>}
-        <div className="mt-8"><ShopSearch action={products} /></div>
-        {categories.length > 0 && (
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
-          </div>
-        )}
+      <header className="grid items-center gap-10 pt-8 md:pt-12 lg:grid-cols-[1fr_1fr] lg:gap-12">
+        <div>
+          <p className="text-sm font-semibold text-brand-ink">
+            {industry ? tr(industry.name) : store.name}{data.market ? ` · ${data.market.code}` : ""}
+          </p>
+          {industries.length > 1 && (
+            <ul className="mt-4 flex flex-wrap gap-2" aria-label={tr("Industries")} data-testid="market-industries">
+              {industries.map((i) => (
+                <li key={i.key}><Link href={`${products}?industry=${encodeURIComponent(i.key)}`} className="rounded-full bg-white px-4 py-1.5 text-sm text-[#5f5c5b]" style={pillShadow}>{tr(i.name)}</Link></li>
+              ))}
+            </ul>
+          )}
+          <h1 className="display mt-3 text-5xl md:text-[64px]">
+            {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
+          </h1>
+          {store.subheadline && <p className="mt-5 max-w-lg text-lg leading-relaxed text-[#5f5c5b]">{store.subheadline}</p>}
+          <div className="mt-8 max-w-xl [&_form]:mx-0 [&_form]:max-w-none"><ShopSearch action={products} /></div>
+          {categories.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-dark bg-grid-dark relative min-h-[420px] overflow-hidden rounded-[32px] p-6 md:min-h-[500px]" aria-label={store.name}>
+          {store.hero_image_url ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner */}
+              <img src={imageSrc(store.hero_image_url) ?? ""} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" aria-hidden="true" />
+            </>
+          ) : (
+            <HeroArt kind={industry?.key} className="mx-auto mt-6 max-h-[18rem] w-full opacity-95" />
+          )}
+          {floating[0] && (
+            <Link href={`${products}/${floating[0].id}`} className="shadow-lift absolute inset-x-6 bottom-6 flex items-center gap-4 rounded-2xl bg-white p-4 transition hover:-translate-y-0.5">
+              <span className="size-[62px] shrink-0"><ProductTile product={floating[0]} /></span>
+              <span className="min-w-0">
+                <span className="font-display block truncate text-xl font-semibold text-black">{floating[0].name}</span>
+                <span className="block truncate text-sm text-[#5f5c5b]">{floating[0].brand ?? floating[0].seller ?? ""}{floating[0].category ? ` · ${categoryLabel(floating[0].category)}` : ""}</span>
+              </span>
+              <span className="font-display ms-auto text-end text-xl font-bold leading-none text-black">{price(floating[0])}</span>
+            </Link>
+          )}
+        </div>
       </header>
 
-      <section className="mt-12" aria-label={store.name}>
-        {store.hero_image_url ? (
-          <div className="relative overflow-hidden rounded-[28px]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- an arbitrary https photo chosen by the store owner */}
-            <img src={imageSrc(store.hero_image_url) ?? ""} alt="" className="aspect-[16/7] w-full object-cover" />
-            <div className="absolute inset-0 bg-black/25" aria-hidden="true" />
-            <p className="absolute start-6 top-6 text-3xl text-white tracking-[-0.05em]">{store.name}</p>
-          </div>
-        ) : (
-          <div className="rounded-[28px] bg-brand-wash p-6"><HeroArt kind={industry?.key} className="mx-auto max-h-[22rem] w-full" /></div>
-        )}
-      </section>
-
       {stats.length > 0 && (
-        <ul className="mt-6 flex flex-wrap justify-center gap-2">
+        <ul className="mt-8 flex flex-wrap gap-2">
           {stats.map((s) => (
             <li key={s.l} className={pillCls} style={pillShadow}><strong className="font-normal text-brand-ink">{formatNumber(s.v)}{s.suffix ?? ""}</strong> <span className="text-[#5f5c5b]">{tr(s.l)}</span></li>
           ))}
@@ -158,8 +161,8 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq).replace(/</g, "\\u003c") }} />
       </section>
 
-      <section className="mt-16 rounded-[28px] bg-black p-8 text-center text-white md:p-12" aria-labelledby="cta">
-        <h2 id="cta" className="text-3xl tracking-[-0.05em]">{tr("Ready to get started?")}</h2>
+      <section className="bg-dark bg-grid-dark mt-16 rounded-[32px] p-8 text-center text-white md:p-14" aria-labelledby="cta">
+        <h2 id="cta" className="display text-3xl !text-white md:text-4xl">{tr("Ready to get started?")}</h2>
         <p className="mx-auto mt-3 max-w-md text-white/70">{tr("Create a free account, choose a service and receive quotes from professionals near you.")}</p>
         <Link href={`/register?store=${encodeURIComponent(store.slug)}`} className="btn-brand mt-6 inline-flex h-11 items-center rounded-full px-6">{tr("Create an account")}</Link>
       </section>

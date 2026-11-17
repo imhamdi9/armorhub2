@@ -2,6 +2,8 @@
 
 import { CategoryField } from "@/components/products/category-field";
 import { INSTALLATION_LABEL, InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { PageTemplateField } from "@/components/products/page-template-field";
+import { DEFAULT_TEMPLATE, PAGE_TEMPLATES, TEMPLATE_INFO, type PageTemplate } from "@/lib/product-templates";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { hasRole } from "@/lib/navigation";
-import { bulkSetInstallation, createProduct, getProducts } from "@/services/platform.service";
+import { bulkSetInstallation, bulkSetPageTemplate, createProduct, getProducts } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
@@ -31,9 +33,11 @@ export default function ProductsPage() {
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [installation, setInstallation] = useState<InstallationMode>("none");
+  const [pageTemplate, setPageTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
   // Choosing many products to give them all the same installation setting.
   const [chosen, setChosen] = useState<number[]>([]);
   const [bulkMode, setBulkMode] = useState<InstallationMode>("optional");
+  const [bulkTemplate, setBulkTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +63,17 @@ export default function ProductsPage() {
     }
   }
 
+  async function applyBulkTemplate() {
+    setBulkMsg(null);
+    try {
+      const r = await bulkSetPageTemplate(chosen, bulkTemplate);
+      setChosen([]);
+      setBulkMsg(tr("Updated {n} products.", { n: r.updated }));
+    } catch {
+      setBulkMsg(tr("Could not update the products. Try again."));
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -68,6 +83,7 @@ export default function ProductsPage() {
         slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
         category,
         installation,
+        ...(hasRole(user, "platform-admin") ? { page_template: pageTemplate } : {}),
         base_price: price,
         industry_id: user?.industry?.id ?? null,
       });
@@ -96,6 +112,7 @@ export default function ProductsPage() {
             <CategoryField id="category" value={category} onChange={setCategory} />
           </div>
           <InstallationField value={installation} onChange={setInstallation} />
+          {hasRole(user, "platform-admin") && <PageTemplateField value={pageTemplate} onChange={setPageTemplate} />}
           <div>
             <Label htmlFor="price">{tr("Base price")}</Label>
             <Input id="price" type="number" min="0" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} />
@@ -124,6 +141,14 @@ export default function ProductsPage() {
                 {(Object.keys(INSTALLATION_LABEL) as InstallationMode[]).map((m) => <option key={m} value={m}>{tr(INSTALLATION_LABEL[m])}</option>)}
               </select>
               <Button type="button" size="sm" onClick={applyBulk}>{tr("Apply to {n} products", { n: chosen.length })}</Button>
+              {hasRole(user, "platform-admin") && (
+                <span className="flex flex-wrap items-center gap-2 border-s ps-3" data-testid="bulk-template">
+                  <select aria-label={tr("Product page layout")} className="h-9 rounded-md border border-input bg-background px-2" value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value as PageTemplate)}>
+                    {PAGE_TEMPLATES.map((k) => <option key={k} value={k}>{tr(TEMPLATE_INFO[k].name)}</option>)}
+                  </select>
+                  <Button type="button" size="sm" variant="outline" onClick={applyBulkTemplate}>{tr("Set the page layout")}</Button>
+                </span>
+              )}
             </>
           )}
           {bulkMsg && <span role="status" className="text-muted-foreground">{bulkMsg}</span>}

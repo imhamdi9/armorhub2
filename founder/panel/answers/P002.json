@@ -1,0 +1,13 @@
+{
+  "id": "P002",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "I already have one workshop I have trusted for years, and I like negotiating the price with them face to face. An app that is only just adding its first partners in Riyadh and Cairo does not give me a reason to switch for a paint film job on the M4.",
+  "objection": "I do not know who these partners really are or whether the one who quotes is the one who does the work. And if I have to wait hours or days for quotes when I want a price now, I will just call my workshop.",
+  "would_change_my_mind": "If my own workshop charged clearly more than the app quotes for the same film, and I could see a named partner in my city with a track record of work I could check myself.",
+  "price_too_cheap": 700,
+  "price_cheap": 1100,
+  "price_expensive": 1900,
+  "price_too_expensive": 2300
+}

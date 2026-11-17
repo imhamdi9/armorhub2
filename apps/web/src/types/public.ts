@@ -99,13 +99,17 @@ export interface PublicProducts {
   data: PublicProduct[];
   current_page: number;
   last_page: number;
+  total?: number;
 }
 
 export interface PublicProductPage {
   product: PublicProduct & {
-    prices: { target_type: string; target: string; price: number; duration_minutes: number | null }[];
+    prices: { target_type: string; target_id?: number; target: string; price: number; duration_minutes: number | null }[];
     highlights?: string[];
+    page_template?: string;
   };
   related?: PublicProduct[];
-  store: { name: string; slug: string };
+  customer_fee_percentage?: number;
+  reviews?: { count: number; average: number | null; items: { id: number; rating: number; comment: string | null; author: string; date: string | null }[] };
+  store: { name: string; slug: string; contact_phone?: string | null };
 }

@@ -1,0 +1,13 @@
+{
+  "id": "P015",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "My usual workshop gives me a price on WhatsApp in a minute and I already know the man who does the work. I do not know ArmorHub or its partners, and a website that finds strangers for my BMW is not something I would hand my car to in my first month.",
+  "objection": "I do not know who these partners are. ID and commercial registration checks sound fine on paper, but I have not met anyone and I would have to trust a stranger with a car that is worth more than my week's salary.",
+  "would_change_my_mind": "A friend or family member who has used ArmorHub and had good work done, so I hear it from someone I know rather than from an app.",
+  "price_too_cheap": 800,
+  "price_cheap": 1200,
+  "price_expensive": 2000,
+  "price_too_expensive": 2300
+}

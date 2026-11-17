@@ -1,0 +1,13 @@
+{
+  "id": "P010",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "My workshop already gives me a price on WhatsApp in a minute, and they have done my cars for years. I would have to learn a new app and wait for strangers to quote me when I already know who I trust.",
+  "objection": "Two partners being added in Riyadh and Cairo means I would be picking a workshop I have never seen, for a car that costs more than most people's houses. Being checked for ID and registration does not tell me if their film is genuine or if their hands are good.",
+  "would_change_my_mind": "A named film brand with its own warranty in writing, and photos of finished work on M4s or similar cars from the specific partner who would do my car.",
+  "price_too_cheap": 900,
+  "price_cheap": 1300,
+  "price_expensive": 2100,
+  "price_too_expensive": 2600
+}

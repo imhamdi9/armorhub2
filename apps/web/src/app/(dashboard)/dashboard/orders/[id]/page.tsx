@@ -63,7 +63,7 @@ function OrderDetail() {
     if (!order) return;
     setError(null);
     try {
-      const res = await payOrder(order.id, order.total_amount);
+      const res = await payOrder(order.id, order.payable_amount ?? Number(order.total_amount));
       if (res.checkout_url) {
         window.location.href = res.checkout_url;
         return;
@@ -109,7 +109,11 @@ function OrderDetail() {
         <p className="font-semibold">{order.product?.name}</p>
         <p>{tr("Product")}: {formatMoney(order.product_amount, order.currency)}</p>
         <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>
-        <p className="mt-1 text-base font-bold">{tr("Total")}: {formatMoney(order.total_amount, order.currency)}</p>
+        <p className="mt-1 font-semibold">{tr("Invoice")}: {formatMoney(order.total_amount, order.currency)}</p>
+        {Number(order.service_fee_amount) > 0 && (
+          <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>
+        )}
+        <p className="mt-1 text-base font-bold">{tr("Total to pay")}: {formatMoney(order.payable_amount ?? order.total_amount, order.currency)}</p>
         {Number(order.tax_rate) > 0 && (
           <p className="text-muted-foreground">
             {tr("Includes VAT ({rate}%)", { rate: Number(order.tax_rate) })}: {formatMoney(order.tax_amount ?? 0, order.currency)}
@@ -191,7 +195,7 @@ function OrderDetail() {
       <div className="mt-6 flex gap-3">
         {canPay && (
           <Button disabled={confirming} onClick={pay}>
-            {tr("Pay {amount}", { amount: formatMoney(order.total_amount, order.currency) })}
+            {tr("Pay {amount}", { amount: formatMoney(order.payable_amount ?? order.total_amount, order.currency) })}
           </Button>
         )}
         {canCancel && (

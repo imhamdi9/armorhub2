@@ -61,6 +61,11 @@ class GuestOrderController extends Controller
 
         app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
 
+        // A seller's plan serves a number of customers a month.
+        if ($product->seller_id) {
+            app(\App\Services\SubscriptionService::class)->assertCanTakeCustomers('seller', (int) $product->seller_id);
+        }
+
         // "Sold only with an installation offer": offers come from centres to a signed-in customer, so a guest cannot buy it directly.
         if ($product->installation === 'required') {
             throw ValidationException::withMessages(['product_id' => ['This product is sold together with an installation offer. Sign in or create an account to get offers first.']]);
@@ -89,7 +94,7 @@ class GuestOrderController extends Controller
                 'company_id' => $company->id, 'customer_id' => null, 'product_id' => $product->id, 'status' => OrderStatus::AwaitingPayment,
                 'product_amount' => $price['total'], 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $price['total'], 'currency' => $price['currency'],
                 'shipping_address' => $address, 'guest_name' => $data['name'], 'guest_email' => strtolower($data['email']), 'guest_token' => Str::random(48),
-            ] + $markets->taxFor($company, (float) $price['total']));
+            ] + $markets->taxFor($company, (float) $price['total']) + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $price['total']));
             OrderEvent::record($order, 'created', null, ['direct_sale' => true, 'guest' => true]);
 
             return $order;
@@ -116,7 +121,7 @@ class GuestOrderController extends Controller
         }
 
         try {
-            $charge = $gateway->charge($order, (float) $order->total_amount, $request->input('payment_method'));
+            $charge = $gateway->charge($order, (float) $order->payable_amount, $request->input('payment_method'));
         } catch (PaymentUnavailable $e) {
             return response()->json(['message' => $e->getMessage()], 503);
         }
@@ -126,7 +131,7 @@ class GuestOrderController extends Controller
         }
 
         if ($charge['status'] === 'redirect') {
-            Payment::create(['company_id' => $order->company_id, 'order_id' => $order->id, 'amount' => $order->total_amount, 'currency' => $order->currency,
+            Payment::create(['company_id' => $order->company_id, 'order_id' => $order->id, 'amount' => $order->payable_amount, 'currency' => $order->currency,
                 'payment_method' => $request->input('payment_method'), 'status' => 'pending', 'provider' => $charge['provider'] ?? null, 'transaction_id' => $charge['transaction_id']]);
 
             return response()->json(['message' => 'Continue to the payment page.', 'checkout_url' => $charge['url']], 202);
@@ -160,7 +165,7 @@ class GuestOrderController extends Controller
         $status = $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status;
 
         return [
-            'id' => $order->id, 'status' => $status, 'currency' => $order->currency, 'total' => (float) $order->total_amount, 'tax_amount' => $order->tax_amount !== null ? (float) $order->tax_amount : null,
+            'id' => $order->id, 'status' => $status, 'currency' => $order->currency, 'total' => (float) $order->total_amount, 'service_fee' => (float) $order->service_fee_amount, 'service_fee_rate' => (float) $order->service_fee_rate, 'payable' => (float) $order->payable_amount, 'tax_amount' => $order->tax_amount !== null ? (float) $order->tax_amount : null,
             'created_at' => $order->created_at?->toIso8601String(), 'email' => $order->guest_email, 'name' => $order->guest_name,
             'product' => ['installation' => $order->product?->installation ?? 'none', 'name' => $order->product?->name, 'image' => $order->product?->images[0] ?? null, 'seller' => $order->product?->seller_id ? \App\Models\Company::withoutGlobalScopes()->whereKey($order->product->seller_id)->value('name') : null],
             'store' => ['name' => $company?->name, 'slug' => $company?->slug],

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class PaymentFinalizer
 {
-    public function __construct(private CalculateCommissionService $commissions, private Settings $settings)
+    public function __construct(private CalculateCommissionService $commissions, private Settings $settings, private \App\Services\SubscriptionService $subscriptions)
     {
     }
 
@@ -49,7 +49,7 @@ class PaymentFinalizer
                 ->first();
 
             $attributes = [
-                'amount' => $locked->total_amount,
+                'amount' => $locked->payable_amount,
                 'currency' => $locked->currency,
                 'payment_method' => $method ?? $payment?->payment_method,
                 'status' => 'completed',
@@ -61,7 +61,7 @@ class PaymentFinalizer
                 ? tap($payment)->update($attributes)
                 : Payment::create($attributes + ['company_id' => $locked->company_id, 'order_id' => $locked->id]);
 
-            $calc = $this->commissions->calculate($locked->total_amount);
+            $calc = $this->commissions->calculate($locked->total_amount, $this->subscriptions->commissionPercentageFor($locked));
 
             $commission = Commission::create([
                 'order_id' => $locked->id,
@@ -69,6 +69,16 @@ class PaymentFinalizer
                 'percentage' => $calc['percentage'],
                 'status' => 'pending',
             ]);
+
+            // The platform fee the customer paid on top of the invoice is platform income of its own.
+            if ((float) $locked->service_fee_amount > 0) {
+                CommissionDistribution::create([
+                    'commission_id' => $commission->id,
+                    'type' => 'service_fee',
+                    'amount' => $locked->service_fee_amount,
+                    'status' => 'pending',
+                ]);
+            }
 
             $quote = PartnerQuote::withoutGlobalScopes()
                 ->where('order_id', $locked->id)
@@ -82,7 +92,7 @@ class PaymentFinalizer
             }
 
             $locked->update(['status' => OrderStatus::Paid]);
-            OrderEvent::record($locked, 'paid', $by, ['amount' => (string) $locked->total_amount]);
+            OrderEvent::record($locked, 'paid', $by, ['amount' => (string) $locked->payable_amount]);
 
             return [$payment, $commission];
         });

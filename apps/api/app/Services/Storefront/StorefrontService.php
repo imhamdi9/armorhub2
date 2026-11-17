@@ -178,6 +178,7 @@ class StorefrontService
 
         return $rules->map(fn ($r) => [
             'target_type' => $r->target_type,
+            'target_id' => (int) $r->target_id,
             'target' => $names[$r->target_type][$r->target_id] ?? null,
             'price' => round((float) $r->price, 2),
             'duration_minutes' => $r->duration_minutes,

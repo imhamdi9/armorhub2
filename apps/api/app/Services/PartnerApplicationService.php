@@ -53,6 +53,7 @@ class PartnerApplicationService
 
             $app->update(['status' => PartnerApplication::APPROVED, 'reviewed_by' => $by->id, 'reviewed_at' => now(), 'partner_id' => $partner->id, 'user_id' => $user->id]);
             Audit::record('partner_application.approved', $app, ['partner_id' => $partner->id], $by);
+            $this->startChosenPlan($app, 'partner', $partner->id);
 
             return $app;
         });
@@ -72,8 +73,31 @@ class PartnerApplicationService
 
         $app->update(['status' => PartnerApplication::APPROVED, 'reviewed_by' => $by->id, 'reviewed_at' => now(), 'user_id' => $user->id]);
         Audit::record('partner_application.approved', $app, ['type' => 'seller', 'company_id' => $company->id], $by);
+        $this->startChosenPlan($app, 'seller', $company->id);
 
         return $app;
+    }
+
+    /**
+     * The plan picked on the pricing page starts once the business is approved. A paid plan starts only if it was paid when applying
+     * (the payment is kept as its first invoice); otherwise, or when the plan was switched off meanwhile, the business starts free and can upgrade from its account.
+     */
+    private function startChosenPlan(PartnerApplication $app, string $type, int $subjectId): void
+    {
+        if ($app->plan_key === null) {
+            return;
+        }
+
+        try {
+            $plan = \App\Models\SubscriptionPlan::where('key', $app->plan_key)->first();
+            $paid = $plan && (float) $plan->price_monthly > 0;
+            if ($paid && $app->plan_paid_at === null) {
+                return;
+            }
+            app(SubscriptionService::class)->choose($type, $subjectId, $app->plan_key, $paid ? $app->plan_payment_reference : null);
+        } catch (ValidationException) {
+            // not available any more: stays on the free plan
+        }
     }
 
     public function reject(PartnerApplication $application, User $by, ?string $reason): PartnerApplication

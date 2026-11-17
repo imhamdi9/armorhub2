@@ -3,9 +3,10 @@ import type { CSSProperties } from "react";
 /** Brand mark: a shield with a check, drawn in the page's brand colour. */
 export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <path d="M16 2 4 6.5v8.2c0 7.2 4.9 12.6 12 14.8 7.1-2.2 12-7.6 12-14.8V6.5L16 2Z" fill="var(--dark, #163300)" />
-      <path d="m10.5 16.2 4 4 7.2-8" fill="none" stroke="var(--on-dark-accent, #9fe870)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 34 34" className={className} aria-hidden="true">
+      <rect width="34" height="34" rx="10" fill="var(--dark, #0b1b3a)" />
+      <path d="M17 6.5 8.5 9.8v6.2c0 5.3 3.6 8.6 8.5 10.2 4.9-1.6 8.5-4.9 8.5-10.2V9.8L17 6.5Z" fill="var(--on-dark-accent, #8db8ff)" />
+      <path d="m12.8 16.6 3 3 5.4-6" fill="none" stroke="var(--dark, #0b1b3a)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -36,11 +37,11 @@ function Backdrop() {
     <>
       <defs>
         <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.2" fill="var(--dark, #163300)" opacity="0.12" />
+          <circle cx="2" cy="2" r="1.2" fill="var(--dark, #0b1b3a)" opacity="0.12" />
         </pattern>
         <radialGradient id="glow" cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="var(--brand, #9fe870)" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="var(--brand, #9fe870)" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--brand, #8db8ff)" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="var(--brand, #8db8ff)" stopOpacity="0" />
         </radialGradient>
       </defs>
       <rect width="480" height="360" rx="28" fill="url(#dots)" />
@@ -49,7 +50,7 @@ function Backdrop() {
   );
 }
 
-const B = "var(--dark, #163300)";
+const B = "var(--dark, #0b1b3a)";
 
 /** Illustrations for each kind of business. Pure SVG: no downloads, always in the store's colours. */
 export function HeroArt({ kind, className = "w-full" }: { kind?: string | null; className?: string }) {

@@ -50,6 +50,9 @@ class PartnerOrderController extends Controller
             'Unauthorized.'
         );
 
+        // A plan serves a number of customers a month; a business at its limit upgrades or waits for the next month.
+        app(\App\Services\SubscriptionService::class)->assertCanTakeCustomers('partner', (int) $request->user()->partner_id);
+
         return response()->json([
             'message' => 'Quote submitted successfully.',
             'quote' => $quotes->submit($quote, $request->price, $request->user()),

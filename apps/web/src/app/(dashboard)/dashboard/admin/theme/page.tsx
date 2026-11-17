@@ -161,7 +161,7 @@ export default function ThemeEditorPage() {
 
           {tab === "style" && (
             <div className="space-y-4">
-              {([["brand_color", "Accent colour (buttons)", "#9fe870"], ["dark_color", "Dark colour (panels, footer)", "#163300"]] as const).map(([k, l, d]) => (
+              {([["brand_color", "Accent colour (buttons)", "#8db8ff"], ["dark_color", "Dark colour (panels, footer)", "#0b1b3a"]] as const).map(([k, l, d]) => (
                 <div key={k}>
                   <label htmlFor={`c-${k}`} className="mb-1 block text-sm font-medium">{tr(l)}</label>
                   <div className="flex items-center gap-2">

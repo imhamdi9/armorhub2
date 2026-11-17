@@ -60,71 +60,103 @@ export function factsOf(stores: { market?: string | null }[], showcase: PublicSh
 
 export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name: string; slug: string; headline: string | null; primary_color: string } }) {
   const badge = useSiteText("home", "badge_text", "Saudi Arabia · Egypt");
-  const title = useSiteText("home", "hero_title", "Trusted services, quoted by experts near you");
+  const title = useSiteText("home", "hero_title", "Describe the job. Compare real quotes. Book who you trust.");
   const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
   const cta = useSiteText("home", "primary_cta", "Browse markets");
   const heroImage = useSiteValue("home", "hero_image_url");
   const ed = useEditable();
+  const proof = [
+    ["shield", "Verified partners", "ID and commercial registration checked"],
+    ["lock", "Protected payment", "Paid in the app, split on completion"],
+    ["star", "Warranty included", "Issued automatically for each job"],
+  ] as const;
+  const cats = [
+    ["Paint protection", "M5 16V11l2-5h10l2 5v5M3 16h18M7 19v-3M17 19v-3"],
+    ["Ceramic coating", "M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"],
+    ["Home cleaning", "M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10"],
+    ["Salons and spas", "M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z"],
+    ["Screen protection", "M4 5h16v11H4zM8 20h8M12 16v4"],
+    ["AC service", "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM12 3v3M12 18v3M3 12h3M18 12h3"],
+  ] as const;
 
   return (
-    <section className="overflow-hidden bg-white">
-      <div className="mx-auto max-w-[1200px] px-4 pb-6 pt-14 text-center md:pt-20">
-        <span className="inline-flex items-center gap-2 rounded-full bg-linen px-4 py-1.5 text-sm font-semibold text-forest">
-          <span className="h-2 w-2 rounded-full bg-spruce" aria-hidden="true" />
+    <section className="overflow-hidden">
+      <div className="mx-auto max-w-[1240px] px-4 pb-6 pt-10 text-center md:px-10 md:pt-14">
+        <span className="inline-flex items-center gap-2 rounded-full bg-fog px-3.5 py-1.5 text-[13.5px] font-semibold text-obsidian">
+          <span className="h-2 w-2 rounded-full bg-[#2f6bff]" aria-hidden="true" />
           <span {...ed("badge_text")}>{badge}</span>
         </span>
-        <h1 {...ed("hero_title")} className="display display-xl mx-auto mt-6 max-w-5xl uppercase">{title}</h1>
-        <p {...ed("hero_subtitle")} className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-charcoal">
-          {subtitle}
+        <h1 {...ed("hero_title")} className="display display-xl mx-auto mt-5 max-w-4xl">{title}</h1>
+        <p {...ed("hero_subtitle")} className="mx-auto mt-4 max-w-2xl text-[17px] leading-relaxed text-slate">{subtitle}</p>
+
+        <div className="mx-auto mt-8 flex max-w-3xl flex-col items-stretch gap-2 rounded-[28px] border border-border bg-white p-2 shadow-[0_6px_24px_rgba(11,27,58,.12)] sm:flex-row sm:items-center sm:rounded-full">
+          {proof.map(([icon, head], i) => (
+            <div key={head} className={`flex flex-1 items-center gap-3 px-5 py-2 text-start ${i ? "sm:border-s sm:border-border" : ""}`}>
+              <Icon name={icon} className="h-5 w-5 shrink-0 text-[#2f6bff]" />
+              <span className="text-[14.5px] font-semibold text-obsidian">{tr(head)}</span>
+            </div>
+          ))}
+          <a href="#stores" {...ed("primary_cta")} className="group inline-flex h-[54px] items-center justify-center gap-2 rounded-full bg-[#2f6bff] px-7 text-[15px] font-semibold text-white transition hover:-translate-y-px hover:brightness-110">
+            {cta}
+            <svg viewBox="0 0 16 16" className="h-4 w-4 transition group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+          </a>
+        </div>
+        <p className="mt-3 text-sm text-slate">
+          <Link href="/partner-signup" className="font-semibold text-obsidian underline underline-offset-4">{tr("Become a partner")}</Link>
+          <span className="mx-2 text-border">·</span>
+          <Link href="/login" className="underline underline-offset-4">{tr("For businesses: sign in")}</Link>
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-          <a href="#stores" {...ed("primary_cta")} className="btn-brand inline-flex items-center gap-2 px-7 py-3.5 text-base">{cta} <span aria-hidden="true">→</span></a>
-          <Link href="/login" className="text-base font-semibold text-forest underline underline-offset-4">{tr("For businesses: sign in")}</Link>
-        </div>
-        <div className="mt-8 flex flex-wrap justify-center gap-2 border-t border-dashed border-fog pt-6">
-          {["Paint protection", "Home cleaning", "Salons and spas", "Screen protection", "Ceramic coating", "AC service"].map((c) => <Chip key={c}>{tr(c)}</Chip>)}
-        </div>
+
+        <ul className="mt-9 flex flex-wrap justify-center gap-x-8 gap-y-4" aria-label={tr("What people book")}>
+          {cats.map(([name, d], i) => (
+            <li key={name}>
+              <a href="#stores" className={`flex flex-col items-center gap-1.5 pb-2 text-[13px] font-semibold transition ${i === 0 ? "border-b-2 border-[#2f6bff] text-[#2f6bff]" : "text-slate hover:text-obsidian"}`}>
+                <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
+                {tr(name)}
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* A layered collage of real numbers and a real store, rather than one flat screenshot. */}
-      <div className="mx-auto mt-6 grid max-w-[1100px] items-end gap-4 px-4 pb-14 md:grid-cols-12">
-        <div className="bg-dark rounded-[28px] p-7 md:col-span-4 md:-mb-4">
-          <p className="text-sm text-white/70">{tr("Open markets")}</p>
-          <p className="display text-on-dark-accent mt-1 !text-7xl md:!text-8xl" style={{ color: "var(--on-dark-accent)" }}>{formatNumber(facts.stores)}</p>
-          <p className="mt-2 text-sm text-white/80">{tr("{n} countries · {m} industries", { n: facts.countries, m: facts.industries })}</p>
-        </div>
-
-        <div className="relative overflow-hidden rounded-[28px] bg-linen md:col-span-5">
-          {heroImage ? (
+      {/* One quote request, shown the way a customer sees it. */}
+      <div className="mx-auto max-w-[1240px] px-4 pb-10 md:px-10" aria-hidden="true">
+        <div className="bg-dark bg-grid-dark relative overflow-hidden rounded-[32px] px-6 py-8 md:px-12">
+          {heroImage && (
             // eslint-disable-next-line @next/next/no-img-element -- an https image an admin chose
-            <img src={heroImage} alt="" className="h-full min-h-56 w-full object-cover" />
-          ) : (
-            <div className="p-5"><HeroArt kind="automotive" className="w-full" /></div>
+            <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
           )}
-          {firstStore && (
-            <Link href={`/s/${firstStore.slug}`} className="absolute bottom-4 start-4 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-forest shadow-card">
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: firstStore.primary_color }} />
-              {firstStore.name}
-            </Link>
-          )}
-        </div>
-
-        <div className="rounded-[28px] border border-fog bg-white p-6 shadow-lift md:col-span-3 md:mb-6">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-forest font-black text-lime" aria-hidden="true">?</span>
-            <div>
-              <p className="font-bold text-obsidian">{tr("Need a hand?")}</p>
-              <p className="text-xs text-slate">{tr("Answers in seconds")}</p>
+          <div className="relative grid items-center gap-6 md:grid-cols-[1fr_1.2fr]">
+            <div className="text-start text-white">
+              <p className="text-sm text-white/70">{tr("Example request")}</p>
+              <p className="font-display mt-1 text-2xl font-semibold leading-tight">{tr("Paint protection film, BMW M4")}</p>
+              <div className="mt-3 flex flex-wrap gap-2">{["Front bumper", "Hood"].map((c) => <span key={c} className="rounded-full bg-white/12 px-3 py-1 text-sm">{tr(c)}</span>)}</div>
+              <p className="mt-4 text-sm text-white/75">{tr("Quote accepted")} · {tr("Pay now, book your slot")}</p>
+            </div>
+            <div className="grid gap-3">
+              {[
+                { n: "C", name: "Cairo Garage", price: 2100, km: 2, best: false },
+                { n: "S", name: "Shop One", price: 1980, km: 4, best: true },
+                { n: "N", name: "Nile Shield", price: 1750, km: 7, best: false },
+              ].map((q) => (
+                <div key={q.n} className={`relative grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-2xl bg-white px-4 py-3 text-start ${q.best ? "outline outline-2 outline-[#2f6bff]" : ""}`}>
+                  {q.best && <span className="absolute -top-2.5 start-4 rounded-full bg-[#2f6bff] px-2.5 py-0.5 text-xs font-semibold text-white">{tr("Best match")}</span>}
+                  <span className={`font-display grid h-11 w-11 place-items-center rounded-[14px] text-lg font-bold ${q.best ? "bg-[#2f6bff] text-white" : "bg-fog text-obsidian"}`}>{q.n}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[15px] font-semibold text-obsidian">{q.name}</span>
+                    <span className="block truncate text-xs text-slate">{tr("Verified")} · {tr("{n} km", { n: formatNumber(q.km) })}</span>
+                  </span>
+                  <span className="font-display text-end text-[21px] font-bold leading-none text-obsidian" dir="ltr">SAR {formatNumber(q.price)}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <a href="#faq" className="mt-4 inline-block rounded-full bg-fog px-4 py-2 text-sm font-semibold text-forest hover:bg-linen">{tr("Read the FAQ")}</a>
         </div>
+        <span className="sr-only">{facts.stores}{firstStore?.name}</span>
       </div>
     </section>
   );
 }
-
-// ------------------------------------------------------------------ partners strip
 
 export function PartnerStrip({ showcase, facts }: { showcase: PublicShowcase; facts: Facts }) {
   const names = showcase.industries.flatMap((i) => i.stores.flatMap((s) => s.partners.map((p) => p.name)));
@@ -308,7 +340,7 @@ export function UseCases({ showcase }: { showcase: PublicShowcase }) {
         <div className="grid gap-6 md:grid-cols-2 md:items-end">
           <div>
             <Eyebrow dark>{tr("Use cases")}</Eyebrow>
-            <h2 className="display display-lg mt-3 uppercase" style={{ color: "var(--on-dark-accent)" }}>{title}</h2>
+            <h2 className="display display-lg mt-3" style={{ color: "var(--on-dark-accent)" }}>{title}</h2>
           </div>
           <p className="text-white/80 md:text-end">{text}</p>
         </div>
@@ -375,7 +407,7 @@ export function Bento({ facts }: { facts: Facts }) {
           <div className="mt-4 max-w-md"><HeroArt kind="home-services" className="w-full" /></div>
         </div>
         <div className="rounded-[28px] border border-fog bg-white p-7 md:col-span-2">
-          <svg viewBox="0 0 120 120" className="h-20 w-20" aria-hidden="true">{[56, 40, 24, 8].map((r, i) => <circle key={r} cx="60" cy="60" r={r} fill="none" stroke="#163300" strokeOpacity={0.15 + i * 0.2} strokeWidth="3" />)}<circle cx="60" cy="60" r="4" fill="#163300" /></svg>
+          <svg viewBox="0 0 120 120" className="h-20 w-20" aria-hidden="true">{[56, 40, 24, 8].map((r, i) => <circle key={r} cx="60" cy="60" r={r} fill="none" stroke="#0b1b3a" strokeOpacity={0.15 + i * 0.2} strokeWidth="3" />)}<circle cx="60" cy="60" r="4" fill="#0b1b3a" /></svg>
           <p className="mt-3 font-semibold text-obsidian">{tr("Quotes come from professionals near you, matched by location.")}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 md:col-span-2">
@@ -511,7 +543,7 @@ export function Banner({ title, text, href, label, secondary, image }: { title: 
         )}
         <div className="absolute -end-10 -top-10 h-40 w-40 rounded-full bg-lime/20" aria-hidden="true" />
         <div className="absolute -bottom-12 start-6 h-32 w-32 rounded-full bg-lime/10" aria-hidden="true" />
-        <h2 className="display display-lg relative mx-auto max-w-3xl uppercase" style={{ color: "var(--on-dark-accent)" }}>{tr(title)}</h2>
+        <h2 className="display display-lg relative mx-auto max-w-3xl" style={{ color: "var(--on-dark-accent)" }}>{tr(title)}</h2>
         <p className="relative mx-auto mt-4 max-w-xl text-white/85">{tr(text)}</p>
         <div className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
           <a href={href} className="btn-brand px-7 py-3.5">{tr(label)}</a>

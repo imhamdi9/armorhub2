@@ -14,6 +14,7 @@ export interface Product {
   is_active: boolean;
   requires_shipping?: boolean;
   installation?: "none" | "optional" | "required";
+  page_template?: string | null;
   seller_id?: number | null;
   sku?: string | null;
   fulfilment?: "seller" | "armorhub";
@@ -53,6 +54,9 @@ export interface Order {
   product_amount: string;
   service_amount: string;
   total_amount: string;
+  service_fee_rate?: string;
+  service_fee_amount?: string;
+  payable_amount?: number;
   currency: string;
   market?: string | null;
   tax_rate?: string;

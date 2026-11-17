@@ -46,34 +46,34 @@ export default function DashboardLayout({
     <I18nProvider>
     <CurrentUserProvider>
       <TooltipProvider>
-        <SidebarProvider>
+        <SidebarProvider className="bg-[radial-gradient(700px_500px_at_5%_0%,#bcd6ff,transparent_60%),radial-gradient(600px_500px_at_98%_12%,#d4f1ff,transparent_60%),#eef3ff]">
           <AppSidebar />
 
-          <SidebarInset className="min-w-0 overflow-x-clip">
-            <header className="flex h-16 items-center justify-between border-b px-3 sm:px-6">
+          <SidebarInset className="min-w-0 overflow-x-clip !bg-transparent">
+            <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between px-3 sm:px-8">
               <div className="flex items-center">
                 <SidebarTrigger />
-                <h1 className="ms-4 hidden text-lg font-semibold sm:block">{tr("ArmorHub")}</h1>
+                <h1 className="sr-only">{tr("ArmorHub")}</h1>
               </div>
 
               <div className="flex items-center gap-2">
-              <LanguageSwitcher />
-              <NotificationBell />
-              <button
-                onClick={async () => {
-                  await logout().catch(() => undefined);
-                  router.replace("/login");
-                }}
-                className="whitespace-nowrap rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
-              >
-                {tr("Logout")}
-              </button>
+                <LanguageSwitcher />
+                <NotificationBell />
+                <button
+                  onClick={async () => {
+                    await logout().catch(() => undefined);
+                    router.replace("/login");
+                  }}
+                  className="whitespace-nowrap rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-obsidian transition hover:bg-fog"
+                >
+                  {tr("Logout")}
+                </button>
               </div>
             </header>
 
             <VerifyEmailBanner />
 
-            <div className="min-w-0 p-4 sm:p-6">{children}</div>
+            <div className="min-w-0 px-4 pb-10 pt-2 sm:px-6 [&_.rounded-lg.border]:rounded-2xl [&_.rounded-lg.border]:bg-white [&_.rounded-lg.border]:shadow-card [&_.rounded-xl.border]:rounded-2xl [&_.rounded-xl.border]:bg-white [&_.rounded-xl.border]:shadow-card [&_.border-dashed]:shadow-none">{children}</div>
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>

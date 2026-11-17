@@ -64,7 +64,7 @@ function FieldInput({ name, spec, value, onChange, error }: { name: string; spec
           {(spec.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : (
-        <Input id={id} type={spec.type === "number" ? "number" : "text"} maxLength={spec.max} placeholder={spec.type === "color" ? "#163300" : spec.type === "url" ? "https://" : tr("Built-in default")} value={(value as string | number) ?? ""} onChange={(e) => onChange(e.target.value)} />
+        <Input id={id} type={spec.type === "number" ? "number" : "text"} maxLength={spec.max} placeholder={spec.type === "color" ? "#0b1b3a" : spec.type === "url" ? "https://" : tr("Built-in default")} value={(value as string | number) ?? ""} onChange={(e) => onChange(e.target.value)} />
       )}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>

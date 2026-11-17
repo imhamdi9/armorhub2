@@ -14,3 +14,6 @@ Artisan::command('inspire', function () {
 
 // Installation jobs: release proven jobs after the objection window, close old requests, rebuild centre records. (Also done lazily when people look, for hosts with no scheduler.)
 \Illuminate\Support\Facades\Schedule::command('installations:maintain')->hourly();
+
+// Monthly plans: renew paid ones, end the cancelled ones.
+\Illuminate\Support\Facades\Schedule::command('subscriptions:renew')->daily();

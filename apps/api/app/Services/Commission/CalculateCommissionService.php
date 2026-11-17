@@ -11,9 +11,10 @@ class CalculateCommissionService
     }
 
     /** @return array{percentage: float, amount: float} */
-    public function calculate(float|int|string $amount): array
+    public function calculate(float|int|string $amount, ?float $percentage = null): array
     {
-        $percentage = (float) $this->settings->get('platform.commission_percentage');
+        // The commission of the partner's or seller's plan when one is given, else the platform default.
+        $percentage ??= (float) $this->settings->get('platform.commission_percentage');
 
         return [
             'percentage' => $percentage,

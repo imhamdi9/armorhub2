@@ -62,6 +62,7 @@ class PartnerApplicationController extends Controller
             'description' => 'nullable|string|max:400',
             'registration_number' => 'required|string|max:40',
             'tax_number' => ($type === 'seller' ? 'required' : 'nullable').'|string|max:30',
+            'plan' => ['nullable', 'string', 'max:40', \Illuminate\Validation\Rule::exists('subscription_plans', 'key')->where('is_active', true)],
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'password' => StrongPassword::rules(confirmed: true),
@@ -117,7 +118,7 @@ class PartnerApplicationController extends Controller
                     'email' => mb_strtolower(trim($data['email'])), 'email_canonical' => $canonical, 'phone' => $phone, 'city' => $data['city'],
                     'country' => strtoupper($data['country']), 'description' => $data['description'] ?? null, 'registration_number' => $data['registration_number'],
                     'tax_number' => $data['tax_number'] ?? null, 'latitude' => $data['latitude'] ?? null, 'longitude' => $data['longitude'] ?? null,
-                    'password' => Hash::make($data['password']), 'status' => PartnerApplication::PENDING,
+                    'password' => Hash::make($data['password']), 'status' => PartnerApplication::PENDING, 'plan_key' => $data['plan'] ?? null, 'plan_pay_token' => $this->planNeedsPayment($data['plan'] ?? null) ? bin2hex(random_bytes(24)) : null,
                 ]);
 
                 foreach (ApplicationDocuments::KINDS as $kind) {
@@ -151,7 +152,34 @@ class PartnerApplicationController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Application received. You can sign in as soon as it is approved.'], 201);
+        $body = ['message' => 'Application received. You can sign in as soon as it is approved.'];
+        if ($application->plan_pay_token) {
+            $plan = \App\Models\SubscriptionPlan::where('key', $application->plan_key)->first();
+            $body['plan_payment'] = ['application_id' => $application->id, 'token' => $application->plan_pay_token, 'plan' => $plan->key, 'name' => $plan->name, 'amount' => (float) $plan->price_monthly, 'currency' => $plan->currency];
+        }
+
+        return response()->json($body, 201);
+    }
+
+    private function planNeedsPayment(?string $key): bool
+    {
+        return $key !== null && (float) \App\Models\SubscriptionPlan::where('key', $key)->where('is_active', true)->value('price_monthly') > 0;
+    }
+
+    /** Pays the first month of the plan picked at signup. The simulated gateway records the charge; a real provider plugs in here. */
+    public function payPlan(Request $request, int $id)
+    {
+        $data = $request->validate(['token' => 'required|string|max:64']);
+        $app = PartnerApplication::findOrFail($id);
+
+        if (! $app->plan_pay_token || ! hash_equals($app->plan_pay_token, $data['token']) || $app->status === PartnerApplication::REJECTED) {
+            abort(404);
+        }
+        if ($app->plan_paid_at === null) {
+            $app->update(['plan_paid_at' => now(), 'plan_payment_reference' => 'simulated-'.bin2hex(random_bytes(4))]);
+        }
+
+        return response()->json(['paid' => true]);
     }
 
     /** Admins see everything; a store's owner sees only partner applications to their own store. */

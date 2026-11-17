@@ -63,7 +63,7 @@ export async function resendVerification() {
 }
 
 export async function getPublicStoreName(slug: string) {
-  const { data } = await api.get<{ store: { name: string; slug: string }; market: { code: string; phone: { dial: string; example: string } } | null }>(
+  const { data } = await api.get<{ store: { name: string; slug: string; logo_url?: string | null; primary_color?: string }; market: { code: string; phone: { dial: string; example: string } } | null }>(
     `/public/storefronts/${encodeURIComponent(slug)}`,
   );
 
@@ -75,8 +75,13 @@ export type BusinessType = "partner" | "seller";
 /** A business application is sent as a form with files (the verification documents). */
 export async function applyAsBusiness(form: FormData) {
   // Let the browser set the multipart boundary itself (the default JSON header would break the upload).
-  return (await api.post<{ message: string }>("/partner-applications", form, { headers: { "Content-Type": undefined } })).data;
+  return (await api.post<{ message: string; plan_payment?: PlanPayment }>("/partner-applications", form, { headers: { "Content-Type": undefined } })).data;
 }
+
+/** What a business pays to start a paid plan right after it applied. */
+export interface PlanPayment { application_id: number; token: string; plan: string; name: string; amount: number; currency: string }
+
+export const payApplicationPlan = async (p: PlanPayment) => (await api.post<{ paid: boolean }>(`/partner-applications/${p.application_id}/pay-plan`, { token: p.token })).data;
 
 /** The open stores a business can apply to (public). */
 export async function getOpenStores() {
@@ -91,3 +96,23 @@ export async function getMarketplaces() {
 
   return data.marketplaces;
 }
+
+/** The live terms a partner sees before joining: the commission, how it is shared, and how many requests and partners there are right now. */
+export interface PublicTerms {
+  commission_percentage: number;
+  split: { platform: number; company: number; partner: number };
+  open_requests: number;
+  verified_partners: number;
+  customer_fee_percentage?: number;
+  plans?: { key: string; name: string; price_monthly: number; currency: string; customer_limit: number | null; commission_percentage: number; team_seats: number }[];
+}
+
+export const getPublicTerms = async () => (await api.get<PublicTerms>("/public/terms")).data;
+
+export type SocialProvider = "google" | "facebook" | "apple";
+
+/** Which "Continue with …" buttons are set up, with the public id each needs. */
+export const getSocialProviders = async () => (await api.get<{ providers: Partial<Record<SocialProvider, { client_id: string }>> }>("/auth/social/providers")).data.providers;
+
+/** Sends what the provider returned; the server checks it and signs the person in (or creates a customer when a store is given). */
+export const socialLogin = async (body: { provider: SocialProvider; credential: string; store?: string; name?: string }) => (await api.post<LoginResponse>("/auth/social", body)).data;

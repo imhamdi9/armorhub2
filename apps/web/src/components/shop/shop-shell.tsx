@@ -8,7 +8,7 @@ import { LanguageSwitcher, tr } from "@/lib/i18n";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
 
-export const SHOP_SHADOW = "0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1)";
+export const SHOP_SHADOW = "0 1px 2px rgba(11,27,58,.06), 0 8px 24px -10px rgba(11,27,58,.16)";
 
 const icon = (d: string) => (
   <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
@@ -33,6 +33,8 @@ function useSession() {
 export function ShopShell({ store, active, children }: { store: ShellStore; active?: "home" | "products"; children: React.ReactNode }) {
   const user = useSession();
   const home = `/s/${store.slug}`;
+  // So the sign-in / sign-up pages can show this market's logo.
+  useEffect(() => { if (store.slug) try { localStorage.setItem("last-store", store.slug); } catch { /* storage unavailable */ } }, [store.slug]);
   const nav = [
     { key: "home", href: home, label: tr("Home"), icon: ICONS.home },
     { key: "products", href: `${home}/products`, label: tr("Products"), icon: ICONS.grid },
@@ -42,8 +44,8 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
   const link = "block py-1 text-sm text-white/70 hover:text-white hover:underline";
 
   return (
-    <div style={themeVars(store) as CSSProperties} className="min-h-screen bg-[#f2f4f5] tracking-[-0.02em] text-black">
-      <nav aria-label={tr("Main")} className="fixed inset-x-0 bottom-0 z-30 flex justify-around bg-white py-1 shadow-[0_-2px_8px_rgba(0,0,0,.06)] md:inset-y-0 md:end-auto md:start-0 md:w-16 md:flex-col md:items-center md:justify-start md:gap-1 md:py-4 md:shadow-none">
+    <div style={themeVars(store) as CSSProperties} className="min-h-screen bg-bone text-black">
+      <nav aria-label={tr("Main")} className="fixed inset-x-0 bottom-0 z-30 flex justify-around bg-white py-1 shadow-[0_-2px_8px_rgba(0,0,0,.06)] md:hidden">
         {nav.map((n) => (
           <Link key={n.key} href={n.href} aria-label={n.label} aria-current={n.key === active ? "page" : undefined} title={n.label}
             className={`grid size-12 place-items-center rounded-[20px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${n.key === active ? "bg-[#f2f4f5]" : "hover:bg-[#f2f4f5]"} ${n.key === "account" ? "md:mt-auto" : ""}`}>
@@ -52,23 +54,38 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
         ))}
       </nav>
 
-      <div className="md:ps-16">
-        <header className="mx-auto flex max-w-[1200px] items-center justify-end gap-2 px-4 pt-3">
-          {store.market && <span dir="ltr" className="me-auto hidden rounded-full bg-white px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
+      <div>
+        <div className="border-b border-border">
+        <header className="mx-auto flex h-[76px] max-w-[1200px] items-center justify-end gap-2 px-4">
+          <Link href={home} className="font-display me-auto flex items-center gap-2.5 text-[21px] font-bold tracking-tight">
+            {store.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
+              <img src={store.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+            ) : (
+              <span className="btn-brand grid h-10 w-10 place-items-center rounded-xl"><svg viewBox="0 0 24 24" className="size-[22px]" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Z" /></svg></span>
+            )}
+            {store.name}
+          </Link>
+          <nav aria-label={tr("Store")} className="hidden items-center gap-1 text-sm font-semibold lg:flex">
+            <Link href={home} aria-current={active === "home" ? "page" : undefined} className={`rounded-full px-4 py-2 ${active === "home" ? "bg-fog" : "hover:bg-fog"}`}>{tr("Home")}</Link>
+            <Link href={`${home}/products`} aria-current={active === "products" ? "page" : undefined} className={`rounded-full px-4 py-2 ${active === "products" ? "bg-fog" : "hover:bg-fog"}`}>{tr("Products")}</Link>
+          </nav>
+          {store.market && <span dir="ltr" className="hidden rounded-full bg-fog px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
           <LanguageSwitcher />
           {user ? (
             <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
           ) : (
             <>
-              <Link href="/login" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.06)" }}>{tr("Sign in")}</Link>
+              <Link href="/login" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold">{tr("Sign in")}</Link>
               <Link href={signup} className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Sign up")}</Link>
             </>
           )}
         </header>
+        </div>
 
         <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pb-16">{children}</main>
 
-        <footer className="bg-black text-white">
+        <footer className="bg-dark bg-grid-dark text-white">
           <div className="mx-auto grid max-w-[1200px] gap-8 px-6 py-12 sm:grid-cols-3">
             <div>
               <p className="text-lg tracking-[-0.04em]">{store.name}</p>

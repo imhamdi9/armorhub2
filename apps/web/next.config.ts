@@ -21,6 +21,16 @@ const CAPTCHA = [
   "https://www.gstatic.com/recaptcha/",
 ];
 
+// "Continue with Google / Facebook / Apple": each provider's sign-in script, popup and token calls.
+const SOCIAL = [
+  "https://accounts.google.com",
+  "https://connect.facebook.net",
+  "https://www.facebook.com",
+  "https://graph.facebook.com",
+  "https://appleid.cdn-apple.com",
+  "https://appleid.apple.com",
+];
+
 /**
  * Content-Security-Policy: even if an attacker managed to inject markup, the browser refuses to
  * load scripts, frames, forms or connections from anywhere we did not list.
@@ -28,13 +38,13 @@ const CAPTCHA = [
  */
 const cspFor = (frameAncestors: string) => [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")}`,
-  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   // Stores may show a logo hosted elsewhere (https only; the editor refuses anything else).
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")}${isProd ? "" : " ws: wss:"}`,
-  `frame-src 'self' ${CAPTCHA.join(" ")}`,
+  `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}${isProd ? "" : " ws: wss:"}`,
+  `frame-src 'self' ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",

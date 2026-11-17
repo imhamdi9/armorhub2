@@ -29,6 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\RequireTrustedOrigin::class,
         ]);
 
+        // This app has no server-side login page (sign-in lives in the web app), so a guest must get a plain 401
+        // instead of a redirect to an undefined "login" route, which used to end as a 500 when no JSON Accept header was sent.
+        $middleware->redirectGuestsTo(fn () => null);
+
         $middleware->alias([
            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

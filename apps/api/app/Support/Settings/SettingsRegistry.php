@@ -51,6 +51,8 @@ class SettingsRegistry
                 'Three-letter code such as USD or SAR. Applies to new orders.', rules: ['size:3', 'alpha']),
             new Definition('platform.commission_percentage', 'platform', 'Commission (% of each order)', 'float',
                 fn () => config('platform.commission_percentage'), 'Taken from the order total when it is paid.', rules: ['min:0', 'max:100']),
+            new Definition('platform.customer_fee_percentage', 'platform', 'Customer platform fee (% of the invoice)', 'float',
+                fn () => config('platform.customer_fee_percentage'), 'Added to what the customer pays and shown on the payment page. Not part of the partner commission.', rules: ['min:0', 'max:30']),
             // ---- Installation (centre jobs) ---------------------------------
             new Definition('installation.fee_percent', 'installation', 'Installation fee (% of the centre price), all markets', 'float', 5,
                 'Taken from the centre\'s price when the job is released. A market below can override it.', rules: ['min:0', 'max:30']),

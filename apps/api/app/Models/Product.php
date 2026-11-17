@@ -17,6 +17,9 @@ class Product extends Model
 }
 
 
+    /** The product-page layouts an administrator can choose from. The first is the default. */
+    public const PAGE_TEMPLATES = ['classic', 'tiers', 'builder', 'story', 'compare', 'marketplace', 'bundle', 'warranty', 'quote', 'immersive'];
+
     protected $fillable = [
         'industry_id',
         'seller_id',
@@ -34,6 +37,7 @@ class Product extends Model
         'is_active',
         'requires_shipping',
         'installation',
+        'page_template',
         'sku',
         'units_per_carton',
         'carton_length_cm',

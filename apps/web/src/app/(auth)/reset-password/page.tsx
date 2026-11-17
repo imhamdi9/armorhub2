@@ -42,14 +42,14 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-16">
         <div className="absolute end-4 top-4">
           <LanguageSwitcher />
         </div>
 
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-0 bg-transparent shadow-none ring-0">
         <CardHeader>
-          <CardTitle aria-level={1} className="text-center text-2xl">{tr("Choose a new password")}</CardTitle>
+          <CardTitle aria-level={1} className="display text-start text-[2.4rem] leading-none">{tr("Choose a new password")}</CardTitle>
         </CardHeader>
         <CardContent>
           {done ? (

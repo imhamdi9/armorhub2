@@ -73,6 +73,15 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
           <p className="text-xl tracking-[-0.04em]" data-testid="checkout-total">{formatMoney(p.from_price, p.currency, true)}</p>
         </section>
 
+        {(data.customer_fee_percentage ?? 0) > 0 && (
+          <dl className="mb-4 space-y-1 rounded-[28px] bg-white p-4 text-sm" style={{ boxShadow: SHOP_SHADOW }} data-testid="checkout-breakdown">
+            <div className="flex justify-between"><dt>{tr("Invoice")}</dt><dd>{formatMoney(p.from_price, p.currency, true)}</dd></div>
+            <div className="flex justify-between"><dt>{tr("Platform fee ({rate}%)", { rate: data.customer_fee_percentage ?? 0 })}</dt><dd data-testid="checkout-fee">{formatMoney(Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}</dd></div>
+            <div className="flex justify-between border-t pt-1 font-semibold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(p.from_price + Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}</dd></div>
+          </dl>
+        )}
+
+
         {p.installation === "required" ? (
           <section className="rounded-[28px] bg-white p-6 text-center" style={{ boxShadow: SHOP_SHADOW }} data-testid="installation-required-block">
             <p className="mb-2 text-lg">{tr("This product is sold only together with an installation offer.")}</p>

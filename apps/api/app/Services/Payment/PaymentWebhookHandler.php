@@ -38,7 +38,7 @@ class PaymentWebhookHandler
         }
 
         // Never trust the event alone: what was paid must match what the order costs.
-        $expected = Money::minorUnits($order->total_amount, $order->currency);
+        $expected = Money::minorUnits($order->payable_amount, $order->currency);
         $paid = $event->amountMinor ?? ($event->amountMajor !== null ? Money::minorUnits($event->amountMajor, $order->currency) : null);
 
         if ($paid !== $expected || ($event->currency !== null && strtoupper($event->currency) !== strtoupper($order->currency))) {

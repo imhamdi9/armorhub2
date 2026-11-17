@@ -3,11 +3,14 @@
 import { CategoryField } from "@/components/products/category-field";
 import { CartonFields, cartonPayload, emptyCarton, type CartonValues } from "@/components/products/carton-fields";
 import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { PageTemplateField, asTemplate } from "@/components/products/page-template-field";
+import { DEFAULT_TEMPLATE, type PageTemplate } from "@/lib/product-templates";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
+import { hasRole } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { aliasLabel } from "@/lib/navigation";
@@ -39,7 +42,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", installation: "none" as InstallationMode, images: [] as string[], highlights: "",
+    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
   });
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
@@ -61,6 +64,7 @@ export default function ProductDetailPage() {
         is_active: p.is_active,
         requires_shipping: !!p.requires_shipping,
         installation: (p.installation ?? "none") as InstallationMode,
+        page_template: asTemplate(p.page_template),
         fulfilment: (p.fulfilment ?? "seller") as "seller" | "armorhub",
       });
       setCarton({
@@ -111,6 +115,7 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
         installation: details.installation,
+        ...(hasRole(user, "platform-admin") ? { page_template: details.page_template } : {}),
         fulfilment: details.fulfilment,
         ...cartonPayload(carton),
       });
@@ -160,6 +165,7 @@ export default function ProductDetailPage() {
             {tr("Physical product: needs a delivery address and shipping")}
           </label>
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
+          {hasRole(user, "platform-admin") && <div className="col-span-2"><PageTemplateField value={details.page_template} onChange={(v) => setDetails({ ...details, page_template: v })} /></div>}
           <CartonFields value={carton} onChange={setCarton} />
           {details.requires_shipping && (
             <fieldset className="col-span-2 space-y-2 rounded-lg border p-3">

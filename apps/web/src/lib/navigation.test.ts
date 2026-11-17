@@ -72,7 +72,7 @@ describe("buildNavigation", () => {
   });
 
   it("gives sellers only their sales and products", () => {
-    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Products", "Warehouse", "Earnings", "Invitations"]);
+    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Products", "Warehouse", "Earnings", "Subscription", "Invitations"]);
   });
 
   it("gives technicians only their jobs, and customers their warranties", () => {
@@ -98,7 +98,7 @@ describe("buildNavigation", () => {
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
-      "Overview", "Markets", "Categories", "Catalog requests", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
+      "Overview", "Subscription plans", "Markets", "Categories", "Catalog requests", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
     ]);
     expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
 

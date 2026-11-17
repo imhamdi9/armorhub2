@@ -109,6 +109,11 @@ class OrderController extends Controller
             ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
         app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
+
+        // A seller's plan serves a number of customers a month.
+        if ($product->seller_id) {
+            app(\App\Services\SubscriptionService::class)->assertCanTakeCustomers('seller', (int) $product->seller_id);
+        }
         if (! $product->is_active || ($product->industry_id !== null && ! in_array($product->industry_id, $user->industryIds(), true))
             || ($product->market !== null && $product->market !== $market)) {
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
@@ -165,7 +170,7 @@ class OrderController extends Controller
                 'total_amount' => $price['total'],
                 'currency' => $price['currency'],
                 'shipping_address' => $address,
-            ] + app(\App\Support\Markets\Markets::class)->taxFor($user->company, (float) $price['total']));
+            ] + app(\App\Support\Markets\Markets::class)->taxFor($user->company, (float) $price['total']) + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $price['total']));
 
             foreach ($partners as $partner) {
                 PartnerQuote::create([

@@ -35,24 +35,24 @@ function useSession() {
 /** Colours for the page: the platform's forest and lime, or a store's own colour with matching dark and wash tones. */
 export function themeVars(store?: ShellStore, brand?: { color?: string | null; dark?: string | null }): CSSProperties {
   if (!store?.primary_color) {
-    const color = brand?.color ?? "#9fe870";
-    const dark = brand?.dark ?? "#163300";
+    const color = brand?.color ?? "#2f6bff";
+    const dark = brand?.dark ?? "#0b1b3a";
 
     // The platform's own colours, optionally changed by an admin (colours are validated #rrggbb values).
     if (brand?.color || brand?.dark) {
-      return { "--brand": color, "--on-brand": color === "#9fe870" ? "#163300" : textOn(color), "--dark": dark, "--on-dark-accent": color, "--brand-wash": `color-mix(in srgb, ${color} 18%, white)`, "--brand-ink": dark } as CSSProperties;
+      return { "--brand": color, "--on-brand": color === "#2f6bff" ? "#ffffff" : textOn(color), "--dark": dark, "--on-dark-accent": `color-mix(in srgb, ${color} 55%, white)`, "--brand-wash": `color-mix(in srgb, ${color} 18%, white)`, "--brand-ink": dark } as CSSProperties;
     }
 
-    return { "--brand": "#9fe870", "--on-brand": "#163300", "--dark": "#163300", "--on-dark-accent": "#9fe870", "--brand-wash": "#e2f6d5", "--brand-ink": "#163300" } as CSSProperties;
+    return { "--brand": "#2f6bff", "--on-brand": "#ffffff", "--dark": "#0b1b3a", "--on-dark-accent": "#8db8ff", "--brand-wash": "#e3edff", "--brand-ink": "#0b1b3a" } as CSSProperties;
   }
   const c = store.primary_color; // a validated #rrggbb (see the editor API), never free text
   return {
     "--brand": c,
     "--on-brand": textOn(c),
-    "--dark": `color-mix(in srgb, ${c} 30%, #0e0f0c)`,
+    "--dark": `color-mix(in srgb, ${c} 30%, #0a1630)`,
     "--on-dark-accent": `color-mix(in srgb, ${c} 55%, white)`,
     "--brand-wash": `color-mix(in srgb, ${c} 14%, white)`,
-    "--brand-ink": `color-mix(in srgb, ${c} 60%, #0e0f0c)`,
+    "--brand-ink": `color-mix(in srgb, ${c} 60%, #0a1630)`,
   } as CSSProperties;
 }
 
@@ -67,7 +67,7 @@ export function AuthLinks({ store }: { store?: ShellStore }) {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-medium text-obsidian hover:bg-fog">{tr("Sign in")}</Link>
+      <Link href="/login" className="rounded-full border border-[#dce3f1] bg-white/60 px-5 py-2.5 text-sm font-semibold text-obsidian transition hover:bg-white">{tr("Sign in")}</Link>
       <Link href={signup} className="btn-brand px-5 py-2.5 text-sm">{tr("Sign up")}</Link>
     </div>
   );
@@ -94,20 +94,20 @@ function Header({ store }: { store?: ShellStore }) {
   const navFaq = useSiteText("nav", "nav_faq", "FAQ");
   const links: [string, string][] = store
     ? [[`/s/${store.slug}/products`, tr("Products")], [`${home}#how`, tr("How it works")], [`${home}#faq`, tr("FAQ")]]
-    : [["/#stores", navMarkets], ["/#partners", navPartners], ["/#how", navHow], ["/#faq", navFaq]];
+    : [["/#stores", navMarkets], ["/#partners", navPartners], ["/#how", navHow], ["/pricing", tr("Pricing")], ["/#faq", navFaq]];
   const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-fog bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4">
-        <Link href={home} className="flex items-center gap-2.5 text-xl font-black tracking-tight text-obsidian">
+    <header className="sticky top-0 z-40 border-b border-transparent bg-bone/85 backdrop-blur supports-[backdrop-filter]:bg-bone/70">
+      <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between gap-3 px-4 md:px-10">
+        <Link href={home} className="flex items-center gap-2.5 font-[family-name:var(--font-display)] text-[21px] font-bold tracking-tight text-obsidian">
           <Logo store={shownStore} />
           <span>{store?.name ?? siteName}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-full bg-fog p-1 text-sm md:flex" aria-label={tr("Main")}>
+        <nav className="hidden items-center gap-1 rounded-full border border-[#dce3f1] bg-white/70 p-1 text-[14.5px] md:flex" aria-label={tr("Main")}>
           {links.map(([href, label]) => (
-            <Link key={label} href={href} className="rounded-full px-4 py-1.5 font-medium text-forest transition hover:bg-white">{label}</Link>
+            <Link key={label} href={href} className="rounded-full px-4 py-2 font-medium text-forest transition hover:bg-forest hover:text-white">{label}</Link>
           ))}
         </nav>
 
@@ -152,8 +152,8 @@ function Footer({ store }: { store?: ShellStore }) {
   const link = "block py-1 text-sm text-white/75 hover:text-white hover:underline";
 
   return (
-    <footer className="bg-dark">
-      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="bg-dark bg-grid-dark">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:grid-cols-2 md:px-10 lg:grid-cols-4">
         <div>
           <div className="flex items-center gap-2.5 text-xl font-black tracking-tight text-white">
             <Logo store={shownStore} size="h-8" />
@@ -169,6 +169,7 @@ function Footer({ store }: { store?: ShellStore }) {
           <div className="mt-3">
             {store ? <Link className={link} href={`${home}/products`}>{tr("Products")}</Link> : <><Link className={link} href="/#stores">{tr("ArmorHub Markets")}</Link><Link className={link} href="/#partners">{tr("Partners")}</Link></>}
             <Link className={link} href={`${home}#how`}>{tr("How it works")}</Link>
+            {!store && <Link className={link} href="/pricing">{tr("Pricing")}</Link>}
             <Link className={link} href={`${home}#faq`}>{tr("FAQ")}</Link>
           </div>
         </div>
@@ -226,7 +227,7 @@ export function PublicShell({ store, children }: { store?: ShellStore; children:
   const style = { ...themeVars(store, brand), ...(headingFont ? { "--theme-heading": headingFont } : {}), ...(bodyFont ? { fontFamily: bodyFont } : {}) } as CSSProperties;
 
   return (
-    <div style={style} className="flex min-h-screen flex-col bg-white text-charcoal">
+    <div style={style} className="flex min-h-screen flex-col bg-bone text-charcoal">
       <Header store={store} />
       <main className="flex-1">{children}</main>
       <Footer store={store} />

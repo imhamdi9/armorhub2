@@ -318,6 +318,55 @@ class StorefrontTest extends TestCase
         $this->postJson('/api/products', $base + ['images' => ['https://cdn.example.com/a.jpg'], 'compare_at_price' => 12, 'attributes' => ['highlights' => ['One']]])->assertCreated();
     }
 
+    public function test_only_platform_admins_choose_the_product_page_layout_and_it_reaches_the_public_page(): void
+    {
+        $slug = $this->store->slug;
+        $url = "/api/public/storefronts/{$slug}/products/{$this->product->id}";
+
+        // Default until someone chooses.
+        $this->getJson($url)->assertOk()->assertJsonPath('product.page_template', 'classic');
+
+        // A layout that does not exist is refused.
+        $this->actingAs($this->admin, 'sanctum');
+        $this->putJson("/api/products/{$this->product->id}", ['page_template' => 'nope'])->assertStatus(422)->assertJsonValidationErrors('page_template');
+
+        // A platform admin chooses one, and the public page shows it.
+        $this->putJson("/api/products/{$this->product->id}", ['page_template' => 'tiers'])->assertOk();
+        $this->assertSame('tiers', $this->product->fresh()->page_template);
+        $this->getJson($url)->assertOk()->assertJsonPath('product.page_template', 'tiers');
+
+        // A store owner's attempt is ignored.
+        $this->actingAs($this->owner(), 'sanctum');
+        $this->putJson("/api/products/{$this->product->id}", ['page_template' => 'story'])->assertOk();
+        $this->assertSame('tiers', $this->product->fresh()->page_template);
+    }
+
+    public function test_the_page_layout_can_be_set_for_many_products_by_a_platform_admin_only(): void
+    {
+        $other = Product::create(['industry_id' => $this->product->industry_id, 'name' => 'Second', 'slug' => 'second-one', 'base_price' => 10, 'is_active' => true, 'category' => $this->product->category]);
+        $ids = [$this->product->id, $other->id];
+
+        $this->actingAs($this->owner(), 'sanctum');
+        $this->postJson('/api/products/bulk-page-template', ['ids' => $ids, 'page_template' => 'story'])->assertForbidden();
+
+        $this->actingAs($this->admin, 'sanctum');
+        $this->postJson('/api/products/bulk-page-template', ['ids' => $ids, 'page_template' => 'nope'])->assertStatus(422);
+        $this->postJson('/api/products/bulk-page-template', ['ids' => $ids, 'page_template' => 'story'])->assertOk()->assertJsonPath('updated', 2);
+        $this->assertSame('story', $other->fresh()->page_template);
+    }
+
+    public function test_the_catalogue_can_be_sorted_by_price_and_name(): void
+    {
+        $cheap = Product::create(['industry_id' => $this->product->industry_id, 'name' => 'Aaa cheap', 'slug' => 'aaa-cheap', 'base_price' => 1, 'is_active' => true, 'category' => 'zz-last']);
+        $slug = $this->store->slug;
+
+        $asc = array_column($this->getJson("/api/public/storefronts/{$slug}/products?sort=price_asc")->assertOk()->json('data'), 'id');
+        $desc = array_column($this->getJson("/api/public/storefronts/{$slug}/products?sort=price_desc")->assertOk()->json('data'), 'id');
+        $this->assertSame($cheap->id, $asc[0]);
+        $this->assertSame($cheap->id, end($desc));
+        $this->getJson("/api/public/storefronts/{$slug}/products?sort=nonsense")->assertStatus(422);
+    }
+
     public function test_the_catalogue_page_size_can_be_chosen_up_to_fifty(): void
     {
         $slug = $this->store->slug;

@@ -41,14 +41,14 @@ class PaymentController extends Controller
             ]);
         }
 
-        if (round((float) $data['amount'], 2) !== round((float) $order->total_amount, 2)) {
+        if (round((float) $data['amount'], 2) !== round((float) $order->payable_amount, 2)) {
             throw ValidationException::withMessages([
-                'amount' => ['The amount must match the order total.'],
+                'amount' => ['The amount must match what you owe: the order total plus the platform fee.'],
             ]);
         }
 
         try {
-            $charge = $gateway->charge($order, (float) $order->total_amount, $data['payment_method'] ?? null);
+            $charge = $gateway->charge($order, (float) $order->payable_amount, $data['payment_method'] ?? null);
         } catch (PaymentUnavailable $e) {
             return response()->json(['message' => $e->getMessage()], 503);
         }
@@ -62,7 +62,7 @@ class PaymentController extends Controller
             Payment::create([
                 'company_id' => $order->company_id,
                 'order_id' => $order->id,
-                'amount' => $order->total_amount,
+                'amount' => $order->payable_amount,
                 'currency' => $order->currency,
                 'payment_method' => $data['payment_method'] ?? null,
                 'status' => 'pending',

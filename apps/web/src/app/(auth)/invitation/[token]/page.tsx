@@ -28,7 +28,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-16">
       <div className="absolute end-4 top-4"><LanguageSwitcher /></div>
       <Card className="w-full max-w-md">
         <CardHeader><CardTitle aria-level={1} className="text-center text-2xl">{tr("Join the team")}</CardTitle></CardHeader>

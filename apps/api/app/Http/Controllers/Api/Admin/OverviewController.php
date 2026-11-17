@@ -40,6 +40,7 @@ class OverviewController extends Controller
             'numbers' => [
                 ['key' => 'revenue', 'label' => 'Revenue', 'value' => round($revenue, 2), 'format' => 'money'],
                 ['key' => 'commission', 'label' => 'Platform commission', 'value' => round((float) Commission::sum('amount'), 2), 'format' => 'money'],
+                ['key' => 'subscription_revenue', 'label' => 'Subscription revenue (this month)', 'value' => round((float) \App\Models\SubscriptionInvoice::where('status', 'paid')->where('paid_at', '>=', now()->startOfMonth())->sum('amount'), 2), 'format' => 'money'],
                 ['key' => 'orders', 'label' => 'Orders', 'value' => Order::count(), 'format' => 'number'],
                 ['key' => 'customers', 'label' => 'Customers', 'value' => User::role('customer')->count(), 'format' => 'number'],
                 ['key' => 'new_accounts', 'label' => 'New accounts (24h)', 'value' => $audit(['auth.registered']), 'format' => 'number'],

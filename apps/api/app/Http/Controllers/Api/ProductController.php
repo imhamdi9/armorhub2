@@ -79,6 +79,18 @@ class ProductController extends Controller
         return response()->json(['updated' => $updated, 'skipped' => count($data['ids']) - $updated]);
     }
 
+    /** Sets the product-page layout for many products at once. Platform administrators only; every product it may not change is reported as skipped. */
+    public function bulkPageTemplate(Request $request)
+    {
+        abort_unless($request->user()->hasRole('platform-admin'), 403);
+
+        $data = $request->validate(['ids' => 'required|array|min:1|max:500', 'ids.*' => 'integer', 'page_template' => ['required', Rule::in(Product::PAGE_TEMPLATES)]]);
+        $updated = Product::whereIn('id', $data['ids'])->update(['page_template' => $data['page_template']]);
+        \App\Support\Audit::record('products.bulk_page_template', null, ['page_template' => $data['page_template'], 'updated' => $updated], $request->user());
+
+        return response()->json(['updated' => $updated, 'skipped' => count($data['ids']) - $updated]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validated($request);
@@ -239,12 +251,19 @@ class ProductController extends Controller
             'requires_shipping' => 'boolean',
             // Whether the buyer may need a centre to fit it: none, optional or required. The product is always sold on its own.
             'installation' => 'sometimes|in:none,optional,required',
+            // The page layout is an administrator's choice.
+            'page_template' => ['sometimes', 'nullable', Rule::in(Product::PAGE_TEMPLATES)],
         ];
 
         // A seller cannot choose the industry or country: they come from its marketplace (set in store()).
         if ($this->isSeller($request->user())) {
             unset($rules['market']);
             $rules['industry_id'] = 'nullable|integer';
+        }
+
+        // Only platform administrators choose the page layout; for everyone else the field is ignored.
+        if (! $request->user()->hasRole('platform-admin')) {
+            unset($rules['page_template']);
         }
 
         $data = $request->validate($rules);

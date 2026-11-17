@@ -92,8 +92,11 @@ class PublicStorefrontController extends Controller
 
     public function products(Request $request, string $slug)
     {
-        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50']);
+        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50', 'sort' => 'nullable|in:category,price_asc,price_desc,name']);
         $company = $this->stores->find($slug) ?? abort(404);
+
+        // The lowest public price: the cheapest active price rule, or the base price when there are none.
+        $lowest = '(select coalesce(min(r.price), products.base_price) from product_price_rules r where r.product_id = products.id and r.is_active = 1)';
 
         $page = $this->stores->products($company)
             ->when($request->filled('q'), fn ($q) => $q->where(fn ($w) => $w
@@ -101,8 +104,11 @@ class PublicStorefrontController extends Controller
                 ->orWhere('brand', 'like', '%'.addcslashes($request->q, '%_\\').'%')))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             ->when($request->filled('industry'), fn ($q) => $q->whereIn('industry_id', \App\Models\Industry::where('key', $request->industry)->select('id')))
-            // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle.
-            ->orderBy('category')->orderBy('name')
+            // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle; or by price or name when asked.
+            ->when($request->input('sort') === 'price_asc', fn ($q) => $q->orderByRaw("$lowest asc")->orderBy('name'))
+            ->when($request->input('sort') === 'price_desc', fn ($q) => $q->orderByRaw("$lowest desc")->orderBy('name'))
+            ->when($request->input('sort') === 'name', fn ($q) => $q->orderBy('name'))
+            ->when(! in_array($request->input('sort'), ['price_asc', 'price_desc', 'name'], true), fn ($q) => $q->orderBy('category')->orderBy('name'))
             ->paginate((int) $request->input('per_page', 12))
             ->through(fn ($p) => $this->stores->card($p, $company));
 
@@ -129,14 +135,58 @@ class PublicStorefrontController extends Controller
 
         // More from the same store: the same category first, then anything else, never this product.
         $related = $this->stores->products($company)->where('id', '!=', $product->id)
-            ->orderByRaw('category = ? desc', [$product->category])->orderBy('name')->limit(4)->get()
+            ->orderByRaw('category = ? desc', [$product->category])->orderBy('name')->limit(8)->get()
             ->map(fn ($p) => $this->stores->card($p, $company))->all();
 
         return $this->cached([
-            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? [])],
+            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
             'related' => $related,
-            'store' => ['name' => $company->name, 'slug' => $company->slug],
+            'reviews' => $this->reviews($product->id),
+            'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),
+            'store' => ['name' => $company->name, 'slug' => $company->slug, 'contact_phone' => $this->stores->settingsOf($company)['contact_phone'] ?? null],
         ]);
+    }
+
+    /**
+     * What a partner or seller needs to know before joining, from the live settings and counts: the commission and exactly how it is shared,
+     * how many requests are open now and how many verified partners are active. Counts are totals only, never who asked.
+     */
+    public function terms()
+    {
+        $settings = app(\App\Support\Settings\Settings::class);
+        $split = [
+            'platform' => (float) $settings->get('platform.commission_split.platform'),
+            'company' => (float) $settings->get('platform.commission_split.company'),
+            'partner' => (float) $settings->get('platform.commission_split.partner'),
+        ];
+
+        return response()->json([
+            'commission_percentage' => (float) $settings->get('platform.commission_percentage'),
+            'customer_fee_percentage' => (float) $settings->get('platform.customer_fee_percentage'),
+            'plans' => \App\Models\SubscriptionPlan::where('is_active', true)->orderBy('sort')->get(['key', 'name', 'price_monthly', 'currency', 'customer_limit', 'commission_percentage', 'team_seats']),
+            'split' => $split,
+            'open_requests' => \App\Models\Order::withoutGlobalScopes()->whereIn('status', [\App\Enums\OrderStatus::PendingQuotes->value, \App\Enums\OrderStatus::QuotesReceived->value])->count(),
+            'verified_partners' => \App\Models\Partner::withoutGlobalScopes()->where('is_active', true)->count(),
+        ])->header('Cache-Control', 'public, max-age=60, s-maxage=60');
+    }
+
+    /** The average rating and the latest published reviews. Only a first name and the date are shown, never an email. */
+    private function reviews(int $productId): array
+    {
+        $published = \App\Models\ProductReview::where('product_id', $productId)->published();
+        $count = (clone $published)->count();
+
+        return [
+            'count' => $count,
+            'average' => $count > 0 ? round((float) (clone $published)->avg('rating'), 1) : null,
+            'items' => (clone $published)->with('user:id,name')->latest()->limit(6)->get()->map(fn ($r) => [
+                'id' => $r->id,
+                'rating' => $r->rating,
+                'comment' => $r->comment,
+                'author' => explode(' ', trim((string) $r->user?->name))[0] ?: 'Customer',
+                'date' => $r->created_at?->toDateString(),
+            ])->all(),
+        ];
     }
 
     /** Public data may be cached by browsers and CDNs for a minute. */

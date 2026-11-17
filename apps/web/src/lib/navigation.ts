@@ -87,6 +87,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
     items.push({ title: "Warehouse", href: "/dashboard/seller-warehouse", icon: "catalog" });
     items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
+    items.push({ title: "Subscription", href: "/dashboard/subscription", icon: "payments" });
 
     return withInvites(items);
   }
@@ -123,6 +124,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   }
   if (hasRole(user, "partner-manager")) {
     items.push({ title: "Wallet", href: "/dashboard/wallet", icon: "commissions" });
+    items.push({ title: "Subscription", href: "/dashboard/subscription", icon: "payments" });
   }
 
   if (technicianOnly) {
@@ -210,6 +212,7 @@ export function buildNavigation(user: User | null): NavItem[] {
 
     // The control panel for everything that can be changed without a deploy.
     items.push({ title: "Overview", href: "/dashboard/admin", section: "admin", icon: "admin" });
+    items.push({ title: "Subscription plans", href: "/dashboard/admin/subscriptions", section: "admin", icon: "payments" });
     items.push({ title: "Markets", href: "/dashboard/admin/markets", section: "admin", icon: "tenants" });
     items.push({ title: "Categories", href: "/dashboard/admin/categories", section: "admin", icon: "products" });
     items.push({ title: "Catalog requests", href: "/dashboard/admin/catalog-changes", section: "admin", icon: "applications" });

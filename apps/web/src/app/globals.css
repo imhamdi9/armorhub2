@@ -8,19 +8,21 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
-  --color-forest: #163300;
-  --color-lime: #9fe870;
-  --color-spruce: #054d28;
-  --color-linen: #e2f6d5;
-  --color-fog: #e8ebe6;
-  --color-charcoal: #454745;
-  --color-obsidian: #0e0f0c;
-  --color-pebble: #868685;
-  --color-slate: #6a6c6a;
+  --color-forest: #0b1b3a;
+  --color-moss: #2f6bff;
+  --color-bone: #ffffff;
+  --color-lime: #8db8ff;
+  --color-spruce: #2f6bff;
+  --color-linen: #e3edff;
+  --color-fog: #e6ecf7;
+  --color-charcoal: #3a4560;
+  --color-obsidian: #0a1630;
+  --color-pebble: #8a94ad;
+  --color-slate: #5b6784;
   --color-signal: #0b4c72;
   --color-alarm: #cb272f;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display), var(--font-arabic), var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -60,38 +62,42 @@
 }
 
 :root {
+  --font-inter: "Inter Variable";
+  --font-display: "Inter Variable";
+  --font-arabic: "Noto Sans Arabic Variable";
+  --font-geist-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --background: #ffffff;
-  --foreground: #0e0f0c;
+  --foreground: #0b1b3a;
   --card: #ffffff;
-  --card-foreground: #0e0f0c;
+  --card-foreground: #0a1630;
   --popover: #ffffff;
-  --popover-foreground: #0e0f0c;
-  --primary: #163300;
+  --popover-foreground: #0a1630;
+  --primary: #0b1b3a;
   --primary-foreground: #ffffff;
-  --secondary: #e8ebe6;
-  --secondary-foreground: #163300;
-  --muted: #f3f5f1;
-  --muted-foreground: #6a6c6a;
-  --accent: #e2f6d5;
-  --accent-foreground: #163300;
+  --secondary: #e6ecf7;
+  --secondary-foreground: #0b1b3a;
+  --muted: #edf1f9;
+  --muted-foreground: #5b6784;
+  --accent: #e3edff;
+  --accent-foreground: #0b1b3a;
   --destructive: #cb272f;
-  --border: #e8ebe6;
-  --input: #868685;
-  --ring: #163300;
-  --chart-1: #9fe870;
-  --chart-2: #054d28;
-  --chart-3: #163300;
+  --border: #dce3f1;
+  --input: #b4bfd6;
+  --ring: #0b1b3a;
+  --chart-1: #8db8ff;
+  --chart-2: #1f4fc4;
+  --chart-3: #0b1b3a;
   --chart-4: #0b4c72;
-  --chart-5: #868685;
-  --radius: 0.625rem;
-  --sidebar: #f7f9f5;
-  --sidebar-foreground: #0e0f0c;
-  --sidebar-primary: #163300;
-  --sidebar-primary-foreground: #9fe870;
-  --sidebar-accent: #e2f6d5;
-  --sidebar-accent-foreground: #163300;
-  --sidebar-border: #e8ebe6;
-  --sidebar-ring: #163300;
+  --chart-5: #8a94ad;
+  --radius: 0.875rem;
+  --sidebar: rgba(255, 255, 255, 0.96);
+  --sidebar-foreground: #0b1b3a;
+  --sidebar-primary: #2f6bff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2f6bff;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(11, 27, 58, 0.08);
+  --sidebar-ring: #2f6bff;
 }
 
 .dark {
@@ -141,9 +147,10 @@
 }
 
 /* Store branding: the colours come from validated hex values set by the store owner. */
+.hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
 .btn-brand {
-  background-color: var(--brand, #9fe870);
-  color: var(--on-brand, #163300);
+  background-color: var(--brand, #2f6bff);
+  color: var(--on-brand, #ffffff);
   border-radius: 9999px;
   font-weight: 600;
   transition: filter 0.15s, transform 0.15s;
@@ -157,54 +164,55 @@
 
 /* Wise-style surfaces: forest-green panels with a lime accent; stores swap in their own colour. */
 .bg-dark {
-  background-color: var(--dark, #163300);
+  background-color: var(--dark, #0b1b3a);
   color: #fff;
 }
 .text-on-dark-accent {
-  color: var(--on-dark-accent, #9fe870);
+  color: var(--on-dark-accent, #8db8ff);
 }
 .bg-brand-wash {
-  background-color: var(--brand-wash, #e2f6d5);
+  background-color: var(--brand-wash, #e3edff);
 }
 .text-brand-ink {
-  color: var(--brand-ink, #163300);
-}
-.shadow-card {
-  box-shadow: rgba(0, 0, 0, 0.08) 0 6px 20px 0;
-}
-.shadow-lift {
-  box-shadow: rgba(0, 0, 0, 0.15) 0 10px 32px 0, rgba(0, 0, 0, 0.04) 0 40px 40px 0;
-}
-.hover-lift {
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.hover-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: rgba(0, 0, 0, 0.15) 0 10px 32px 0, rgba(0, 0, 0, 0.04) 0 40px 40px 0;
+  color: var(--brand-ink, #0b1b3a);
 }
 
-/* The brand's shout: Inter Black, tight, block-like. Latin only; Arabic falls back to its own heavy face. */
+/* The brand's voice: Inter, tight, in sentence case. Arabic falls back to its own face. */
 .display {
-  font-family: var(--theme-heading, inherit);
-  font-weight: 900;
-  line-height: 0.95;
+  font-family: var(--theme-heading, var(--font-display), var(--font-arabic), sans-serif);
+  font-weight: 700;
+  line-height: 1.04;
   letter-spacing: -0.04em;
-  color: #0e0f0c;
+  color: #0b1b3a;
 }
 .display-xl {
-  font-size: clamp(2.75rem, 9vw, 6.5rem);
+  font-size: clamp(2.5rem, 6.2vw, 4.5rem);
 }
 .display-lg {
-  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
 }
 .display-md {
-  font-size: clamp(1.9rem, 4.2vw, 2.9rem);
-  line-height: 1.05;
+  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  line-height: 1.06;
 }
 [dir="rtl"] .display,
 html[lang="ar"] .display {
   letter-spacing: 0;
-  line-height: 1.15;
+  line-height: 1.2;
+}
+h1, h2, h3 { font-family: var(--font-display), var(--font-arabic), sans-serif; }
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3 { font-family: var(--font-arabic), sans-serif; }
+
+/* Soft, layered depth instead of one heavy shadow. */
+.shadow-card { box-shadow: 0 1px 2px rgba(11,27,58,.06), 0 8px 24px -10px rgba(11,27,58,.16); }
+.shadow-lift { box-shadow: 0 2px 4px rgba(11,27,58,.06), 0 18px 40px -14px rgba(11,27,58,.28); }
+.hover-lift:hover { box-shadow: 0 2px 4px rgba(11,27,58,.06), 0 18px 40px -14px rgba(11,27,58,.28); transform: translateY(-2px); }
+
+/* Faint column grid that gives dark panels some texture. */
+.bg-grid-dark {
+  background-image:
+    radial-gradient(520px 320px at 88% 0%, color-mix(in srgb, var(--on-dark-accent, #8db8ff) 22%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 44px);
 }
 
 /* The thin countdown bar of a toast: it drains over the toast's lifetime, and pauses while the pointer is over the toast. */

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { getOpenStores, getPublicStoreName, register } from "@/services/auth.service";
 import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
+import { SocialButtons } from "@/components/auth/social-buttons";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 
 export default function RegisterPage() {
@@ -83,14 +84,14 @@ function RegisterForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-16">
         <div className="absolute end-4 top-4">
           <LanguageSwitcher />
         </div>
 
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-0 bg-transparent shadow-none ring-0">
         <CardHeader>
-          <CardTitle aria-level={1} className="text-center text-2xl">{tr("Create your account")}</CardTitle>
+          <CardTitle aria-level={1} className="display text-start text-[2.4rem] leading-none">{tr("Create your account")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -140,6 +141,7 @@ function RegisterForm() {
               {tr("Do you run a service business?")} <Link href={storeSlug ? `/partner-signup?store=${encodeURIComponent(storeSlug)}` : "/partner-signup"} className="underline">{tr("Become a partner")}</Link>
             </p>
           </form>
+          <div className="mt-6"><SocialButtons store={storeSlug} onDone={() => router.push(productId ? (wantsInstallation ? `/dashboard/installations/new?product=${encodeURIComponent(productId)}` : `/dashboard/orders/new?product=${encodeURIComponent(productId)}`) : "/dashboard")} /></div>
         </CardContent>
       </Card>
     </div>

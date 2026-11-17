@@ -1,0 +1,35 @@
+{
+  "business": "ArmorHub, a marketplace that sends customers to verified service partners and sellers (partner side)",
+  "target": "Owners of car-care, tint and protection shops, home-service and beauty providers, and sellers of physical products in Saudi Arabia and Egypt",
+  "where": "Riyadh, Jeddah, Dammam, Cairo, Giza and Alexandria",
+  "age": [24, 60],
+  "segments": [
+    {"name": "Small workshop or one-person installer", "share": 0.35, "income": [40000, 120000]},
+    {"name": "Established service centre with staff", "share": 0.30, "income": [150000, 500000]},
+    {"name": "Home-service or beauty freelancer", "share": 0.20, "income": [30000, 90000]},
+    {"name": "Product seller or distributor", "share": 0.15, "income": [100000, 400000]}
+  ],
+  "behaviours": [
+    {"name": "Gets customers by word of mouth and Instagram", "share": 0.28, "how": "Already has a steady flow and is wary of paying for more."},
+    {"name": "Hungry for new customers", "share": 0.22, "how": "Slow months hurt, would try any channel that brings jobs."},
+    {"name": "Dislikes commissions", "share": 0.18, "how": "Compares any percentage to what they keep by dealing directly."},
+    {"name": "Worried customers will bypass the platform", "share": 0.12, "how": "Expects customers to take their number and go direct next time."},
+    {"name": "Paperwork-averse", "share": 0.10, "how": "Does not want to upload documents or wait for approval."},
+    {"name": "Tech-savvy and growth minded", "share": 0.10, "how": "Likes dashboards, online payments and scheduling tools."}
+  ],
+  "objections": [
+    "The commission of 10% of every order is too much for my margin",
+    "How do I know real customers will come and how many jobs per month?",
+    "I do not want to quote blind against my competitors on price",
+    "Customers will take my number and bypass the platform next time",
+    "When and how exactly do I get paid, and what if a customer disputes the job?",
+    "Uploading ID and commercial registration and waiting for approval is a hassle",
+    "I already get work from Instagram and WhatsApp; why add another channel?"
+  ],
+  "habits": [
+    "you take most bookings through WhatsApp and Instagram direct messages",
+    "you quote prices by looking at the car or the job first",
+    "you get paid in cash or by transfer, usually on the day",
+    "you worry about unpaid jobs and customers who change their mind"
+  ]
+}

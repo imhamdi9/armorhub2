@@ -35,6 +35,11 @@ return [
         'api_base' => env('STRIPE_API_BASE', 'https://api.stripe.com'),
     ],
 
+    // Continue with Google, Facebook or Apple: the public ids from each provider's developer console. A button shows only when its id is set.
+    'google' => ['client_id' => env('GOOGLE_CLIENT_ID')],
+    'facebook' => ['app_id' => env('FACEBOOK_APP_ID'), 'app_secret' => env('FACEBOOK_APP_SECRET')],
+    'apple' => ['client_id' => env('APPLE_CLIENT_ID')],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

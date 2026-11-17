@@ -1,0 +1,13 @@
+{
+  "id": "P006",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I want to know the film is genuine and the warranty will be honoured, and a site that is only now adding its first partners has no track record yet. Holding the money until the work is done helps, but I still would not pay through an app I have never used, and I would rather see the installer's work before I pay anyone.",
+  "objection": "Who actually stands behind this? If the film peels or the installer disappears, is the warranty in my account worth anything, and what happens to my money when the shop I was sent to is one nobody I know has ever used?",
+  "would_change_my_mind": "Seeing verified partners with real reviews from people in my own city, and a named warranty provider I can call directly if the film fails.",
+  "price_too_cheap": 800,
+  "price_cheap": 1100,
+  "price_expensive": 2000,
+  "price_too_expensive": 2400
+}

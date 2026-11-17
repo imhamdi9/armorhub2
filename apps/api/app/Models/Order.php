@@ -47,6 +47,8 @@ class Order extends Model
         'service_amount',
         'commission_amount',
         'total_amount',
+        'service_fee_rate',
+        'service_fee_amount',
         'currency',
         'market',
         'tax_rate',
@@ -64,6 +66,14 @@ class Order extends Model
 
     /** The delivery address is only sent to the customer and the staff handling the parcel. */
     protected $hidden = ['shipping_address', 'guest_token'];
+
+    /** What the customer actually pays: the invoice plus the platform fee. */
+    protected $appends = ['payable_amount'];
+
+    public function getPayableAmountAttribute(): float
+    {
+        return round((float) $this->total_amount + (float) $this->service_fee_amount, 2);
+    }
 
     protected function casts(): array
     {

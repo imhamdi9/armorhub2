@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage, fieldErrors } from "@/lib/errors";
-import { LanguageSwitcher, tr } from "@/lib/i18n";
-import { applyAsBusiness, getMarketplaces, getOpenStores, type BusinessType } from "@/services/auth.service";
+import { PartnerTerms } from "@/components/auth/partner-terms";
+import { formatNumber, LanguageSwitcher, tr } from "@/lib/i18n";
+import { applyAsBusiness, getMarketplaces, getOpenStores, getPublicTerms, payApplicationPlan, type BusinessType, type PlanPayment } from "@/services/auth.service";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
@@ -61,7 +62,23 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const human = useHumanCheck();
+  const router = useRouter();
+  const plan = params.get("plan") ?? "";
+  const storeParam = params.get("store") ?? "";
+  const [payment, setPayment] = useState<PlanPayment | null>(null);
+  const [paid, setPaid] = useState(false);
+  const [planInfo, setPlanInfo] = useState<{ name: string; price_monthly: number; currency: string } | null>(null);
   const isSeller = type === "seller";
+
+  // Everyone picks a plan first: the form is the second step.
+  useEffect(() => {
+    if (!plan) router.replace(`/pricing?for=${type}${storeParam ? `&store=${encodeURIComponent(storeParam)}` : ""}`);
+  }, [plan, router, type, storeParam]);
+
+  useEffect(() => {
+    if (!plan) return;
+    getPublicTerms().then((t) => setPlanInfo(t.plans?.find((p) => p.key === plan) ?? null)).catch(() => undefined);
+  }, [plan]);
 
   useEffect(() => {
     const load = isSeller
@@ -112,6 +129,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
     data.set("type", type);
     data.set(isSeller ? "marketplace" : "store", target);
     data.set("country", country);
+    if (plan && planInfo) data.set("plan", plan);
     for (const [key, value] of Object.entries(form)) if (value !== "") data.set(key, value);
     if (coords) {
       data.set("latitude", String(coords.latitude));
@@ -124,7 +142,8 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
 
     setBusy(true);
     try {
-      await applyAsBusiness(data);
+      const res = await applyAsBusiness(data);
+      setPayment(res.plan_payment ?? null);
       setDone(true);
     } catch (err) {
       const fields = fieldErrors(err);
@@ -139,8 +158,24 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
     }
   }
 
+  async function payNow() {
+    if (!payment) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await payApplicationPlan(payment);
+      setPaid(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!plan) return null;
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-muted px-4 py-10">
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-12">
       <div className="absolute end-4 top-4"><LanguageSwitcher /></div>
 
       <Card className="w-full max-w-2xl">
@@ -156,10 +191,29 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
           {done ? (
             <div className="space-y-4 text-center" role="status">
               <p className="rounded-xl bg-accent p-4 font-semibold text-accent-foreground">{tr("Application received. You can sign in as soon as it is approved.")}</p>
+              {payment && !paid && (
+                <div className="rounded-xl border border-[#2f6bff]/40 bg-white p-4 text-start" data-testid="plan-payment">
+                  <h2 className="font-display text-lg font-semibold">{tr("Pay for your plan")}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{tr("{name}: first month", { name: tr(payment.name) })}</p>
+                  <p className="mt-2 text-2xl font-black">{formatNumber(payment.amount)} {payment.currency}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{tr("Your plan starts when your application is approved. If you skip this, you start on the free plan and can upgrade from your account.")}</p>
+                  {error && <p className="mt-2 text-sm text-red-600" role="alert">{error}</p>}
+                  <Button type="button" className="mt-3 w-full" disabled={busy} onClick={payNow} data-testid="pay-plan">{tr("Pay {amount}", { amount: `${formatNumber(payment.amount)} ${payment.currency}` })}</Button>
+                </div>
+              )}
+              {payment && paid && <p className="rounded-xl bg-accent p-3 text-sm font-semibold text-accent-foreground" data-testid="plan-paid">{tr("Payment received. Your plan starts when you are approved.")}</p>}
               <p className="text-sm text-muted-foreground">{tr("We will check your documents. Until then, signing in will tell you the application is under review.")}</p>
               <Link href="/login" className="underline">{tr("Sign in")}</Link>
             </div>
           ) : (
+            <>
+            {planInfo && (
+              <p className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f6bff]/40 bg-accent p-3 text-sm font-semibold text-accent-foreground" data-testid="chosen-plan">
+                <span>{tr("Your plan: {name}", { name: tr(planInfo.name) })} · {planInfo.price_monthly > 0 ? `${formatNumber(planInfo.price_monthly)} ${planInfo.currency} / ${tr("month")}` : tr("Free")}</span>
+                <Link href={isSeller ? "/pricing?for=seller" : "/pricing?for=partner"} className="underline">{tr("Change plan")}</Link>
+              </p>
+            )}
+            <PartnerTerms />
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="target">{isSeller ? tr("Marketplace you want to sell in") : tr("Store you want to join")}</Label>
@@ -266,6 +320,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
               </Button>
               <p className="text-center text-sm"><Link href="/signup" className="underline">{tr("Choose a different account type")}</Link></p>
             </form>
+            </>
           )}
         </CardContent>
       </Card>

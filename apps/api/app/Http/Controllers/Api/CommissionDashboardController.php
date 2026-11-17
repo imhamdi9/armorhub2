@@ -29,6 +29,7 @@ class CommissionDashboardController extends Controller
     {
         return response()->json([
             'platform' => $this->q($request)->where('type', 'platform')->sum('amount'),
+            'service_fees' => $this->q($request)->where('type', 'service_fee')->sum('amount'),
             'companies' => $this->q($request)->where('type', 'company')->sum('amount'),
             'partners' => $this->q($request)->where('type', 'partner')->sum('amount'),
         ]);

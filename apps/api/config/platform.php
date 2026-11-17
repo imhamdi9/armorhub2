@@ -18,6 +18,9 @@ return [
     // Share of an order's total taken as commission, in percent.
     'commission_percentage' => (float) env('PLATFORM_COMMISSION_PERCENTAGE', 10),
 
+    // Fee the customer pays on top of the invoice (goods and accepted quote), in percent of the invoice. Shown on the payment page.
+    'customer_fee_percentage' => (float) env('PLATFORM_CUSTOMER_FEE_PERCENTAGE', 5),
+
     // How the commission is split. Must add up to 1.
     'commission_split' => [
         'platform' => 0.35,

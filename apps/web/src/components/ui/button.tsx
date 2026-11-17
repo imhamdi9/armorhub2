@@ -8,7 +8,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-lime text-forest hover:brightness-95",
+        default: "bg-forest text-white hover:bg-forest/90",
+        lime: "bg-lime text-forest hover:brightness-95",
         dark: "bg-primary text-primary-foreground hover:bg-primary/85",
         outline:
           "border-forest bg-background text-forest hover:bg-accent aria-expanded:bg-accent dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
@@ -22,7 +23,7 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-10 gap-1.5 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+          "h-11 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         xs: "h-6 gap-1 rounded-full px-3 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1 rounded-full px-4 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-12 gap-2 px-6 text-base has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",

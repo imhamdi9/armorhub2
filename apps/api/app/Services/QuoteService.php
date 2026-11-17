@@ -49,7 +49,8 @@ class QuoteService
                 'service_amount' => $quote->price,
                 'total_amount' => $total,
                 'status' => $planned->to,
-            ] + app(\App\Support\Markets\Markets::class)->taxFor(\App\Models\Company::withoutGlobalScopes()->find($order->company_id), (float) $total));
+            ] + app(\App\Support\Markets\Markets::class)->taxFor(\App\Models\Company::withoutGlobalScopes()->find($order->company_id), (float) $total)
+              + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $total));
 
             OrderEvent::record($order, 'quote_accepted', $by, ['partner_id' => $quote->partner_id, 'price' => (string) $quote->price]);
 

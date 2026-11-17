@@ -1,24 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Inter, Noto_Sans_Arabic } from "next/font/google";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/noto-sans-arabic";
 import "./globals.css";
 
-// Inter carries the whole interface; weight 900 is the big display voice.
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
-});
-
-// Geist has no Arabic glyphs; the browser falls back to this per character.
-const notoArabic = Noto_Sans_Arabic({
-  variable: "--font-arabic",
-  subsets: ["arabic"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Fonts are self-hosted (npm packages), so builds and pages never depend on reaching Google at runtime.
+// Inter carries the interface and headings, Noto Sans Arabic covers Arabic.
 
 // Relative addresses in metadata (images, canonical links) resolve against the real public address when SITE_URL is set.
 const SITE = (process.env.SITE_URL ?? "").replace(/\/$/, "");
@@ -32,7 +18,7 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export const viewport: Viewport = { themeColor: "#163300" };
+export const viewport: Viewport = { themeColor: "#0b1b3a" };
 
 export default function RootLayout({
   children,
@@ -40,11 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${geistMono.variable} ${notoArabic.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen">
         {children}
       </body>

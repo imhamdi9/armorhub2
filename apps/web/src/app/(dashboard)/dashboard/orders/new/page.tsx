@@ -40,6 +40,8 @@ function NewOrder() {
   const search = useSearchParams();
   const preselected = Number(search.get("product")) || null;
   const installationRequest = Number(search.get("installation_request")) || null;
+  // Parts ticked on the product page (ids, comma separated).
+  const presetParts = (search.get("parts") ?? "").split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0);
   const user = useCurrentUser();
   const industry = user?.industry;
   const targetType = industry?.targets[0] ?? "";
@@ -60,7 +62,12 @@ function NewOrder() {
 
   useEffect(() => {
     getProducts().then(setProducts);
-    if (targetType) getCatalog(targetType).then(setTargets);
+    if (targetType) getCatalog(targetType).then((rows) => {
+      setTargets(rows);
+      // Start with the parts the customer already chose on the product page, keeping only ones that exist.
+      if (presetParts.length > 0) setSelected(rows.filter((r) => presetParts.includes(r.id)).map((r) => r.id));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the preset is read once, when the page opens
   }, [targetType]);
 
   useEffect(() => {

@@ -156,7 +156,7 @@ class AuthController extends Controller
     }
 
     /** Issues the session: an HttpOnly cookie for browsers, a Bearer token for everything else. */
-    private function signedIn(Request $request, User $user, int $status = 200)
+    public function signedIn(Request $request, User $user, int $status = 200)
     {
         $token = $user->createToken('auth-token')->plainTextToken;
 

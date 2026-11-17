@@ -347,6 +347,10 @@ export const getCatalogChanges = async (status?: string) => (await api.get<Catal
 export const approveCatalogChange = async (id: number) => (await api.post(`/admin/catalog-changes/${id}/approve`)).data;
 export const rejectCatalogChange = async (id: number, note: string) => (await api.post(`/admin/catalog-changes/${id}/reject`, { note })).data;
 
+/** Sets the product-page layout for many products at once (platform administrators only). */
+export const bulkSetPageTemplate = async (ids: number[], page_template: string) =>
+  (await api.post<{ updated: number; skipped: number }>("/products/bulk-page-template", { ids, page_template })).data;
+
 /** Sets installation (none / optional / required) for many products at once. */
 export const bulkSetInstallation = async (ids: number[], installation: "none" | "optional" | "required") =>
   (await api.post<{ updated: number; skipped: number }>("/products/bulk-installation", { ids, installation })).data;
@@ -416,3 +420,27 @@ export const openMarketDepartments = async (market?: number) => (await api.post<
 export const updateDepartmentScope = async (id: number, scope: string[]) => (await api.put<DepartmentRow>(`/departments/${id}/scope`, { scope })).data;
 export const updateDepartmentRole = async (id: number, roleId: number, permissions: string[]) => (await api.put(`/departments/${id}/roles/${roleId}`, { permissions })).data;
 export const deleteDepartmentRole = async (id: number, roleId: number) => { await api.delete(`/departments/${id}/roles/${roleId}`); };
+
+/** What the signed-in customer may do on a product's reviews: leave one (if they received it) or edit theirs. */
+export const getMyReview = async (productId: number) =>
+  (await api.get<{ eligible: boolean; review: { rating: number; comment: string | null; status: string } | null }>(`/products/${productId}/review`)).data;
+
+export const saveReview = async (productId: number, rating: number, comment: string) =>
+  (await api.post<{ rating: number; comment: string | null }>(`/products/${productId}/review`, { rating, comment })).data;
+
+// ---- Subscription plans for partners and sellers
+export interface SubscriptionPlan { id?: number; key: string; name: string; price_monthly: number; currency: string; customer_limit: number | null; commission_percentage: number; team_seats: number; is_active?: boolean }
+export interface SubscriptionView {
+  plan: SubscriptionPlan;
+  usage: { customers: number; limit: number | null; reached: boolean };
+  period_end: string | null;
+  auto_renew: boolean;
+  plans: SubscriptionPlan[];
+  invoices: { id: number; plan_key: string; amount: number; currency: string; status: string; period_start: string; period_end: string; reference: string | null }[];
+}
+
+export const getSubscription = async () => (await api.get<SubscriptionView>("/subscription")).data;
+export const chooseSubscription = async (plan: string) => (await api.post<SubscriptionView>("/subscription", { plan })).data;
+export const cancelSubscription = async () => (await api.post<SubscriptionView>("/subscription/cancel")).data;
+export const getSubscriptionPlans = async () => (await api.get<SubscriptionPlan[]>("/admin/subscription-plans")).data;
+export const updateSubscriptionPlan = async (id: number, data: Partial<SubscriptionPlan>) => (await api.put<SubscriptionPlan>(`/admin/subscription-plans/${id}`, data)).data;
