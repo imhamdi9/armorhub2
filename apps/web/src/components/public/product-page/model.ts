@@ -58,7 +58,11 @@ export function useProductModel(store: ShellStore, data: PublicProductPage) {
   const cheaper = others.filter((r) => r.from_price < p.from_price).sort((a, b) => b.from_price - a.from_price);
   const pricier = others.filter((r) => r.from_price > p.from_price).sort((a, b) => a.from_price - b.from_price);
   // Products from other categories: things that go with this one rather than replace it.
-  const pairs = others.filter((r) => r.category !== p.category);
+  // Products the seller chose to offer with this one come first; otherwise the page suggests the store's other categories.
+  const page = p.page ?? {};
+  const addons = (p.addons ?? []).filter((r) => r.id !== p.id);
+  const pairs = addons.length > 0 ? addons : others.filter((r) => r.category !== p.category);
+  const lead = page.headline || (p.description ?? "").split("\n").filter(Boolean)[0] || "";
   const sameCategory = others.filter((r) => r.category === p.category);
 
   // A bar with the price and button appears once the main button has scrolled out of sight.
@@ -76,5 +80,5 @@ export function useProductModel(store: ShellStore, data: PublicProductPage) {
   const phoneDigits = (data.store.contact_phone ?? store.contact_phone ?? "").replace(/\D/g, "");
   const whatsapp = phoneDigits.length >= 8 ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(`${p.name}`)}` : null;
 
-  return { p, store, reviews, whatsapp, feePercent: data.customer_fee_percentage ?? 0, goods, links, parts, setParts, mode, href, options, picked, setPicked, chosen, shown, was, saving, cta, stuck, paragraphs, multiOptions: options.length > 1, others, cheaper, pricier, pairs, sameCategory };
+  return { p, store, page, lead, reviews, whatsapp, feePercent: data.customer_fee_percentage ?? 0, goods, links, parts, setParts, mode, href, options, picked, setPicked, chosen, shown, was, saving, cta, stuck, paragraphs, multiOptions: options.length > 1, others, cheaper, pricier, pairs, sameCategory };
 }

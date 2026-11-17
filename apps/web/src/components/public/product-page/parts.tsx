@@ -230,7 +230,7 @@ export function ctaLabel(m: ProductModel) {
 
 /** The details every layout ends with: description, prices, how it works, warranty. */
 export function DetailsAccordions({ m }: { m: ProductModel }) {
-  const { p, goods, options, paragraphs } = m;
+  const { p, goods, options, paragraphs, page } = m;
 
   return (
     <div className="border-t border-fog">
@@ -250,13 +250,25 @@ export function DetailsAccordions({ m }: { m: ProductModel }) {
           {!goods && <p className="mt-2 text-xs text-slate">{tr("Service by a partner is quoted separately after you order.")}</p>}
         </Accordion>
       )}
+      {page.specs && page.specs.length > 0 && (
+        <Accordion title="Specifications">
+          <table className="w-full" data-testid="specs"><tbody>
+            {page.specs.map((r) => <tr key={r.label} className="border-b border-fog last:border-0"><th scope="row" className="py-2 pe-3 text-start font-medium">{r.label}</th><td className="py-2">{r.value}</td></tr>)}
+          </tbody></table>
+        </Accordion>
+      )}
       <Accordion title={goods ? "Shipping and delivery" : "How it works"}>
         {goods ? tr("The seller ships your order with a carrier and you follow every step, with tracking, from your account.") : tr("Choose a service, get quotes from nearby vetted professionals, accept the one you like and pay online. You follow every step until the job is done.")}
+        {page.lead_time && <p className="mt-2 font-medium" data-testid="lead-time">{page.lead_time}</p>}
+        {page.free_delivery_from != null && Number(page.free_delivery_from) > 0 && <p className="mt-2 font-medium" data-testid="free-delivery">{tr("Free delivery on orders from {amount}", { amount: formatMoney(page.free_delivery_from, p.currency, true) })}</p>}
+        {page.quote_note && <p className="mt-2 text-slate">{page.quote_note}</p>}
       </Accordion>
       <Accordion title="Warranty and cancellation">
         {p.warranty_years ? <p className="mb-2">🛡 {tr("{n}-year warranty", { n: p.warranty_years })}</p> : null}
+        {page.warranty_terms && <p className="mb-2" data-testid="warranty-terms">{page.warranty_terms}</p>}
         <p>{tr("You can cancel any order before you pay, at no cost. After payment, contact the store from your order page.")}</p>
       </Accordion>
+      {page.faqs?.map((f) => <Accordion key={f.q} title={f.q}><p>{f.a}</p></Accordion>)}
     </div>
   );
 }

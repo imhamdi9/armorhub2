@@ -2,7 +2,9 @@
 
 import { CategoryField } from "@/components/products/category-field";
 import { INSTALLATION_LABEL, InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { PageContentFields } from "@/components/products/page-content-fields";
 import { PageTemplateField } from "@/components/products/page-template-field";
+import { cleanContent, type PageContent } from "@/lib/product-content";
 import { DEFAULT_TEMPLATE, PAGE_TEMPLATES, TEMPLATE_INFO, type PageTemplate } from "@/lib/product-templates";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -34,6 +36,7 @@ export default function ProductsPage() {
   const [price, setPrice] = useState("");
   const [installation, setInstallation] = useState<InstallationMode>("none");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
+  const [content, setContent] = useState<PageContent>({});
   // Choosing many products to give them all the same installation setting.
   const [chosen, setChosen] = useState<number[]>([]);
   const [bulkMode, setBulkMode] = useState<InstallationMode>("optional");
@@ -83,7 +86,7 @@ export default function ProductsPage() {
         slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
         category,
         installation,
-        ...(hasRole(user, "platform-admin") ? { page_template: pageTemplate } : {}),
+        ...(hasRole(user, "platform-admin") ? { page_template: pageTemplate, attributes: { page: cleanContent(content) } } : {}),
         base_price: price,
         industry_id: user?.industry?.id ?? null,
       });
@@ -113,6 +116,7 @@ export default function ProductsPage() {
           </div>
           <InstallationField value={installation} onChange={setInstallation} />
           {hasRole(user, "platform-admin") && <PageTemplateField value={pageTemplate} onChange={setPageTemplate} />}
+          {hasRole(user, "platform-admin") && <PageContentFields template={pageTemplate} value={content} onChange={setContent} />}
           <div>
             <Label htmlFor="price">{tr("Base price")}</Label>
             <Input id="price" type="number" min="0" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} />

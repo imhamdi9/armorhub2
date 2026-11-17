@@ -3,7 +3,9 @@
 import { CategoryField } from "@/components/products/category-field";
 import { CartonFields, cartonPayload, emptyCarton, type CartonValues } from "@/components/products/carton-fields";
 import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { PageContentFields } from "@/components/products/page-content-fields";
 import { PageTemplateField, asTemplate } from "@/components/products/page-template-field";
+import { cleanContent, type PageContent } from "@/lib/product-content";
 import { DEFAULT_TEMPLATE, type PageTemplate } from "@/lib/product-templates";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -44,6 +46,7 @@ export default function ProductDetailPage() {
   const [details, setDetails] = useState({
     name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
   });
+  const [content, setContent] = useState<PageContent>({});
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
   const [newImage, setNewImage] = useState("");
@@ -67,6 +70,7 @@ export default function ProductDetailPage() {
         page_template: asTemplate(p.page_template),
         fulfilment: (p.fulfilment ?? "seller") as "seller" | "armorhub",
       });
+      setContent((p.attributes?.page as PageContent | undefined) ?? {});
       setCarton({
         sku: p.sku ?? "", units_per_carton: p.units_per_carton == null ? "" : String(p.units_per_carton), carton_length_cm: p.carton_length_cm == null ? "" : String(p.carton_length_cm),
         carton_width_cm: p.carton_width_cm == null ? "" : String(p.carton_width_cm), carton_height_cm: p.carton_height_cm == null ? "" : String(p.carton_height_cm),
@@ -109,7 +113,7 @@ export default function ProductDetailPage() {
         base_price: details.base_price,
         compare_at_price: details.compare_at_price === "" ? null : details.compare_at_price,
         images: details.images,
-        attributes: { ...(product?.attributes ?? {}), highlights: details.highlights.split("\n").map((l) => l.trim()).filter(Boolean) },
+        attributes: { highlights: details.highlights.split("\n").map((l) => l.trim()).filter(Boolean), page: cleanContent(content) },
         warranty_years: details.warranty_years === "" ? null : Number(details.warranty_years),
         description: details.description || null,
         is_active: details.is_active,
@@ -166,6 +170,7 @@ export default function ProductDetailPage() {
           </label>
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
           {hasRole(user, "platform-admin") && <div className="col-span-2"><PageTemplateField value={details.page_template} onChange={(v) => setDetails({ ...details, page_template: v })} /></div>}
+          <div className="col-span-2"><PageContentFields template={details.page_template} value={content} onChange={setContent} selfId={Number(id)} /></div>
           <CartonFields value={carton} onChange={setCarton} />
           {details.requires_shipping && (
             <fieldset className="col-span-2 space-y-2 rounded-lg border p-3">

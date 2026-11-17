@@ -128,6 +128,25 @@ class PublicStorefrontController extends Controller
         return $this->cached(['seller' => ['id' => $seller->id, 'name' => $seller->name, 'city' => $seller->city ?? null, 'since' => $seller->created_at?->format('Y-m')], 'store' => ['name' => $company->name, 'slug' => $company->slug], 'products' => $page]);
     }
 
+    /** The content the page layout asks for, with only the known keys (older products have none). */
+    private function pageContent(\App\Models\Product $product): array
+    {
+        $page = is_array($product->attributes['page'] ?? null) ? $product->attributes['page'] : [];
+
+        return array_intersect_key($page, array_flip(['headline', 'steps', 'faqs', 'specs', 'tiers', 'free_delivery_from', 'warranty_terms', 'lead_time', 'quote_note']));
+    }
+
+    /** The products the seller chose to offer next to this one, only if they are really for sale in this store. */
+    private function addons(\App\Models\Product $product, $company): array
+    {
+        $ids = array_map('intval', (array) ($product->attributes['page']['addon_ids'] ?? []));
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->stores->products($company)->whereIn('id', $ids)->where('id', '!=', $product->id)->limit(4)->get()->map(fn ($p) => $this->stores->card($p, $company))->all();
+    }
+
     public function product(string $slug, int $id)
     {
         $company = $this->stores->find($slug) ?? abort(404);
@@ -139,7 +158,7 @@ class PublicStorefrontController extends Controller
             ->map(fn ($p) => $this->stores->card($p, $company))->all();
 
         return $this->cached([
-            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
+            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
             'related' => $related,
             'reviews' => $this->reviews($product->id),
             'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),

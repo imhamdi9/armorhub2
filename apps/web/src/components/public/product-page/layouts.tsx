@@ -56,7 +56,7 @@ export function ClassicLayout({ m }: { m: ProductModel }) {
         <div className="space-y-5">
           <div><Heading m={m} /></div>
           <div><PriceLine m={m} /></div>
-          {m.paragraphs[0] && <p className="text-charcoal">{m.paragraphs[0]}</p>}
+          {m.lead && <p className="text-charcoal">{m.lead}</p>}
           <Highlights items={p.highlights} />
           <OptionPills m={m} />
           <Fulfilled m={m} />
@@ -91,7 +91,7 @@ export function TiersLayout({ m }: { m: ProductModel }) {
       <div className="mx-auto max-w-3xl text-center">
         {p.category && <span className="text-xs font-bold uppercase tracking-wider text-brand-ink">{p.category.replace(/-/g, " ")}</span>}
         <h1 className="display display-lg mt-1">{p.name}</h1>
-        {m.paragraphs[0] && <p className="mt-3 text-lg text-slate">{m.paragraphs[0]}</p>}
+        {m.lead && <p className="mt-3 text-lg text-slate">{m.lead}</p>}
       </div>
       <div className={`mt-10 grid items-end gap-5 ${tiers.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2"}`} data-testid="tiers">
         {tiers.map((t, i) => {
@@ -99,7 +99,8 @@ export function TiersLayout({ m }: { m: ProductModel }) {
           return (
             <div key={`${t.target_type}:${t.target}`} className={`relative flex flex-col rounded-[24px] bg-white p-6 ${best ? "border-2 border-[var(--brand)] lg:py-9" : "border border-fog"}`} style={{ boxShadow: best ? "0 18px 40px -16px color-mix(in srgb, var(--brand) 45%, transparent)" : SHOP_SHADOW }}>
               <span className="absolute -top-3 start-5">{i === 0 ? <Tag tone="down">{tr("Lowest price")}</Tag> : best ? <Tag tone="best">{tr("Best value")}</Tag> : <Tag>{tr("Most complete")}</Tag>}</span>
-              <b className="text-xl text-obsidian">{t.target}</b>
+              <b className="text-xl text-obsidian">{m.page.tiers?.[i]?.name ?? t.target}</b>
+              {m.page.tiers?.[i]?.text && <span className="mt-1 text-sm text-slate">{m.page.tiers[i].text}</span>}
               <span className="mt-3 text-3xl font-extrabold tracking-tight">{formatMoney(t.price, p.currency, true)}</span>
               <ul className="my-5 space-y-2">
                 {(p.highlights ?? []).slice(0, i + 2).map((h) => <li key={h} className="flex gap-2 text-sm"><span aria-hidden="true">✓</span>{h}</li>)}
@@ -188,7 +189,8 @@ export function StoryLayout({ m }: { m: ProductModel }) {
   const { p } = m;
   const img = p.images?.[0] ? imageSrc(p.images[0]) : null;
   const feats = (p.highlights ?? []).slice(0, 3);
-  const steps = !m.goods ? ["Choose what you need", "Compare quotes", "Pay in the app", "Get it done"] : ["Choose your product", "Pay securely", "Track delivery", "Enjoy it"];
+  const own = (m.page.steps ?? []).map((x) => x.title);
+  const steps = own.length > 0 ? own : !m.goods ? ["Choose what you need", "Compare quotes", "Pay in the app", "Get it done"] : ["Choose your product", "Pay securely", "Track delivery", "Enjoy it"];
 
   return (
     <>
@@ -197,7 +199,7 @@ export function StoryLayout({ m }: { m: ProductModel }) {
           <div className="pb-10">
             {p.category && <span className="rounded-full bg-white/15 px-3 py-1 text-sm">{p.category.replace(/-/g, " ")}</span>}
             <h1 className="display display-lg mt-4 !text-white">{p.name}</h1>
-            {m.paragraphs[0] && <p className="mt-4 max-w-md text-lg text-white/80">{m.paragraphs[0]}</p>}
+            {m.lead && <p className="mt-4 max-w-md text-lg text-white/80">{m.lead}</p>}
             <div className="mt-6 flex flex-wrap items-center gap-4">
               <Link href={m.href} className="btn-brand inline-flex items-center px-7 py-3.5 text-base">{ctaLabel(m)}</Link>
               <span className="text-lg font-bold text-white">{!m.goods && m.options.length > 0 ? `${tr("From")} ` : ""}{price({ from_price: m.shown, currency: p.currency })}</span>
@@ -436,7 +438,7 @@ export function QuoteLayout({ m }: { m: ProductModel }) {
         <div className="space-y-5">
           <Gallery images={p.images ?? []} name={p.name} sticky={false} square={false} />
           <div><Heading m={m} /></div>
-          {m.paragraphs[0] && <p className="text-charcoal">{m.paragraphs[0]}</p>}
+          {m.lead && <p className="text-charcoal">{m.lead}</p>}
           <Highlights items={p.highlights} />
           <DetailsAccordions m={m} />
         </div>
@@ -497,7 +499,7 @@ export function ImmersiveLayout({ m }: { m: ProductModel }) {
           <Crumbs m={m} />
           <div><Heading m={m} /></div>
           <div><PriceLine m={m} /></div>
-          {m.paragraphs[0] && <p className="text-charcoal">{m.paragraphs[0]}</p>}
+          {m.lead && <p className="text-charcoal">{m.lead}</p>}
           <OptionPills m={m} />
           <Fulfilled m={m} />
           <BuyButtons m={m} />

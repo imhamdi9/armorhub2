@@ -106,6 +106,8 @@ export interface PublicProductPage {
   product: PublicProduct & {
     prices: { target_type: string; target_id?: number; target: string; price: number; duration_minutes: number | null }[];
     highlights?: string[];
+    page?: import("@/lib/product-content").PageContent;
+    addons?: PublicProduct[];
     page_template?: string;
   };
   related?: PublicProduct[];

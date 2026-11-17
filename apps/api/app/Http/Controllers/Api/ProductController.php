@@ -85,7 +85,7 @@ class ProductController extends Controller
         abort_unless($request->user()->hasRole('platform-admin'), 403);
 
         $data = $request->validate(['ids' => 'required|array|min:1|max:500', 'ids.*' => 'integer', 'page_template' => ['required', Rule::in(Product::PAGE_TEMPLATES)]]);
-        $updated = Product::whereIn('id', $data['ids'])->update(['page_template' => $data['page_template']]);
+        $updated = Product::query()->tap(fn ($q) => $this->visibleTo($request->user(), $q))->whereIn('id', $data['ids'])->update(['page_template' => $data['page_template']]);
         \App\Support\Audit::record('products.bulk_page_template', null, ['page_template' => $data['page_template'], 'updated' => $updated], $request->user());
 
         return response()->json(['updated' => $updated, 'skipped' => count($data['ids']) - $updated]);
@@ -235,18 +235,44 @@ class ProductController extends Controller
             'name' => $sometimes.'required|string|max:255',
             'slug' => [
                 ...($product ? ['sometimes'] : []),
-                'required', 'string', 'max:255',
+                'required', 'string', 'max:255', 'regex:/^[a-z0-9][a-z0-9-]*$/',
                 Rule::unique('products', 'slug')->ignore($product?->id),
             ],
-            'description' => 'nullable|string',
-            'base_price' => $sometimes.'required|numeric|min:0',
-            'warranty_years' => 'nullable|integer|min:0',
+            'description' => 'nullable|string|max:10000',
+            // decimal(12,2): a larger number would be a database error, not a validation message.
+            'base_price' => $sometimes.'required|numeric|min:0|max:9999999999',
+            'warranty_years' => 'nullable|integer|min:0|max:50',
+            // Only the keys the screens use are kept (see below): anything else sent is dropped, never stored.
             'attributes' => 'nullable|array',
             'attributes.highlights' => 'nullable|array|max:8',
             'attributes.highlights.*' => 'string|max:120',
+            // The content each page layout asks for (what the form shows once a layout is chosen).
+            'attributes.page' => 'nullable|array',
+            'attributes.page.headline' => 'nullable|string|max:160',
+            'attributes.page.steps' => 'nullable|array|max:4',
+            'attributes.page.steps.*' => 'array',
+            'attributes.page.steps.*.title' => 'required|string|max:80',
+            'attributes.page.faqs' => 'nullable|array|max:8',
+            'attributes.page.faqs.*' => 'array',
+            'attributes.page.faqs.*.q' => 'required|string|max:160',
+            'attributes.page.faqs.*.a' => 'required|string|max:600',
+            'attributes.page.specs' => 'nullable|array|max:10',
+            'attributes.page.specs.*' => 'array',
+            'attributes.page.specs.*.label' => 'required|string|max:60',
+            'attributes.page.specs.*.value' => 'required|string|max:120',
+            'attributes.page.tiers' => 'nullable|array|max:3',
+            'attributes.page.tiers.*' => 'array',
+            'attributes.page.tiers.*.name' => 'required|string|max:40',
+            'attributes.page.tiers.*.text' => 'nullable|string|max:160',
+            'attributes.page.addon_ids' => 'nullable|array|max:4',
+            'attributes.page.addon_ids.*' => ['integer', 'distinct', fn ($a, $v, $fail) => $this->visibleTo($request->user(), Product::whereKey($v))->exists() || $fail('That product was not found.')],
+            'attributes.page.free_delivery_from' => 'nullable|numeric|min:0|max:9999999999',
+            'attributes.page.warranty_terms' => 'nullable|string|max:600',
+            'attributes.page.lead_time' => 'nullable|string|max:80',
+            'attributes.page.quote_note' => 'nullable|string|max:300',
             'images' => 'nullable|array|max:8',
             'images.*' => ['string', 'max:500', fn ($attr, $value, $fail) => \App\Support\ImageRef::valid($value) || $fail('Each image must be an https address or an uploaded image.')],
-            'compare_at_price' => 'nullable|numeric|min:0',
+            'compare_at_price' => 'nullable|numeric|min:0|max:9999999999',
             'is_active' => 'boolean',
             'requires_shipping' => 'boolean',
             // Whether the buyer may need a centre to fit it: none, optional or required. The product is always sold on its own.
@@ -267,9 +293,40 @@ class ProductController extends Controller
         }
 
         $data = $request->validate($rules);
+        if (isset($data['attributes'])) {
+            $data['attributes'] = $this->plainText($this->knownKeys($data['attributes']));
+        }
         $this->checkFulfilment($data, $request, $product);
 
         return $data;
+    }
+
+    /** Keeps only what the screens use: the highlights and the page content, each with its known fields and shapes. */
+    private function knownKeys(array $attributes): array
+    {
+        $page = \Illuminate\Support\Arr::only($attributes['page'] ?? [], ['headline', 'steps', 'faqs', 'specs', 'tiers', 'addon_ids', 'free_delivery_from', 'warranty_terms', 'lead_time', 'quote_note']);
+        foreach (['steps' => ['title'], 'faqs' => ['q', 'a'], 'specs' => ['label', 'value'], 'tiers' => ['name', 'text']] as $list => $keys) {
+            if (isset($page[$list])) {
+                $page[$list] = array_values(array_map(fn ($row) => \Illuminate\Support\Arr::only($row, $keys), $page[$list]));
+            }
+        }
+        if (isset($page['addon_ids'])) {
+            $page['addon_ids'] = array_values(array_map('intval', $page['addon_ids']));
+        }
+
+        $out = array_filter(['highlights' => isset($attributes['highlights']) ? array_values($attributes['highlights']) : null, 'page' => $page ?: null], fn ($v) => $v !== null);
+
+        return $out;
+    }
+
+    /** Product copy is plain text: markup is removed on the way in, so no other screen, email or export ever has to guess whether it is safe. */
+    private function plainText(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(fn ($v) => $this->plainText($v), $value);
+        }
+
+        return is_string($value) ? trim(strip_tags($value)) : $value;
     }
 
     /** ArmorHub can only store and ship what it can handle: a physical product with complete carton data, in a market that has a warehouse. */
