@@ -22,6 +22,7 @@ import {
 import type { Order, PartnerQuote } from "@/types/platform";
 import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { OrderStatusStrip } from "@/components/orders/status-strip";
+import { RefundPanel } from "@/components/orders/refund-panel";
 
 export default function OrderDetailPage() {
   return (
@@ -89,7 +90,8 @@ function OrderDetail() {
 
   const submitted = quotes.filter((q) => q.status !== "pending");
   const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
-  const guide = statusGuide(order.status, !!user?.roles?.includes("customer"), !!order.product?.requires_shipping);
+  const refunded = order.statuses?.payment === "refunded";
+  const guide = refunded ? "This order was cancelled and refunded." : statusGuide(order.status, !!user?.roles?.includes("customer"), !!order.product?.requires_shipping);
   const canPay = ["partner_selected", "awaiting_payment"].includes(order.status);
   const canCancel = ["pending_quotes", "quotes_received", "partner_selected", "awaiting_payment"].includes(order.status);
 
@@ -97,7 +99,7 @@ function OrderDetail() {
     <div className="max-w-2xl">
       <PageHeader
         title={tr("Order #{id}", { id: order.id })}
-        action={<Badge variant="secondary">{statusLabel(order.status)}</Badge>}
+        action={<Badge variant="secondary">{refunded ? tr("Refunded") : statusLabel(order.status)}</Badge>}
       />
 
       {guide && (
@@ -134,6 +136,7 @@ function OrderDetail() {
         </div>
       )}
 
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && <RefundPanel orderId={order.id} currency={order.currency} onChange={() => getOrder(id).then(setOrder)} />}
       <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
 
       {order.warranty && (

@@ -55,8 +55,8 @@ export interface DeliveryAddress {
 }
 
 export const getCart = async () => (await api.get<CartView>("/cart")).data;
-export const addToCart = async (productId: number, optionId?: number | null, quantity = 1) =>
-  (await api.post<CartView>("/cart/items", { product_id: productId, ...(optionId ? { option_id: optionId } : {}), quantity })).data;
+export const addToCart = async (productId: number, optionId?: number | null, quantity = 1, vehicleId?: number | null) =>
+  (await api.post<CartView>("/cart/items", { product_id: productId, ...(optionId ? { option_id: optionId } : {}), ...(vehicleId ? { vehicle_id: vehicleId } : {}), quantity })).data;
 export const setCartQuantity = async (itemId: number, quantity: number) => (await api.put<CartView>(`/cart/items/${itemId}`, { quantity })).data;
 export const removeCartItem = async (itemId: number) => (await api.delete<CartView>(`/cart/items/${itemId}`)).data;
 

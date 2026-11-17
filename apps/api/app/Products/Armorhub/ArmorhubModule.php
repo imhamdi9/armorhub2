@@ -38,6 +38,10 @@ class ArmorhubModule implements Module
         'shipment_delivered' => 'The parcel was delivered',
         'shipment_failed' => 'A delivery attempt failed',
         'shipment_returned' => 'The parcel was returned',
+        'refund_requested' => 'The customer asked for a refund',
+        'refund_rejected' => 'A refund request was declined',
+        'refunded' => 'The order was refunded',
+        'refund_sent' => 'The refund was sent to the customer',
     ];
 
     public function manifest(): ModuleManifest

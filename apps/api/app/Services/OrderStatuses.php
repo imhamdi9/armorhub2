@@ -68,6 +68,10 @@ class OrderStatuses
     /** Only for goods: pending, processing, ready, shipped, delivered, returned. */
     private function product(Order $order): ?string
     {
+        if ($order->refund_status) {
+            return 'cancelled';
+        }
+
         $goods = $order->product_id && (bool) \App\Models\Product::withoutGlobalScopes()->whereKey($order->product_id)->value('requires_shipping');
         if (! $goods) {
             return null;

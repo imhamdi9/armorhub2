@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { field, Note } from "@/components/installations/shared";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { importProducts, markRefundSent, refundOrder } from "@/services/ops.service";
+import { approveRefundRequest, getRefundQueue, importProducts, markRefundSent, refundOrder, rejectRefundRequest, type RefundQueueItem } from "@/services/ops.service";
+import { formatMoney } from "@/lib/i18n";
 
 type Result = { tone: "ok" | "warn"; text: string; rows?: { row: number; messages: string[] }[] };
 
@@ -16,6 +17,14 @@ export default function AdminToolsPage() {
   const [refund, setRefund] = useState<Result | null>(null);
   const [imp, setImp] = useState<Result | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [queue, setQueue] = useState<RefundQueueItem[]>([]);
+  const [queueErr, setQueueErr] = useState<string | null>(null);
+  const loadQueue = () => getRefundQueue().then(setQueue).catch(() => setQueue([]));
+  useEffect(() => { loadQueue(); }, []);
+  async function decide(fn: () => Promise<unknown>) {
+    setQueueErr(null);
+    try { await fn(); await loadQueue(); } catch (e) { setQueueErr(errorMessage(e)); }
+  }
 
   async function doImport(dry: boolean) {
     if (!file) { setImp({ tone: "warn", text: tr("Choose a file first.") }); return; }
@@ -31,6 +40,26 @@ export default function AdminToolsPage() {
   return (
     <div className="space-y-8">
       <PageHeader title={tr("Operations tools")} />
+
+      <section className="rounded-xl border p-4" data-testid="refund-queue">
+        <h2 className="mb-1 text-lg font-semibold">{tr("Return requests")}</h2>
+        <p className="mb-3 text-sm text-muted-foreground">{tr("Customers asking to return goods that already shipped. Approving refunds them in full.")}</p>
+        {queueErr && <Note tone="warn">{queueErr}</Note>}
+        {queue.length === 0 ? <p className="text-sm text-muted-foreground">{tr("No requests waiting.")}</p> : (
+          <ul className="divide-y rounded-lg border">
+            {queue.map((q) => (
+              <li key={q.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                <span><b>#{q.order_id}</b> · {q.product} · {formatMoney(q.amount, q.currency ?? "EGP")} · {q.customer}</span>
+                <span className="text-muted-foreground">{q.reason}</span>
+                <span className="flex gap-2">
+                  <Button size="sm" onClick={() => decide(() => approveRefundRequest(q.id))}>{tr("Approve")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => { const note = window.prompt(tr("Why is it declined?")); if (note) decide(() => rejectRefundRequest(q.id, note)); }}>{tr("Decline")}</Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border p-4">
         <h2 className="mb-1 text-lg font-semibold">{tr("Refund an order")}</h2>

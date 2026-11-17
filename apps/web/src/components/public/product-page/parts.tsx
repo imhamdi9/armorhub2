@@ -11,6 +11,7 @@ import { SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { addToCart } from "@/services/cart.service";
+import { getGarage, type Vehicle } from "@/services/ops.service";
 import { getMyReview, saveReview } from "@/services/platform.service";
 import { imageSrc } from "@/lib/surfaces";
 import type { PublicProduct } from "@/types/public";
@@ -243,13 +244,20 @@ export function AddToCart({ m }: { m: ProductModel }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The customer's cars: the default one is chosen, so the server can refuse parts that do not fit it.
+  const [cars, setCars] = useState<Vehicle[]>([]);
+  const [car, setCar] = useState("");
+  useEffect(() => {
+    if (!m.links.signedIn) return;
+    getGarage().then((v) => { setCars(v); setCar(String(v.find((c) => c.is_default)?.id ?? "")); }).catch(() => {});
+  }, [m.links.signedIn]);
   if (!m.goods || m.mode === "required" || !m.links.signedIn) return null;
 
   async function add() {
     setBusy(true);
     setError(null);
     try {
-      await addToCart(m.p.id, m.chosen?.target_id);
+      await addToCart(m.p.id, m.chosen?.target_id, 1, car ? Number(car) : null);
       router.push("/dashboard/cart");
     } catch (e) {
       setError(errorMessage(e));
@@ -259,6 +267,14 @@ export function AddToCart({ m }: { m: ProductModel }) {
 
   return (
     <div>
+      {cars.length > 0 && (
+        <label className="mb-2 block text-sm text-slate">{tr("For my car")}
+          <select value={car} onChange={(e) => setCar(e.target.value)} className="mt-1 h-10 w-full rounded-[10px] border border-fog bg-white px-2 text-sm text-obsidian" data-testid="cart-vehicle">
+            <option value="">{tr("No specific car")}</option>
+            {cars.map((c) => <option key={c.id} value={c.id}>{c.nickname || c.label}</option>)}
+          </select>
+        </label>
+      )}
       <button type="button" onClick={add} disabled={busy} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
       {error && <p role="alert" className="mt-1 text-center text-sm text-red-600">{error}</p>}
     </div>

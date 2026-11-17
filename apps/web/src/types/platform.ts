@@ -14,6 +14,7 @@ export interface Product {
   is_active: boolean;
   requires_shipping?: boolean;
   installation?: "none" | "optional" | "required";
+  sale_mode?: "fixed" | "quote";
   page_template?: string | null;
   seller_id?: number | null;
   sku?: string | null;

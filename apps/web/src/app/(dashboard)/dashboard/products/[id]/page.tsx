@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { hasRole } from "@/lib/navigation";
+import { FitmentEditor } from "@/components/products/fitment-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { aliasLabel } from "@/lib/navigation";
@@ -44,7 +45,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
+    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", sale_mode: "fixed" as "fixed" | "quote", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
   });
   const [content, setContent] = useState<PageContent>({});
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
@@ -67,6 +68,7 @@ export default function ProductDetailPage() {
         is_active: p.is_active,
         requires_shipping: !!p.requires_shipping,
         installation: (p.installation ?? "none") as InstallationMode,
+        sale_mode: (p.sale_mode ?? "fixed") as "fixed" | "quote",
         page_template: asTemplate(p.page_template),
         fulfilment: (p.fulfilment ?? "seller") as "seller" | "armorhub",
       });
@@ -119,6 +121,7 @@ export default function ProductDetailPage() {
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
         installation: details.installation,
+        sale_mode: details.sale_mode,
         ...(hasRole(user, "platform-admin") ? { page_template: details.page_template } : {}),
         fulfilment: details.fulfilment,
         ...cartonPayload(carton),
@@ -168,6 +171,12 @@ export default function ProductDetailPage() {
             <input type="checkbox" id="requires_shipping" checked={details.requires_shipping} onChange={(e) => setDetails({ ...details, requires_shipping: e.target.checked })} />
             {tr("Physical product: needs a delivery address and shipping")}
           </label>
+          {details.requires_shipping && (
+            <label className="col-span-2 flex items-start gap-2 text-sm" data-testid="sale-mode">
+              <input type="checkbox" className="mt-1" checked={details.sale_mode === "quote"} onChange={(e) => setDetails({ ...details, sale_mode: e.target.checked ? "quote" : "fixed" })} />
+              <span>{tr("Sold by price request")}<span className="block text-muted-foreground">{tr("Customers ask for a price and sellers send quotes, instead of buying at a fixed price. Use it for items whose price changes or depends on the order.")}</span></span>
+            </label>
+          )}
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
           {hasRole(user, "platform-admin") && <div className="col-span-2"><PageTemplateField value={details.page_template} onChange={(v) => setDetails({ ...details, page_template: v })} /></div>}
           <div className="col-span-2"><PageContentFields template={details.page_template} value={content} onChange={setContent} selfId={Number(id)} /></div>
@@ -288,6 +297,7 @@ export default function ProductDetailPage() {
           )}
         </>
       )}
+      {product && canEdit && <div className="mt-8"><FitmentEditor productId={product.id} /></div>}
     </div>
   );
 }

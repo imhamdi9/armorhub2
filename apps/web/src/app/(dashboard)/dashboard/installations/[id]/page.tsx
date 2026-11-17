@@ -1,5 +1,6 @@
 "use client";
 
+import { BookingPanel } from "@/components/installations/booking-panel";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -151,6 +152,7 @@ export default function InstallationDetailPage() {
 
       {["paid", "in_progress"].includes(job.status) && <Note>{tr("The payment is held safely. When the work is finished the centre uploads proof and you will be asked to confirm it.")}</Note>}
 
+      {job.status === "paid" && <BookingPanel jobId={job.id} />}
       {(job.proofs.length > 0 || job.status === "proof_submitted") && (
         <Section title="Proof of the work"><ProofGallery proofs={job.proofs} /></Section>
       )}

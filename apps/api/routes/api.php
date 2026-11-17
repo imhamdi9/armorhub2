@@ -315,6 +315,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
 
     // Orders, quotes, payments
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
     Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
     // The cart, and buying it: one purchase (an order group), paid once, one order per line.
@@ -352,8 +354,14 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
 
+    Route::middleware('role:platform-admin')->prefix('admin/refund-requests')->group(function () {
+        $rq = \App\Http\Controllers\Api\Admin\RefundRequestAdminController::class;
+        Route::get('/', [$rq, 'index']);
+        Route::post('/{id}/approve', [$rq, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [$rq, 'reject'])->whereNumber('id');
+    });
     Route::middleware('role:platform-admin')->prefix('admin/orders')->group(function () {
-        $r = \App\Http\Controllers\Api\Admin\OrderRefundController::class;
+        $r =\App\Http\Controllers\Api\Admin\OrderRefundController::class;
         Route::post('/{id}/refund', [$r, 'refund'])->whereNumber('id');
         Route::post('/{id}/refund-sent', [$r, 'sent'])->whereNumber('id');
     });

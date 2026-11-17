@@ -144,6 +144,62 @@ class RefundImportIdempotencyTest extends TestCase
         $this->assertEquals(64.5, \App\Models\Product::withoutGlobalScopes()->where('name', 'Air filter')->value('base_price'));
     }
 
+    public function test_a_customer_cancelling_before_shipping_is_refunded_at_once(): void
+    {
+        [$group, $order] = $this->paidOrder();
+        $ledger = app(Ledger::class);
+        $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}/refund-request")->assertOk()->assertJsonPath('can_request', true);
+
+        $this->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'Changed my mind'])->assertCreated()->assertJsonPath('kind', 'cancel')->assertJsonPath('status', 'approved');
+        $this->assertSame('pending', Order::withoutGlobalScopes()->find($order->id)->refund_status);
+        $this->assertEqualsWithDelta($group['payable_amount'], $ledger->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::sellerHeld($this->seller->company_id), $order->currency), 0.001);
+        $this->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'again please'])->assertUnprocessable();
+        $this->getJson("/api/orders/{$order->id}/refund-request")->assertJsonPath('can_request', false)->assertJsonPath('refund_status', 'pending');
+    }
+
+    public function test_after_shipping_the_request_waits_for_an_administrator(): void
+    {
+        [, $order] = $this->paidOrder();
+        $shipment = \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::IN_TRANSIT]);
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'It is on its way but I do not want it'])
+            ->assertCreated()->assertJsonPath('kind', 'return')->assertJsonPath('status', 'requested');
+        $this->assertNull(Order::withoutGlobalScopes()->find($order->id)->refund_status);                        // nothing moved yet
+        $this->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'second request'])->assertUnprocessable();
+
+        $this->actingAs($this->customer, 'sanctum')->getJson('/api/admin/refund-requests')->assertForbidden();
+        $this->actingAs($this->admin, 'sanctum');
+        $id = $this->getJson('/api/admin/refund-requests')->assertOk()->assertJsonCount(1)->json('0.id');
+        $this->postJson("/api/admin/refund-requests/{$id}/reject", [])->assertUnprocessable();
+        $this->postJson("/api/admin/refund-requests/{$id}/approve")->assertOk()->assertJsonPath('status', 'approved');
+        $this->assertSame('pending', Order::withoutGlobalScopes()->find($order->id)->refund_status);
+        $this->postJson("/api/admin/refund-requests/{$id}/approve")->assertUnprocessable();                       // decided once
+        $this->assertNotNull($shipment->fresh());
+    }
+
+    public function test_a_rejected_request_leaves_the_order_as_it_was_and_only_the_owner_can_ask(): void
+    {
+        [, $order] = $this->paidOrder();
+        \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::DELIVERED, 'delivered_at' => now()->subDays(2)]);
+
+        $other = User::factory()->create(['company_id' => $this->customer->company_id]);
+        $other->assignRole('customer');
+        $this->actingAs($other, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'not mine to ask'])->assertNotFound();
+
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'Does not work'])->assertCreated()->assertJsonPath('kind', 'return');
+        $id = \App\Models\OrderRefundRequest::firstOrFail()->id;
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/refund-requests/{$id}/reject", ['note' => 'Used and damaged'])->assertOk()->assertJsonPath('status', 'rejected');
+        $this->assertNull(Order::withoutGlobalScopes()->find($order->id)->refund_status);
+        $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}/refund-request")->assertJsonPath('request.status', 'rejected')->assertJsonPath('request.note', 'Used and damaged');
+    }
+
+    public function test_the_return_window_closes(): void
+    {
+        [, $order] = $this->paidOrder();
+        \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::DELIVERED, 'delivered_at' => now()->subDays(40)]);
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'too late now'])->assertUnprocessable();
+    }
+
     public function test_a_customer_cannot_import(): void
     {
         $this->actingAs($this->customer, 'sanctum')->postJson('/api/products/import', ['file' => $this->csv("name,category,base_price\na,spare-parts,1\n")])->assertForbidden();

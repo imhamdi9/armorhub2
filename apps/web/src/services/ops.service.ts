@@ -61,3 +61,33 @@ export const importProducts = async (file: File, dryRun: boolean) => {
   form.append("dry_run", dryRun ? "1" : "0");
   return (await api.post<{ message: string; imported: number; rows?: number; errors?: { row: number; messages: string[] }[] }>("/products/import", form, { headers: { "Content-Type": "multipart/form-data" } })).data;
 };
+
+export interface RefundState {
+  request: { id: number; kind: "cancel" | "return"; status: "requested" | "approved" | "rejected"; reason: string; note: string | null; created_at: string } | null;
+  refund_status: "pending" | "refunded" | null;
+  refund_amount: number | null;
+  can_request: boolean;
+  return_days: number;
+}
+export const getRefundState = async (orderId: number) => (await api.get<RefundState>(`/orders/${orderId}/refund-request`)).data;
+export const requestRefund = async (orderId: number, reason: string) => (await api.post<{ id: number; kind: "cancel" | "return"; status: string }>(`/orders/${orderId}/refund-request`, { reason })).data;
+
+export interface RefundQueueItem { id: number; order_id: number; product: string | null; amount: number; currency: string | null; kind: string; reason: string; status: string; customer: string | null; created_at: string }
+export const getRefundQueue = async () => (await api.get<RefundQueueItem[]>("/admin/refund-requests")).data;
+export const approveRefundRequest = async (id: number) => (await api.post(`/admin/refund-requests/${id}/approve`)).data;
+export const rejectRefundRequest = async (id: number, note: string) => (await api.post(`/admin/refund-requests/${id}/reject`, { note })).data;
+
+export interface FitmentRow { vehicle_make_id: number | null; vehicle_model_id: number | null; year_from: number | null; year_to: number | null; note: string | null; make?: string | null; model?: string | null }
+export const getFitments = async (productId: number) => {
+  const p = (await api.get<{ fitments?: FitmentRow[]; fitment_required?: boolean }>(`/products/${productId}`)).data;
+  return { rows: p.fitments ?? [], required: !!p.fitment_required };
+};
+export const saveFitments = async (productId: number, rows: FitmentRow[], required: boolean) =>
+  (await api.put(`/products/${productId}/fitments`, { fitment_required: required, rows: rows.map(({ vehicle_make_id, vehicle_model_id, year_from, year_to, note }) => ({ vehicle_make_id, vehicle_model_id, year_from, year_to, note })) })).data;
+
+export interface BookingView { starts_at: string; ends_at: string; status: string; reschedules: number; can_change: boolean; cancel_reason: string | null }
+export interface SlotsView { timezone: string; job_hours: number; days: { date: string; times: string[] }[] }
+export const getBooking = async (jobId: number) => (await api.get<{ booking: BookingView | null }>(`/installation-requests/${jobId}/booking`)).data.booking;
+export const getSlots = async (jobId: number) => (await api.get<SlotsView>(`/installation-requests/${jobId}/slots`)).data;
+export const bookSlot = async (jobId: number, starts_at: string) => (await api.post(`/installation-requests/${jobId}/booking`, { starts_at })).data;
+export const rescheduleSlot = async (jobId: number, starts_at: string) => (await api.put(`/installation-requests/${jobId}/booking`, { starts_at })).data;
