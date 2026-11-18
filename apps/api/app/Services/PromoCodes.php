@@ -19,10 +19,18 @@ class PromoCodes
     }
 
     /** @return array{code: PromoCode, discount: float} */
-    public function check(string $code, User $user, float $itemsAmount, ?string $market): array
+    public function check(string $code, User $user, float $itemsAmount, ?string $market, ?array $byProduct = null): array
     {
         $promo = PromoCode::where('code', self::normalise($code))->first();
         $fail = fn (string $why) => throw ValidationException::withMessages(['code' => [$why]]);
+
+        // A seller's coupon counts only the products the seller chose for it.
+        if ($promo?->company_id && $byProduct !== null) {
+            $itemsAmount = (float) collect($promo->product_ids ?? [])->sum(fn ($id) => (float) ($byProduct[(int) $id] ?? 0.0));
+            if ($itemsAmount <= 0) {
+                $fail('This code is only for specific products, and none of them is in your cart.');
+            }
+        }
 
         if (! $promo || ! $promo->is_active) {
             $fail('This code is not valid.');

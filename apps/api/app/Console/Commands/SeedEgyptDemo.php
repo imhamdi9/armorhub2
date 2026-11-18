@@ -86,6 +86,9 @@ class SeedEgyptDemo extends Command
             $this->publishSite();
         }
 
+        // Each product keeps its English and Arabic copy in separate fields, so every screen shows one language only.
+        app(\App\Services\ProductLanguages::class)->backfill();
+
         $this->info('Egyptian demo ready: '.count($stores).' stores, '.Product::where('market', 'EG')->count().' products.');
         $this->line("Logins (password {$password}): admin@demo.eg, owner.auto@demo.eg (also .beauty .home .devices), manager.auto1@demo.eg, tech.auto1@demo.eg, seller.khan@demo.eg (also .delta .aswan .siwa .autopro .techsouq), customers like nour.fawzy@demo.eg");
 

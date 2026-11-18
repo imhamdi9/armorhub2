@@ -25,7 +25,7 @@ class PartnerJobController extends Controller
             ->pluck('order_id');
 
         return Order::withoutGlobalScopes()
-            ->with(['product:id,name,warranty_years', 'subject', 'customer:id,name,city,country', 'events.user:id,name'])
+            ->with(['product:id,name,name_ar,warranty_years', 'subject', 'customer:id,name,city,country', 'events.user:id,name'])
             ->whereIn('id', $orderIds)
             ->whereIn('status', ['paid', 'appointment_scheduled', 'service_in_progress', 'completed'])
             ->latest('updated_at')

@@ -14,7 +14,7 @@ class InvoicePdf
 
     public function render(Order $order): string
     {
-        $order->loadMissing('product:id,name,sku,seller_id');
+        $order->loadMissing('product:id,name,name_ar,sku,seller_id');
         $pdf = new MiniPdf();
         $money = fn ($v) => number_format((float) $v, 2).' '.$order->currency;
         $name = MiniPdf::ascii((string) $order->product?->name) ?: 'Product '.($order->product?->sku ?: '#'.$order->product_id);

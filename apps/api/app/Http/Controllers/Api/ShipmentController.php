@@ -36,7 +36,7 @@ class ShipmentController extends Controller
 
     public function index(Request $request, int $id)
     {
-        $order = Order::withoutGlobalScopes()->with('product:id,name,requires_shipping,seller_id')->findOrFail($id);
+        $order = Order::withoutGlobalScopes()->with('product:id,name,name_ar,requires_shipping,seller_id')->findOrFail($id);
         $role = $this->role($request->user(), $order) ?? abort(404);
 
         return [

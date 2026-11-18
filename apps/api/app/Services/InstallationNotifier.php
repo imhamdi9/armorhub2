@@ -15,10 +15,10 @@ class InstallationNotifier
         }
     }
 
-    public function centre(int $partnerId, string $title, string $body, string $path): void
+    public function centre(int $partnerId, string $title, string $body, string $path, array $replace = []): void
     {
         User::withoutGlobalScopes()->where('partner_id', $partnerId)->role('partner-manager')->get()
-            ->each(fn (User $u) => $u->notify(new InstallationUpdate($title, $body, $path)));
+            ->each(fn (User $u) => $u->notify(new InstallationUpdate($title, $body, $path, $replace)));
     }
 
     public function admins(string $title, string $body, string $path, array $replace = []): void

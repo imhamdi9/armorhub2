@@ -48,7 +48,7 @@ class WarrantyClaimController extends Controller
         $user = $request->user();
         abort_unless($user->hasRole('platform-admin') || ($user->company_id && $user->can('products.update')), 403);
 
-        return WarrantyClaim::with(['product:id,name,seller_id', 'customer:id,name'])
+        return WarrantyClaim::with(['product:id,name,name_ar,seller_id', 'customer:id,name'])
             ->when(! $user->hasRole('platform-admin'), fn ($q) => $q->whereIn('product_id', Product::withoutGlobalScopes()->where('seller_id', $user->company_id)->select('id')))
             ->orderByRaw("status = 'open' desc")->latest('id')->limit(100)->get()
             ->map(fn ($c) => $this->row($c) + ['product' => ['id' => $c->product?->id, 'name' => $c->product?->name], 'customer' => explode(' ', trim((string) $c->customer?->name))[0] ?: 'Customer'])->values();

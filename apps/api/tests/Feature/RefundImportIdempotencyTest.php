@@ -113,6 +113,19 @@ class RefundImportIdempotencyTest extends TestCase
         $this->assertEqualsWithDelta(0, app(Ledger::class)->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
     }
 
+    public function test_the_seller_is_told_of_a_return_and_the_customer_sees_where_it_goes(): void
+    {
+        [, $order] = $this->paidOrder();
+        \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::DELIVERED, 'delivered_at' => now()->subDay()]);
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'It does not fit'])->assertCreated();
+
+        $told = $this->seller->notifications()->get()->first(fn ($n) => str_contains($n->data['title'] ?? '', 'return'));
+        $this->assertNotNull($told);
+        $this->assertStringContainsString("#{$order->id}", $told->data['title']);
+        $this->assertSame('It does not fit', $told->data['body']);
+        $this->getJson("/api/orders/{$order->id}/refund-request")->assertOk()->assertJsonPath('return_to.kind', 'seller');
+    }
+
     public function test_only_administrators_refund_and_only_orders_that_were_paid(): void
     {
         [, $order] = $this->paidOrder();

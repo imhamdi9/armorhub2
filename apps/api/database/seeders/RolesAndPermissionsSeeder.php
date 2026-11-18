@@ -49,6 +49,8 @@ class RolesAndPermissionsSeeder extends Seeder
     // Running the day-to-day of a market: watching orders and requests, the business numbers (operations agents)
     'operations.manage',
     'support.manage',
+    // Looking at the products sellers submit and approving them (the catalogue team)
+    'catalog.review',
     // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
     'warehouse.manage',
     // Platform administration (admins only: they get every permission)
@@ -154,6 +156,12 @@ class RolesAndPermissionsSeeder extends Seeder
 'support-agent' => [
     'support.manage',
     'orders.view',
+    'dashboard.view',
+],
+
+// ArmorHub's catalogue reviewer: approves or sends back the products sellers submit, in their own market; sees nothing else.
+'catalog-reviewer' => [
+    'catalog.review',
     'dashboard.view',
 ],
 

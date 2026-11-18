@@ -83,6 +83,10 @@ class CheckoutService
             foreach ($lines as $l) {
                 $perSeller[(int) $l['product']->seller_id] = ($perSeller[(int) $l['product']->seller_id] ?? 0.0) + round((float) $l['price']['total'] * $l['quantity'], 2);
             }
+            $perProduct = [];
+            foreach ($lines as $l) {
+                $perProduct[(int) $l['product']->id] = ($perProduct[(int) $l['product']->id] ?? 0.0) + round((float) $l['price']['total'] * $l['quantity'], 2);
+            }
             $charged = [];
             $shippingTotal = 0.0;
 
@@ -90,7 +94,7 @@ class CheckoutService
             $promo = null;
             $discount = 0.0;
             if ($cart->promo_code) {
-                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round(array_sum($perSeller), 2), $market);
+                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round(array_sum($perSeller), 2), $market, $perProduct);
                 $promo = $checked['code'];
                 $discount = $checked['discount'];
             }
@@ -105,7 +109,22 @@ class CheckoutService
                 }
                 $discount += $loyalty->worth($pointsUsed);
             }
-            $shares = app(\App\Services\PromoCodes::class)->allocate($discount, array_map(fn ($l) => round((float) $l['price']['total'] * $l['quantity'], 2), $lines));
+            $lineTotals = array_map(fn ($l) => round((float) $l['price']['total'] * $l['quantity'], 2), $lines);
+            $codes = app(\App\Services\PromoCodes::class);
+            $ownerId = (int) ($promo?->company_id ?? 0);
+            // A seller's coupon is shared over the lines of the products the seller chose for it; every other discount (points, ArmorHub's codes) over all of them.
+            $promoShares = array_fill(0, count($lines), 0.0);
+            if ($ownerId) {
+                $chosen = array_map('intval', (array) ($promo->product_ids ?? []));
+                $mine = array_keys(array_filter($lines, fn ($l) => (int) $l['product']->seller_id === $ownerId && in_array((int) $l['product']->id, $chosen, true)));
+                foreach ($codes->allocate($promoDiscount, array_map(fn ($i) => $lineTotals[$i], $mine)) as $k => $part) {
+                    $promoShares[$mine[$k]] = $part;
+                }
+                $pointShares = $codes->allocate($discount - $promoDiscount, $lineTotals);
+            } else {
+                $pointShares = $codes->allocate($discount, $lineTotals);
+            }
+            $shares = array_map(fn ($i) => round($promoShares[$i] + $pointShares[$i], 2), array_keys($lines));
 
             $items = $fee = 0.0;
             foreach ($lines as $idx => $line) {
@@ -118,7 +137,7 @@ class CheckoutService
                     'company_id' => $user->company_id, 'customer_id' => $user->id, 'group_id' => $group->id, 'product_id' => $line['product']->id, 'quantity' => $line['quantity'],
                     'subject_type' => $line['vehicle'] ? 'vehicle_model' : null, 'subject_id' => $line['vehicle']?->vehicle_model_id,
                     'status' => OrderStatus::AwaitingPayment, 'product_amount' => $total, 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $total,
-                    'currency' => $line['price']['currency'], 'shipping_address' => $ship, 'shipping_amount' => $shipping, 'discount_amount' => $shares[$idx], 'promo_code' => $promo?->code,
+                    'currency' => $line['price']['currency'], 'shipping_address' => $ship, 'shipping_amount' => $shipping, 'discount_amount' => $shares[$idx], 'seller_discount_amount' => $ownerId ? $promoShares[$idx] : 0, 'promo_code' => $promo?->code,
                 ] + $extras + $this->markets->taxFor($company, $total) + $this->fees->forInvoice($total));
                 OrderEvent::record($order, 'created', $user, ['direct_sale' => true, 'group_id' => $group->id, 'quantity' => $line['quantity']] + ($line['vehicle'] ? ['vehicle' => $line['vehicle']->label()] : []));
                 $items += (float) $order->total_amount;

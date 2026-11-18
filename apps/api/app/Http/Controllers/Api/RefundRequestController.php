@@ -53,6 +53,19 @@ class RefundRequestController extends Controller
         return ['status' => $r->status, 'pickup_day' => $r->pickup_day?->toDateString()];
     }
 
+    /** @return array{kind: string, city: ?string} */
+    private function returnTo(Order $order): array
+    {
+        if (($order->fulfilment ?? null) === 'armorhub') {
+            $wh = \App\Models\Warehouse::whereKey($order->warehouse_id)->first(['name', 'city']);
+
+            return ['kind' => 'armorhub', 'city' => $wh?->city];
+        }
+        $seller = \App\Models\Company::withoutGlobalScopes()->whereKey(\App\Models\Product::withoutGlobalScopes()->whereKey($order->product_id)->value('seller_id'))->first();
+
+        return ['kind' => 'seller', 'city' => $seller?->settings['profile']['return_address']['city'] ?? $seller?->settings['profile']['city'] ?? null];
+    }
+
     /** The newest request for an order, and whether a new one may be made, so the screen shows the right thing. */
     public function show(Request $request, int $id)
     {
@@ -67,6 +80,8 @@ class RefundRequestController extends Controller
             'can_request' => (bool) $order->product?->requires_shipping && ! $order->refund_status && ($last === null || ! in_array($last->status, ['requested', 'awaiting_pickup', 'collected'], true))
                 && in_array($order->status->value ?? $order->status, ['paid', 'appointment_scheduled', 'service_in_progress', 'completed'], true),
             'return_days' => OrderRefundRequests::RETURN_DAYS,
+            // Where goods come back to: ArmorHub's warehouse for goods it keeps, otherwise the seller's own return address (the city only).
+            'return_to' => $this->returnTo($order),
         ];
     }
 }

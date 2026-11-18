@@ -28,8 +28,8 @@ class BookingNoShows
                 return;
             }
             $b->update(['no_show_flagged_at' => now()]);
-            User::find($request->customer_id)?->notify(new SimpleNotice('Did the centre come?', "{$request->subject}: the booked time has passed. If nobody came, open a dispute from the job while the payment is held.", "/dashboard/installations/{$request->id}"));
-            $this->notify->centre($b->partner_id, 'Your booked time passed', "{$request->subject}: upload the proof of work, or the customer may open a dispute.", "/dashboard/centre-jobs/{$request->id}");
+            User::find($request->customer_id)?->notify(new SimpleNotice('Did the centre come?', ':subject: the booked time has passed. If nobody came, open a dispute from the job while the payment is held.', "/dashboard/installations/{$request->id}", ['subject' => (string) $request->subject]));
+            $this->notify->centre($b->partner_id, 'Your booked time passed', ':subject: upload the proof of work, or the customer may open a dispute.', "/dashboard/centre-jobs/{$request->id}", ['subject' => (string) $request->subject]);
             $this->notify->admins('Possible no-show', 'Job #:id: the booked time passed with no proof.', '/dashboard/admin/disputes', ['id' => (string) $request->id]);
             $flagged++;
         });

@@ -46,6 +46,9 @@ class PartialRefunds
             if (! $sellerId) {
                 throw ValidationException::withMessages(['order' => ['Only a seller\'s product order can be refunded here.']]);
             }
+            if ((float) $o->seller_discount_amount > 0) {
+                throw ValidationException::withMessages(['order' => ['This order used a seller\'s coupon: refund it in full instead.']]);
+            }
             $payable = (float) $o->payable_amount;
             if ($amount < 0.01 || $amount >= $payable) {
                 throw ValidationException::withMessages(['amount' => ["Enter an amount above zero and below what the customer paid ({$payable}). To give everything back, refund the order."]]);

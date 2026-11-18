@@ -91,7 +91,7 @@ class InstallationMatching
 
         foreach ($next as $centre) {
             InstallationInvite::firstOrCreate(['request_id' => $request->id, 'partner_id' => $centre->id], ['wave' => $wave]);
-            app(InstallationNotifier::class)->centre($centre->id, 'New installation request near you', "{$request->subject}: ".implode(', ', (array) $request->parts), '/dashboard/centre-requests');
+            app(InstallationNotifier::class)->centre($centre->id, 'New installation request near you', ':subject: :parts', '/dashboard/centre-requests', ['subject' => (string) $request->subject, 'parts' => implode(', ', (array) $request->parts)]);
         }
         $request->update(['invite_wave' => $wave]);
 

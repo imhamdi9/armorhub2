@@ -23,7 +23,8 @@ class AdminHasAllPowersTest extends TestCase
         $admin->assignRole('platform-admin');
         $this->actingAs($admin, 'sanctum');
 
-        $allowed403 = ['api/email/verify/{id}/{hash}', 'api/admin/roles/{id}'];
+        // The two guest-only calls answer everyone who is not a quiet guest shopper with 403, an administrator included, by design.
+        $allowed403 = ['api/email/verify/{id}/{hash}', 'api/admin/roles/{id}', 'api/guest-session/contact', 'api/guest-session/claim'];
         $forbidden = [];
         foreach (Route::getRoutes() as $route) {
             // The versioned copy (api/v1/...) follows the same rules as the plain one.

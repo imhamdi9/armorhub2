@@ -16,7 +16,7 @@ class OrderProblemController extends Controller
         $ids = \App\Support\MarketScope::companyIds($request->user());
 
         return OrderMessage::where('kind', 'problem')->whereNull('handled_at')->when($ids !== null, fn ($q) => $q->whereIn('order_id', Order::withoutGlobalScopes()->whereIn('company_id', $ids)->select('id')))->latest('id')->limit(100)->get()->map(function ($m) {
-            $order = Order::withoutGlobalScopes()->with('product:id,name')->find($m->order_id);
+            $order = Order::withoutGlobalScopes()->with('product:id,name,name_ar')->find($m->order_id);
 
             return ['id' => $m->id, 'order_id' => $m->order_id, 'product' => $order?->product?->name, 'customer' => User::withoutGlobalScopes()->whereKey($m->user_id)->value('name'), 'body' => $m->body, 'created_at' => $m->created_at?->toIso8601String()];
         })->values();

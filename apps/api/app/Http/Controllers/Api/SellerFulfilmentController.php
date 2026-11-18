@@ -40,7 +40,7 @@ class SellerFulfilmentController extends Controller
     {
         $c = $this->seller($request);
 
-        return InboundShipment::where('seller_id', $c->id)->with('items.product:id,name,sku,units_per_carton')->latest('id')->limit(100)->get();
+        return InboundShipment::where('seller_id', $c->id)->with('items.product:id,name,name_ar,sku,units_per_carton')->latest('id')->limit(100)->get();
     }
 
     /** Announce cartons that are on their way to the market's warehouse. */
@@ -65,7 +65,7 @@ class SellerFulfilmentController extends Controller
             return $inbound;
         });
 
-        return response()->json($inbound->load('items.product:id,name,sku,units_per_carton'), 201);
+        return response()->json($inbound->load('items.product:id,name,name_ar,sku,units_per_carton'), 201);
     }
 
     public function cancel(Request $request, int $id)

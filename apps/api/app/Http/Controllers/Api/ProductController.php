@@ -107,6 +107,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        Product::$rawNames = true;        // the editing screens speak of the main (English) name, never the translated one
         $data = $this->validated($request);
         $user = $request->user();
 
@@ -121,11 +122,16 @@ class ProductController extends Controller
             ]);
         }
 
-        return response()->json(Product::create($data), 201);
+        $product = Product::create($this->isSeller($user) ? app(\App\Services\ProductApproval::class)->onCreate($data) : $data);
+        // A seller's product is buyable at its base price from the start (no hidden "price rule" step).
+        app(\App\Services\DefaultPrice::class)->ensure($product);
+
+        return response()->json($product, 201);
     }
 
     public function show(Request $request, Product $product)
     {
+        Product::$rawNames = true;        // the editing screens speak of the main (English) name, never the translated one
         abort_unless($this->visibleTo($request->user(), Product::whereKey($product->id))->exists(), 404);
 
         // Whether the signed-in person may change it: the screen shows an editor only to those who can, instead of buttons that fail.
@@ -134,6 +140,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        Product::$rawNames = true;        // the editing screens speak of the main (English) name, never the translated one
         abort_unless($this->mayChange($request->user(), $product), 404);
         $data = $this->validated($request, $product);
 
@@ -145,12 +152,39 @@ class ProductController extends Controller
         if (($data['fulfilment'] ?? $product->fulfilment) === 'armorhub') {
             unset($data['stock_cartons']);
         }
+        if (($data['fulfilment'] ?? null) === 'armorhub' && \App\Models\ProductBundleItem::where('product_id', $product->id)->exists()) {
+            throw ValidationException::withMessages(['fulfilment' => ['This product is part of a bundle you ship yourself. Remove it from the bundle first.']]);
+        }
+        // Nothing a seller makes goes live until the catalogue team approves it: only an approved product can be switched on or off.
+        if ($this->isSeller($request->user()) && ($data['is_active'] ?? false) && ! $product->is_active && $product->review_status !== 'approved' && app(\App\Services\ProductApproval::class)->required()) {
+            throw ValidationException::withMessages(['is_active' => ['A product goes live only after ArmorHub approves it. Submit it for review first.']]);
+        }
+        // A seller publishes a draft only when shoppers have something to look at: at least one photo and a short description.
+        if ($this->isSeller($request->user()) && ($data['is_active'] ?? false) && ! $product->is_active) {
+            $photos = count(array_filter((array) ($data['images'] ?? $product->images)));
+            $text = mb_strlen(trim((string) ($data['description'] ?? $product->description)));
+            if ($photos < 1 || $text < 30) {
+                throw ValidationException::withMessages(['is_active' => ['Add at least one photo and a description of 30 characters or more before you publish.']]);
+            }
+        }
         $oldPrice = (float) $product->base_price;
         $product->update($data);
+        app(\App\Services\DefaultPrice::class)->follow($product, $oldPrice);
+        if ($this->isSeller($request->user())) {
+            app(\App\Services\ProductApproval::class)->reopened($product, array_keys($product->getChanges()));
+        }
         app(\App\Services\PriceAlerts::class)->dropped($product, $oldPrice, (float) $product->base_price);
 
         // The same shape as show(), so a screen that replaces its copy with this one does not lose the edit permission.
         return $product->fresh()->toArray() + ['can_edit' => true];
+    }
+
+    /** The seller asks ArmorHub's catalogue team to look at the product. */
+    public function submitReview(Request $request, Product $product, \App\Services\ProductApproval $approval)
+    {
+        abort_unless($this->mayChange($request->user(), $product), 404);
+
+        return $approval->submit($product)->only(['id', 'review_status', 'review_note', 'is_active']);
     }
 
     /** Which cars the product fits. An empty list means every car (unless the product requires a fit, then it fits none). */
@@ -256,6 +290,19 @@ class ProductController extends Controller
         return $query;
     }
 
+    /** A lowercase address that no other product uses: the wanted one, or the same with a short suffix. */
+    private function freeSlug(string $wanted): string
+    {
+        $base = \Illuminate\Support\Str::slug($wanted) ?: 'product';
+        $base = mb_substr($base, 0, 200);
+        $slug = $base;
+        while (Product::withoutGlobalScopes()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.strtolower(\Illuminate\Support\Str::random(4));
+        }
+
+        return $slug;
+    }
+
     private function validated(Request $request, ?Product $product = null): array
     {
         $sometimes = $product ? 'sometimes|' : '';
@@ -263,6 +310,18 @@ class ProductController extends Controller
         // One spelling per category ("Skin Care", "skin care" and "skin-care" are the same one), and never empty.
         if ($request->has('category')) {
             $request->merge(['category' => \Illuminate\Support\Str::slug((string) $request->input('category'))]);
+        }
+
+        // Numbers typed with Arabic-Indic digits (and the Arabic decimal mark) are read as the numbers they are.
+        foreach (['base_price', 'compare_at_price', 'stock_cartons', 'units_per_carton', 'warranty_years', 'carton_length_cm', 'carton_width_cm', 'carton_height_cm', 'carton_weight_kg'] as $numeric) {
+            if (is_string($request->input($numeric))) {
+                $request->merge([$numeric => strtr(trim($request->input($numeric)), ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9', '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9', '٫' => '.', '،' => '.', ',' => '.'])]);
+            }
+        }
+
+        // The web address of a product is made for the seller, from the name in any language, and is never "already taken".
+        if (! $product) {
+            $request->merge(['slug' => $this->freeSlug((string) ($request->input('slug') ?: $request->input('name')))]);
         }
 
         if ($request->filled('sku')) {
@@ -289,11 +348,18 @@ class ProductController extends Controller
                 Rule::unique('products', 'slug')->ignore($product?->id),
             ],
             'description' => 'nullable|string|max:10000',
+            // The same listing in Arabic: shoppers browsing in Arabic read these instead (the other copy is the fallback).
+            'name_ar' => 'nullable|string|max:255',
+            'description_ar' => 'nullable|string|max:10000',
             // decimal(12,2): a larger number would be a database error, not a validation message.
             'base_price' => $sometimes.'required|numeric|min:0|max:9999999999',
             'warranty_years' => 'nullable|integer|min:0|max:50',
             // Only the keys the screens use are kept (see below): anything else sent is dropped, never stored.
             'attributes' => 'nullable|array',
+            // For cars and motorcycles: a plain sentence the seller writes about what it fits, shown in bold (never a required section).
+            'attributes.fits_note' => 'nullable|string|max:300',
+            'attributes.highlights_ar' => 'nullable|array|max:8',
+            'attributes.highlights_ar.*' => 'string|max:120',
             'attributes.highlights' => 'nullable|array|max:8',
             'attributes.highlights.*' => 'string|max:120',
             // The content each page layout asks for (what the form shows once a layout is chosen).
@@ -340,8 +406,8 @@ class ProductController extends Controller
             $rules['industry_id'] = 'nullable|integer';
         }
 
-        // Only platform administrators choose the page layout; for everyone else the field is ignored.
-        if (! $request->user()->hasRole('platform-admin')) {
+        // Administrators and sellers (for their own products) choose the page layout; for everyone else the field is ignored.
+        if (! $request->user()->hasRole('platform-admin') && ! $this->isSeller($request->user())) {
             unset($rules['page_template']);
         }
 
@@ -350,8 +416,74 @@ class ProductController extends Controller
             $data['attributes'] = $this->plainText($this->knownKeys($data['attributes']));
         }
         $this->checkFulfilment($data, $request, $product);
+        $this->checkListing($data, $request, $product);
 
         return $data;
+    }
+
+    /**
+     * Shoppers read the English copy when the platform is in English and the Arabic copy when it is in Arabic, never a mix: a seller gives both,
+     * each in its own language (the setting products.require_both_languages can relax the "both" part, never the "own language" part).
+     */
+    private function checkLanguages(array $data, Request $request, ?Product $product): void
+    {
+        $has = fn (string $re, ?string $text) => $text === null || $text === '' || (bool) preg_match($re, $text);
+        $mix = fn (string $field, string $why) => throw ValidationException::withMessages([$field => [$why]]);
+        foreach (['name' => $data['name'] ?? null, 'description' => $data['description'] ?? null] as $f => $v) {
+            if (! $has('/[A-Za-z]/', $v)) {
+                $mix($f, 'Write this in English: it is the copy shoppers read when the platform is in English.');
+            }
+        }
+        foreach (['name_ar' => $data['name_ar'] ?? null, 'description_ar' => $data['description_ar'] ?? null] as $f => $v) {
+            if (! $has('/\p{Arabic}/u', $v)) {
+                $mix($f, 'Write this in Arabic: it is the copy shoppers read when the platform is in Arabic.');
+            }
+        }
+        if (! app(\App\Support\Settings\Settings::class)->bool('products.require_both_languages')) {
+            return;
+        }
+        // Creating, or publishing a draft: every one of the four must be there.
+        $publishing = $product === null || (($data['is_active'] ?? false) && ! $product->is_active);
+        if ($publishing) {
+            $val = fn (string $k) => trim((string) (array_key_exists($k, $data) ? $data[$k] : ($product?->{$k} ?? '')));
+            foreach (['name' => 'English name', 'name_ar' => 'Arabic name', 'description' => 'English description', 'description_ar' => 'Arabic description'] as $k => $label) {
+                if ($val($k) === '') {
+                    $mix($k, "Add the {$label}: every product needs its name and description in English and in Arabic.");
+                }
+            }
+        }
+    }
+
+    /** What a shopper reads before paying must not carry a way around the platform, and the prices must make sense. */
+    private function checkListing(array $data, Request $request, ?Product $product): void
+    {
+        if (! $this->isSeller($request->user())) {
+            return;
+        }
+        $this->checkLanguages($data, $request, $product);
+        $texts = ['description' => $data['description'] ?? null, 'description_ar' => $data['description_ar'] ?? null];     // names and brands carry model numbers and years, so only free text is checked
+        foreach (($data['attributes']['highlights'] ?? []) as $i => $line) {
+            $texts["attributes.highlights.{$i}"] = $line;
+        }
+        foreach (($data['attributes']['highlights_ar'] ?? []) as $i => $line) {
+            $texts["attributes.highlights_ar.{$i}"] = $line;
+            if (! preg_match('/\p{Arabic}/u', (string) $line)) {
+                throw ValidationException::withMessages(["attributes.highlights_ar.{$i}" => ['Write this in Arabic: it is the copy shoppers read when the platform is in Arabic.']]);
+            }
+        }
+        foreach ($texts as $field => $text) {
+            if (is_string($text) && \App\Support\ContactGuard::contains($text)) {
+                throw ValidationException::withMessages([$field => ['Please do not put phone numbers, e-mails or links here. Shoppers reach you through the platform.']]);
+            }
+        }
+        $price = array_key_exists('base_price', $data) ? (float) $data['base_price'] : (float) ($product?->base_price ?? 0);
+        if (array_key_exists('base_price', $data) && $price < 0.01) {
+            throw ValidationException::withMessages(['base_price' => ['The price must be more than zero.']]);
+        }
+        $was = array_key_exists('compare_at_price', $data) ? $data['compare_at_price'] : $product?->compare_at_price;
+        if ($was !== null && (float) $was > 0 && (float) $was <= $price) {
+            throw ValidationException::withMessages(['compare_at_price' => ['The price before the discount must be higher than the price.']]);
+        }
     }
 
     /** Keeps only what the screens use: the highlights and the page content, each with its known fields and shapes. */
@@ -367,7 +499,7 @@ class ProductController extends Controller
             $page['addon_ids'] = array_values(array_map('intval', $page['addon_ids']));
         }
 
-        $out = array_filter(['highlights' => isset($attributes['highlights']) ? array_values($attributes['highlights']) : null, 'page' => $page ?: null], fn ($v) => $v !== null);
+        $out = array_filter(['highlights' => isset($attributes['highlights']) ? array_values($attributes['highlights']) : null, 'highlights_ar' => isset($attributes['highlights_ar']) ? array_values($attributes['highlights_ar']) : null, 'fits_note' => ($attributes['fits_note'] ?? '') !== '' ? $attributes['fits_note'] : null, 'page' => $page ?: null], fn ($v) => $v !== null);
 
         return $out;
     }

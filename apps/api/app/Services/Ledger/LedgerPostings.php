@@ -40,6 +40,15 @@ class LedgerPostings
             [Accounts::EXP_PROMO, $cur, (float) $order->discount_amount],     // the customer paid less: the platform bears the discount
         ]), $order, "Order #{$order->id} paid");
 
+        // A seller's own coupon: the platform paid the customer's discount above, and takes that part back from what it owes the seller.
+        $sellerDiscount = (float) $order->seller_discount_amount;
+        if ($sellerId && $sellerDiscount > 0) {
+            $this->ledger->post("order:{$order->id}:seller_discount", 'seller_discount', [
+                [Accounts::sellerHeld($sellerId), $cur, $sellerDiscount],
+                [Accounts::EXP_PROMO, $cur, -$sellerDiscount],
+            ], $order, "Order #{$order->id}: the seller's coupon is paid by the seller");
+        }
+
         // The host store's and the partner's shares of the commission are owed to them, out of the platform's commission.
         $lines = [];
         foreach (CommissionDistribution::where('commission_id', $commission->id)->whereIn('type', ['company', 'partner'])->get() as $d) {
@@ -73,7 +82,7 @@ class LedgerPostings
         if (! $sellerId || ! $commission) {
             return;
         }
-        $net = (float) $order->total_amount - (float) $commission->amount + (float) $order->shipping_amount;
+        $net = (float) $order->total_amount - (float) $commission->amount + (float) $order->shipping_amount - (float) $order->seller_discount_amount;
 
         $this->ledger->post("order:{$order->id}:released", 'seller_released', [
             [Accounts::sellerHeld($sellerId), $order->currency, $net],

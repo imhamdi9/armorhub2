@@ -39,7 +39,7 @@ class ProductImport
             }
         }
         if (count($rows) > self::MAX_ROWS) {
-            throw ValidationException::withMessages(['file' => ['At most '.self::MAX_ROWS.' products at a time.']]);
+            throw ValidationException::withMessages(['file' => [__('At most :n products at a time.', ['n' => self::MAX_ROWS])]]);
         }
 
         return $rows;

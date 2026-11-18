@@ -78,7 +78,7 @@ class InstallationAdminController extends Controller
         abort_unless($r->refund_status === 'pending', 422, 'There is no pending refund for this job.');
         $r->update(['refund_status' => 'refunded', 'refund_reference' => $data['reference']]);
         app(\App\Services\Ledger\LedgerPostings::class)->installationRefundPaid($r);
-        app(InstallationNotifier::class)->user($r->customer_id, 'Refund sent', "{$r->refund_amount} {$r->currency} was refunded (reference {$data['reference']}).", "/dashboard/installations/{$r->id}");
+        app(InstallationNotifier::class)->user($r->customer_id, 'Refund sent', ':amount :currency was refunded (reference :ref).', "/dashboard/installations/{$r->id}", ['amount' => (string) $r->refund_amount, 'currency' => (string) $r->currency, 'ref' => (string) $data['reference']]);
 
         return ['id' => $r->id, 'refund_status' => 'refunded'];
     }

@@ -125,7 +125,7 @@ class ProductQuoteService
                 'lead_days' => (int) ($data['lead_days'] ?? 0), 'condition' => $data['condition'] ?? 'new', 'warranty_days' => $data['warranty_days'] ?? null,
                 'note' => isset($data['note']) ? trim(strip_tags($data['note'])) : null, 'valid_until' => now()->addDays($days), 'status' => 'submitted',
             ]);
-            $this->notify->user($req->customer_id, 'You received a quote', "{$quote->number} for {$req->title}", "/dashboard/quote-requests/{$req->id}");
+            $this->notify->user($req->customer_id, 'You received a quote', ':number for :title', "/dashboard/quote-requests/{$req->id}", ['number' => (string) $quote->number, 'title' => (string) $req->title]);
 
             return $quote;
         });

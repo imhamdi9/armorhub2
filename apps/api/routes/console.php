@@ -27,3 +27,4 @@ Artisan::command('inspire', function () {
 // Paid orders that sellers have not shipped: remind them, then cancel and refund.
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\SellerEarningsRelease::class)->run())->hourly()->name('earnings:release')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\ShippingDeadlines::class)->run())->hourly()->name('orders:ship-deadlines')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('guests:prune')->daily();

@@ -43,6 +43,7 @@ class Order extends Model
         'quantity',
         'shipping_amount',
         'discount_amount',
+        'seller_discount_amount',
         'promo_code',
         'product_id',
         'subject_type',

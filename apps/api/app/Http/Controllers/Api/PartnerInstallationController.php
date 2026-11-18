@@ -53,7 +53,7 @@ class PartnerInstallationController extends Controller
             'warranty_days' => 'nullable|integer|min:0|max:3650', 'earliest_date' => 'nullable|date|after_or_equal:today']);
 
         if ($partner->min_job_price !== null && (float) $data['price'] < (float) $partner->min_job_price) {
-            throw ValidationException::withMessages(['price' => ['Your minimum price for a job is '.(float) $partner->min_job_price.'. Change it in your settings or offer more.']]);
+            throw ValidationException::withMessages(['price' => [__('Your minimum price for a job is :n. Change it in your settings or offer more.', ['n' => (float) $partner->min_job_price])]]);
         }
 
         if (ContactGuard::contains($data['note'] ?? null)) {

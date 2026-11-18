@@ -93,6 +93,7 @@ class StorefrontService
             ->with('seller:id,name')
             ->withMin(['priceRules as lowest_price' => fn ($q) => $q->where('is_active', true)], 'price')
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->published()])
+            ->withCount('bundleItems')
             ->withAvg(['reviews as reviews_avg' => fn ($q) => $q->published()], 'rating')
             ->visibleInTenant($company->tenant_id)
             ->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)))
@@ -137,16 +138,36 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
+    /** @return array<string, string> slug => the category's name in the current language */
+    public function categoryLabels(): array
+    {
+        static $cache = [];
+        $locale = app()->getLocale();
+
+        return $cache[$locale] ??= \App\Models\ProductCategory::where('is_active', true)->get()->mapWithKeys(fn ($c) => [$c->key => $locale === 'ar' && $c->name_ar ? $c->name_ar : $c->name_en])->all();
+    }
+
+    /** The key features, in the language being browsed (the Arabic list when there is one, else the main one). @return list<string> */
+    public function highlightsOf(Product $product): array
+    {
+        $main = array_values($product->attributes['highlights'] ?? []);
+        $ar = array_values($product->attributes['highlights_ar'] ?? []);
+
+        return app()->getLocale() === 'ar' && $ar !== [] ? $ar : $main;
+    }
+
     public function card(Product $product, ?Company $company = null, ?float $from = null): array
     {
         return [
             'seller' => $product->seller_id ? $product->seller?->name : null,
             'seller_id' => $product->seller_id,
             'id' => $product->id,
-            'name' => $product->name,
+            // Shoppers browsing in Arabic read the seller's Arabic copy when there is one.
+            'name' => app()->getLocale() === 'ar' && $product->name_ar ? $product->name_ar : $product->name,
             'brand' => $product->brand,
             'category' => $product->category,
-            'description' => $product->description,
+            'category_name' => $this->categoryLabels()[$product->category] ?? null,
+            'description' => app()->getLocale() === 'ar' && $product->description_ar ? $product->description_ar : $product->description,
             'warranty_years' => $product->warranty_years,
             'images' => array_values($product->images ?? []),
             'compare_at_price' => $product->compare_at_price !== null ? round((float) $product->compare_at_price, 2) : null,
@@ -160,6 +181,8 @@ class StorefrontService
             'currency' => $this->markets->currencyFor($company),
             'rating' => $this->rating($product),
             'sale_mode' => $product->sale_mode ?? 'fixed',
+            // A bundle the seller made: shown with a bundle mark everywhere it appears.
+            'is_bundle' => (int) ($product->bundle_items_count ?? $product->bundleItems()->count()) > 0,
         ];
     }
 
@@ -205,7 +228,8 @@ class StorefrontService
         return $rules->map(fn ($r) => [
             'target_type' => $r->target_type,
             'target_id' => (int) $r->target_id,
-            'target' => $names[$r->target_type][$r->target_id] ?? null,
+            // Catalogue names (a car part, a room, a device part) are shown in the shopper's language.
+            'target' => isset($names[$r->target_type][$r->target_id]) ? __($names[$r->target_type][$r->target_id]) : null,
             'price' => round((float) $r->price, 2),
             'duration_minutes' => $r->duration_minutes,
         ])->filter(fn ($r) => $r['target'] !== null)->values()->all();

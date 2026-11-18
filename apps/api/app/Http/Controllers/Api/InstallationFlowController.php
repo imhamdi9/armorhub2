@@ -93,7 +93,7 @@ class InstallationFlowController extends Controller
         abort_unless($r->selected_offer_id, 422, 'Nothing to report yet.');
         $centre = $this->jobs->centreOf($r);
         InstallationViolation::firstOrCreate(['request_id' => $r->id, 'partner_id' => $centre->id, 'reported_by' => $request->user()->id], ['note' => $data['note'] ?? null]);
-        app(InstallationNotifier::class)->admins('Off-platform contact reported', "Job #{$r->id}: the customer says the centre tried to deal outside the platform.", '/dashboard/admin/disputes');
+        app(InstallationNotifier::class)->admins('Off-platform contact reported', 'Job #:id: the customer says the centre tried to deal outside the platform.', '/dashboard/admin/disputes', ['id' => (string) $r->id]);
 
         return response()->json(['message' => 'Thank you. The platform will review this.']);
     }

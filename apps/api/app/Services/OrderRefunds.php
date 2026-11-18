@@ -47,7 +47,7 @@ class OrderRefunds
             $bucket = null;
             $entries = collect();
             if ($sellerId) {
-                $entries = SellerLedgerEntry::where('order_id', $o->id)->whereIn('type', ['sale', 'commission', 'shipping'])->get();
+                $entries = SellerLedgerEntry::where('order_id', $o->id)->whereIn('type', ['sale', 'commission', 'shipping', 'discount'])->get();
                 // Already paid out (or in a payout): the customer is refunded now and the seller owes it back, taken from what they earn next.
                 $paidOut = $entries->contains(fn ($e) => $e->status === 'paid' || $e->payout_id !== null);
                 $bucket = $paidOut || $entries->first()?->status === 'available' ? Accounts::sellerAvailable($sellerId) : Accounts::sellerHeld($sellerId);
@@ -66,12 +66,15 @@ class OrderRefunds
             $promoPartial = round((float) $o->discount_amount * $r, 2);
             // Paid on delivery and not yet delivered: no money was taken, so nothing goes back.
             $codDue = \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->where('status', 'cod_due')->first();
+            $sellerDiscount = (float) $o->seller_discount_amount;
             $net = (float) $o->total_amount - (float) $commission->amount + (float) $o->shipping_amount;
 
             $this->ledger->post("order:{$o->id}:refunded", 'order_refunded', array_filter([
                 // The seller's share of an earlier partial refund was taken from their available balance: give it back when the earnings leave from "held".
                 $sellerId ? [$bucket, $cur, $paidOut ?? false ? $net - $sellerPartial : $net] : [Accounts::REV_COMMISSION, $cur, $net],
                 $sellerId && $sellerPartial > 0 && ! ($paidOut ?? false) ? [Accounts::sellerAvailable($sellerId), $cur, -$sellerPartial] : null,
+                $sellerDiscount > 0 ? [$bucket, $cur, -$sellerDiscount] : null,              // the seller gets back what its own coupon cost it
+                $sellerDiscount > 0 ? [Accounts::EXP_PROMO, $cur, $sellerDiscount] : null,
                 [Accounts::REV_COMMISSION, $cur, (float) $commission->amount - $cutPartial],
                 [Accounts::REV_SERVICE_FEE, $cur, (float) $o->service_fee_amount - $feePartial],
                 [Accounts::EXP_PROMO, $cur, -((float) $o->discount_amount - $promoPartial)],        // the discount is no longer the platform's cost

@@ -22,7 +22,7 @@ class RefundRequestAdminController extends Controller
 
     public function index(Request $request)
     {
-        return $this->scoped($request)->with('order.product:id,name')->whereIn('status', $request->query('status') ? [$request->query('status')] : ['requested', 'awaiting_pickup', 'collected'])->latest('id')->limit(100)->get()->map(fn ($r) => [
+        return $this->scoped($request)->with('order.product:id,name,name_ar')->whereIn('status', $request->query('status') ? [$request->query('status')] : ['requested', 'awaiting_pickup', 'collected'])->latest('id')->limit(100)->get()->map(fn ($r) => [
             'id' => $r->id, 'order_id' => $r->order_id, 'product' => $r->order?->product?->name, 'amount' => (float) ($r->order?->payable_amount ?? 0), 'currency' => $r->order?->currency,
             'kind' => $r->kind, 'reason' => $r->reason, 'photos' => $r->photos ?? [], 'status' => $r->status, 'pickup_day' => $r->pickup_day?->toDateString(), 'pickup_note' => $r->pickup_note, 'customer' => User::whereKey($r->customer_id)->value('name'), 'created_at' => $r->created_at?->toIso8601String(),
         ])->values();

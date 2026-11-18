@@ -232,7 +232,7 @@ class InstallationJobs
             $hours = (int) $this->settings->get('installation.objection_hours');
             $deadline = now()->addHours($hours);
             $r->update(['status' => 'proof_submitted', 'proof_submitted_at' => now(), 'objection_deadline' => $deadline, 'proxy_expires_at' => $deadline]);
-            $this->notify->user($r->customer_id, 'Please check the finished work', "The centre says the job is done. Confirm it, or open a dispute within {$hours} hours. After that the payment is released.", "/dashboard/installations/{$r->id}");
+            $this->notify->user($r->customer_id, 'Please check the finished work', 'The centre says the job is done. Confirm it, or open a dispute within :hours hours. After that the payment is released.', "/dashboard/installations/{$r->id}", ['hours' => (string) $hours]);
         }
 
         return $r->fresh();
@@ -281,7 +281,7 @@ class InstallationJobs
 
             $centre = $this->centreOf($r);
             $this->reputation->refresh($centre);
-            $this->notify->centre($centre->id, 'Payment released', "{$r->centre_amount} {$r->currency} is now available in your wallet.", '/dashboard/wallet');
+            $this->notify->centre($centre->id, 'Payment released', ':amount :currency is now available in your wallet.', '/dashboard/wallet', ['amount' => (string) $r->centre_amount, 'currency' => (string) $r->currency]);
             $this->notify->user($r->customer_id, 'Job completed', 'The job is complete and covered by the platform warranty. Please rate the centre.', "/dashboard/installations/{$r->id}");
 
             return $r->fresh();

@@ -58,6 +58,13 @@ class OrderRefundRequests
 
             $req = \App\Models\OrderRefundRequest::create(['order_id' => $o->id, 'customer_id' => $customer->id, 'reason' => $reason, 'kind' => $left ? 'return' : 'cancel']);
             OrderEvent::record($o, 'refund_requested', $customer, ['reason' => $reason, 'kind' => $req->kind]);
+            // The seller hears of it at once: a return may end with their earnings being taken back.
+            if ($o->product?->seller_id) {
+                User::where('company_id', $o->product->seller_id)->role('seller')->get()->each(fn ($u) => $u->notify(new \App\Notifications\SimpleNotice(
+                    $req->kind === 'return' ? 'A customer asked to return order #:id' : 'A customer asked to cancel order #:id', ':why', '/dashboard/seller-orders',
+                    ['id' => (string) $o->id, 'why' => mb_substr($reason, 0, 160)],
+                )));
+            }
 
             if (! $left) {
                 try {

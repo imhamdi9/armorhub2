@@ -77,7 +77,7 @@ class WarehouseController extends Controller
 
     public function inbound(Request $request)
     {
-        return InboundShipment::where('tenant_id', $this->tenant($request))->with('items.product:id,name,sku,units_per_carton')->latest('id')->limit(100)->get();
+        return InboundShipment::where('tenant_id', $this->tenant($request))->with('items.product:id,name,name_ar,sku,units_per_carton')->latest('id')->limit(100)->get();
     }
 
     /** The cartons that arrived (what was counted, which may differ from what the seller announced). */
@@ -111,7 +111,7 @@ class WarehouseController extends Controller
         Audit::record('warehouse.received', $inbound, [], $request->user());
 
         // The seller hears about every shortfall or surplus, line by line.
-        $inbound->load('items.product:id,name');
+        $inbound->load('items.product:id,name,name_ar');
         $diffs = $inbound->items->filter(fn ($i) => (int) $i->cartons_received !== (int) $i->cartons_expected)
             ->map(fn ($i) => "{$i->product?->name}: {$i->cartons_expected} → {$i->cartons_received}".($i->note ? " ({$i->note})" : ''))->values();
         if ($diffs->isNotEmpty()) {
@@ -119,7 +119,7 @@ class WarehouseController extends Controller
                 ->each(fn ($u) => $u->notify(new \App\Notifications\SimpleNotice('Delivery #:id arrived with differences', ':lines', '/dashboard/seller-warehouse', ['id' => (string) $inbound->id, 'lines' => $diffs->implode('; ')])));
         }
 
-        return $inbound->fresh('items.product:id,name,sku,units_per_carton');
+        return $inbound->fresh('items.product:id,name,name_ar,sku,units_per_carton');
     }
 
     /** Orders for goods ArmorHub keeps, paid and waiting to be packed and sent. */
@@ -130,7 +130,7 @@ class WarehouseController extends Controller
         return Order::withoutGlobalScopes()->where('fulfilment', 'armorhub')->whereIn('status', ['paid'])
             ->whereIn('company_id', \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $tenant)->select('id'))
             ->whereDoesntHave('shipments')
-            ->with('product:id,name,sku,units_per_carton')->oldest('id')->get()
+            ->with('product:id,name,name_ar,sku,units_per_carton')->oldest('id')->get()
             ->map(fn (Order $o) => $o->makeVisible('shipping_address'));
     }
 

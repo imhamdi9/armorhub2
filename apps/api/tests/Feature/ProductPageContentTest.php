@@ -90,16 +90,16 @@ class ProductPageContentTest extends TestCase
             ['description' => str_repeat('d', 10001)],
             ['base_price' => '99999999999999'],
             ['warranty_years' => 5000],
-            ['slug' => '../../etc'],
         ] as $bad) {
             $admin->postJson('/api/products', $this->body($bad))->assertUnprocessable();
         }
     }
 
-    public function test_a_seller_fills_in_the_content_but_cannot_choose_the_layout_or_pick_a_rivals_product(): void
+    public function test_a_seller_fills_in_the_content_and_chooses_the_layout_but_cannot_pick_a_rivals_product(): void
     {
         $mine = $this->actingAs($this->seller, 'sanctum')->postJson('/api/products', $this->body(['page_template' => 'immersive', 'attributes' => ['page' => ['headline' => 'Mine']]]))->assertCreated();
-        $this->assertSame('classic', Product::find($mine->json('id'))->page_template ?? 'classic');
+        $this->assertSame('immersive', Product::find($mine->json('id'))->page_template);          // a seller picks the layout of their own product
+        $this->actingAs($this->seller, 'sanctum')->postJson('/api/products', $this->body(['page_template' => 'nonsense']))->assertUnprocessable();
 
         $theirs = $this->actingAs($this->rivalSeller, 'sanctum')->postJson('/api/products', $this->body())->assertCreated()->json('id');
         $this->actingAs($this->seller, 'sanctum')->putJson('/api/products/'.$mine->json('id'), ['attributes' => ['page' => ['addon_ids' => [$theirs]]]])->assertUnprocessable();

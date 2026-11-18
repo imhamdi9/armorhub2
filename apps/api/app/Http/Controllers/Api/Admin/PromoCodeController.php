@@ -71,6 +71,6 @@ class PromoCodeController extends Controller
     {
         return ['id' => $p->id, 'code' => $p->code, 'type' => $p->type, 'value' => (float) $p->value, 'max_discount' => $p->max_discount !== null ? (float) $p->max_discount : null, 'min_order' => $p->min_order !== null ? (float) $p->min_order : null,
             'market' => $p->market, 'starts_at' => $p->starts_at?->toIso8601String(), 'ends_at' => $p->ends_at?->toIso8601String(), 'usage_limit' => $p->usage_limit, 'per_customer_limit' => $p->per_customer_limit,
-            'is_active' => $p->is_active, 'used' => (int) ($used->n ?? 0), 'given' => (float) ($used->total ?? 0)];
+            'seller_id' => $p->company_id, 'is_active' => $p->is_active, 'used' => (int) ($used->n ?? 0), 'given' => (float) ($used->total ?? 0)];
     }
 }

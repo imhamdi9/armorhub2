@@ -14,7 +14,7 @@ class WarrantyController extends Controller
         $user = $request->user();
         $claims = app(WarrantyClaimController::class);
 
-        return Warranty::with(['product:id,name,requires_shipping', 'order:id,total_amount,currency'])
+        return Warranty::with(['product:id,name,name_ar,requires_shipping', 'order:id,total_amount,currency'])
             ->when($user->hasRole('customer'), fn ($q) => $q->where('customer_id', $user->id))
             ->orderByDesc('ends_at')
             ->get()

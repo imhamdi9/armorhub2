@@ -77,7 +77,7 @@ class WorkOrderController extends Controller
 
         $job->update(['technician_id' => $tech?->id, 'assigned_at' => $tech ? now() : null]);
         if ($tech) {
-            $this->notify->user($tech->id, 'A job was given to you', "{$job->subject}: {$this->parts($job)}", "/dashboard/centre-jobs/{$job->id}");
+            $this->notify->user($tech->id, 'A job was given to you', ':subject: :parts', "/dashboard/centre-jobs/{$job->id}", ['subject' => (string) $job->subject, 'parts' => (string) $this->parts($job)]);
         }
 
         return $this->present($job->fresh());

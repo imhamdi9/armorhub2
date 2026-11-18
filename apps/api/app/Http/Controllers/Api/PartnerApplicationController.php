@@ -217,7 +217,7 @@ class PartnerApplicationController extends Controller
         // Never approve a business whose required documents are not all on file.
         $missing = array_diff(ApplicationDocuments::required($app->type), $app->documents()->pluck('kind')->all());
         if ($missing) {
-            throw ValidationException::withMessages(['documents' => ['Required documents are missing: '.implode(', ', $missing)]]);
+            throw ValidationException::withMessages(['documents' => [__('Required documents are missing: :list', ['list' => implode(', ', $missing)])]]);
         }
 
         return $service->approve($app, $request->user());

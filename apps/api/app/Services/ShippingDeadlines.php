@@ -32,7 +32,7 @@ class ShippingDeadlines
         }
         $actor = User::role('platform-admin')->first();
 
-        Order::withoutGlobalScopes()->with('product:id,name,seller_id,requires_shipping')->where('status', 'paid')->whereNull('refund_status')
+        Order::withoutGlobalScopes()->with('product:id,name,name_ar,seller_id,requires_shipping')->where('status', 'paid')->whereNull('refund_status')
             ->where(fn ($q) => $q->whereNull('fulfilment')->orWhere('fulfilment', '!=', 'armorhub'))
             ->whereHas('product', fn ($q) => $q->where('requires_shipping', true)->whereNotNull('seller_id'))
             ->get()->each(function (Order $o) use ($remind, $cancel, $actor, &$out) {
@@ -57,7 +57,7 @@ class ShippingDeadlines
 
                         return;
                     }
-                    User::find($o->customer_id)?->notify(new SimpleNotice('Your order was cancelled and refunded', "{$name}: the seller did not ship in time. Your money is on its way back.", "/dashboard/orders/{$o->id}"));
+                    User::find($o->customer_id)?->notify(new SimpleNotice('Your order was cancelled and refunded', ':name: the seller did not ship in time. Your money is on its way back.', "/dashboard/orders/{$o->id}", ['name' => (string) $name]));
                     $this->tellSeller($o, 'An order was cancelled because it was not shipped', "Order #{$o->id} ({$name}) was refunded to the customer.");
                     $out['cancelled']++;
                 } elseif ($remind > 0 && $days >= $remind && ! $o->ship_reminded_at) {

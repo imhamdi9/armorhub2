@@ -51,7 +51,7 @@ class ProductQuestionController extends Controller
         $user = $request->user();
         abort_unless($user->hasRole('platform-admin') || ($user->company_id && $user->can('products.update')), 403);
 
-        return ProductQuestion::query()->with(['product:id,name,seller_id', 'user:id,name'])
+        return ProductQuestion::query()->with(['product:id,name,name_ar,seller_id', 'user:id,name'])
             ->when(! $user->hasRole('platform-admin'), fn ($q) => $q->whereIn('product_id', Product::withoutGlobalScopes()->where('seller_id', $user->company_id)->select('id')))
             ->orderByRaw('answered_at is not null')->latest('id')->limit(100)->get()
             ->map(fn ($q) => $this->row($q) + ['product' => ['id' => $q->product?->id, 'name' => $q->product?->name], 'asker' => explode(' ', trim((string) $q->user?->name))[0] ?: 'Customer'])->values();

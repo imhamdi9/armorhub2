@@ -81,7 +81,7 @@ class CheckoutController extends Controller
     /** @return array<string, mixed> */
     private function present(OrderGroup $g): array
     {
-        $orders = $g->orders()->with('product:id,name,images,seller_id')->get();
+        $orders = $g->orders()->with('product:id,name,name_ar,images,seller_id')->get();
 
         return [
             'id' => $g->id, 'status' => $g->status, 'currency' => $g->currency, 'items_amount' => (float) $g->items_amount, 'service_fee_amount' => (float) $g->service_fee_amount,

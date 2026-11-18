@@ -26,7 +26,7 @@ class SandboxProvider implements PaymentProvider
 
     public function label(): string
     {
-        return 'Sandbox checkout (test cards, no real money)';
+        return __('Sandbox checkout (test cards, no real money)');
     }
 
     public function help(): string

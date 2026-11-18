@@ -95,6 +95,8 @@ class PublicStorefrontController extends Controller
             'market' => $this->stores->market($company),
             'featured' => $featured->map(fn ($p) => $this->stores->card($p, $company))->values(),
             'categories' => $this->stores->products($company)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
+            // Each category's name in the language the shopper is browsing in.
+            'category_labels' => $this->stores->categoryLabels(),
             'partners' => $this->stores->partnerSummary($company),
         ]);
     }
@@ -245,6 +247,13 @@ class PublicStorefrontController extends Controller
         return ['fits' => app(\App\Services\Fitment\FitmentService::class)->check($product, (int) $request->input('vehicle_model_id'), (int) $request->input('year'))];
     }
 
+    /** Every category's name in both languages, keyed by the slug products carry, so any screen can show it in the shopper's language. */
+    public function categoryNames()
+    {
+        return response()->json(\App\Models\ProductCategory::where('is_active', true)->get()->mapWithKeys(fn ($c) => [$c->key => ['en' => $c->name_en, 'ar' => $c->name_ar]]))
+            ->header('Cache-Control', 'public, max-age=300');
+    }
+
     public function product(\Illuminate\Http\Request $request, string $slug, int $id)
     {
         $company = $this->stores->find($slug) ?? abort(404);
@@ -256,7 +265,13 @@ class PublicStorefrontController extends Controller
             ->map(fn ($p) => $this->stores->card($p, $company))->all();
 
         return $this->cached([
-            'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'fitment_required' => (bool) $product->fitment_required, 'fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product) + [], 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
+            'product' => $this->stores->card($product, $company) + ['fits_note' => $product->attributes['fits_note'] ?? null, 'bundle_items' => $product->bundleItems()->with('product:id,name,name_ar,name_ar,description,description_ar,brand,base_price,images,warranty_years')->get()->map(function ($i) {
+                $ar = app()->getLocale() === 'ar';
+                $p = $i->product;
+
+                return ['id' => $i->product_id, 'name' => $ar && $p?->name_ar ? $p->name_ar : $p?->name, 'quantity' => (int) $i->quantity, 'image' => ($p?->images ?? [])[0] ?? null,
+                    'description' => \Illuminate\Support\Str::limit((string) ($ar && $p?->description_ar ? $p->description_ar : $p?->description), 160), 'brand' => $p?->brand, 'price' => (float) ($p?->base_price ?? 0), 'warranty_years' => $p?->warranty_years];
+            })->values()->all(), 'prices' => $this->stores->priceList($product), 'highlights' => $this->stores->highlightsOf($product), 'fitment_required' => (bool) $product->fitment_required, 'fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product) + [], 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
             'related' => $related,
             'recommended' => [
                 'also_bought' => app(\App\Services\Storefront\ProductRecommendations::class)->alsoBought($product, $company)->map(fn ($p) => $this->stores->card($p, $company))->all(),
@@ -325,6 +340,7 @@ class PublicStorefrontController extends Controller
 
     private function cached($data)
     {
-        return response()->json($data)->header('Cache-Control', 'public, max-age=60, s-maxage=60');
+        // The words depend on the language of the asker, so a shared cache must keep one copy per language.
+        return response()->json($data)->header('Cache-Control', 'public, max-age=60, s-maxage=60')->header('Vary', 'Accept-Language');
     }
 }

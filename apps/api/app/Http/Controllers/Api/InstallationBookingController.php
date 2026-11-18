@@ -68,7 +68,7 @@ class InstallationBookingController extends Controller
         $booking = InstallationBooking::updateOrCreate(['request_id' => $r->id], [
             'partner_id' => $centre->id, 'starts_at' => $start, 'ends_at' => $start->addHours($centre->job_hours), 'status' => 'booked', 'cancel_reason' => null,
         ]);
-        $this->notify->centre($centre->id, 'A job was booked', "{$r->subject}: {$start->setTimezone($this->availability->timezone($centre))->format('D j M, H:i')}", "/dashboard/centre-jobs/{$r->id}");
+        $this->notify->centre($centre->id, 'A job was booked', ':subject: :when', "/dashboard/centre-jobs/{$r->id}", ['subject' => (string) $r->subject, 'when' => $start->setTimezone($this->availability->timezone($centre))->format('Y-m-d H:i')]);
 
         return response()->json(['booking' => $this->present($booking, $centre)], 201);
     }
@@ -88,7 +88,7 @@ class InstallationBookingController extends Controller
         $start = $this->start($request);
         $this->availability->assertFree($centre, $start, $booking->id);
         $booking->update(['starts_at' => $start, 'ends_at' => $start->addHours($centre->job_hours), 'reschedules' => $booking->reschedules + 1]);
-        $this->notify->centre($centre->id, 'A booking was moved', "{$r->subject}: {$start->setTimezone($this->availability->timezone($centre))->format('D j M, H:i')}", "/dashboard/centre-jobs/{$r->id}");
+        $this->notify->centre($centre->id, 'A booking was moved', ':subject: :when', "/dashboard/centre-jobs/{$r->id}", ['subject' => (string) $r->subject, 'when' => $start->setTimezone($this->availability->timezone($centre))->format('Y-m-d H:i')]);
 
         return ['booking' => $this->present($booking->fresh(), $centre)];
     }

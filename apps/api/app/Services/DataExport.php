@@ -21,7 +21,7 @@ class DataExport
     /** @return array<string, mixed> */
     public function of(User $user): array
     {
-        $orders = Order::withoutGlobalScopes()->with('product:id,name')->where('customer_id', $user->id)->orderBy('id')->get();
+        $orders = Order::withoutGlobalScopes()->with('product:id,name,name_ar')->where('customer_id', $user->id)->orderBy('id')->get();
 
         return [
             'exported_at' => now()->toIso8601String(),
@@ -39,9 +39,9 @@ class DataExport
                 'delivery_speed' => $o->delivery_speed, 'preferred_day' => $o->preferred_day?->toDateString(), 'gift_note' => $o->gift_note,
                 'delivery_address' => $o->makeVisible('shipping_address')->shipping_address, 'placed' => $o->created_at?->toIso8601String(),
             ])->values(),
-            'reviews' => ProductReview::with('product:id,name')->where('user_id', $user->id)->get()->map(fn ($r) => ['product' => $r->product?->name, 'rating' => $r->rating, 'comment' => $r->comment, 'photos' => $r->photos ?? [], 'date' => $r->created_at?->toDateString()])->values(),
-            'questions' => ProductQuestion::with('product:id,name')->where('user_id', $user->id)->get()->map(fn ($q) => ['product' => $q->product?->name, 'question' => $q->question, 'answer' => $q->answer, 'date' => $q->created_at?->toDateString()])->values(),
-            'warranty_claims' => WarrantyClaim::with('product:id,name')->where('customer_id', $user->id)->get()->map(fn ($c) => ['product' => $c->product?->name, 'problem' => $c->description, 'status' => $c->status, 'resolution' => $c->resolution, 'date' => $c->created_at?->toDateString()])->values(),
+            'reviews' => ProductReview::with('product:id,name,name_ar')->where('user_id', $user->id)->get()->map(fn ($r) => ['product' => $r->product?->name, 'rating' => $r->rating, 'comment' => $r->comment, 'photos' => $r->photos ?? [], 'date' => $r->created_at?->toDateString()])->values(),
+            'questions' => ProductQuestion::with('product:id,name,name_ar')->where('user_id', $user->id)->get()->map(fn ($q) => ['product' => $q->product?->name, 'question' => $q->question, 'answer' => $q->answer, 'date' => $q->created_at?->toDateString()])->values(),
+            'warranty_claims' => WarrantyClaim::with('product:id,name,name_ar')->where('customer_id', $user->id)->get()->map(fn ($c) => ['product' => $c->product?->name, 'problem' => $c->description, 'status' => $c->status, 'resolution' => $c->resolution, 'date' => $c->created_at?->toDateString()])->values(),
             'loyalty_points' => ['balance' => (int) LoyaltyEntry::where('user_id', $user->id)->sum('points'), 'history' => LoyaltyEntry::where('user_id', $user->id)->orderBy('id')->get(['points', 'reason', 'created_at'])->map(fn ($e) => ['points' => $e->points, 'reason' => $e->reason, 'date' => $e->created_at?->toDateString()])->values()],
             'favourites' => DB::table('favourites')->where('user_id', $user->id)->pluck('product_id')->values(),
             'notifications' => $user->notifications()->latest()->limit(200)->get()->map(fn ($n) => ['title' => $n->data['title'] ?? null, 'body' => $n->data['body'] ?? null, 'date' => $n->created_at?->toIso8601String()])->values(),

@@ -137,6 +137,6 @@ class StripeProvider implements PaymentProvider
 
         return $response->ok()
             ? ['ok' => true, 'message' => 'Stripe accepted the secret key.']
-            : ['ok' => false, 'message' => 'Stripe rejected the key: '.($response->json('error.message') ?? 'unknown error')];
+            : ['ok' => false, 'message' => __('Stripe rejected the key: :why', ['why' => ($response->json('error.message') ?? 'unknown error')])];
     }
 }

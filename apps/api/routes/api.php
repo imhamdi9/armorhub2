@@ -47,6 +47,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
     Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
     Route::get('/zones', [PublicStorefrontController::class, 'zones']);
+    Route::get('/category-names', [PublicStorefrontController::class, 'categoryNames'])->middleware('throttle:public');
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
     Route::get('/storefronts/{slug}/suggest', [PublicStorefrontController::class, 'suggest']);
@@ -71,6 +72,8 @@ Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middlewar
 Route::get('/public/invitations/{token}', [\App\Http\Controllers\Api\InvitationController::class, 'show'])->middleware('throttle:30,1');
 Route::post('/public/invitations/{token}/accept', [\App\Http\Controllers\Api\InvitationController::class, 'accept'])->middleware('throttle:register');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+// Shopping without an account: a quiet shopper session (cart, checkout, tracking) that can become a full account later.
+Route::post('/guest-session', [\App\Http\Controllers\Api\GuestSessionController::class, 'start'])->middleware('throttle:guest-orders');
 Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
 Route::post('/partner-applications/{id}/pay-plan', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'payPlan'])->whereNumber('id')->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -98,6 +101,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
 
     // Session
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/guest-session/contact', [\App\Http\Controllers\Api\GuestSessionController::class, 'contact'])->middleware('throttle:20,1');
+    Route::post('/guest-session/claim', [\App\Http\Controllers\Api\GuestSessionController::class, 'claim'])->middleware('throttle:5,1');
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::put('/me/profile', [\App\Http\Controllers\Api\ProfileController::class, 'update'])->middleware('throttle:30,1');
     Route::get('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'preferences']);
@@ -332,6 +337,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/products/{product}/readiness', [ProductController::class, 'readiness'])->middleware('permission:products.update');
     Route::get('/products/{product}', [ProductController::class, 'show'])->middleware('permission:products.view');
     Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update');
+    Route::post('/products/{product}/submit-review', [ProductController::class, 'submitReview'])->middleware(['permission:products.update', 'throttle:30,1']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete');
     Route::get('/products/{product}/price-rules', [ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
     Route::put('/products/{product}/price-rules', [ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
@@ -406,6 +412,12 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::middleware('role:platform-admin')->prefix('admin/outbox')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'index']);
         Route::get('/{id}', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'show'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|catalog-reviewer')->prefix('admin/product-reviews')->group(function () {
+        $pr = \App\Http\Controllers\Api\Admin\ProductReviewController::class;
+        Route::get('/', [$pr, 'index']);
+        Route::post('/{id}/approve', [$pr, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [$pr, 'reject'])->whereNumber('id');
     });
     Route::middleware('role:platform-admin|support-agent')->prefix('admin/support')->group(function () {
         $sa = \App\Http\Controllers\Api\Admin\SupportAdminController::class;
@@ -527,6 +539,18 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'signedIn'])->where('key', '[a-z0-9_.]+');
 
     // Sellers: the orders for their own products, and their earnings
+    Route::middleware('role:seller')->prefix('seller/bundles')->group(function () {
+        $sb = \App\Http\Controllers\Api\SellerBundleController::class;
+        Route::get('/', [$sb, 'index']);
+        Route::post('/', [$sb, 'store'])->middleware('throttle:30,1');
+        Route::put('/{id}', [$sb, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+    Route::middleware('role:seller')->prefix('seller/promo-codes')->group(function () {
+        $sp = \App\Http\Controllers\Api\SellerPromoController::class;
+        Route::get('/', [$sp, 'index']);
+        Route::post('/', [$sp, 'store'])->middleware('throttle:30,1');
+        Route::put('/{id}', [$sp, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+    });
     Route::get('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'show']);
     Route::put('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'update'])->middleware('throttle:20,1');
     Route::get('/seller/payout-account', [\App\Http\Controllers\Api\SellerPayoutController::class, 'account']);

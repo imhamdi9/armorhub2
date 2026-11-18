@@ -27,8 +27,11 @@ class Product extends Model
         'category',
         'brand',
         'name',
+        'name_ar',
+        'review_status',
         'slug',
         'description',
+        'description_ar',
         'images',
         'compare_at_price',
         'base_price',
@@ -50,6 +53,23 @@ class Product extends Model
         'sale_mode',
     ];
 
+
+    /** Set by the screens where the seller edits the English copy itself: they must see the main name, whatever the language. */
+    public static bool $rawNames = false;
+
+    /** Everywhere else a product is named in the language being browsed (its Arabic name when the platform is in Arabic and there is one). */
+    public function getNameAttribute($value): ?string
+    {
+        $ar = $this->attributes['name_ar'] ?? null;
+
+        return ! self::$rawNames && $ar && app()->getLocale() === 'ar' ? $ar : $value;
+    }
+
+    /** The products a bundle is made of (empty for an ordinary product). */
+    public function bundleItems(): HasMany
+    {
+        return $this->hasMany(ProductBundleItem::class, 'bundle_id');
+    }
 
     /** Customers' reviews of it. */
     public function reviews(): HasMany
@@ -78,6 +98,8 @@ class Product extends Model
 
     protected $casts = [
         'base_price'=>'decimal:2',
+        'submitted_at'=>'datetime',
+        'reviewed_at'=>'datetime',
         'is_active'=>'boolean',
         'requires_shipping'=>'boolean',
         'attributes'=>'array',

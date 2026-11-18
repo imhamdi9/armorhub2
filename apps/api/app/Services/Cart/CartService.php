@@ -84,7 +84,7 @@ class CartService
         $cart = $this->cartOf($user);
         $view = $this->view($user, ignorePromo: true);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
-        $checked = app(\App\Services\PromoCodes::class)->check($code, $user, (float) $view['items_amount'], $market);
+        $checked = app(\App\Services\PromoCodes::class)->check($code, $user, (float) $view['items_amount'], $market, $view['by_product'] ?? null);
         $cart->update(['promo_code' => $checked['code']->code]);
     }
 
@@ -111,6 +111,7 @@ class CartService
         $sum = $fee = 0.0;
         $ok = true;
         $bySeller = [];
+        $byProduct = [];
         $allGoods = true;
 
         foreach ($this->cartOf($user)->items()->with('product')->get() as $item) {
@@ -125,6 +126,7 @@ class CartService
                 $sum += $row['line_total'];
                 $allGoods = $allGoods && (bool) $item->product?->requires_shipping;
                 $bySeller[(int) $item->product?->seller_id] = ($bySeller[(int) $item->product?->seller_id] ?? 0.0) + $row['line_total'];
+                $byProduct[(int) $item->product_id] = ($byProduct[(int) $item->product_id] ?? 0.0) + $row['line_total'];
                 $fee += $feeRate['service_fee_amount'];
             } catch (ValidationException $e) {
                 $row += ['problem' => collect($e->errors())->flatten()->first(), 'unit_price' => null, 'line_total' => null, 'currency' => null];
@@ -146,7 +148,7 @@ class CartService
         $cart = $this->cartOf($user);
         if (! $ignorePromo && $cart->promo_code) {
             try {
-                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round($sum, 2), $market);
+                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round($sum, 2), $market, $byProduct);
                 $discount = $checked['discount'];
                 $promo = $checked['code']->code;
             } catch (ValidationException $e) {
@@ -155,7 +157,7 @@ class CartService
             }
         }
 
-        return ['items' => $items, 'currency' => $currency, 'items_amount' => round($sum, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => $shippingTotal,
+        return ['by_product' => $byProduct, 'items' => $items, 'currency' => $currency, 'items_amount' => round($sum, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => $shippingTotal,
             'discount_amount' => $discount, 'cod_available' => app(\App\Services\Payment\GroupPayments::class)->codAvailable(round($sum + $fee + $shippingTotal - $discount, 2), $allGoods && $items !== []), 'promo_code' => $promo, 'promo_problem' => $promoProblem,
             'points' => $allGoods && $items !== [] ? app(\App\Services\Loyalty::class)->redeemable($user, round($sum, 2)) : null, 'delivery_options' => $allGoods && $items !== [] ? $this->deliveryOptions($shipping, $market, count($bySeller), $rules['eta_days']) : [], 'eta_days' => $rules['eta_days'], 'free_shipping_over' => $rules['free_over'], 'payable_amount' => round($sum + $fee + $shippingTotal - $discount, 2), 'can_checkout' => $ok && $items !== []];
     }

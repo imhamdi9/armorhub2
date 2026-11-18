@@ -45,6 +45,16 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
         return in_array($this->locale, ['ar', 'en'], true) ? $this->locale : null;
     }
 
+    /** Mail goes to the address a guest shopper gave, never to their placeholder login. */
+    public function routeNotificationForMail($notification = null): ?string
+    {
+        if ($this->is_guest) {
+            return $this->contact_email;       // none given yet: nothing is sent
+        }
+
+        return $this->email;
+    }
+
     protected static function booted(): void
     {
         static::saving(function (self $user) {
