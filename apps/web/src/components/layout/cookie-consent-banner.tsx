@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { tr } from "@/lib/i18n";
+
 const focus = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2";
 
 export const CONSENT_KEY = "cookie-consent";
@@ -41,7 +43,7 @@ function announce(detail: ConsentDetail) {
 }
 
 /** A bottom cookie-consent bar. The decision and its time are stored, the bar slides away, and later visits never show it again. */
-export function CookieConsentBanner({ policyHref = "#privacy" }: { policyHref?: string }) {
+export function CookieConsentBanner({ policyHref = "/policies/cookies" }: { policyHref?: string }) {
   // "unknown" on the server, so the bar is never in the server's HTML and can't flash for someone who already chose.
   const state = useSyncExternalStore(subscribe, snapshot, () => "unknown" as const);
   const [leaving, setLeaving] = useState(false);
@@ -72,15 +74,15 @@ export function CookieConsentBanner({ policyHref = "#privacy" }: { policyHref?: 
   if (gone || (state !== "undecided" && !leaving)) return null;
 
   return (
-    <div role="region" aria-label="Cookie consent" data-cookie-banner className={`fixed inset-x-0 bottom-0 z-50 p-3 transition duration-300 ease-out motion-reduce:transition-none sm:p-4 ${entered && !leaving ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}>
+    <div role="region" aria-label={tr("Cookie consent")} data-cookie-banner className={`fixed inset-x-0 bottom-0 z-50 p-3 transition duration-300 ease-out motion-reduce:transition-none sm:p-4 ${entered && !leaving ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}>
       <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-900/10 sm:flex-row sm:items-center sm:gap-5">
         <p className="text-sm leading-relaxed text-neutral-600">
-          We use cookies to keep the site working and to understand how it is used. You can choose to accept them all or reject the optional ones.{" "}
-          <a href={policyHref} className={`inline-flex min-h-11 items-center rounded font-medium text-neutral-900 underline underline-offset-2 sm:min-h-0 ${focus}`}>Read our privacy policy</a>
+          {tr("We use cookies to keep the site working and to understand how it is used. You can choose to accept them all or reject the optional ones.")}{" "}
+          <a href={policyHref} className={`inline-flex min-h-11 items-center rounded font-medium text-neutral-900 underline underline-offset-2 sm:min-h-0 ${focus}`}>{tr("Read our cookie policy")}</a>
         </p>
         <div className="flex shrink-0 items-center gap-2">
-          <button type="button" onClick={() => choose("rejected")} className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-50 sm:flex-none ${focus}`}>Reject</button>
-          <button type="button" onClick={() => choose("accepted")} className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-neutral-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 sm:flex-none ${focus}`}>Accept all</button>
+          <button type="button" onClick={() => choose("rejected")} className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-50 sm:flex-none ${focus}`}>{tr("Reject")}</button>
+          <button type="button" onClick={() => choose("accepted")} className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-neutral-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 sm:flex-none ${focus}`}>{tr("Accept all")}</button>
         </div>
       </div>
     </div>

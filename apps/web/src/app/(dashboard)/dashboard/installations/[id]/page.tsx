@@ -73,7 +73,7 @@ export default function InstallationDetailPage() {
             ) : needsOffer && !chosen ? (
               <p className="mt-1 text-sm text-muted-foreground" data-testid="buy-locked">{tr("This product is sold only together with an installation offer. Choose an offer below, then you can buy the product.")}</p>
             ) : (
-              <Button className="mt-2" render={<Link href={`/dashboard/orders/new?product=${job.product.id}&installation_request=${job.id}`} />}>{tr("Buy the product now")}</Button>
+              <Button className="mt-2" nativeButton={false} render={<Link href={`/dashboard/orders/new?product=${job.product.id}&installation_request=${job.id}`} />}>{tr("Buy the product now")}</Button>
             )}
           </Section>
         );
@@ -141,7 +141,7 @@ export default function InstallationDetailPage() {
           <p className="text-lg font-medium">{job.centre.name} <TierBadge tier={job.centre.tier} /></p>
           <p className="text-sm text-muted-foreground">{[job.centre.address, job.centre.city].filter(Boolean).join(", ")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {job.centre.maps_url && <Button variant="outline" render={<a href={job.centre.maps_url} target="_blank" rel="noreferrer" />}>{tr("Open in Google Maps")}</Button>}
+            {job.centre.maps_url && <Button variant="outline" nativeButton={false} render={<a href={job.centre.maps_url} target="_blank" rel="noreferrer" />}>{tr("Open in Google Maps")}</Button>}
             <CallBox call={job.centre.call} />
           </div>
           <Note tone="warn">{tr("The platform warranty covers only work arranged and paid through the platform. Never pay or arrange work outside it.")}</Note>
@@ -202,10 +202,12 @@ export default function InstallationDetailPage() {
 
       {job.refund && <Note>{tr("Refund")}: {formatMoney(job.refund.amount, cur)} · {job.refund.status === "refunded" ? `${tr("sent")} (${job.refund.reference})` : tr("being sent")}</Note>}
 
+      {job.booking?.on_the_way_at && <Note tone="ok">{tr("The centre is on its way")}</Note>}
+
       {job.status === "released" && (
         <Section title="Completed">
           <p>{tr("The platform warranty on this job lasts until")} <strong>{job.warranty_ends_at ? formatDateTime(job.warranty_ends_at) : ""}</strong>.</p>
-          {job.review ? <p className="mt-2 text-sm">{tr("Your rating")}: <Stars value={job.review.rating} /> {job.review.comment}</p>
+          {job.review ? <p className="mt-2 text-sm">{tr("Your rating")}: <Stars value={job.review.rating} /> {job.review.comment}{job.review.reply && <span className="mt-1 block rounded-lg bg-muted p-2">{tr("The centre answered")}: {job.review.reply}</span>}</p>
             : job.can_review && (
               <div className="mt-3 space-y-2">
                 <Label htmlFor="rate">{tr("Rate the centre")}</Label>

@@ -204,6 +204,9 @@ function Footer({ store }: { store?: ShellStore }) {
       <div className="border-t border-white/15">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-white/65">
           <span>© {new Date().getFullYear()} {name}</span>
+          <nav aria-label={tr("Policies")} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {([["privacy", "Privacy"], ["terms", "Terms"], ["returns", "Returns"], ["shipping", "Delivery"], ["cookies", "Cookies"]] as const).map(([k, l]) => <Link key={k} href={`/policies/${k}`} className="hover:text-white hover:underline">{tr(l)}</Link>)}
+          </nav>
           <span className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1"><Icon name="lock" className="h-4 w-4" /> {tr("Secure payments")}</span>
             <span className="inline-flex items-center gap-1"><Icon name="shield" className="h-4 w-4" /> {tr("Warranty on every job")}</span>

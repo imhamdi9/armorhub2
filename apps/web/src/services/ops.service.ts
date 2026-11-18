@@ -53,6 +53,9 @@ export const deleteZone = async (id: number) => (await api.delete(`/admin/zones/
 export const getDemand = async () => (await api.get<{ market: string; city: string; customers: number }[]>("/admin/zones/demand")).data;
 
 export const refundOrder = async (id: number, reason: string) => (await api.post<{ refund_status: string; refund_amount: number; currency: string }>(`/admin/orders/${id}/refund`, { reason })).data;
+export const partialRefundOrder = async (id: number, amount: number, reason: string) => (await api.post<{ partial_refund_status: string; partial_refund_amount: number; currency: string }>(`/admin/orders/${id}/partial-refund`, { amount, reason })).data;
+export const sendPartialRefundThrough = async (id: number) => (await api.post<{ reference: string }>(`/admin/orders/${id}/partial-refund-send`)).data;
+export const markPartialRefundSent = async (id: number, reference: string) => (await api.post(`/admin/orders/${id}/partial-refund-sent`, { reference })).data;
 export const markRefundSent = async (id: number, reference: string) => (await api.post(`/admin/orders/${id}/refund-sent`, { reference })).data;
 
 export const importProducts = async (file: File, dryRun: boolean) => {
@@ -63,16 +66,21 @@ export const importProducts = async (file: File, dryRun: boolean) => {
 };
 
 export interface RefundState {
-  request: { id: number; kind: "cancel" | "return"; status: "requested" | "approved" | "rejected"; reason: string; note: string | null; created_at: string } | null;
+  request: { id: number; kind: "cancel" | "return"; status: "requested" | "awaiting_pickup" | "collected" | "approved" | "rejected"; reason: string; note: string | null; created_at: string; return_code?: string | null; pickup_day?: string | null; inspection?: "passed" | "failed" | null; inspection_note?: string | null } | null;
   refund_status: "pending" | "refunded" | null;
   refund_amount: number | null;
   can_request: boolean;
   return_days: number;
 }
 export const getRefundState = async (orderId: number) => (await api.get<RefundState>(`/orders/${orderId}/refund-request`)).data;
-export const requestRefund = async (orderId: number, reason: string) => (await api.post<{ id: number; kind: "cancel" | "return"; status: string }>(`/orders/${orderId}/refund-request`, { reason })).data;
+export const requestRefund = async (orderId: number, reason: string, photos: string[] = []) => (await api.post<{ id: number; kind: "cancel" | "return"; status: string }>(`/orders/${orderId}/refund-request`, { reason, photos })).data;
+export const uploadRefundPhoto = async (orderId: number, file: File) => {
+  const form = new FormData();
+  form.append("image", file);
+  return (await api.post<{ path: string }>(`/orders/${orderId}/refund-photos`, form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
+};
 
-export interface RefundQueueItem { id: number; order_id: number; product: string | null; amount: number; currency: string | null; kind: string; reason: string; status: string; customer: string | null; created_at: string }
+export interface RefundQueueItem { id: number; order_id: number; product: string | null; amount: number; currency: string | null; kind: string; reason: string; status: string; customer: string | null; created_at: string; pickup_day?: string | null; pickup_note?: string | null; photos?: string[] }
 export const getRefundQueue = async () => (await api.get<RefundQueueItem[]>("/admin/refund-requests")).data;
 export const approveRefundRequest = async (id: number) => (await api.post(`/admin/refund-requests/${id}/approve`)).data;
 export const rejectRefundRequest = async (id: number, note: string) => (await api.post(`/admin/refund-requests/${id}/reject`, { note })).data;
@@ -85,7 +93,7 @@ export const getFitments = async (productId: number) => {
 export const saveFitments = async (productId: number, rows: FitmentRow[], required: boolean) =>
   (await api.put(`/products/${productId}/fitments`, { fitment_required: required, rows: rows.map(({ vehicle_make_id, vehicle_model_id, year_from, year_to, note }) => ({ vehicle_make_id, vehicle_model_id, year_from, year_to, note })) })).data;
 
-export interface BookingView { starts_at: string; ends_at: string; status: string; reschedules: number; can_change: boolean; cancel_reason: string | null }
+export interface BookingView { timezone?: string; starts_at: string; ends_at: string; status: string; reschedules: number; can_change: boolean; cancel_reason: string | null }
 export interface SlotsView { timezone: string; job_hours: number; days: { date: string; times: string[] }[] }
 export const getBooking = async (jobId: number) => (await api.get<{ booking: BookingView | null }>(`/installation-requests/${jobId}/booking`)).data.booking;
 export const getSlots = async (jobId: number) => (await api.get<SlotsView>(`/installation-requests/${jobId}/slots`)).data;
@@ -99,6 +107,8 @@ export const updateAddress = async (id: number, body: Partial<Address>) => (awai
 export const removeAddress = async (id: number) => (await api.delete(`/addresses/${id}`)).data;
 export const saveProfile = async (body: { name?: string; phone?: string | null }) => (await api.put<{ name: string; phone: string | null }>("/me/profile", body)).data;
 export const changePassword = async (body: { current_password: string; password: string; password_confirmation: string }) => (await api.put<{ message: string }>("/me/password", body)).data;
+/** Everything held about the signed-in customer, as a JSON file the browser can save. */
+export const downloadMyData = async () => (await api.get<Blob>("/me/export", { responseType: "blob" })).data;
 export const deleteAccount = async (body: { password?: string; confirm?: string }) => (await api.delete("/me", { data: body })).data;
 export interface VehicleFit { vehicle_id: number; label: string; is_default: boolean; status: "fits" | "does_not_fit" | "universal" | "unknown" }
 export const getFit = async (productId: number) => (await api.get<VehicleFit[]>(`/garage/fit/${productId}`)).data;
@@ -115,7 +125,9 @@ export const sendOrderMessage = async (orderId: number, body: string, problem = 
 
 export interface OrderProblem { id: number; order_id: number; product: string | null; customer: string | null; body: string; created_at: string }
 export const getOrderProblems = async () => (await api.get<OrderProblem[]>("/admin/order-problems")).data;
-export const markProblemHandled = async (id: number) => (await api.post(`/admin/order-problems/${id}/handled`)).data;
+export const markProblemHandledWith = async (id: number, note?: string) => (await api.post(`/admin/order-problems/${id}/handled`, { note })).data;
+export const giveGoodwill = async (orderId: number, points: number, why: string) => (await api.post<{ points: number; balance: number }>(`/admin/orders/${orderId}/goodwill`, { points, why })).data;
+export const markProblemHandled =async (id: number) => (await api.post(`/admin/order-problems/${id}/handled`)).data;
 
 export interface PromoCode { id: number; code: string; type: "percent" | "fixed"; value: number; max_discount: number | null; min_order: number | null; market: string | null; starts_at: string | null; ends_at: string | null; usage_limit: number | null; per_customer_limit: number; is_active: boolean; used: number; given: number }
 export const getPromoCodes = async () => (await api.get<PromoCode[]>("/admin/promo-codes")).data;
@@ -125,11 +137,27 @@ export interface NotificationPrefs { notify_email: boolean; notify_push: boolean
 export const getNotificationPrefs = async () => (await api.get<NotificationPrefs>("/me/notification-preferences")).data;
 export const saveNotificationPrefs = async (body: Partial<NotificationPrefs>) => (await api.put<NotificationPrefs>("/me/notification-preferences", body)).data;
 
-export interface SupportTicket { id: number; subject: string; body: string; status: "open" | "answered" | "closed"; reply: string | null; replied_at: string | null; created_at: string }
+export interface SupportMessage { id: number; side: "customer" | "staff"; body: string; created_at: string }
+export interface SupportTicket { id: number; subject: string; body: string; status: "open" | "answered" | "closed"; reply: string | null; replied_at: string | null; created_at: string; order_id?: number | null; messages?: SupportMessage[] }
 export const getSupportTickets = async () => (await api.get<SupportTicket[]>("/support")).data;
-export const sendSupportTicket = async (subject: string, body: string) => (await api.post<SupportTicket>("/support", { subject, body })).data;
+export const sendSupportTicket = async (subject: string, body: string, orderId?: number) => (await api.post<SupportTicket>("/support", { subject, body, ...(orderId ? { order_id: orderId } : {}) })).data;
+export const writeSupport = async (id: number, body: string) => (await api.post<SupportTicket>(`/support/${id}/messages`, { body })).data;
 export const closeSupportTicket = async (id: number) => (await api.post<SupportTicket>(`/support/${id}/close`)).data;
 
-export interface HelpRequest { id: number; subject: string; body: string; customer: string | null; created_at: string }
+export interface HelpRequest { id: number; subject: string; body: string; customer: string | null; created_at: string; order_id?: number | null; messages?: SupportMessage[] }
 export const getHelpRequests = async () => (await api.get<HelpRequest[]>("/admin/support")).data;
 export const answerHelpRequest = async (id: number, reply: string) => (await api.post(`/admin/support/${id}/reply`, { reply })).data;
+
+export const sendRefundThrough = async (orderId: number) => (await api.post<{ refund_status: string; reference: string }>(`/admin/orders/${orderId}/refund-send`)).data;
+
+export interface OutboxRow { id: number; to: string; subject: string; created_at: string }
+export interface OutboxMail extends OutboxRow { html: string | null; text: string | null }
+export const getOutbox = async () => (await api.get<OutboxRow[]>("/admin/outbox")).data;
+export const getOutboxMail = async (id: number) => (await api.get<OutboxMail>(`/admin/outbox/${id}`)).data;
+
+export const scheduleReturnPickup = async (orderId: number, day: string, note?: string) => (await api.post(`/orders/${orderId}/return-pickup`, { day, note })).data;
+export const collectReturn = async (id: number, code: string) => (await api.post(`/admin/refund-requests/${id}/collect`, { code })).data;
+export const inspectReturn = async (id: number, passed: boolean, note?: string) => (await api.post(`/admin/refund-requests/${id}/inspect`, { passed, note })).data;
+
+export interface ReferralInfo { code: string; link: string; invited: number; rewarded: number; points_each: number }
+export const getReferral = async () => (await api.get<ReferralInfo>("/referral")).data;

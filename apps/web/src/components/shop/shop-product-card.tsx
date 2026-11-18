@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { price, savingPercent } from "@/components/public/product-card";
+import { CompareToggle } from "@/components/shop/compare";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
@@ -26,6 +27,7 @@ export function ShopProductCard({ product, slug, headingLevel = 3 }: { product: 
   const hasWas = !!product.compare_at_price && product.compare_at_price > product.from_price;
 
   return (
+    <div className="relative">
     <Link href={`/s/${slug}/products/${product.id}`} className="group block rounded-[28px] bg-white p-2 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black" style={{ boxShadow: SHOP_SHADOW }}>
       <div className="relative aspect-square">
         <ProductTile product={product} />
@@ -42,5 +44,7 @@ export function ShopProductCard({ product, slug, headingLevel = 3 }: { product: 
         {product.warranty_years ? <p className="mt-1 text-xs text-[#5f5c5b]">{tr("{n}-year warranty", { n: product.warranty_years })}</p> : null}
       </div>
     </Link>
+    <CompareToggle slug={slug} id={product.id} className="absolute end-4 top-4" />
+    </div>
   );
 }

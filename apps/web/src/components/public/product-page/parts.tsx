@@ -12,7 +12,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { addToCart } from "@/services/cart.service";
 import { addFavourite, getFavouriteIds, getFit, getGarage, removeFavourite, type Vehicle, type VehicleFit } from "@/services/ops.service";
-import { getMyReview, saveReview } from "@/services/platform.service";
+import { getMyReview, saveReview, uploadReviewPhoto } from "@/services/platform.service";
 import { imageSrc } from "@/lib/surfaces";
 import type { PublicProduct } from "@/types/public";
 
@@ -437,12 +437,14 @@ function ReviewForm({ productId }: { productId: number }) {
   const [state, setState] = useState<"loading" | "hidden" | "ready" | "saved">("loading");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getMyReview(productId).then((r) => {
       if (!r.eligible) return setState("hidden");
-      if (r.review) { setRating(r.review.rating); setComment(r.review.comment ?? ""); }
+      if (r.review) { setRating(r.review.rating); setComment(r.review.comment ?? ""); setPhotos(r.review.photos ?? []); }
       setState("ready");
     }).catch(() => setState("hidden"));
   }, [productId]);
@@ -454,10 +456,26 @@ function ReviewForm({ productId }: { productId: number }) {
     setError(null);
     if (rating < 1) return setError(tr("Choose a rating from 1 to 5."));
     try {
-      await saveReview(productId, rating, comment);
+      await saveReview(productId, rating, comment, photos);
       setState("saved");
     } catch {
       setError(tr("Could not save your review. Try again."));
+    }
+  }
+
+  async function addPhotos(files: FileList | null) {
+    if (!files) return;
+    setError(null);
+    setUploading(true);
+    try {
+      for (const file of Array.from(files).slice(0, 4 - photos.length)) {
+        const path = await uploadReviewPhoto(productId, file);
+        setPhotos((p) => [...p, path].slice(0, 4));
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -470,6 +488,24 @@ function ReviewForm({ productId }: { productId: number }) {
         ))}
       </div>
       <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} rows={3} placeholder={tr("Add a comment (optional)")} className="w-full rounded-xl border border-fog bg-white p-3 text-sm" />
+      <div className="mt-3" data-testid="review-photos">
+        <p className="mb-2 text-sm text-slate">{tr("Add photos of what you received (up to 4)")}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {photos.map((p) => (
+            <span key={p} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element -- a picture the customer just uploaded */}
+              <img src={imageSrc(p) ?? ""} alt="" className="size-16 rounded-xl border border-fog object-cover" />
+              <button type="button" aria-label={tr("Remove photo")} onClick={() => setPhotos((all) => all.filter((x) => x !== p))} className="absolute -end-1 -top-1 grid size-5 place-items-center rounded-full bg-black text-xs text-white">×</button>
+            </span>
+          ))}
+          {photos.length < 4 && (
+            <label className="grid size-16 cursor-pointer place-items-center rounded-xl border border-dashed border-slate/50 bg-white text-2xl text-slate">
+              {uploading ? "…" : "+"}
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="sr-only" disabled={uploading} onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} aria-label={tr("Add photos")} />
+            </label>
+          )}
+        </div>
+      </div>
       {error && <p className="mt-2 text-sm text-red-600" role="alert">{error}</p>}
       {state === "saved" && <p className="mt-2 text-sm text-brand-ink" role="status">{tr("Thank you. Your review is saved.")}</p>}
       <button type="submit" className="btn-brand mt-3 px-6 py-2.5 text-sm">{tr("Save review")}</button>
@@ -496,6 +532,16 @@ export function ReviewsSection({ m }: { m: ProductModel }) {
               <li key={r.id} className="rounded-2xl border border-fog p-4">
                 <div className="flex items-center justify-between"><Stars value={r.rating} /><span className="text-xs text-slate">{r.date ? formatDate(r.date) : ""}</span></div>
                 {r.comment && <p className="mt-2 text-sm text-charcoal">{r.comment}</p>}
+                {(r.photos ?? []).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2" data-testid="review-photo-list">
+                    {r.photos!.map((src) => (
+                      <a key={src} href={imageSrc(src) ?? "#"} target="_blank" rel="noopener noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- a customer's uploaded picture */}
+                        <img src={imageSrc(src) ?? ""} alt={tr("Photo from a customer")} loading="lazy" className="size-16 rounded-xl border border-fog object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-2 text-xs font-semibold text-obsidian">{r.author}</p>
               </li>
             ))}

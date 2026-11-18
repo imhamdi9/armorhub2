@@ -164,6 +164,8 @@ export const applyBlueprint = async (id: string, params: Record<string, string>)
 export type Balances = Record<string, { held: number; available: number; in_payout: number; paid: number }>;
 
 export interface Payout {
+  account?: { method: string; holder: string; bank_name: string | null; number: string | null } | null;
+  source?: string;
   id: number;
   company_id: number;
   amount: string;
@@ -232,3 +234,7 @@ export interface Publication {
 }
 export const getPublications = async () => (await api.get<{ require_approval: boolean; open: Publication[]; recent: Publication[] }>("/admin/surface-publications")).data;
 export const decidePublication = async (id: number, action: "approve" | "reject" | "cancel") => (await api.post<{ status: string }>(`/admin/surface-publications/${id}/${action}`)).data;
+
+export interface PayoutAccountRow { id: number; company: string | null; method: "bank" | "wallet"; holder: string; bank_name: string | null; number: string | null; status: "pending" | "verified" | "rejected"; note: string | null }
+export const getPayoutAccounts = async () => (await api.get<PayoutAccountRow[]>("/admin/payout-accounts")).data;
+export const decidePayoutAccount = async (id: number, decision: "verified" | "rejected", note?: string) => (await api.post(`/admin/payout-accounts/${id}/decide`, { decision, note })).data;

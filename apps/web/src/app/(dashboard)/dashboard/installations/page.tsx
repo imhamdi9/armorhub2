@@ -23,7 +23,7 @@ export default function InstallationsPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Installation requests" action={<Button render={<Link href="/dashboard/installations/new" />}>{tr("New request")}</Button>} />
+      <PageHeader title="Installation requests" action={<Button nativeButton={false} render={<Link href="/dashboard/installations/new" />}>{tr("New request")}</Button>} />
       <p className="mb-4 text-sm text-muted-foreground">{tr("Ask nearby centres to fit or repair something. You compare their offers without sharing your details. You pay on the platform, and the centre is paid only after the work is proven.")}</p>
 
       {loyalty && (

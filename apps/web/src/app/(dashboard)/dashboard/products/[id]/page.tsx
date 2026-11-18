@@ -3,6 +3,7 @@
 import { CategoryField } from "@/components/products/category-field";
 import { CartonFields, cartonPayload, emptyCarton, type CartonValues } from "@/components/products/carton-fields";
 import { InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { ReadinessCard } from "@/components/products/readiness-card";
 import { PageContentFields } from "@/components/products/page-content-fields";
 import { PageTemplateField, asTemplate } from "@/components/products/page-template-field";
 import { cleanContent, type PageContent } from "@/lib/product-content";
@@ -155,6 +156,7 @@ export default function ProductDetailPage() {
         </p>
       )}
       <p className="mb-6 text-muted-foreground">{tr("Base price")}: {product.base_price}</p>
+      {canEdit && <ReadinessCard product={product} />}
 
       {canEdit && (
         <form onSubmit={saveDetails} className="mb-8 grid grid-cols-2 gap-3 rounded-lg border p-4">

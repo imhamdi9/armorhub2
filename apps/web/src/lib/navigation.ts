@@ -53,7 +53,7 @@ export function aliasSingular(alias: string): string {
     .join(" ");
 }
 
-const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent"];
+const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent", "support-agent"];
 
 /** Someone whose only roles are ones an admin created. */
 export function isCustomRole(user: User | null): boolean {
@@ -91,9 +91,12 @@ function buildNavigationFor(user: User | null): NavItem[] {
   // Sellers manage their own products and ship the orders for them: nothing else.
   if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
+    items.push({ title: "Shop profile", href: "/dashboard/seller-profile", icon: "companies" });
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
     items.push({ title: "Warehouse", href: "/dashboard/seller-warehouse", icon: "catalog" });
     items.push({ title: "Price requests", href: "/dashboard/seller-quotes", icon: "requests" });
+    items.push({ title: "Questions", href: "/dashboard/seller-questions", icon: "requests" });
+    items.push({ title: "Warranty claims", href: "/dashboard/warranty-claims", icon: "requests" });
     items.push({ title: "Earnings", href: "/dashboard/earnings", icon: "commissions" });
     items.push({ title: "Subscription", href: "/dashboard/subscription", icon: "payments" });
 
@@ -113,6 +116,10 @@ function buildNavigationFor(user: User | null): NavItem[] {
   }
 
   // Technicians only work assigned jobs; everyone else deals with orders.
+  if (hasRole(user, "support-agent") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Support", href: "/dashboard/admin/tools", icon: "requests" });
+  }
+
   const technicianOnly = hasRole(user, "technician") && !hasRole(user, "partner-manager", "platform-admin", "company-owner");
 
   if (hasRole(user, "operations-agent") && !hasRole(user, "platform-admin")) {
@@ -142,6 +149,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
   if (hasRole(user, "partner-manager")) {
     items.push({ title: "Installation requests", href: "/dashboard/centre-requests", icon: "requests" });
     items.push({ title: "Schedule and settings", href: "/dashboard/centre-schedule", icon: "settings" });
+    items.push({ title: "Prices and reviews", href: "/dashboard/centre-profile", icon: "companies" });
   }
   if (hasRole(user, "partner-manager")) {
     items.push({ title: "Wallet", href: "/dashboard/wallet", icon: "commissions" });
@@ -161,6 +169,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
   if (hasRole(user, "customer")) {
     items.push({ title: "Installation requests", href: "/dashboard/installations", icon: "jobs" });
     items.push({ title: "Warranties", href: "/dashboard/warranties", icon: "warranties" });
+    items.push({ title: "Invite friends", href: "/dashboard/referrals", icon: "commissions" });
     items.push({ title: "Account", href: "/dashboard/account", icon: "users" });
   }
 
@@ -237,6 +246,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "admin", icon: "security" });
     items.push({ title: "Withdrawals", href: "/dashboard/admin/withdrawals", section: "admin", icon: "commissions" });
     items.push({ title: "Business numbers", href: "/dashboard/admin/kpis", section: "admin", icon: "admin" });
+    items.push({ title: "Sent e-mails", href: "/dashboard/admin/emails", section: "admin", icon: "settings" });
     items.push({ title: "Promo codes", href: "/dashboard/admin/promo-codes", section: "admin", icon: "payments" });
     items.push({ title: "Service zones", href: "/dashboard/admin/zones", section: "admin", icon: "tenants" });
     items.push({ title: "Operations tools", href: "/dashboard/admin/tools", section: "admin", icon: "settings" });

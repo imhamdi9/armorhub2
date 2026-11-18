@@ -14,3 +14,7 @@ export const createGuestOrder = async (body: Record<string, unknown>) => (await 
 export const getGuestOrder = async (token: string) => (await api.get<GuestOrder>(`/guest-orders/${encodeURIComponent(token)}`)).data;
 export const payGuestOrder = async (token: string) => (await api.post<{ checkout_url?: string } & Partial<GuestOrder>>(`/guest-orders/${encodeURIComponent(token)}/pay`)).data;
 export const cancelGuestOrder = async (token: string) => (await api.post<GuestOrder>(`/guest-orders/${encodeURIComponent(token)}/cancel`)).data;
+
+export interface GuestMessage { id: number; side: string; mine: boolean; kind: string; body: string; created_at: string }
+export const getGuestMessages = async (token: string) => (await api.get<GuestMessage[]>(`/guest-orders/${encodeURIComponent(token)}/messages`)).data;
+export const sendGuestMessage = async (token: string, body: string, problem: boolean) => (await api.post<GuestMessage>(`/guest-orders/${encodeURIComponent(token)}/messages`, { body, problem })).data;

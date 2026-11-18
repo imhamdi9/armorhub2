@@ -12,7 +12,7 @@ export interface OrderStatuses {
 
 const WORDS: Record<string, Record<string, string>> = {
   order: { draft: "Being prepared", pending_payment: "Waiting for payment", confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled" },
-  payment: { pending: "Payment pending", paid: "Paid", failed: "Payment failed", refunded: "Refunded", not_required: "No payment" },
+  payment: { pending: "Payment pending", cash_on_delivery: "Pay on delivery", paid: "Paid", failed: "Payment failed", refunded: "Refunded", not_required: "No payment" },
   product: { pending: "Goods: waiting", processing: "Goods: being prepared", ready: "Goods: ready to ship", shipped: "Goods: on their way", delivered: "Goods: delivered", returned: "Goods: returned", cancelled: "Goods: cancelled" },
   service: { requested: "Service: requested", quoted: "Service: quoted", accepted: "Service: accepted", booked: "Service: booked", in_progress: "Service: in progress", completed: "Service: done", cancelled: "Service: cancelled" },
   settlement: { pending: "Seller payment: held", eligible: "Seller payment: ready", processing: "Seller payment: being sent", paid: "Seller payment: sent" },

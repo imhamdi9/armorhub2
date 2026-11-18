@@ -204,6 +204,11 @@ export const completeJob = async (id: number) =>
   (await api.post<Order>(`/orders/${id}/complete`)).data;
 
 export const getWarranties = async () => (await api.get<Warranty[]>("/warranties")).data;
+export const fileWarrantyClaim = async (warrantyId: number, description: string) => (await api.post(`/warranties/${warrantyId}/claims`, { description })).data;
+export const getWarrantyClaimInbox = async () => (await api.get<import("@/types/platform").WarrantyClaim[]>("/warranty-claims")).data;
+export const decideWarrantyClaim = async (id: number, body: { status: "approved" | "rejected" | "resolved"; resolution?: string; note?: string }) => (await api.put(`/warranty-claims/${id}`, body)).data;
+/** The invoice PDF of a paid order, as a file the browser can save. */
+export const downloadInvoice = async (orderId: number) => (await api.get<Blob>(`/orders/${orderId}/invoice.pdf`, { responseType: "blob" })).data;
 
 export const getNotifications = async () =>
   (await api.get<{ unread: number; items: AppNotification[] }>("/notifications")).data;
@@ -275,8 +280,11 @@ export const bookShipment = async (
 export const refreshShipment = async (id: number) =>
   (await api.post<{ updates: number; shipment: Shipment }>(`/shipments/${id}/refresh`)).data;
 
-export const setShipmentStatus = async (id: number, status: string) =>
-  (await api.post<Shipment>(`/shipments/${id}/status`, { status })).data;
+export const setShipmentStatus = async (id: number, status: string, extra: { code?: string; description?: string } = {}) =>
+  (await api.post<Shipment>(`/shipments/${id}/status`, { status, ...extra })).data;
+
+export const rescheduleShipment = async (id: number, date: string, note?: string) =>
+  (await api.post<Shipment>(`/shipments/${id}/reschedule`, { date, note })).data;
 
 // ---- Partner applications (reviewers)
 export const getPartnerApplications = async (status: string = "pending", type?: string) =>
@@ -315,6 +323,7 @@ export interface LedgerEntry {
   amount: string;
   currency: string;
   status: "held" | "available" | "paid";
+  release_at?: string | null;
   created_at: string;
 }
 
@@ -369,7 +378,7 @@ export const updateMarket = async (id: number, body: { name?: string; industries
 
 // ---- Warehouse and fulfilment -------------------------------------------------------------------
 export interface WarehouseRow { id: number; name: string; city: string | null; address: string | null; is_active: boolean }
-export interface InboundLine { id: number; product_id: number; cartons_expected: number; cartons_received: number; product?: { id: number; name: string; sku: string | null; units_per_carton: number | null } }
+export interface InboundLine { id: number; product_id: number; cartons_expected: number; cartons_received: number; note?: string | null; product?: { id: number; name: string; sku: string | null; units_per_carton: number | null } }
 export interface InboundRow { id: number; warehouse_id: number; seller_id: number; status: "announced" | "received" | "cancelled"; carrier: string | null; tracking_number: string | null; note: string | null; created_at: string; items: InboundLine[] }
 export interface StockRow { warehouse_id: number; warehouse: string; product_id: number; name: string; sku: string | null; units_per_carton: number | null; units: number }
 export interface PackOrder { id: number; status: string; total_amount: string; currency: string; shipping_address: { name: string; line1: string; city: string; phone: string } | null; product?: { name: string; sku: string | null } }
@@ -381,7 +390,7 @@ export const addWarehouse = async (body: { name: string; city?: string }, market
 export const getWarehouseStock = async (market?: number | null) => (await api.get<StockRow[]>("/warehouse/stock", { params: wp(market) })).data;
 export const adjustStock = async (body: { warehouse_id: number; product_id: number; units: number; note: string }, market?: number | null) => (await api.post<{ units: number }>("/warehouse/stock/adjust", body, { params: wp(market) })).data;
 export const getWarehouseInbound = async (market?: number | null) => (await api.get<InboundRow[]>("/warehouse/inbound", { params: wp(market) })).data;
-export const receiveInbound = async (id: number, items: { id: number; cartons_received: number }[], market?: number | null) => (await api.post<InboundRow>(`/warehouse/inbound/${id}/receive`, { items }, { params: wp(market) })).data;
+export const receiveInbound = async (id: number, items: { id: number; cartons_received: number; note?: string }[], market?: number | null) => (await api.post<InboundRow>(`/warehouse/inbound/${id}/receive`, { items }, { params: wp(market) })).data;
 export const getPackOrders = async (market?: number | null) => (await api.get<PackOrder[]>("/warehouse/orders", { params: wp(market) })).data;
 export const shipPackOrder = async (id: number, body: { carrier?: string; tracking_number?: string }, market?: number | null) => (await api.post(`/warehouse/orders/${id}/ship`, body, { params: wp(market) })).data;
 
@@ -423,10 +432,24 @@ export const deleteDepartmentRole = async (id: number, roleId: number) => { awai
 
 /** What the signed-in customer may do on a product's reviews: leave one (if they received it) or edit theirs. */
 export const getMyReview = async (productId: number) =>
-  (await api.get<{ eligible: boolean; review: { rating: number; comment: string | null; status: string } | null }>(`/products/${productId}/review`)).data;
+  (await api.get<{ eligible: boolean; review: { rating: number; comment: string | null; status: string; photos?: string[] } | null }>(`/products/${productId}/review`)).data;
 
-export const saveReview = async (productId: number, rating: number, comment: string) =>
-  (await api.post<{ rating: number; comment: string | null }>(`/products/${productId}/review`, { rating, comment })).data;
+export const saveReview = async (productId: number, rating: number, comment: string, photos: string[] = []) =>
+  (await api.post<{ rating: number; comment: string | null; photos: string[] }>(`/products/${productId}/review`, { rating, comment, photos })).data;
+
+/** One picture for the review; returns the path to send with the review. */
+export const uploadReviewPhoto = async (productId: number, file: File) => {
+  const form = new FormData();
+  form.append("image", file);
+  return (await api.post<{ path: string }>(`/products/${productId}/review-photos`, form, { headers: { "Content-Type": "multipart/form-data" } })).data.path;
+};
+
+// ---- Questions about a product
+export interface ProductQuestionRow { id: number; question: string; answer: string | null; answered_at: string | null; asked_at: string | null; status: string; product?: { id: number; name: string }; asker?: string }
+export const askQuestion = async (productId: number, question: string) => (await api.post<ProductQuestionRow>(`/products/${productId}/questions`, { question })).data;
+export const getMyQuestions = async (productId: number) => (await api.get<ProductQuestionRow[]>(`/products/${productId}/questions`)).data;
+export const getQuestionInbox = async () => (await api.get<ProductQuestionRow[]>("/product-questions")).data;
+export const answerQuestion = async (id: number, answer: string) => (await api.put<ProductQuestionRow>(`/product-questions/${id}/answer`, { answer })).data;
 
 // ---- Subscription plans for partners and sellers
 export interface SubscriptionPlan { id?: number; key: string; name: string; price_monthly: number; currency: string; customer_limit: number | null; commission_percentage: number; team_seats: number; is_active?: boolean }
@@ -444,3 +467,14 @@ export const chooseSubscription = async (plan: string) => (await api.post<Subscr
 export const cancelSubscription = async () => (await api.post<SubscriptionView>("/subscription/cancel")).data;
 export const getSubscriptionPlans = async () => (await api.get<SubscriptionPlan[]>("/admin/subscription-plans")).data;
 export const updateSubscriptionPlan = async (id: number, data: Partial<SubscriptionPlan>) => (await api.put<SubscriptionPlan>(`/admin/subscription-plans/${id}`, data)).data;
+
+export const getProductReadiness = async (id: number) => (await api.get<import("@/types/platform").ProductReadiness>(`/products/${id}/readiness`)).data;
+
+export interface SellerPayoutAccount { method: "bank" | "wallet"; holder: string; bank_name: string | null; number: string | null; status: "pending" | "verified" | "rejected"; note: string | null }
+export const getPayoutAccount = async () => (await api.get<{ account: SellerPayoutAccount | null; min_amount: number }>("/seller/payout-account")).data;
+export const savePayoutAccount = async (body: { method: "bank" | "wallet"; holder: string; bank_name?: string; account_number?: string; wallet_phone?: string }) => (await api.put<{ account: SellerPayoutAccount }>("/seller/payout-account", body)).data;
+export const requestPayout = async (currency: string) => (await api.post("/seller/payouts/request", { currency })).data;
+
+export interface SellerProfile { about: string | null; city: string | null; hours: string | null; logo: string | null; ships_within_days: number | null; return_address: { line1: string | null; city: string | null; notes: string | null } }
+export const getSellerProfile = async () => (await api.get<{ name: string; profile: SellerProfile }>("/seller/profile")).data;
+export const saveSellerProfile = async (profile: Partial<SellerProfile>) => (await api.put<{ name: string; profile: SellerProfile }>("/seller/profile", profile)).data;

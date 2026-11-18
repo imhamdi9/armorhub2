@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { addAddress, changePassword, getNotificationPrefs, saveNotificationPrefs, type NotificationPrefs, deleteAccount, getAddresses, removeAddress, saveProfile, updateAddress, type Address } from "@/services/ops.service";
+import { addAddress, changePassword, getNotificationPrefs, saveNotificationPrefs, type NotificationPrefs, deleteAccount, downloadMyData, getAddresses, removeAddress, saveProfile, updateAddress, type Address } from "@/services/ops.service";
 
 type Msg = { tone: "ok" | "warn"; text: string } | null;
 
@@ -22,6 +22,7 @@ export default function AccountPage() {
   const [pw, setPw] = useState<Msg>(null);
   const [addr, setAddr] = useState<Msg>(null);
   const [danger, setDanger] = useState<Msg>(null);
+  const [exportNote, setExportNote] = useState<Msg>(null);
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
@@ -124,6 +125,25 @@ export default function AccountPage() {
             ))}
           </ul>
         )}
+      </section>}
+
+      {personal && <section className="rounded-xl border p-4" data-testid="export">
+        <h2 className="mb-1 text-lg font-semibold">{tr("Download my data")}</h2>
+        <p className="mb-3 text-sm text-muted-foreground">{tr("A file with everything we hold about you: your details, addresses, orders, reviews, questions, warranty claims and points. You can download it up to 3 times an hour.")}</p>
+        {exportNote && <Note tone={exportNote.tone}>{exportNote.text}</Note>}
+        <Button variant="outline" onClick={async () => {
+          setExportNote(null);
+          try {
+            const blob = await downloadMyData();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "armorhub-my-data.json";
+            a.click();
+            URL.revokeObjectURL(url);
+            setExportNote({ tone: "ok", text: tr("Your data was downloaded.") });
+          } catch (e) { setExportNote({ tone: "warn", text: errorMessage(e) }); }
+        }}>{tr("Download my data")}</Button>
       </section>}
 
       {personal ? <section className="rounded-xl border border-red-200 p-4" data-testid="danger">

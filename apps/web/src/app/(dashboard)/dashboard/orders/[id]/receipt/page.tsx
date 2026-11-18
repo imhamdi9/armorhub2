@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatMoney, tr } from "@/lib/i18n";
-import { getOrder } from "@/services/platform.service";
+import { downloadInvoice, getOrder } from "@/services/platform.service";
 import type { Order } from "@/types/platform";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
@@ -33,6 +33,15 @@ export default function ReceiptPage() {
         </div>
         <div className="flex gap-2 print:hidden">
           <Link href={`/dashboard/orders/${order.id}`} className="inline-flex h-8 items-center rounded-full border px-4 text-sm">{tr("Back to the order")}</Link>
+          <Button size="sm" variant="outline" data-testid="invoice-pdf" onClick={async () => {
+            const blob = await downloadInvoice(order.id);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `invoice-${order.id}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}>{tr("Download invoice (PDF)")}</Button>
           <Button size="sm" onClick={() => window.print()}>{tr("Print")}</Button>
         </div>
       </div>

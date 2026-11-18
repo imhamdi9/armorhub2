@@ -197,6 +197,9 @@ export default function ProductsPage() {
                     {[p.brand, p.category].filter(Boolean).join(" · ") || p.slug}
                   </p>
                   {p.requires_shipping && <p className="mt-1 text-xs text-muted-foreground" data-testid="installation-badge">{tr(INSTALLATION_LABEL[(p.installation ?? "none") as InstallationMode])}</p>}
+                  {canManage && p.readiness && !p.readiness.ready && (
+                    <p className="mt-1 text-xs text-muted-foreground" data-testid="readiness-badge">{tr("Listing quality")} {p.readiness.score}% · {tr("{n} to complete", { n: p.readiness.missing })}</p>
+                  )}
                   {canManage && p.is_active && p.price_rules_count === 0 && (
                     <p className="mt-1 text-xs font-medium text-amber-700">{tr("Not for sale yet: add a price")}</p>
                   )}

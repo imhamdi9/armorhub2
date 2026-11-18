@@ -23,6 +23,12 @@ export interface CartView {
   shipping_amount: number;
   /** A discount code applied to the cart: what it takes off, or why the code was dropped. */
   discount_amount: number;
+  /** Whether this purchase may be paid in cash at the door. */
+  cod_available?: boolean;
+  /** How goods may be delivered: the usual way, and faster for an extra fee when the market offers it. Empty when nothing in the cart is shipped. */
+  /** Loyalty points the customer may spend on this purchase: their balance, the most allowed and what one point is worth. */
+  points?: { balance: number; max_use: number; value: number } | null;
+  delivery_options?: { key: "standard" | "express"; extra_fee: number; eta_days: number | null }[];
   promo_code: string | null;
   promo_problem: string | null;
   eta_days: number | null;
@@ -70,10 +76,11 @@ export const addToCart = async (productId: number, optionId?: number | null, qua
 export const setCartQuantity = async (itemId: number, quantity: number) => (await api.put<CartView>(`/cart/items/${itemId}`, { quantity })).data;
 export const removeCartItem = async (itemId: number) => (await api.delete<CartView>(`/cart/items/${itemId}`)).data;
 
-export const checkoutCart = async (address: DeliveryAddress) => (await api.post<Purchase>("/checkout", { shipping_address: address })).data;
+export interface DeliveryChoices { delivery_speed?: "standard" | "express"; preferred_day?: string; gift_note?: string; use_points?: number }
+export const checkoutCart = async (address: DeliveryAddress, choices: DeliveryChoices = {}) => (await api.post<Purchase>("/checkout", { shipping_address: address, ...choices })).data;
 export const getPurchases = async () => (await api.get<Purchase[]>("/order-groups")).data;
 export const getPurchase = async (id: number | string) => (await api.get<Purchase>(`/order-groups/${id}`)).data;
-export const payPurchase = async (id: number) => (await api.post<{ status: string; checkout_url?: string; group: Purchase }>(`/order-groups/${id}/payments`, { payment_method: "card" })).data;
+export const payPurchase = async (id: number, method: "card" | "wallet" | "cod" = "card") => (await api.post<{ status: string; checkout_url?: string; group: Purchase }>(`/order-groups/${id}/payments`, { payment_method: method })).data;
 export const cancelPurchase = async (id: number) => (await api.post<Purchase>(`/order-groups/${id}/cancel`)).data;
 
 export const applyPromo = async (code: string) => (await api.post<CartView>("/cart/promo", { code })).data;

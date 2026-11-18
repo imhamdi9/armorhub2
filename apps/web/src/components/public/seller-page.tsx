@@ -19,6 +19,13 @@ export function SellerPageView({ data }: { data: PublicSellerPage }) {
           <span className="text-obsidian">{seller.name}</span>
         </nav>
         <h1 className="display display-md">{seller.name}</h1>
+        {seller.about && <p className="mt-2 max-w-2xl text-slate" data-testid="seller-about">{seller.about}</p>}
+        <p className="mt-2 flex flex-wrap gap-x-4 text-sm text-slate" data-testid="seller-facts">
+          {seller.rating?.average ? <span>★ {seller.rating.average} ({seller.rating.count})</span> : null}
+          {seller.delivered_orders ? <span>{tr("{n} orders delivered", { n: seller.delivered_orders })}</span> : null}
+          {seller.ships_within_days ? <span>{tr("Ships within {n} days", { n: seller.ships_within_days })}</span> : null}
+          {seller.hours ? <span>{seller.hours}</span> : null}
+        </p>
         <p className="mt-1 text-sm text-slate">
           {[seller.city, seller.since ? tr("Selling on {market} since {date}", { market: store.name, date: seller.since }) : null].filter(Boolean).join(" · ")}
         </p>

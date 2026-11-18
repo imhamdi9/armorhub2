@@ -1,5 +1,6 @@
 "use client";
 
+import { CompareBar } from "@/components/shop/compare";
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 
@@ -45,6 +46,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
 
   return (
     <div style={themeVars(store) as CSSProperties} className="min-h-screen bg-bone text-black">
+      <CompareBar slug={store.slug} />
       <nav aria-label={tr("Main")} className="fixed inset-x-0 bottom-0 z-30 flex justify-around bg-white py-1 shadow-[0_-2px_8px_rgba(0,0,0,.06)] md:hidden">
         {nav.map((n) => (
           <Link key={n.key} href={n.href} aria-label={n.label} aria-current={n.key === active ? "page" : undefined} title={n.label}
@@ -110,6 +112,9 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
             </div>
           </div>
           <p className="px-6 pb-2 text-center text-xs text-white/70">🔒 {tr("Secure payments")} · 🛡 {tr("Warranty on every job")}</p>
+          <nav aria-label={tr("Policies")} className="flex flex-wrap justify-center gap-x-4 gap-y-1 px-6 pb-3 text-xs text-white/70">
+            {([["privacy", "Privacy"], ["terms", "Terms"], ["returns", "Returns"], ["shipping", "Delivery"], ["cookies", "Cookies"]] as const).map(([k, l]) => <Link key={k} href={`/policies/${k}`} className="hover:text-white hover:underline">{tr(l)}</Link>)}
+          </nav>
           <p className="border-t border-white/15 px-6 py-4 text-center text-xs text-white/60">© {new Date().getFullYear()} {store.name} · {tr("Powered by")} <Link href="/" className="underline">{tr("ArmorHub")}</Link></p>
         </footer>
       </div>

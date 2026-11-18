@@ -14,6 +14,13 @@ export const api = axios.create({
   },
 });
 
+// The API answers in the language the person reads the site in.
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") config.headers["Accept-Language"] = window.localStorage.getItem("locale") === "ar" ? "ar" : "en";
+
+  return config;
+});
+
 // Market settings reuse the admin screens. A market manager's pages (/dashboard/market/...) talk to /market/..., which can only ever reach their
 // own market. A platform admin who opened one market (?market=<id>) edits that market's values instead of the platform-wide ones.
 api.interceptors.request.use((config) => {

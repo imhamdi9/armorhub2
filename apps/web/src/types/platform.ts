@@ -29,6 +29,8 @@ export interface Product {
   can_edit?: boolean;
   /** On the product list: how many options have a price. A product with none cannot be ordered yet. */
   price_rules_count?: number;
+  /** On the product list, for people who manage products: how complete the listing is. */
+  readiness?: { score: number; ready: boolean; missing: number };
 }
 
 export interface PriceRule {
@@ -120,9 +122,18 @@ export interface Shipment {
   cost: string | null;
   currency: string | null;
   events: ShipmentEvent[];
+  /** Only the customer receives it, while the parcel is on its way. */
+  delivery_code?: string;
+  attempts: number;
+  failed_reason: string | null;
+  reschedule_for: string | null;
+  reschedule_note: string | null;
 }
 
 export interface OrderShipping {
+  delivery_speed?: "standard" | "express";
+  preferred_day?: string | null;
+  gift_note?: string | null;
   requires_shipping: boolean;
   can_manage: boolean;
   address: ShippingAddress | null;
@@ -148,7 +159,22 @@ export interface Warranty {
   starts_at: string;
   ends_at: string;
   active?: boolean;
+  product?: { id: number; name: string; requires_shipping?: boolean };
+  claims?: WarrantyClaim[];
+  /** Goods under a running warranty with no claim in progress. */
+  can_claim?: boolean;
+}
+
+export interface WarrantyClaim {
+  id: number;
+  warranty_id: number;
+  description: string;
+  status: "open" | "approved" | "rejected" | "resolved";
+  resolution: "repair" | "replace" | "refund" | null;
+  note: string | null;
+  created_at: string | null;
   product?: { id: number; name: string };
+  customer?: string;
 }
 
 export interface Partner {
@@ -257,4 +283,12 @@ export interface PartnerApplication {
   created_at: string;
   reviewed_at: string | null;
   store?: { id: number; name: string; slug: string };
+}
+
+export interface ProductReadiness {
+  score: number;
+  ready: boolean;
+  done: number;
+  total: number;
+  items: { key: string; ok: boolean; label: string; hint: string }[];
 }

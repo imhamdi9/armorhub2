@@ -71,6 +71,7 @@ function RegisterForm() {
         phone: form.phone || undefined,
         store: storeSlug ?? "",
         signup_token: human.token,
+        referral: params.get("ref") ?? undefined,
         website,
         captcha_token: human.captchaToken,
       });

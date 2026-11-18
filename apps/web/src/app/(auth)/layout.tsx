@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AuthAside } from "@/components/auth/auth-aside";
 import { AuthBrand } from "@/components/auth/auth-brand";
+import { CookieConsentBanner } from "@/components/layout/cookie-consent-banner";
 import { I18nProvider } from "@/lib/i18n";
 
 // Sign-in and sign-up screens are for people, not for search results.
@@ -18,6 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <main className="flex flex-1">{children}</main>
         </div>
       </div>
+      <CookieConsentBanner />
     </I18nProvider>
   );
 }

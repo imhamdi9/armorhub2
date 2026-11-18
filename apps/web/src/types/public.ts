@@ -79,10 +79,11 @@ export interface PublicProduct {
   seller_id?: number | null;
   fulfilled_by_armorhub?: boolean;
   in_stock?: boolean;
+  rating?: { average: number | null; count: number };
 }
 
 export interface PublicSellerPage {
-  seller: { id: number; name: string; city: string | null; since: string | null };
+  seller: { id: number; name: string; city: string | null; since: string | null; about?: string | null; logo?: string | null; hours?: string | null; ships_within_days?: number | null; rating?: { count: number; average: number | null }; delivered_orders?: number };
   store: { name: string; slug: string };
   products: PublicProducts;
 }
@@ -106,6 +107,10 @@ export interface PublicProducts {
   current_page: number;
   last_page: number;
   total?: number;
+  /** What was searched, and the words it was read as when the typed ones matched nothing. */
+  search?: { q: string; corrected: string | null };
+  /** What the filters offer: brands with their product counts and the price range. */
+  facets?: { brands: { name: string; count: number }[]; price: { min: number; max: number } };
 }
 
 export interface PublicProductPage {
@@ -117,9 +122,15 @@ export interface PublicProductPage {
     page_template?: string;
   };
   related?: PublicProduct[];
+  /** Bought together with this product, and like it. */
+  recommended?: { also_bought: PublicProduct[]; similar: PublicProduct[] };
   customer_fee_percentage?: number;
   /** Delivery in this market: the flat fee, the amount above which it is free, and the usual days. */
   shipping?: { flat: number; free_over: number | null; eta_days: number | null };
-  reviews?: { count: number; average: number | null; items: { id: number; rating: number; comment: string | null; author: string; date: string | null }[] };
+  reviews?: { count: number; average: number | null; items: { id: number; rating: number; comment: string | null; author: string; date: string | null; photos?: string[] }[] };
+  /** Answered questions about the product. */
+  questions?: { id: number; question: string; answer: string; asker: string; answered_at: string | null }[];
+  /** When a parcel ordered today should arrive; null when the market has not said. */
+  delivery_estimate?: { min_days: number; max_days: number; from: string; to: string } | null;
   store: { name: string; slug: string; contact_phone?: string | null };
 }

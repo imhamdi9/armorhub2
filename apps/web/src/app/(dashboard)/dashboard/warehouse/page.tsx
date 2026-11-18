@@ -26,6 +26,7 @@ export default function WarehousePage() {
   const [stock, setStock] = useState<StockRow[]>([]);
   const [orders, setOrders] = useState<PackOrder[]>([]);
   const [counted, setCounted] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
   const [tracking, setTracking] = useState<Record<number, string>>({});
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -105,13 +106,16 @@ export default function WarehousePage() {
                         <span className="flex items-center gap-2">
                           <Label htmlFor={`cnt-${it.id}`} className="sr-only">{tr("Cartons counted")}</Label>
                           <Input id={`cnt-${it.id}`} type="number" min="0" className="w-24" placeholder={tr("Counted")} value={counted[it.id] ?? ""} onChange={(e) => setCounted({ ...counted, [it.id]: e.target.value })} />
+                          {counted[it.id] !== undefined && counted[it.id] !== "" && Number(counted[it.id]) !== it.cartons_expected && (
+                            <Input aria-label={tr("Why the count differs")} className="w-56" maxLength={200} placeholder={tr("Why the count differs")} value={notes[it.id] ?? ""} onChange={(e) => setNotes({ ...notes, [it.id]: e.target.value })} />
+                          )}
                         </span>
-                      ) : <span>{tr("{n} cartons received", { n: it.cartons_received })}</span>}
+                      ) : <span className={it.cartons_received !== it.cartons_expected ? "text-amber-700" : ""}>{tr("{n} cartons received", { n: it.cartons_received })}{it.cartons_received !== it.cartons_expected && ` ≠ ${it.cartons_expected}`}{it.note ? ` · ${it.note}` : ""}</span>}
                     </li>
                   ))}
                 </ul>
                 {d.status === "announced" && (
-                  <Button size="sm" className="mt-3" onClick={() => run(() => receiveInbound(d.id, d.items.map((it) => ({ id: it.id, cartons_received: Number(counted[it.id] ?? it.cartons_expected) })), m), tr("Delivery received."))}>{tr("Confirm count and receive")}</Button>
+                  <Button size="sm" className="mt-3" onClick={() => run(() => receiveInbound(d.id, d.items.map((it) => ({ id: it.id, cartons_received: Number(counted[it.id] ?? it.cartons_expected), note: notes[it.id] })), m), tr("Delivery received."))}>{tr("Confirm count and receive")}</Button>
                 )}
               </li>
             ))}

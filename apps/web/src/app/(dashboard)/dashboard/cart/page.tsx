@@ -32,6 +32,13 @@ export default function CartPage() {
   const [saved, setSaved] = useState<Address[]>([]);
   const [saveIt, setSaveIt] = useState(true);
   const [code, setCode] = useState("");
+  const [payMethod, setPayMethod] = useState<"card" | "wallet" | "cod">("card");
+  const [usePoints, setUsePoints] = useState(false);
+  const [speed, setSpeed] = useState<"standard" | "express">("standard");
+  const [day, setDay] = useState("");
+  const [gift, setGift] = useState("");
+  const [startedAt] = useState(() => Date.now());
+  const dayAfter = (n: number) => new Date(startedAt + n * 86_400_000).toISOString().slice(0, 10);
   const [promoErr, setPromoErr] = useState<string | null>(null);
   useEffect(() => {
     getAddresses().then((list) => {
@@ -61,10 +68,10 @@ export default function CartPage() {
     setError(null);
     setFields({});
     try {
-      const purchase = await checkoutCart(form);
+      const purchase = await checkoutCart(form, { delivery_speed: speed, ...(day ? { preferred_day: day } : {}), ...(gift.trim() ? { gift_note: gift.trim() } : {}), ...(usePoints && cart?.points?.max_use ? { use_points: cart.points.max_use } : {}) });
       try { localStorage.setItem("last-address", JSON.stringify(form)); } catch { /* storage unavailable */ }
       if (saveIt && !saved.some((a) => a.line1 === form.line1 && a.city === form.city)) addAddress({ ...form, label: null }).catch(() => {});
-      const paid = await payPurchase(purchase.id);
+      const paid = await payPurchase(purchase.id, cart && !cart.cod_available && payMethod === "cod" ? "card" : payMethod);
       if (paid.checkout_url) {
         window.location.href = paid.checkout_url;
         return;
@@ -81,6 +88,8 @@ export default function CartPage() {
   const err = (k: string) => fields[`shipping_address.${k}`] && <p role="alert" className="mt-1 text-sm text-red-600">{fields[`shipping_address.${k}`]}</p>;
 
   if (cart === null) return <LoadingBlock />;
+  const pointsOff = usePoints && cart.points ? cart.points.max_use * cart.points.value : 0;
+  const extra = speed === "express" ? (cart.delivery_options ?? []).find((o) => o.key === "express")?.extra_fee ?? 0 : 0;
 
   return (
     <div>
@@ -140,16 +149,54 @@ export default function CartPage() {
 
             <dl className="space-y-1 border-t pt-3 text-sm">
               <div className="flex justify-between"><dt>{tr("Items")}</dt><dd>{formatMoney(cart.items_amount, cart.currency ?? "")}</dd></div>
+              {pointsOff > 0 && <div className="flex justify-between text-green-700" data-testid="points-discount"><dt>{tr("Points")}</dt><dd>−{formatMoney(pointsOff, cart.currency ?? "")}</dd></div>}
               {cart.discount_amount > 0 && <div className="flex justify-between text-green-700" data-testid="discount"><dt>{tr("Discount")}</dt><dd>−{formatMoney(cart.discount_amount, cart.currency ?? "")}</dd></div>}
-              <div className="flex justify-between" data-testid="delivery"><dt>{tr("Delivery")}</dt><dd>{cart.shipping_amount > 0 ? formatMoney(cart.shipping_amount, cart.currency ?? "") : tr("Free")}</dd></div>
+              <div className="flex justify-between" data-testid="delivery"><dt>{tr("Delivery")}</dt><dd>{cart.shipping_amount + extra > 0 ? formatMoney(cart.shipping_amount + extra, cart.currency ?? "") : tr("Free")}</dd></div>
               {cart.service_fee_amount > 0 && <div className="flex justify-between" data-testid="platform-fee"><dt>{tr("Platform fee")}</dt><dd>{formatMoney(cart.service_fee_amount, cart.currency ?? "")}</dd></div>}
-              <div className="flex justify-between text-base font-bold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(cart.payable_amount, cart.currency ?? "")}</dd></div>
+              <div className="flex justify-between text-base font-bold"><dt>{tr("Total to pay")}</dt><dd data-testid="payable">{formatMoney(cart.payable_amount + extra - pointsOff, cart.currency ?? "")}</dd></div>
             </dl>
             {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             {cart.eta_days && <p className="text-sm text-muted-foreground" data-testid="eta">{tr("Usually delivered in about {days} days.", { days: cart.eta_days })}</p>}
             {cart.shipping_amount > 0 && cart.free_shipping_over && <p className="text-sm text-muted-foreground">{tr("Delivery is free for a seller's part of the cart worth {amount} or more.", { amount: formatMoney(cart.free_shipping_over, cart.currency ?? "") })}</p>}
+            {(cart.delivery_options ?? []).length > 0 && (
+              <fieldset className="grid gap-2 text-sm" data-testid="delivery-choices">
+                <legend className="mb-1 font-semibold">{tr("How fast, and when?")}</legend>
+                {cart.delivery_options!.map((o) => (
+                  <label key={o.key} className="flex items-start gap-2 rounded-lg border p-2">
+                    <input type="radio" name="speed" className="mt-1" checked={speed === o.key} onChange={() => setSpeed(o.key)} />
+                    <span>
+                      <b>{o.key === "express" ? tr("Express delivery") : tr("Standard delivery")}</b>
+                      {o.eta_days ? <span className="text-muted-foreground"> · {tr("about {days} days", { days: o.eta_days })}</span> : null}
+                      {o.extra_fee > 0 && <span className="block text-muted-foreground">+ {formatMoney(o.extra_fee, cart.currency ?? "")}</span>}
+                    </span>
+                  </label>
+                ))}
+                <label className="text-xs text-muted-foreground">{tr("Preferred delivery day (optional)")}
+                  <input type="date" className="mt-1 h-10 w-full rounded-[10px] border bg-background px-2 text-sm text-foreground" min={dayAfter(1)} max={dayAfter(14)} value={day} onChange={(e) => setDay(e.target.value)} data-testid="preferred-day" />
+                </label>
+                <label className="text-xs text-muted-foreground">{tr("Gift note (optional)")}
+                  <textarea className="mt-1 w-full rounded-[10px] border bg-background p-2 text-sm text-foreground" rows={2} maxLength={200} placeholder={tr("A message for the person who receives it")} value={gift} onChange={(e) => setGift(e.target.value)} data-testid="gift-note" />
+                </label>
+              </fieldset>
+            )}
+            {cart.points && cart.points.max_use > 0 && (
+              <label className="flex items-start gap-2 rounded-lg border p-2 text-sm" data-testid="use-points">
+                <input type="checkbox" className="mt-1" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
+                <span>
+                  <b>{tr("Use {n} points", { n: cart.points.max_use })}</b>
+                  <span className="block text-muted-foreground">{tr("Takes {amount} off. You have {balance} points.", { amount: formatMoney(cart.points.max_use * cart.points.value, cart.currency ?? ""), balance: cart.points.balance })}</span>
+                </span>
+              </label>
+            )}
+            <fieldset className="grid gap-1 text-sm" data-testid="pay-method">
+              <legend className="mb-1 font-semibold">{tr("How do you want to pay?")}</legend>
+              {([["card", "Card (secure payment page)"], ["wallet", "Mobile wallet"]] as const).map(([v, label]) => (
+                <label key={v} className="flex items-center gap-2"><input type="radio" name="pay" checked={payMethod === v} onChange={() => setPayMethod(v)} />{tr(label)}</label>
+              ))}
+              {cart.cod_available && <label className="flex items-center gap-2"><input type="radio" name="pay" checked={payMethod === "cod"} onChange={() => setPayMethod("cod")} />{tr("Cash on delivery")}</label>}
+            </fieldset>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saveIt} onChange={(e) => setSaveIt(e.target.checked)} />{tr("Save this address for next time")}</label>
-            <Button type="submit" className="w-full" disabled={busy || !cart.can_checkout}>{tr("Place order and pay")}</Button>
+            <Button type="submit" className="w-full" disabled={busy || !cart.can_checkout}>{payMethod === "cod" && cart.cod_available ? tr("Place order (pay on delivery)") : tr("Place order and pay")}</Button>
             {!cart.can_checkout && <p className="text-xs text-muted-foreground">{tr("Remove the items that cannot be bought to continue.")}</p>}
           </form>
         </div>

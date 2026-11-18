@@ -41,10 +41,13 @@ export default function PurchasePage() {
 
   if (!purchase) return error ? <p role="alert" className="text-red-600">{error}</p> : <LoadingBlock />;
 
+  // Every order of a cash-on-delivery purchase is confirmed, but the money is collected at the door.
+  const cod = purchase.orders.length > 0 && purchase.orders.every((o) => o.statuses?.payment === "cash_on_delivery");
+
   return (
     <div>
       <PageHeader title={`${tr("Purchase")} #${purchase.id}`} />
-      <p className="mb-4"><Badge variant={purchase.status === "paid" ? "default" : "secondary"} data-testid="purchase-status">{purchase.status === "paid" ? tr("Paid") : purchase.status === "cancelled" ? tr("Cancelled") : tr("Waiting for payment")}</Badge></p>
+      <p className="mb-4"><Badge variant={purchase.status === "paid" ? "default" : "secondary"} data-testid="purchase-status">{purchase.status === "paid" ? tr(cod ? "Pay on delivery" : "Paid") : purchase.status === "cancelled" ? tr("Cancelled") : tr("Waiting for payment")}</Badge></p>
 
       <ul className="space-y-3">
         {purchase.orders.map((o) => (
@@ -66,7 +69,7 @@ export default function PurchasePage() {
         {(purchase.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-700"><dt>{tr("Discount")}</dt><dd>−{formatMoney(purchase.discount_amount ?? 0, purchase.currency)}</dd></div>}
         {(purchase.shipping_amount ?? 0) > 0 && <div className="flex justify-between"><dt>{tr("Delivery")}</dt><dd>{formatMoney(purchase.shipping_amount ?? 0, purchase.currency)}</dd></div>}
         {purchase.service_fee_amount > 0 && <div className="flex justify-between"><dt>{tr("Platform fee")}</dt><dd>{formatMoney(purchase.service_fee_amount, purchase.currency)}</dd></div>}
-        <div className="flex justify-between text-base font-bold"><dt>{tr(purchase.status === "paid" ? "Total paid" : "Total to pay")}</dt><dd>{formatMoney(purchase.payable_amount, purchase.currency)}</dd></div>
+        <div className="flex justify-between text-base font-bold"><dt>{tr(purchase.status === "paid" ? (cod ? "Total to pay on delivery" : "Total paid") : "Total to pay")}</dt><dd>{formatMoney(purchase.payable_amount, purchase.currency)}</dd></div>
       </dl>
 
       {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}

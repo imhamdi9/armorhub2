@@ -22,6 +22,8 @@ export async function register(data: {
   store?: string;
   company_id?: number;
   signup_token: string;
+  /** A friend's invite code: their reward comes when this customer's first order arrives. */
+  referral?: string;
   website?: string;
   captcha_token?: string;
 }) {

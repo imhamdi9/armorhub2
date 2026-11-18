@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HeroArt } from "@/components/public/art";
 import { FAQS } from "@/components/public/faq";
 import { ProductTile, ShopProductCard } from "@/components/shop/shop-product-card";
+import { ForYou, RecentlyViewed } from "@/components/shop/memory";
 import { ShopSearch } from "@/components/shop/shop-search";
 import { price } from "@/components/public/product-card";
 import { ShopShell, SHOP_SHADOW } from "@/components/shop/shop-shell";
@@ -61,7 +62,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
             {store.headline ?? tr("Quality {service} services, quoted by experts near you", { service: industry ? tr(industry.name) : "" })}
           </h1>
           {store.subheadline && <p className="mt-5 max-w-lg text-lg leading-relaxed text-[#5f5c5b]">{store.subheadline}</p>}
-          <div className="mt-8 max-w-xl [&_form]:mx-0 [&_form]:max-w-none"><ShopSearch action={products} /></div>
+          <div className="mt-8 max-w-xl [&_form]:mx-0 [&_form]:max-w-none"><ShopSearch action={products} slug={store.slug} /></div>
           {categories.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
               {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
@@ -160,6 +161,9 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
         </div>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq).replace(/</g, "\\u003c") }} />
       </section>
+
+      <RecentlyViewed slug={store.slug} />
+      <ForYou slug={store.slug} />
 
       <section className="bg-dark bg-grid-dark mt-16 rounded-[32px] p-8 text-center text-white md:p-14" aria-labelledby="cta">
         <h2 id="cta" className="display text-3xl !text-white md:text-4xl">{tr("Ready to get started?")}</h2>

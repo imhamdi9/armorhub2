@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { logout, resendVerification } from "@/services/auth.service";
+import { CookieConsentBanner } from "@/components/layout/cookie-consent-banner";
 import { I18nProvider, LanguageSwitcher, tr } from "@/lib/i18n";
 
 function VerifyEmailBanner() {
@@ -78,6 +79,7 @@ export default function DashboardLayout({
         </SidebarProvider>
       </TooltipProvider>
     </CurrentUserProvider>
+      <CookieConsentBanner />
     </I18nProvider>
   );
 }

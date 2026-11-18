@@ -16,8 +16,8 @@ export interface CustomerJob {
   price: number | null; discount: number | null; pay_amount: number | null; points_used: number; offer_count: number; offers?: Offer[];
   objection_deadline: string | null; warranty_ends_at: string | null; terms: { version: string; lines: string[] }; proofs: Proof[]; dispute: DisputeInfo | null;
   refund: { amount: number; status: string; reference: string | null } | null;
-  can_confirm: boolean; can_dispute: boolean; can_cancel: boolean; can_review: boolean; review: { rating: number; comment: string | null } | null;
-  centre?: { code: string; tier: string; rating: number | null; rating_count: number; completed_jobs: number; name?: string; address?: string | null; city?: string | null; maps_url?: string | null; call?: Call | null };
+  can_confirm: boolean; can_dispute: boolean; can_cancel: boolean; can_review: boolean; review: { rating: number; comment: string | null; reply?: string | null } | null; booking?: { starts_at: string; on_the_way_at: string | null } | null;
+  centre?: { price_list?: { service: string; price: number; note: string | null }[]; code: string; tier: string; rating: number | null; rating_count: number; completed_jobs: number; name?: string; address?: string | null; city?: string | null; maps_url?: string | null; call?: Call | null };
 }
 export interface OpenRequest { id: number; subject: string; parts: string[]; work_type: string; notes: string | null; area: string | null; distance_km: number; created_at: string; my_offer: { price: number; eta_days: number; note: string | null; status: string } | null }
 export interface CentreJob {
@@ -68,3 +68,11 @@ export const payWithdrawal = async (id: number, reference: string) => (await api
 export const rejectWithdrawal = async (id: number, note: string) => (await api.post(`/admin/centre-withdrawals/${id}/reject`, { note })).data;
 export const getViolations = async () => (await api.get<{ id: number; request_id: number; centre: string; strikes: number; note: string | null; status: string }[]>("/admin/installation-violations")).data;
 export const decideViolation = async (id: number, decision: "confirmed" | "dismissed") => (await api.post(`/admin/installation-violations/${id}/decide`, { decision })).data;
+
+export interface PriceItem { service: string; price: number; note: string | null }
+export interface CentreReview { id: number; rating: number; comment: string | null; reply: string | null; created_at: string }
+export const getPriceList = async () => (await api.get<{ items: PriceItem[] }>("/partner/price-list")).data.items;
+export const savePriceList = async (items: PriceItem[]) => (await api.put<{ items: PriceItem[] }>("/partner/price-list", { items })).data.items;
+export const getCentreReviews = async () => (await api.get<CentreReview[]>("/partner/reviews")).data;
+export const replyToReview = async (id: number, reply: string) => (await api.post(`/partner/reviews/${id}/reply`, { reply })).data;
+export const sayOnTheWay = async (id: number) => (await api.post<{ on_the_way_at: string | null }>(`/partner/installation-jobs/${id}/on-the-way`)).data;

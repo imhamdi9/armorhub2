@@ -32,6 +32,7 @@ const ROLE_LABELS: Record<string, string> = {
   seller: "Company owner (seller)",
   "warehouse-staff": "Warehouse staff",
   "operations-agent": "Operations agent",
+  "support-agent": "Support agent",
 };
 
 /** The people list. For a platform admin it is split: "platform" is ArmorHub's own team, "users" is everyone else. */

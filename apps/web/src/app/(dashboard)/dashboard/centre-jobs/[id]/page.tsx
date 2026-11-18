@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { askLocation, DISPUTE_TYPES } from "@/lib/installation";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
-import { disputeCentreJob, getCentreJob, sendEvidence, sendProof, startCentreJob, type CentreJob } from "@/services/installation.service";
+import { disputeCentreJob, getCentreJob, sendEvidence, sendProof, sayOnTheWay, startCentreJob, type CentreJob } from "@/services/installation.service";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CentreJobPage() {
@@ -57,14 +57,19 @@ export default function CentreJobPage() {
         <Section title="Customer">
           <p className="text-lg font-medium">{job.customer.name}{job.customer.city ? ` · ${job.customer.city}` : ""}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <Button variant="outline" render={<a href={job.customer.maps_url} target="_blank" rel="noreferrer" />}>{tr("Open the place in Google Maps")}</Button>
+            <Button variant="outline" nativeButton={false} render={<a href={job.customer.maps_url} target="_blank" rel="noreferrer" />}>{tr("Open the place in Google Maps")}</Button>
             <CallBox call={job.customer.call} />
           </div>
           <Note tone="warn">{tr("The platform warranty and your payment are protected only while the job stays on the platform. Do not arrange payment or work outside it: it can get your account suspended.")}</Note>
         </Section>
       )}
 
-      {job.can_start && <Button className="mb-6" disabled={busy} onClick={() => run(() => startCentreJob(job.id))}>{tr("Start the work")}</Button>}
+      {job.can_start && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Button disabled={busy} onClick={() => run(() => startCentreJob(job.id))}>{tr("Start the work")}</Button>
+          <Button variant="outline" disabled={busy} onClick={() => run(() => sayOnTheWay(job.id))}>{tr("Tell the customer we are on our way")}</Button>
+        </div>
+      )}
 
       {job.can_add_proof && (
         <Section title="Proof of the work">

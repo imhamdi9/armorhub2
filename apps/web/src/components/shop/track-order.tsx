@@ -8,17 +8,44 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
-import { cancelGuestOrder, getGuestOrder, payGuestOrder, type GuestOrder } from "@/services/guest-orders.service";
+import { cancelGuestOrder, getGuestMessages, getGuestOrder, payGuestOrder, sendGuestMessage, type GuestMessage, type GuestOrder } from "@/services/guest-orders.service";
 
 const card = "rounded-[28px] bg-white p-6";
 
 /** A guest's private order page: reached only by its secret link. Shows the steps, the delivery, tracking, and an optional account. */
+/** Someone without an account writes about their order, or flags a problem; answers come by e-mail and appear here. */
+function GuestMessages({ token }: { token: string }) {
+  const [list, setList] = useState<GuestMessage[]>([]);
+  const [text, setText] = useState("");
+  const [problem, setProblem] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const load = useCallback(() => getGuestMessages(token).then(setList).catch(() => setList([])), [token]);
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <section className="rounded-[28px] bg-white p-6" style={{ boxShadow: SHOP_SHADOW }} data-testid="guest-messages">
+      <h2 className="text-xl tracking-[-0.05em]">{tr("Messages and problems")}</h2>
+      <ul className="mt-3 space-y-2 text-sm">
+        {list.map((m) => <li key={m.id} className={`rounded-2xl p-3 ${m.mine ? "bg-[#f2f4f5]" : "bg-brand-wash"}`}>{m.kind === "problem" ? "⚠ " : ""}{m.body}</li>)}
+      </ul>
+      {err && <p role="alert" className="mt-2 text-sm text-red-600">{err}</p>}
+      <form className="mt-3 grid gap-2" onSubmit={async (e) => { e.preventDefault(); setErr(null); try { await sendGuestMessage(token, text, problem); setText(""); setProblem(false); await load(); } catch (x) { setErr(errorMessage(x)); } }}>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} required minLength={2} maxLength={1000} rows={2} className="w-full rounded-2xl border border-[#ebebeb] p-3 text-sm" placeholder={tr("Write to the seller and ArmorHub")} />
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={problem} onChange={(e) => setProblem(e.target.checked)} />{tr("This is a problem: ask ArmorHub to look at it")}</label>
+        <div><button type="submit" className="btn-brand h-11 rounded-full px-6" disabled={text.trim().length < 2}>{tr("Send")}</button></div>
+      </form>
+    </section>
+  );
+}
+
 export function TrackOrder({ token }: { token: string }) {
   const [order, setOrder] = useState<GuestOrder | null>(null);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
+  // The tab title follows the reader's language (the page metadata is static English).
+  useEffect(() => { document.title = tr("Your order"); }, []);
 
   const load = useCallback(() => getGuestOrder(token).then(setOrder).catch(() => setMissing(true)), [token]);
   useEffect(() => { load(); }, [load]);
@@ -123,6 +150,8 @@ export function TrackOrder({ token }: { token: string }) {
         )}
 
         {error && <p role="alert" className="text-center text-sm text-red-600">{error}</p>}
+
+        <GuestMessages token={token} />
 
         <section className={`${card} text-center`} style={{ boxShadow: SHOP_SHADOW }}>
           <h2 className="text-xl tracking-[-0.05em]">{tr("Keep all your orders in one place")}</h2>
