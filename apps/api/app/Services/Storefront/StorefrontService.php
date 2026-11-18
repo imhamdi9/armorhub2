@@ -71,7 +71,7 @@ class StorefrontService
     public function marketplaces(): array
     {
         return Company::withoutGlobalScopes()->with('tenant.industry')->stores()->whereNotNull('slug')->whereNotIn('status', self::HIDDEN_STATUSES)->get()
-            ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant && $c->tenant->status === 'active')
+            ->filter(fn (Company $c) => $this->settingsOf($c)['enabled'] && $c->tenant && $c->tenant->status === 'active' && $c->tenant->selling_enabled)
             ->unique('tenant_id')
             ->map(function (Company $c) {
                 $industries = collect($this->industries($c))->pluck('name');

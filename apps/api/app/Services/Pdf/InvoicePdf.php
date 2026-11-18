@@ -22,7 +22,8 @@ class InvoicePdf
         $customer = $order->customer?->name ?? $order->guest_name;
         $address = (array) $order->makeVisible('shipping_address')->shipping_address;
 
-        $pdf->text(50, 70, 'ArmorHub', 24, true);
+        $brand = MiniPdf::ascii(\App\Support\PlatformBrand::name()) ?: 'ArmorHub';
+        $pdf->text(50, 70, $brand, 24, true);
         $pdf->text(545, 62, 'TAX INVOICE', 14, true, true);
         $pdf->text(545, 80, self::number($order), 10, false, true);
         $pdf->line(50, 100, 545, 100, 1.2);
@@ -32,7 +33,7 @@ class InvoicePdf
         $pdf->text(200, 125, 'Order', 9);
         $pdf->text(200, 139, '#'.$order->id, 11, true);
         $pdf->text(300, 125, 'Sold by', 9);
-        $pdf->text(300, 139, $seller ? (MiniPdf::ascii($seller) ?: 'Seller') : 'ArmorHub', 11, true);
+        $pdf->text(300, 139, $seller ? (MiniPdf::ascii($seller) ?: 'Seller') : $brand, 11, true);
 
         $pdf->text(50, 175, 'Billed to', 9);
         $pdf->text(50, 189, MiniPdf::ascii((string) $customer) ?: 'Customer', 11, true);
@@ -78,7 +79,7 @@ class InvoicePdf
         $pdf->text(380, $y, 'Total paid', 12, true);
         $pdf->text(545, $y, $money($order->payable_amount), 12, true, true);
 
-        $pdf->text(50, 780, 'Issued by ArmorHub on behalf of the seller. Keep this invoice for your records and for any warranty claim.', 8);
+        $pdf->text(50, 780, 'Issued by '.$brand.' on behalf of the seller. Keep this invoice for your records and for any warranty claim.', 8);
 
         return $pdf->output();
     }

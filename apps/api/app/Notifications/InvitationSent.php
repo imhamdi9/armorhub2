@@ -18,8 +18,8 @@ class InvitationSent extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)->subject("{$this->inviter} invited you to ArmorHub")
-            ->line("{$this->inviter} invited you to join their team on ArmorHub. The link works for 7 days.")
+        return (new MailMessage)->subject("{$this->inviter} invited you to ".\App\Support\PlatformBrand::name())
+            ->line("{$this->inviter} invited you to join their team on ".\App\Support\PlatformBrand::name().". The link works for 7 days.")
             ->action('Accept the invitation', rtrim(config('platform.web_url'), '/').'/invitation/'.$this->token);
     }
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { PublicShell } from "@/components/public/shell";
 import { formatNumber, tr } from "@/lib/i18n";
+import { useMarketOffers } from "@/lib/market-offers";
 import { getPublicTerms, type PublicTerms } from "@/services/auth.service";
 
 type Audience = "seller" | "partner";
@@ -17,6 +18,7 @@ const AUDIENCES: { key: Audience; icon: string; title: string; text: string; sig
 /** Pricing for businesses: pick what you are, compare the plans, then go on to the application form with the plan already chosen. */
 export function Pricing({ initial, store }: { initial?: Audience; store?: string }) {
   const [audience, setAudience] = useState<Audience | null>(initial ?? null);
+  const offers = useMarketOffers();
   const [terms, setTerms] = useState<PublicTerms | null>(null);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export function Pricing({ initial, store }: { initial?: Audience; store?: string
         <section aria-labelledby="who-h" className="mt-10">
           <h2 id="who-h" className="text-center text-lg font-bold text-obsidian">{tr("What describes your business?")}</h2>
           <div className="mx-auto mt-4 grid max-w-3xl gap-3 sm:grid-cols-2" role="radiogroup" aria-labelledby="who-h">
-            {AUDIENCES.map((a) => (
+            {AUDIENCES.filter((a) => (a.key === "seller" ? offers.selling : offers.installation)).map((a) => (
               <button key={a.key} type="button" role="radio" aria-checked={audience === a.key} onClick={() => setAudience(a.key)}
                 className={`flex items-start gap-4 rounded-[24px] border p-5 text-start transition ${audience === a.key ? "border-[#2f6bff] bg-white ring-2 ring-[#2f6bff]/25" : "border-fog bg-white hover:border-[#2f6bff]/50"}`}>
                 <span className="text-3xl" aria-hidden="true">{a.icon}</span>

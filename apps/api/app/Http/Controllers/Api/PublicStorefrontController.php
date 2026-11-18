@@ -32,6 +32,8 @@ class PublicStorefrontController extends Controller
                 'logo_url' => $this->stores->settingsOf($c)['logo_url'],
                 'industry' => $this->stores->industry($c),
                 'market' => $this->stores->market($c)['code'] ?? null,
+                'selling_enabled' => (bool) $c->tenant?->selling_enabled,
+                'installation_enabled' => (bool) $c->tenant?->installation_enabled,
             ])->values();
 
         return $this->cached(['stores' => $stores]);

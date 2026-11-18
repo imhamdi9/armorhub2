@@ -366,15 +366,15 @@ export const bulkSetInstallation = async (ids: number[], installation: "none" | 
 
 // ---- Markets: one per country, running several industries (platform owner)
 export interface MarketRow {
-  id: number; name: string; country: string; country_name: string | null; country_name_ar: string | null; currency: string | null; status: string; store_slug: string | null;
+  id: number; name: string; country: string; country_name: string | null; country_name_ar: string | null; currency: string | null; status: string; store_slug: string | null; selling_enabled: boolean; installation_enabled: boolean;
   industries: { id: number; key: string; name: string }[];
   stats: { sellers: number; centres: number; products: number; orders: number };
 }
 export const getMarkets = async () => (await api.get<{ markets: MarketRow[]; industries: { id: number; key: string; name: string }[] }>("/admin/markets")).data;
 export const getCountries = async () => (await api.get<{ code: string; name: string; name_ar: string; currency: string; open: boolean }[]>("/admin/countries")).data;
 export const consolidateMarkets = async () => (await api.post<{ folded: number }>("/admin/markets/consolidate")).data;
-export const openMarket = async (body: { country: string; name?: string; industries: number[]; slug?: string }) => (await api.post<MarketRow>("/admin/markets", body)).data;
-export const updateMarket = async (id: number, body: { name?: string; industries?: number[]; status?: "active" | "paused" }) => (await api.put<MarketRow>(`/admin/markets/${id}`, body)).data;
+export const openMarket = async (body: { country: string; name?: string; industries: number[]; slug?: string; selling_enabled?: boolean; installation_enabled?: boolean }) => (await api.post<MarketRow>("/admin/markets", body)).data;
+export const updateMarket = async (id: number, body: { name?: string; industries?: number[]; status?: "active" | "paused"; selling_enabled?: boolean; installation_enabled?: boolean }) => (await api.put<MarketRow>(`/admin/markets/${id}`, body)).data;
 
 // ---- Warehouse and fulfilment -------------------------------------------------------------------
 export interface WarehouseRow { id: number; name: string; city: string | null; address: string | null; is_active: boolean }

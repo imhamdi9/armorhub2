@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useSyncExternalStore } 
 
 import { categoryNamesReady, loadCategoryNames } from "@/lib/category-names";
 import { AR } from "@/lib/i18n-ar";
+import { loadPlatformBrand, withPlatformName } from "@/lib/platform-brand";
 
 export type Locale = "en" | "ar";
 
@@ -20,7 +21,7 @@ let current: Locale = "en";
  * `{name}` placeholders are filled from `vars`.
  */
 export function tr(text: string, vars?: Record<string, string | number>): string {
-  const base = current === "ar" ? (AR[text] ?? text) : text;
+  const base = withPlatformName(current === "ar" ? (AR[text] ?? text) : text, current);
 
   return vars ? base.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? `{${key}}`)) : base;
 }
@@ -110,6 +111,9 @@ export function I18nProvider({ children, gate = true }: { children: React.ReactN
   // Category names (in both languages) come from the API once; screens that print a category draw again when they arrive.
   const [namesReady, setNamesReady] = useState(categoryNamesReady());
   useEffect(() => { if (!namesReady) loadCategoryNames().then((ok) => ok && setNamesReady(true)); }, [namesReady]);
+  // The platform's own name (set by its owners) replaces the built-in one in every sentence once it is known.
+  const [brandReady, setBrandReady] = useState(false);
+  useEffect(() => { loadPlatformBrand().then((changed) => changed && setBrandReady(true)); }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", locale);
@@ -134,7 +138,7 @@ export function I18nProvider({ children, gate = true }: { children: React.ReactN
   return (
     <LocaleContext.Provider value={locale}>
       {(hydrated || !gate) && (
-        <div key={`${locale}-${namesReady}`} className="contents">
+        <div key={`${locale}-${namesReady}-${brandReady}`} className="contents">
           {children}
         </div>
       )}

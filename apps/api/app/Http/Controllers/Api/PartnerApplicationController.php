@@ -77,6 +77,9 @@ class PartnerApplicationController extends Controller
         if ($type === 'partner') {
             $store = $stores->find($data['store']) ?? throw ValidationException::withMessages(['store' => ['This store was not found.']]);
             $tenant = $store->tenant;
+            if (! $tenant?->installation_enabled) {
+                throw ValidationException::withMessages(['store' => ['Installation centres are not open in this market.']]);
+            }
         } else {
             $tenant = Tenant::where('uuid', $data['marketplace'])->first();
             $open = collect($stores->marketplaces())->pluck('key');

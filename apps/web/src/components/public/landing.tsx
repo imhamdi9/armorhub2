@@ -61,7 +61,7 @@ export function factsOf(stores: { market?: string | null }[], showcase: PublicSh
 export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name: string; slug: string; headline: string | null; primary_color: string } }) {
   const badge = useSiteText("home", "badge_text", "Saudi Arabia · Egypt");
   const title = useSiteText("home", "hero_title", "Describe the job. Compare real quotes. Book who you trust.");
-  const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
+  const subtitle = useSiteText("home", "hero_subtitle", "A marketplace platform where any industry can open its own market: customers find trusted sellers and service providers, and every market works the same way.");
   const cta = useSiteText("home", "primary_cta", "Browse markets");
   const heroImage = useSiteValue("home", "hero_image_url");
   const cur = useSiteText("home", "example_currency", "SAR");   // the sample prices speak the market's own currency

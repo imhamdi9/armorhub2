@@ -53,6 +53,9 @@ class GuestOrderController extends Controller
 
         $company = $this->stores->find($data['store']) ?? abort(404);
         $market = $markets->forCompany($company);
+        if ($company->tenant && ! $company->tenant->selling_enabled) {
+            throw ValidationException::withMessages(['product_id' => ['Buying from the marketplace is not open in this market.']]);
+        }
         $product = Product::visibleInTenant($company->tenant_id)->whereNotNull('seller_id')->where('requires_shipping', true)->find($data['product_id']);
         if (! $product || ! $product->is_active || ($product->market !== null && $product->market !== $market?->code)
             || ($product->industry_id !== null && ! in_array($product->industry_id, $company->tenant?->industryIds() ?? [], true))) {

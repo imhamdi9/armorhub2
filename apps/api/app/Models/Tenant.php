@@ -22,6 +22,8 @@ class Tenant extends Model
         'domain',
         'status',
         'settings',
+        'selling_enabled',
+        'installation_enabled',
     ];
 
 public function industry(): BelongsTo
@@ -51,6 +53,8 @@ public function companies(): HasMany
 }
     protected $casts = [
         'settings' => 'array',
+        'selling_enabled' => 'boolean',
+        'installation_enabled' => 'boolean',
     ];
 
 

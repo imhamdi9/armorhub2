@@ -69,6 +69,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   const [paid, setPaid] = useState(false);
   const [planInfo, setPlanInfo] = useState<{ name: string; price_monthly: number; currency: string } | null>(null);
   const isSeller = type === "seller";
+  const [closed, setClosed] = useState(false);
 
   // Everyone picks a plan first: the form is the second step.
   useEffect(() => {
@@ -83,9 +84,10 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
   useEffect(() => {
     const load = isSeller
       ? getMarketplaces().then((l) => l.map((m) => ({ value: m.key, label: m.name, market: m.market, info: [m.country, m.currency, m.industries?.join(", ")].filter(Boolean).join(" · ") })))
-      : getOpenStores().then((l) => l.map((s) => ({ value: s.slug, label: s.name, market: s.market })));
+      : getOpenStores().then((l) => l.filter((s) => s.installation_enabled !== false).map((s) => ({ value: s.slug, label: s.name, market: s.market })));
     load.then((list) => {
       setTargets(list);
+      setClosed(list.length === 0);
       setTarget((current) => current || list[0]?.value || "");
     }).catch(() => undefined);
   }, [isSeller]);
@@ -214,7 +216,8 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
               </p>
             )}
             <PartnerTerms />
-            <form onSubmit={onSubmit} className="space-y-4">
+            {closed && <p role="status" className="rounded-lg bg-muted p-3 text-sm" data-testid="signup-closed">{isSeller ? tr("Selling is not open in any market right now.") : tr("Installation centres are not open in any market right now.")}</p>}
+            <form onSubmit={onSubmit} className="space-y-4" hidden={closed}>
               <div>
                 <Label htmlFor="target">{isSeller ? tr("Marketplace you want to sell in") : tr("Store you want to join")}</Label>
                 <select id="target" required className="h-10 w-full rounded-[10px] border border-input bg-background px-3" value={target} onChange={(e) => setTarget(e.target.value)}>

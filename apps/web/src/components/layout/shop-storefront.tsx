@@ -9,12 +9,12 @@ type Item = { name: string; seller: string; price: string; was?: string; rating:
 
 export const ITEMS: Item[] = [
   { name: "Level IIIA vest", seller: "Nile Armor Co.", price: "EGP 18,500", was: "EGP 21,000", rating: "4.8 (212)", tone: "#d9c7ad", icon: Shield },
-  { name: "Armoured SUV, whole car", seller: "Cairo Motors", price: "EGP 4.2M", rating: "4.9 (38)", tone: "#b98a6e", icon: Car },
+  { name: "Large item, delivered", seller: "Cairo Trading", price: "EGP 4.2M", rating: "4.9 (38)", tone: "#b98a6e", icon: Car },
   { name: "Ceramic plate set", seller: "Delta Defence", price: "EGP 9,900", rating: "4.7 (96)", tone: "#a9b39b", icon: Shield },
-  { name: "Door panel upgrade", seller: "Giza Garage", price: "EGP 62,000", rating: "4.6 (54)", tone: "#e6dccb", icon: Wrench },
+  { name: "Premium upgrade", seller: "Giza Workshop", price: "EGP 62,000", rating: "4.6 (54)", tone: "#e6dccb", icon: Wrench },
   { name: "Fleet transport", seller: "Suez Logistics", price: "From EGP 3,200", rating: "4.5 (71)", tone: "#8f8378", icon: Truck },
   { name: "Armour inspection", seller: "Alex Certify", price: "EGP 2,400", rating: "5.0 (19)", tone: "#c9b79a", icon: Package },
-  { name: "Run-flat tyre kit", seller: "Giza Garage", price: "EGP 14,800", rating: "4.7 (63)", tone: "#b5aea4", icon: Car },
+  { name: "Starter kit", seller: "Giza Workshop", price: "EGP 14,800", rating: "4.7 (63)", tone: "#b5aea4", icon: Car },
   { name: "Helmet, ballistic", seller: "Nile Armor Co.", price: "EGP 7,600", rating: "4.8 (140)", tone: "#cdbba0", icon: Shield },
 ];
 
@@ -145,7 +145,7 @@ export function ShopStorefront() {
             <a href="#" className="relative grid min-h-80 place-items-center overflow-hidden rounded-[28px] bg-[#332f2d] p-6 text-white">
               <Car className="size-24 text-white/20" aria-hidden />
               <div className="absolute left-6 top-6">
-                <p className="text-[32px] leading-none tracking-[-0.05em]">Cairo Motors</p>
+                <p className="text-[32px] leading-none tracking-[-0.05em]">Cairo Trading</p>
                 <p className="mt-2 flex items-center gap-1 text-[14px]"><Star className="size-3.5 fill-white" aria-hidden /> 4.9 · 38 reviews</p>
               </div>
             </a>

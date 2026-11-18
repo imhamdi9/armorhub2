@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { useMarketOffers } from "@/lib/market-offers";
 
 const TYPES = [
   { href: "/register", icon: "🛒", title: "I want to buy", text: "Order products and services, compare quotes from professionals near you and pay securely.", cta: "Create a customer account", note: "Instant: no review needed." },
@@ -12,6 +13,9 @@ const TYPES = [
 
 /** Where everyone starts: the three kinds of account. */
 export default function SignupChooserPage() {
+  const offers = useMarketOffers();
+  const shown = TYPES.filter((t) => !(t.href.endsWith("for=seller") && !offers.selling) && !(t.href.endsWith("for=partner") && !offers.installation));
+
   return (
     <div className="relative flex w-full flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="absolute end-4 top-4"><LanguageSwitcher /></div>
@@ -19,7 +23,7 @@ export default function SignupChooserPage() {
       <p className="mt-2 text-center text-muted-foreground">{tr("Choose the account that fits. You can sign in any time with the email you register.")}</p>
 
       <div className="mt-8 grid w-full max-w-5xl gap-4 md:grid-cols-3">
-        {TYPES.map((t) => (
+        {shown.map((t) => (
           <Link key={t.href} href={t.href} className="hover-lift flex flex-col rounded-[28px] border border-fog bg-white p-7">
             <span className="text-4xl" aria-hidden="true">{t.icon}</span>
             <h2 className="mt-4 text-xl font-black tracking-tight text-obsidian">{tr(t.title)}</h2>

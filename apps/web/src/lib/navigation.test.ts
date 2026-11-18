@@ -58,7 +58,10 @@ describe("hasRole", () => {
 describe("buildNavigation", () => {
   it("shows a customer their shopping screens, not catalogs, admin screens or per-industry lists", () => {
     const nav = titles(user(["customer"]));
-    expect(nav).toContain("Garage");
+    expect(nav).not.toContain("Garage");                                  // a garage only exists in markets that sell vehicle parts
+    const driver = user(["customer"]);
+    driver.industries = [{ id: 1, key: "automotive", name: "Automotive" }];
+    expect(titles(driver)).toContain("Garage");
     expect(nav).not.toContain("My Properties");
     expect(nav).not.toContain("Room Types");
     expect(nav).not.toContain("Markets");
@@ -117,7 +120,7 @@ describe("buildNavigation", () => {
   });
 
   it("still works without an industry or a user", () => {
-    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Garage", "Favourites", "Price requests", "Shop", "Installation requests", "Warranties", "Invite friends", "Account"]);
+    expect(titles(user(["customer"], false))).toEqual(["Dashboard", "Orders", "Cart", "Favourites", "Price requests", "Shop", "Installation requests", "Warranties", "Invite friends", "Account"]);
     expect(titles(null)).toEqual(["Dashboard", "Orders", "Products"]);
   });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { platformLogo } from "@/lib/platform-brand";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -109,7 +110,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-3 pb-1">
         <Link href="/" className="block rounded-2xl px-3 py-4 transition-colors hover:bg-[#0b1b3a]/5" aria-label={tr("ArmorHub")}>
           <span className="flex items-center gap-2.5">
-            <LogoMark className="h-[34px] w-[34px] shrink-0" />
+            {platformLogo() ? <img src={platformLogo() ?? ""} alt="" className="h-[34px] w-[34px] shrink-0 rounded-lg object-cover" /> : <LogoMark className="h-[34px] w-[34px] shrink-0" />}
             <span className="font-display text-xl font-bold tracking-tight text-[#0b1b3a]">{tr("ArmorHub")}</span>
           </span>
           <span className="mt-1 block ps-[44px] text-[12.5px] text-[#5b6784]">

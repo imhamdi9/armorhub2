@@ -87,7 +87,7 @@ export const payApplicationPlan = async (p: PlanPayment) => (await api.post<{ pa
 
 /** The open stores a business can apply to (public). */
 export async function getOpenStores() {
-  const { data } = await api.get<{ stores: { name: string; slug: string; market: string | null }[] }>("/public/storefronts");
+  const { data } = await api.get<{ stores: { name: string; slug: string; market: string | null; selling_enabled?: boolean; installation_enabled?: boolean }[] }>("/public/storefronts");
 
   return data.stores;
 }

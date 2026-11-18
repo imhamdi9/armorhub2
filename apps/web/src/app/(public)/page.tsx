@@ -6,7 +6,7 @@ import { getShowcase, getStoresChecked, getSurface } from "@/lib/public-api";
 export const metadata: Metadata = {
   title: "ArmorHub — trusted services, quoted by experts near you",
   description:
-    "A marketplace connecting customers with trusted service providers across automotive, home services, beauty and devices.",
+    "A marketplace platform where any industry can open its own market, with the same trusted way of buying, quoting and booking.",
   alternates: { canonical: "/" },
   openGraph: { title: "ArmorHub — trusted services, quoted by experts near you", type: "website", url: "/" },
 };

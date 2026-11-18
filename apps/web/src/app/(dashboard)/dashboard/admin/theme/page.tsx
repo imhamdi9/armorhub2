@@ -162,6 +162,13 @@ export default function ThemeEditorPage() {
 
           {tab === "style" && (
             <div className="space-y-4">
+              {([["name", "Platform name", 40], ["tagline", "Tagline", 120]] as const).map(([k, l, max]) => (
+                <div key={k}>
+                  <label htmlFor={`b-${k}`} className="mb-1 block text-sm font-medium">{tr(l)}</label>
+                  <Input id={`b-${k}`} value={(brand[k] as string) ?? ""} maxLength={max} placeholder={k === "name" ? "ArmorHub" : ""} onChange={(e) => setBrandValue(k, e.target.value)} />
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">{tr("The name and logo appear across the platform: sign-in pages, menus, emails and invoices. Leave empty to keep the built-in name.")}</p>
               {([["brand_color", "Accent colour (buttons)", "#8db8ff"], ["dark_color", "Dark colour (panels, footer)", "#0b1b3a"]] as const).map(([k, l, d]) => (
                 <div key={k}>
                   <label htmlFor={`c-${k}`} className="mb-1 block text-sm font-medium">{tr(l)}</label>

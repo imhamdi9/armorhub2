@@ -177,6 +177,9 @@ class CartService
         }
 
         $company = $user->company;
+        if ($company?->tenant && ! $company->tenant->selling_enabled) {
+            throw ValidationException::withMessages(['product_id' => ['Buying from the marketplace is not open in this market.']]);
+        }
         $market = $this->markets->forCompany($company)?->code;
         $product = Product::visibleInTenant($company?->tenant_id)->whereNotNull('seller_id')->where('requires_shipping', true)->find($productId);
 

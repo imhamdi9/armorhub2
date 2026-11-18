@@ -91,7 +91,7 @@ class OrderMessageController extends Controller
     /** @return array<string, mixed> */
     private function present(OrderMessage $m, User $viewer): array
     {
-        $name = $m->side === 'support' ? 'ArmorHub' : ($m->side === 'seller' ? null : null);
+        $name = $m->side === 'support' ? \App\Support\PlatformBrand::name() : ($m->side === 'seller' ? null : null);
 
         return ['id' => $m->id, 'side' => $m->side, 'mine' => $m->user_id === $viewer->id, 'kind' => $m->kind, 'body' => $m->body, 'name' => $name, 'handled' => $m->handled_at !== null, 'created_at' => $m->created_at?->toIso8601String()];
     }

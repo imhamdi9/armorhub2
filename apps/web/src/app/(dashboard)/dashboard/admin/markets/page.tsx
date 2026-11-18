@@ -103,6 +103,13 @@ function MarketCard({ m, all, onChange }: { m: MarketRow; all: Industry[]; onCha
         </div>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{m.country_name} · {m.currency}{m.store_slug && <> · <Link className="underline" href={`/s/${m.store_slug}`}>/s/{m.store_slug}</Link></>}</p>
+      <div className="mt-3 flex flex-wrap gap-2" data-testid="market-switches">
+        {([["selling_enabled", "Selling on the marketplace"], ["installation_enabled", "Installation centres"]] as const).map(([k, label]) => (
+          <Button key={k} size="sm" variant={m[k] ? "default" : "outline"} role="switch" aria-checked={m[k]} onClick={() => updateMarket(m.id, { [k]: !m[k] }).then(onChange)}>
+            {tr(label)}: {tr(m[k] ? "On" : "Off")}
+          </Button>
+        ))}
+      </div>
       <p className="mt-3 flex flex-wrap gap-2">{m.industries.map((i) => <Badge key={i.id} variant="outline">{tr(i.name)}</Badge>)}</p>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
         {([["sellers", "Sellers"], ["centres", "Service centres"], ["products", "Products"], ["orders", "Orders"]] as const).map(([k, label]) => (
@@ -133,6 +140,8 @@ export default function MarketsPage() {
   const [name, setName] = useState("");
   const [chosen, setChosen] = useState<number[]>([]);
   const [slug, setSlug] = useState("");
+  const [selling, setSelling] = useState(true);
+  const [installation, setInstallation] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -149,10 +158,10 @@ export default function MarketsPage() {
     e.preventDefault();
     setError(null); setBusy(true);
     try {
-      const created = await openMarket({ country, ...(name ? { name } : {}), industries: chosen, ...(slug ? { slug } : {}) });
+      const created = await openMarket({ country, ...(name ? { name } : {}), industries: chosen, ...(slug ? { slug } : {}), selling_enabled: selling, installation_enabled: installation });
       setMarkets((m) => [...(m ?? []), created]);
       setCountries((cs) => cs.map((c) => (c.code === country ? { ...c, open: true } : c)));
-      setCountry(""); setName(""); setChosen([]); setSlug("");
+      setCountry(""); setName(""); setChosen([]); setSlug(""); setSelling(true); setInstallation(true);
     } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
   }
 
@@ -198,6 +207,12 @@ export default function MarketsPage() {
         </div>
         <div><Label htmlFor="mname">{tr("Market name")}</Label><Input id="mname" value={name} onChange={(e) => setName(e.target.value)} placeholder="ArmorHub Egypt" /></div>
         <div><p className="mb-1 text-sm font-medium">{tr("Industries this market runs")}</p><IndustryChecks all={industries} value={chosen} onChange={setChosen} /></div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{tr("What this market offers")}</p>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selling} onChange={(e) => setSelling(e.target.checked)} /> {tr("Selling on the marketplace (sellers and products)")}</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={installation} onChange={(e) => setInstallation(e.target.checked)} /> {tr("Installation centres")}</label>
+          <p className="text-xs text-muted-foreground">{tr("You can change these any time. A switched-off feature disappears from this market's signup pages.")}</p>
+        </div>
         <div><Label htmlFor="mslug">{tr("Store address (optional)")}</Label><Input id="mslug" dir="ltr" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder={country ? `armorhub-${country.toLowerCase()}` : "armorhub-eg"} /></div>
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
         <Button type="submit" disabled={busy || !country || chosen.length === 0}>{tr("Open the market")}</Button>

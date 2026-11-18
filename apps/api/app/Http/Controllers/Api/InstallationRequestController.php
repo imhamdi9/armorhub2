@@ -45,6 +45,11 @@ class InstallationRequestController extends Controller
             : null;
         $subject = $vehicle?->label() ?? $data['subject'];
 
+        $tenant = \App\Models\Company::withoutGlobalScopes()->with('tenant')->find($user->company_id)?->tenant;
+        if ($tenant && ! $tenant->installation_enabled) {
+            throw ValidationException::withMessages(['subject' => ['Installation centres are not open in this market.']]);
+        }
+
         foreach ([$data['subject'] ?? '', $data['notes'] ?? '', ...$data['parts']] as $text) {
             if (ContactGuard::contains($text)) {
                 throw ValidationException::withMessages(['notes' => ['Please do not put phone numbers, links or contact details here. They are shared safely after you accept an offer.']]);

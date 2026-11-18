@@ -7,6 +7,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { themeVars, type ShellStore } from "@/components/public/shell";
 import { categoryNamesReady, loadCategoryNames } from "@/lib/category";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { useMarketOffers } from "@/lib/market-offers";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
 
@@ -34,6 +35,7 @@ function useSession() {
  */
 export function ShopShell({ store, active, children }: { store: ShellStore; active?: "home" | "products"; children: React.ReactNode }) {
   const user = useSession();
+  const offers = useMarketOffers();
   // Category names come in both languages from the API; the page draws once they are here.
   const [namesReady, setNamesReady] = useState(categoryNamesReady());
   useEffect(() => { if (!namesReady) loadCategoryNames().then((ok) => ok && setNamesReady(true)); }, [namesReady]);
@@ -108,7 +110,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
               <p className="mb-2 text-sm">{tr("Account")}</p>
               <Link className={link} href="/login">{tr("Sign in")}</Link>
               <Link className={link} href={signup}>{tr("Create an account")}</Link>
-              <Link className={link} href={`/partner-signup?store=${encodeURIComponent(store.slug)}`}>{tr("Become a partner")}</Link>
+              {(offers.installationStores.includes(store.slug) || !offers.ready) && <Link className={link} href={`/partner-signup?store=${encodeURIComponent(store.slug)}`}>{tr("Become a partner")}</Link>}
               {store.contact_email && <a className={link} href={`mailto:${store.contact_email}`}>{store.contact_email}</a>}
               {store.contact_phone && <p dir="ltr" className="py-1 text-start text-sm text-white/70">{store.contact_phone}</p>}
             </div>

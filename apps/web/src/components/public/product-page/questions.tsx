@@ -71,7 +71,7 @@ export function QuestionsSection({ productId, items }: { productId: number; item
         <form onSubmit={submit} className="mt-5 rounded-2xl border border-fog bg-brand-wash p-5" data-testid="question-form">
           <label className="font-semibold text-obsidian" htmlFor="ask">{tr("Ask the seller")}</label>
           <textarea id="ask" value={text} onChange={(e) => { setText(e.target.value); setSent(false); }} minLength={8} maxLength={300} rows={2} required
-            placeholder={tr("For example: does it fit my car?")} className="mt-2 w-full rounded-xl border border-fog bg-white p-3 text-sm" />
+            placeholder={tr("For example: does it work with mine?")} className="mt-2 w-full rounded-xl border border-fog bg-white p-3 text-sm" />
           {error && <p className="mt-2 text-sm text-red-600" role="alert">{error}</p>}
           {sent && <p className="mt-2 text-sm text-brand-ink" role="status">{tr("Sent. The seller will answer here and you will be notified.")}</p>}
           <button type="submit" className="btn-brand mt-3 px-6 py-2.5 text-sm" disabled={text.trim().length < 8}>{tr("Send question")}</button>

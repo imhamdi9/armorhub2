@@ -23,7 +23,7 @@ class MarketLauncher
     }
 
     /** @param list<int> $industryIds */
-    public function open(string $country, string $name, array $industryIds, ?string $slug, ?User $by = null): Tenant
+    public function open(string $country, string $name, array $industryIds, ?string $slug, ?User $by = null, array $switches = []): Tenant
     {
         $country = strtoupper($country);
 
@@ -38,30 +38,33 @@ class MarketLauncher
             throw ValidationException::withMessages(['industries' => ['Choose at least one industry for the market.']]);
         }
 
-        return DB::transaction(function () use ($country, $name, $industries, $slug, $by) {
-            $tenant = Tenant::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'market' => $country, 'status' => 'active', 'industry_id' => null]);
+        return DB::transaction(function () use ($country, $name, $industries, $slug, $by, $switches) {
+            $tenant = Tenant::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'market' => $country, 'status' => 'active', 'industry_id' => null] + $switches);
             $tenant->industries()->sync($industries);
 
             $company = Company::create([
                 'tenant_id' => $tenant->id, 'name' => $name, 'status' => 'active', 'slug' => $slug ? Company::uniqueSlug($slug) : Company::uniqueSlug('armorhub-'.strtolower($country)),
                 'settings' => ['storefront' => ['enabled' => true, 'headline' => $name, 'primary_color' => '#111827']],
             ]);
-            Audit::record('market.opened', $tenant, ['country' => $country, 'name' => $name, 'industries' => $industries, 'store' => $company->slug], $by);
+            Audit::record('market.opened', $tenant, ['country' => $country, 'name' => $name, 'industries' => $industries, 'store' => $company->slug] + $switches, $by);
 
             return $tenant;
         });
     }
 
     /** @param list<int> $industryIds */
-    public function update(Tenant $tenant, ?string $name, ?array $industryIds, ?string $status, ?User $by = null): Tenant
+    public function update(Tenant $tenant, ?string $name, ?array $industryIds, ?string $status, ?User $by = null, array $switches = []): Tenant
     {
-        return DB::transaction(function () use ($tenant, $name, $industryIds, $status, $by) {
+        return DB::transaction(function () use ($tenant, $name, $industryIds, $status, $by, $switches) {
             if ($name !== null) {
                 $tenant->update(['name' => $name]);
                 Company::withoutGlobalScopes()->where('tenant_id', $tenant->id)->stores()->whereNotNull('slug')->update(['name' => $name]);
             }
             if ($status !== null) {
                 $tenant->update(['status' => $status]);
+            }
+            if ($switches !== []) {
+                $tenant->update($switches);
             }
             if ($industryIds !== null) {
                 $keep = Industry::whereIn('id', $industryIds)->pluck('id')->all();
@@ -70,7 +73,7 @@ class MarketLauncher
                 }
                 $tenant->industries()->sync($keep);
             }
-            Audit::record('market.updated', $tenant, ['name' => $name, 'status' => $status, 'industries' => $industryIds], $by);
+            Audit::record('market.updated', $tenant, ['name' => $name, 'status' => $status, 'industries' => $industryIds] + $switches, $by);
 
             return $tenant->fresh();
         });

@@ -6,12 +6,12 @@ import { Band, ITEMS, ShopHero, ShopShell, SHADOW, ACCENT } from "./shop-storefr
 const card = "rounded-[28px] bg-white p-6";
 const pill = "inline-flex h-11 items-center rounded-full px-6 text-[16px]";
 
-const PARTNERS = ["Nile Armor Co.", "Cairo Motors", "Delta Defence", "Giza Garage", "Suez Logistics", "Alex Certify"];
+const PARTNERS = ["Nile Armor Co.", "Cairo Trading", "Delta Defence", "Giza Workshop", "Suez Logistics", "Alex Certify"];
 const MARKETS = ["Egypt", "Saudi Arabia", "United Arab Emirates", "Jordan"];
 const FAQ = [
   ["How do I know a seller is genuine?", "Every seller uploads documents and is approved by our team before listing anything."],
   ["When does the seller get paid?", "Payment is held until you receive the order, then released to the seller."],
-  ["Can I ask for a custom quote?", "Yes. Describe your vehicle or need and verified partners reply with prices."],
+  ["Can I ask for a custom quote?", "Yes. Describe what you need and verified partners reply with prices."],
 ];
 
 export function ShopHome() {
@@ -73,7 +73,7 @@ export function ShopHome() {
       <section className="mt-16" aria-labelledby="uc-h">
         <h2 id="uc-h" className="mb-6 text-[20px] tracking-[-0.05em]">Made for</h2>
         <div className="grid gap-3 md:grid-cols-3">
-          {[["Individuals", "Protect your car or yourself.", Shield, "#d9c7ad"], ["Fleets and companies", "Quotes and transport for many vehicles.", Car, "#b98a6e"], ["Workshops and installers", "Get orders and manage jobs.", Wrench, "#a9b39b"]].map(([t, d, I, c]) => {
+          {[["Individuals", "Find what you need from trusted sellers.", Shield, "#d9c7ad"], ["Fleets and companies", "Quotes and delivery for many items.", Car, "#b98a6e"], ["Workshops and installers", "Get orders and manage jobs.", Wrench, "#a9b39b"]].map(([t, d, I, c]) => {
             const Icon = I as typeof Shield;
             return (
               <a key={t as string} href="#" className="rounded-[28px] bg-white p-2" style={{ boxShadow: SHADOW }}>

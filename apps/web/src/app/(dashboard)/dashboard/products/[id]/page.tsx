@@ -52,6 +52,8 @@ export default function ProductDetailPage() {
   const [details, setDetails] = useState({
     name: "", name_ar: "", description_ar: "", fits_note: "", highlights_ar: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", sale_mode: "fixed" as "fixed" | "quote", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
   });
+  // "Which cars does it fit" only makes sense where vehicle parts are sold (or where this product already says so).
+  const vehicleParts = !!user?.industries?.some((i) => i.key === "automotive") || user?.industry?.key === "automotive" || !!(product as { fitment_required?: boolean } | null)?.fitment_required || !!details.fits_note;
   const [content, setContent] = useState<PageContent>({});
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
   const [detailsMsg, setDetailsMsg] = useState<string | null>(null);
@@ -233,7 +235,7 @@ export default function ProductDetailPage() {
             value={details.description_ar}
             onChange={(e) => setDetails({ ...details, description_ar: e.target.value })}
           />
-          <label className="col-span-2 grid gap-1 text-sm" data-testid="fits-note">
+          {vehicleParts && <label className="col-span-2 grid gap-1 text-sm" data-testid="fits-note">
             <span className="font-medium">{tr("Which cars or motorcycles does it fit? (optional)")}</span>
             <textarea
               aria-label={tr("Which cars or motorcycles does it fit? (optional)")}
@@ -245,7 +247,7 @@ export default function ProductDetailPage() {
               onChange={(e) => setDetails({ ...details, fits_note: e.target.value })}
             />
             <span className="text-xs text-muted-foreground">{tr("Shoppers see this in bold on the product page.")}</span>
-          </label>
+          </label>}
           <textarea
             aria-label={tr("Highlights (one per line)")}
             placeholder={tr("Highlights (one per line)")}
@@ -352,7 +354,7 @@ export default function ProductDetailPage() {
         </>
       )}
       </>)}
-      {product && canEdit && !sellerView && <div className="mt-8"><FitmentEditor productId={product.id} /></div>}
+      {product && canEdit && !sellerView && vehicleParts && <div className="mt-8"><FitmentEditor productId={product.id} /></div>}
     </div>
   );
 }

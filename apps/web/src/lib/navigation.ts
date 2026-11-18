@@ -140,7 +140,8 @@ function buildNavigationFor(user: User | null): NavItem[] {
   // Only plain customers shop: staff, sellers and centres have their own screens.
   if (hasRole(user, "customer") && !hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager", "technician")) {
     items.push({ title: "Cart", href: "/dashboard/cart", icon: "orders" });
-    items.push({ title: "Garage", href: "/dashboard/garage", icon: "items" });
+    // Only markets that sell vehicle parts need a garage of cars.
+    if (user?.industries?.some((i) => i.key === "automotive")) items.push({ title: "Garage", href: "/dashboard/garage", icon: "items" });
     items.push({ title: "Favourites", href: "/dashboard/favourites", icon: "products" });
     items.push({ title: "Price requests", href: "/dashboard/quotes", icon: "requests" });
   }

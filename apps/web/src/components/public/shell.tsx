@@ -7,6 +7,7 @@ import { Icon, LogoMark } from "@/components/public/art";
 import { useSite, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { LanguageSwitcher, tr, useLocale } from "@/lib/i18n";
 import { FONT_STACKS, imageSrc, pickText } from "@/lib/surfaces";
+import { useMarketOffers } from "@/lib/market-offers";
 import { textOn } from "@/lib/public-api";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -142,10 +143,11 @@ function Header({ store }: { store?: ShellStore }) {
 const COUNTRIES = [["SA", "Saudi Arabia"], ["EG", "Egypt"]];
 
 function Footer({ store }: { store?: ShellStore }) {
+  const offers = useMarketOffers();
   const home = store ? `/s/${store.slug}` : "/";
   const siteName = useSiteText("brand", "name", "ArmorHub");
   const siteLogo = useSiteValue("brand", "logo_url");
-  const blurb = useSiteText("home", "footer_blurb", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
+  const blurb = useSiteText("home", "footer_blurb", "A marketplace platform where any industry can open its own market: customers find trusted sellers and service providers, and every market works the same way.");
   const name = store?.name ?? tr(siteName);
   const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
   const col = "text-sm font-bold text-on-dark-accent";
@@ -194,8 +196,8 @@ function Footer({ store }: { store?: ShellStore }) {
           <div className="mt-3">
             <Link className={link} href="/login">{tr("Sign in")}</Link>
             <Link className={link} href={store ? `/register?store=${encodeURIComponent(store.slug)}` : "/signup"}>{tr("Create an account")}</Link>
-            <Link className={link} href={store ? `/partner-signup?store=${encodeURIComponent(store.slug)}` : "/partner-signup"}>{tr("Become a partner")}</Link>
-            <Link className={link} href="/seller-signup">{tr("Sell on ArmorHub")}</Link>
+            {(store ? offers.installationStores.includes(store.slug) || !offers.ready : offers.installation) && <Link className={link} href={store ? `/partner-signup?store=${encodeURIComponent(store.slug)}` : "/partner-signup"}>{tr("Become a partner")}</Link>}
+            {offers.selling && <Link className={link} href="/seller-signup">{tr("Sell on ArmorHub")}</Link>}
             {!store && <Link className={link} href="/login">{tr("For businesses: sign in")}</Link>}
           </div>
         </div>

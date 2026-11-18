@@ -1,5 +1,6 @@
 "use client";
 
+import { platformLogo } from "@/lib/platform-brand";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,15 +39,15 @@ export function AuthBrand({ variant = "bar" }: { variant?: "panel" | "bar" }) {
 
   const href = brand ? `/s/${encodeURIComponent(brand.slug)}` : "/";
   const name = brand?.name ?? tr("ArmorHub");
-  const logo = brand?.logo_url
+  const logo = (brand?.logo_url ?? platformLogo())
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={brand.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+    ? <img src={brand?.logo_url ?? platformLogo() ?? ""} alt="" className="h-10 w-10 rounded-xl object-cover" />
     : <LogoMark className="h-10 w-10" />;
 
   if (variant === "panel") {
     return (
       <Link href={href} aria-label={name} className="flex w-max items-center gap-3 rounded-full border border-white/15 bg-white/10 py-2 pe-5 ps-2 text-white transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-        <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-lime">{brand?.logo_url ? logo : <LogoMark className="h-10 w-10" />}</span>
+        <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-lime">{brand?.logo_url || platformLogo() ? logo : <LogoMark className="h-10 w-10" />}</span>
         <span className="leading-tight">
           <span className="font-display block text-[19px] font-semibold tracking-tight">{name}</span>
           <span className="block text-xs text-white/70">{brand ? tr("Back to the store") : tr("Back to the home page")}</span>
