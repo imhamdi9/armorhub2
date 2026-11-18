@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { api } from "@/services/api";
 import { acceptQuote, closeQuoteRequest, createQuoteRequest, getQuoteRequests, type QuoteRequest } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Asking sellers for a price on something not sold from a shelf, then choosing between their numbered quotes. */
 export default function QuotesPage() {
@@ -64,7 +65,7 @@ export default function QuotesPage() {
         </form>
       )}
 
-      {rows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : rows.length === 0 ? <EmptyState>{tr("No price requests yet.")}</EmptyState> : rows.map((r) => (
+      {rows === null ? <LoadingBlock /> : rows.length === 0 ? <EmptyState>{tr("No price requests yet.")}</EmptyState> : rows.map((r) => (
         <section key={r.id} className="rounded-xl border p-4" data-testid="quote-request">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold">{r.number} · {r.title ?? r.category} × {r.quantity}</p>

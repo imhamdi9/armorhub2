@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getWarranties } from "@/services/platform.service";
 import type { Warranty } from "@/types/platform";
 import { formatDate, tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function WarrantiesPage() {
   const [items, setItems] = useState<Warranty[] | null>(null);
@@ -20,7 +21,7 @@ export default function WarrantiesPage() {
       <PageHeader title={tr("Warranties")} />
 
       {items === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : items.length === 0 ? (
         <EmptyState>{tr("No warranties yet. One is issued when a warranted service is completed.")}</EmptyState>
       ) : (

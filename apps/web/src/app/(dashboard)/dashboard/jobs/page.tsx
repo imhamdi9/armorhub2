@@ -12,6 +12,7 @@ import { statusLabel } from "@/lib/orders";
 import { completeJob, getJobs, scheduleJob, startJob } from "@/services/platform.service";
 import type { Order } from "@/types/platform";
 import { formatDateTime, tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Paid work assigned to the signed-in user's partner: schedule, start, complete. */
 export default function JobsPage() {
@@ -45,7 +46,7 @@ export default function JobsPage() {
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {jobs === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : jobs.length === 0 ? (
         <EmptyState>{tr("No jobs yet. Jobs appear here once a customer accepts your quote and pays.")}</EmptyState>
       ) : (

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, tr } from "@/lib/i18n";
 import { getKpis, type Kpis } from "@/services/kpi.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const money = (m: Record<string, number | null>) => {
   const rows = Object.entries(m).filter(([, v]) => v !== null) as [string, number][];
@@ -53,7 +54,7 @@ export default function KpisPage() {
       </div>
 
       {!kpis ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : (
         <div className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -6,7 +6,7 @@ import { getStore, getStoreProducts } from "@/lib/public-api";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ q?: string; category?: string; page?: string; industry?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; page?: string; industry?: string; sort?: string; vehicle_model_id?: string; year?: string; compatible?: string }>;
 };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -31,13 +31,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 export default async function ProductsPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { q = "", category = "", page = "", industry = "", sort: rawSort = "" } = await searchParams;
+  const { q = "", category = "", page = "", industry = "", sort: rawSort = "", vehicle_model_id: carModel = "", year: carYear = "", compatible = "" } = await searchParams;
+  // "Only what fits my car": the model and year travel in the address, so the list stays a plain server-rendered page.
+  const fit = /^\d+$/.test(carModel) && /^\d{4}$/.test(carYear) && compatible === "1" ? { vehicle_model_id: carModel, year: carYear, compatible: "1" } : undefined;
   const sort = ["price_asc", "price_desc", "name"].includes(rawSort) ? rawSort : "";
   const first = await getStore(slug);
   if (first?.merged_into) redirect(`/s/${first.merged_into}/products${industry ? `?industry=${encodeURIComponent(industry)}` : ""}`);
-  const [store, result] = await Promise.all([Promise.resolve(first), getStoreProducts(slug, { q, category, page, industry, sort })]);
+  const [store, result] = await Promise.all([Promise.resolve(first), getStoreProducts(slug, { q, category, page, industry, sort, ...(fit ?? {}) })]);
 
   if (!store) notFound();
 
-  return <Catalog store={store.store} result={result} categories={store.categories} counts={store.category_counts} industries={store.industries ?? []} industryCounts={store.industry_counts ?? {}} industry={industry} q={q} category={category} sort={sort} />;
+  return <Catalog store={store.store} result={result} categories={store.categories} counts={store.category_counts} industries={store.industries ?? []} industryCounts={store.industry_counts ?? {}} industry={industry} q={q} category={category} sort={sort} fit={fit} />;
 }

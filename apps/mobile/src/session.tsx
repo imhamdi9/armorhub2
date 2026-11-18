@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, loadToken, saveToken, setUnauthorizedHandler } from "@/api";
 import { registerForPush, unregisterPush } from "@/push";
 
-export type User = { id: number; name: string; email: string; phone?: string | null; company_id?: number | null };
+export type User = { id: number; name: string; email: string; phone?: string | null; company_id?: number | null; store_slug?: string | null };
 export type SocialProvider = "google" | "apple";
 
 type Session = {

@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { getSettings, resetSetting, saveSettings } from "@/services/admin.service";
 import type { SettingRow } from "@/types/admin";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const GROUPS: Record<string, string> = { platform: "Platform", installation: "Installation by centres", content: "Content", security: "Security" };
 
@@ -66,7 +67,7 @@ export default function AdminSettingsPage() {
   }
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!rows) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!rows) return <LoadingBlock />;
 
   return (
     <div className="max-w-3xl">

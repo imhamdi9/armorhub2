@@ -41,6 +41,9 @@ class Order extends Model
         'customer_id',
         'group_id',
         'quantity',
+        'shipping_amount',
+        'discount_amount',
+        'promo_code',
         'product_id',
         'subject_type',
         'subject_id',
@@ -74,7 +77,7 @@ class Order extends Model
 
     public function getPayableAmountAttribute(): float
     {
-        return round((float) $this->total_amount + (float) $this->service_fee_amount, 2);
+        return round((float) $this->total_amount + (float) $this->service_fee_amount + (float) $this->shipping_amount - (float) $this->discount_amount, 2);
     }
 
     protected function casts(): array

@@ -38,3 +38,12 @@ export const STATUS_TEXT: Record<string, string> = {
 };
 
 export type Showcase = { industries: { industry: { key: string; name: string }; stores: { name: string; slug: string; primary_color: string; market: string | null; products: Product[] }[] }[] };
+
+export type CartLine = { id: number; product_id: number; name: string | null; quantity: number; unit_price: number | null; line_total: number | null; currency: string | null; problem: string | null };
+export type CartView = {
+  items: CartLine[]; currency: string | null; items_amount: number; service_fee_amount: number; shipping_amount: number; discount_amount: number;
+  promo_code: string | null; promo_problem: string | null; eta_days: number | null; free_shipping_over: number | null; payable_amount: number; can_checkout: boolean;
+};
+export type Address = { id: number; label: string | null; name: string; phone: string; line1: string; line2: string | null; city: string; is_default: boolean };
+export type RefundState = { request: { kind: string; status: string; note: string | null } | null; refund_status: string | null; refund_amount: number | null; can_request: boolean; return_days: number };
+export type OrderMessage = { id: number; side: string; mine: boolean; kind: string; body: string; created_at: string };

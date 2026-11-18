@@ -12,6 +12,7 @@ import { formatDateTime, tr } from "@/lib/i18n";
 import { hasRole } from "@/lib/navigation";
 import { applicationDocumentUrl, approvePartnerApplication, getPartnerApplications, rejectPartnerApplication } from "@/services/platform.service";
 import type { PartnerApplication } from "@/types/platform";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const STATUSES = [["pending", "Pending"], ["approved", "Approved"], ["rejected", "Rejected"]] as const;
 const KINDS = [["", "All"], ["partner", "Partners"], ["seller", "Sellers"]] as const;
@@ -87,7 +88,7 @@ export default function PartnerApplicationsPage() {
       {error && <p className="mb-4 text-sm text-red-500" role="alert">{error}</p>}
 
       {items === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : items.length === 0 ? (
         <EmptyState>{tr("No applications here.")}</EmptyState>
       ) : (

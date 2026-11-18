@@ -13,6 +13,7 @@ import {
   testShippingProvider,
 } from "@/services/admin.service";
 import type { PaymentProviderInfo } from "@/types/admin";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Shipping providers are drivers an admin connects here. The built-in manual one works with any carrier. */
 export default function AdminShippingPage() {
@@ -24,7 +25,7 @@ export default function AdminShippingPage() {
   }, []);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!providers) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!providers) return <LoadingBlock />;
 
   return (
     <div className="max-w-4xl">

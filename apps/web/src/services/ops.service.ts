@@ -108,3 +108,19 @@ export const getFavourites = async () => (await api.get<FavouriteProduct[]>("/fa
 export const getFavouriteIds = async () => (await api.get<number[]>("/favourites/ids")).data;
 export const addFavourite = async (productId: number) => (await api.post("/favourites", { product_id: productId })).data;
 export const removeFavourite = async (productId: number) => (await api.delete(`/favourites/${productId}`)).data;
+
+export interface OrderMessage { id: number; side: "customer" | "seller" | "support"; mine: boolean; kind: "message" | "problem"; body: string; created_at: string }
+export const getOrderMessages = async (orderId: number) => (await api.get<OrderMessage[]>(`/orders/${orderId}/messages`)).data;
+export const sendOrderMessage = async (orderId: number, body: string, problem = false) => (await api.post<OrderMessage>(`/orders/${orderId}/messages`, { body, ...(problem ? { problem: true } : {}) })).data;
+
+export interface OrderProblem { id: number; order_id: number; product: string | null; customer: string | null; body: string; created_at: string }
+export const getOrderProblems = async () => (await api.get<OrderProblem[]>("/admin/order-problems")).data;
+export const markProblemHandled = async (id: number) => (await api.post(`/admin/order-problems/${id}/handled`)).data;
+
+export interface PromoCode { id: number; code: string; type: "percent" | "fixed"; value: number; max_discount: number | null; min_order: number | null; market: string | null; starts_at: string | null; ends_at: string | null; usage_limit: number | null; per_customer_limit: number; is_active: boolean; used: number; given: number }
+export const getPromoCodes = async () => (await api.get<PromoCode[]>("/admin/promo-codes")).data;
+export const savePromoCode = async (body: Record<string, unknown>, id?: number) => (id ? await api.put<PromoCode>(`/admin/promo-codes/${id}`, body) : await api.post<PromoCode>("/admin/promo-codes", body)).data;
+
+export interface NotificationPrefs { notify_email: boolean; notify_push: boolean }
+export const getNotificationPrefs = async () => (await api.get<NotificationPrefs>("/me/notification-preferences")).data;
+export const saveNotificationPrefs = async (body: Partial<NotificationPrefs>) => (await api.put<NotificationPrefs>("/me/notification-preferences", body)).data;

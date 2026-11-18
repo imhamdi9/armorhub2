@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { cancelSubscription, chooseSubscription, getSubscription, type SubscriptionView } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** A partner's or seller's own plan: what it includes, how much of the month is used, and the other plans to move to. */
 export default function SubscriptionPage() {
@@ -31,7 +32,7 @@ export default function SubscriptionPage() {
   }
 
   if (error && !view) return <p role="alert" className="text-red-600">{error}</p>;
-  if (!view) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!view) return <LoadingBlock />;
 
   const { plan, usage } = view;
   const pct = usage.limit ? Math.min(100, Math.round((usage.customers / usage.limit) * 100)) : 0;

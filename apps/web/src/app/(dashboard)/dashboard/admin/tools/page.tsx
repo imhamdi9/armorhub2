@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { approveRefundRequest, getRefundQueue, importProducts, markRefundSent, refundOrder, rejectRefundRequest, type RefundQueueItem } from "@/services/ops.service";
+import { approveRefundRequest, getOrderProblems, getRefundQueue, markProblemHandled, type OrderProblem, importProducts, markRefundSent, refundOrder, rejectRefundRequest, type RefundQueueItem } from "@/services/ops.service";
 import { formatMoney } from "@/lib/i18n";
 
 type Result = { tone: "ok" | "warn"; text: string; rows?: { row: number; messages: string[] }[] };
@@ -19,6 +19,9 @@ export default function AdminToolsPage() {
   const [file, setFile] = useState<File | null>(null);
   const [queue, setQueue] = useState<RefundQueueItem[]>([]);
   const [queueErr, setQueueErr] = useState<string | null>(null);
+  const [problems, setProblems] = useState<OrderProblem[]>([]);
+  const loadProblems = () => getOrderProblems().then(setProblems).catch(() => setProblems([]));
+  useEffect(() => { loadProblems(); }, []);
   const loadQueue = () => getRefundQueue().then(setQueue).catch(() => setQueue([]));
   useEffect(() => { loadQueue(); }, []);
   async function decide(fn: () => Promise<unknown>) {
@@ -40,6 +43,24 @@ export default function AdminToolsPage() {
   return (
     <div className="space-y-8">
       <PageHeader title={tr("Operations tools")} />
+
+      <section className="rounded-xl border p-4" data-testid="problem-queue">
+        <h2 className="mb-1 text-lg font-semibold">{tr("Problems reported by customers")}</h2>
+        {problems.length === 0 ? <p className="text-sm text-muted-foreground">{tr("No problems waiting.")}</p> : (
+          <ul className="divide-y rounded-lg border">
+            {problems.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                <span><b>#{p.order_id}</b> · {p.product} · {p.customer}</span>
+                <span className="text-muted-foreground">{p.body}</span>
+                <span className="flex gap-2">
+                  <a className="inline-flex h-8 items-center rounded-full border px-4 text-[0.8rem] font-semibold" href={`/dashboard/orders/${p.order_id}`}>{tr("Open the order")}</a>
+                  <Button size="sm" onClick={() => markProblemHandled(p.id).then(loadProblems)}>{tr("Mark as handled")}</Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border p-4" data-testid="refund-queue">
         <h2 className="mb-1 text-lg font-semibold">{tr("Return requests")}</h2>

@@ -15,6 +15,7 @@ import {
   testProvider,
 } from "@/services/admin.service";
 import type { AdminPayment, PaymentProviderInfo } from "@/types/admin";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Payment providers are drivers an admin configures and switches here at any time. */
 export default function AdminPaymentsPage() {
@@ -28,7 +29,7 @@ export default function AdminPaymentsPage() {
   }, []);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!providers) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!providers) return <LoadingBlock />;
 
   return (
     <div className="max-w-4xl">

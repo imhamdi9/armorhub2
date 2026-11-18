@@ -47,7 +47,7 @@ class OrderRefunds
             $bucket = null;
             $entries = collect();
             if ($sellerId) {
-                $entries = SellerLedgerEntry::where('order_id', $o->id)->whereIn('type', ['sale', 'commission'])->get();
+                $entries = SellerLedgerEntry::where('order_id', $o->id)->whereIn('type', ['sale', 'commission', 'shipping'])->get();
                 if ($entries->contains(fn ($e) => ! in_array($e->status, ['held', 'available'], true) || $e->payout_id !== null)) {
                     throw ValidationException::withMessages(['order' => ['The seller was already paid for this order; settle it with the seller first.']]);
                 }
@@ -56,12 +56,13 @@ class OrderRefunds
 
             $cur = $o->currency;
             $payable = (float) $o->payable_amount;
-            $net = (float) $o->total_amount - (float) $commission->amount;
+            $net = (float) $o->total_amount - (float) $commission->amount + (float) $o->shipping_amount;
 
             $this->ledger->post("order:{$o->id}:refunded", 'order_refunded', array_filter([
                 $sellerId ? [$bucket, $cur, $net] : [Accounts::REV_COMMISSION, $cur, $net],
                 [Accounts::REV_COMMISSION, $cur, (float) $commission->amount],
                 [Accounts::REV_SERVICE_FEE, $cur, (float) $o->service_fee_amount],
+                [Accounts::EXP_PROMO, $cur, -(float) $o->discount_amount],        // the discount is no longer the platform's cost
                 [Accounts::REFUND_DUE, $cur, -$payable],
             ]), $o, "Order #{$o->id} refunded");
 

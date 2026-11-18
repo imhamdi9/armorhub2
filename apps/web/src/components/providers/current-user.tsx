@@ -3,6 +3,7 @@
 import { isAxiosError } from "axios";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 import { Button } from "@/components/ui/button";
 import { tr } from "@/lib/i18n";
@@ -59,7 +60,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   }
 
   if (!user) {
-    return <div className="p-6 text-muted-foreground" role="status">{tr("Loading...")}</div>;
+    return <div className="p-6"><LoadingBlock rows={4} /></div>;
   }
 
   return (

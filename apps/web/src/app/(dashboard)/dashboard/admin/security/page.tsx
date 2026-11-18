@@ -8,6 +8,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatNumber, tr } from "@/lib/i18n";
 import { getSecurity, revokeAllSessions } from "@/services/admin.service";
 import type { SecurityReport } from "@/types/admin";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const STATUS: Record<string, { dot: string; label: string }> = {
   ok: { dot: "bg-green-500", label: "OK" },
@@ -37,7 +38,7 @@ export default function AdminSecurityPage() {
   }
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!report) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!report) return <LoadingBlock />;
 
   const last = report.last_24h;
 

@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { aliasLabel } from "@/lib/navigation";
 import { createMyItem, getCatalog, getMyItems } from "@/services/platform.service";
 import { tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Row = Record<string, unknown>;
 
@@ -62,7 +63,7 @@ export default function MyItemsPage() {
       )}
 
       {rows === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : rows.length === 0 ? (
         <EmptyState>{tr("Nothing here yet.")}</EmptyState>
       ) : (

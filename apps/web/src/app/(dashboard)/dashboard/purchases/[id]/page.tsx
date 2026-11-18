@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatMoney, tr } from "@/lib/i18n";
 import { OrderStatusStrip } from "@/components/orders/status-strip";
 import { cancelPurchase, getPurchase, payPurchase, type Purchase } from "@/services/cart.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** One purchase: what was bought, from whom, and where each part is. Each line is its own order with its own status. */
 export default function PurchasePage() {
@@ -38,7 +39,7 @@ export default function PurchasePage() {
     try { setPurchase(await cancelPurchase(purchase.id)); } catch (e) { setError(errorMessage(e)); }
   }
 
-  if (!purchase) return error ? <p role="alert" className="text-red-600">{error}</p> : <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!purchase) return error ? <p role="alert" className="text-red-600">{error}</p> : <LoadingBlock />;
 
   return (
     <div>
@@ -62,6 +63,8 @@ export default function PurchasePage() {
 
       <dl className="mt-4 max-w-sm space-y-1 text-sm">
         <div className="flex justify-between"><dt>{tr("Items")}</dt><dd>{formatMoney(purchase.items_amount, purchase.currency)}</dd></div>
+        {(purchase.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-700"><dt>{tr("Discount")}</dt><dd>−{formatMoney(purchase.discount_amount ?? 0, purchase.currency)}</dd></div>}
+        {(purchase.shipping_amount ?? 0) > 0 && <div className="flex justify-between"><dt>{tr("Delivery")}</dt><dd>{formatMoney(purchase.shipping_amount ?? 0, purchase.currency)}</dd></div>}
         {purchase.service_fee_amount > 0 && <div className="flex justify-between"><dt>{tr("Platform fee")}</dt><dd>{formatMoney(purchase.service_fee_amount, purchase.currency)}</dd></div>}
         <div className="flex justify-between text-base font-bold"><dt>{tr(purchase.status === "paid" ? "Total paid" : "Total to pay")}</dt><dd>{formatMoney(purchase.payable_amount, purchase.currency)}</dd></div>
       </dl>

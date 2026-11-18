@@ -16,6 +16,7 @@ import {
   acceptOffer, cancelInstallation, confirmInstallation, disputeInstallation, getInstallation, getLoyalty, payInstallation, reportContact, reviewInstallation, sendEvidence,
   type CustomerJob, type Offer,
 } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const BADGE: Record<string, string> = { closest: "Closest", fastest: "Fastest", best_rated: "Best rated" };
 
@@ -45,7 +46,7 @@ export default function InstallationDetailPage() {
   }
 
   if (error && !job) return <p role="alert" className="text-red-600">{error}</p>;
-  if (!job) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!job) return <LoadingBlock />;
   const cur = job.currency ?? "EGP";
   const picking = job.status === "open" || job.status === "offers_received";
 

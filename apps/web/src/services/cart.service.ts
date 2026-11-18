@@ -19,6 +19,14 @@ export interface CartView {
   currency: string | null;
   items_amount: number;
   service_fee_amount: number;
+  /** What delivery costs (0 when free), the usual days it takes, and the cart value above which it is free. */
+  shipping_amount: number;
+  /** A discount code applied to the cart: what it takes off, or why the code was dropped. */
+  discount_amount: number;
+  promo_code: string | null;
+  promo_problem: string | null;
+  eta_days: number | null;
+  free_shipping_over: number | null;
   payable_amount: number;
   can_checkout: boolean;
 }
@@ -40,6 +48,8 @@ export interface Purchase {
   currency: string;
   items_amount: number;
   service_fee_amount: number;
+  shipping_amount?: number;
+  discount_amount?: number;
   payable_amount: number;
   paid_at: string | null;
   created_at: string | null;
@@ -65,3 +75,6 @@ export const getPurchases = async () => (await api.get<Purchase[]>("/order-group
 export const getPurchase = async (id: number | string) => (await api.get<Purchase>(`/order-groups/${id}`)).data;
 export const payPurchase = async (id: number) => (await api.post<{ status: string; checkout_url?: string; group: Purchase }>(`/order-groups/${id}/payments`, { payment_method: "card" })).data;
 export const cancelPurchase = async (id: number) => (await api.post<Purchase>(`/order-groups/${id}/cancel`)).data;
+
+export const applyPromo = async (code: string) => (await api.post<CartView>("/cart/promo", { code })).data;
+export const removePromo = async () => (await api.delete<CartView>("/cart/promo")).data;

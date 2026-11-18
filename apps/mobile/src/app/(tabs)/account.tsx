@@ -51,6 +51,7 @@ export default function AccountScreen() {
         <Text style={s.muted}>{user.email}</Text>
       </Card>
 
+      <Button title={t("Favourites")} kind="outline" onPress={() => router.push("/favourites")} />
       <Button title={t("Open the website")} kind="outline" onPress={() => Linking.openURL(WEB_URL)} />
       <Button title={t("Sign out")} kind="outline" onPress={() => void signOut()} />
 

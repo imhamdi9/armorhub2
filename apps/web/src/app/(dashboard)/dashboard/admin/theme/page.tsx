@@ -11,6 +11,7 @@ import { tr } from "@/lib/i18n";
 import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import { imageSrc } from "@/lib/surfaces";
 import { getMedia, getSurfaceDetail, publishSurface, saveSurfaceDraft, uploadImage, type MediaImage } from "@/services/admin.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Values = Record<string, unknown>;
 
@@ -105,7 +106,7 @@ export default function ThemeEditorPage() {
   useEffect(() => { push(); }, [push]);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!home) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!home) return <LoadingBlock />;
 
   const order = orderSections(((home.section_order as { section: string }[] | undefined) ?? []).map((r) => r.section));
   const setHomeValue = (k: string, v: unknown) => setHome((h) => ({ ...(h ?? {}), [k]: v }));

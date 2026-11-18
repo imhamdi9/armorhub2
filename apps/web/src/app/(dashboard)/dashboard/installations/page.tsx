@@ -8,6 +8,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { getInstallations, getLoyalty, type CustomerJob } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** The customer's installation requests, and their loyalty points. */
 export default function InstallationsPage() {
@@ -32,7 +33,7 @@ export default function InstallationsPage() {
       )}
 
       {failed ? <EmptyState>{tr("Could not load your requests. Please try again.")}</EmptyState>
-        : jobs === null ? <p className="text-muted-foreground">{tr("Loading...")}</p>
+        : jobs === null ? <LoadingBlock />
         : jobs.length === 0 ? <EmptyState>{tr("No installation requests yet.")}</EmptyState>
         : (
           <div className="space-y-3">

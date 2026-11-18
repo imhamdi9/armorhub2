@@ -14,6 +14,7 @@ import { resendVerification } from "@/services/auth.service";
 import { getOrders } from "@/services/platform.service";
 import type { Order, Paginated } from "@/types/platform";
 import { formatDate, formatMoney, tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function OrdersPage() {
   const user = useCurrentUser();
@@ -67,7 +68,7 @@ export default function OrdersPage() {
       </select>
 
       {result === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : result.data.length === 0 ? (
         <EmptyState>
           {tr("No orders found.")}

@@ -4,11 +4,13 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
 import { ShippingPanel } from "@/components/orders/shipping-panel";
+import { OrderMessages } from "@/components/orders/order-messages";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { eventLabel, statusLabel } from "@/lib/orders";
 import { getSellerOrder, type SellerOrder } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** One sale: what was bought, where it goes, and the shipment (book it, track it). */
 export default function SellerOrderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +23,7 @@ export default function SellerOrderPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   if (missing) return <EmptyState>{tr("This order was not found.")}</EmptyState>;
-  if (!order) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!order) return <LoadingBlock />;
 
   return (
     <div className="max-w-2xl">
@@ -35,6 +37,7 @@ export default function SellerOrderPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <ShippingPanel orderId={order.id} paid />
+      <div className="mt-6"><OrderMessages orderId={order.id} /></div>
 
       {order.events && order.events.length > 0 && (
         <>

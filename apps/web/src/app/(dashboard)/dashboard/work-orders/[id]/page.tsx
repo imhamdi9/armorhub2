@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import { hasRole } from "@/lib/navigation";
 import { addMaterial, assignTechnician, getTechnicians, getWorkOrder, removeMaterial, type WorkOrder } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** One job as the people doing it see it: who has it, when, and what was used. */
 export default function WorkOrderPage() {
@@ -31,7 +32,7 @@ export default function WorkOrderPage() {
   }
 
   if (missing) return <EmptyState>{tr("This work order was not found.")}</EmptyState>;
-  if (!w) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!w) return <LoadingBlock />;
 
   return (
     <div className="space-y-6">

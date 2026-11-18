@@ -260,6 +260,149 @@ class CartCheckoutTest extends TestCase
         }
     }
 
+    private function shippingRules(float $flat, ?float $freeOver = null, ?int $eta = null): void
+    {
+        // Delivery fees are per market, so the test marketplace gets one (Saudi Arabia: the currency the test prices are in).
+        \App\Models\Tenant::whereKey($this->store->tenant_id)->update(['market' => 'SA']);
+        $code = 'SA';
+        $settings = app(\App\Support\Settings\Settings::class);
+        $settings->set("shipping.flat_fee.{$code}", $flat);
+        $settings->set("shipping.free_over.{$code}", $freeOver);
+        $settings->set("shipping.eta_days.{$code}", $eta);
+    }
+
+    public function test_delivery_is_charged_once_per_seller_and_travels_to_the_seller(): void
+    {
+        $this->shippingRules(30, null, 3);
+        [$a, $b] = $this->cartOf2();                                                                // 2 x 100 from A, 1 x 250 from B
+
+        $cart = $this->getJson('/api/cart')->assertOk()->json();
+        $this->assertEquals(60, $cart['shipping_amount']);                                          // one parcel for each seller
+        $this->assertSame(3, $cart['eta_days']);
+        $this->assertEqualsWithDelta(450 + $cart['service_fee_amount'] + 60, $cart['payable_amount'], 0.001);
+
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->assertCreated()->json();
+        $this->assertEquals(60, $group['shipping_amount'] ?? OrderGroup::find($group['id'])->shipping_amount);
+        $orders = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->get();
+        $this->assertSame([30.0, 30.0], $orders->map(fn ($o) => (float) $o->shipping_amount)->all());
+        $this->assertEqualsWithDelta($cart['payable_amount'], (float) OrderGroup::find($group['id'])->payable_amount, 0.001);
+
+        $this->postJson("/api/order-groups/{$group['id']}/payments", [])->assertOk();
+        $ledger = app(Ledger::class);
+        $commission = fn ($o) => (float) \App\Models\Commission::where('order_id', $o->id)->value('amount');
+        foreach ($orders as $o) {
+            $seller = \App\Models\Product::find($o->product_id)->seller_id;
+            $this->assertEqualsWithDelta((float) $o->total_amount - $commission($o) + 30, $ledger->balance(Accounts::sellerHeld($seller), $o->currency), 0.001);   // no commission on delivery
+        }
+        $this->assertEqualsWithDelta($cart['payable_amount'], $ledger->balance(Accounts::GATEWAY, $group['currency']), 0.001);
+    }
+
+    public function test_delivery_is_free_above_the_threshold_and_when_no_fee_is_set(): void
+    {
+        $this->shippingRules(30, 200);
+        $this->cartOf2();                                                                           // A: 200 (reaches the threshold), B: 250 (also)
+        $this->assertEquals(0, $this->getJson('/api/cart')->json('shipping_amount'));
+
+        $this->shippingRules(30, 220);                                                              // A: 200 pays, B: 250 is free
+        $this->assertEquals(30, $this->getJson('/api/cart')->json('shipping_amount'));
+
+        $this->shippingRules(0);                                                                    // no fee set: as before
+        $cart = $this->getJson('/api/cart')->json();
+        $this->assertEquals(0, $cart['shipping_amount']);
+        $this->assertNull($cart['eta_days']);
+    }
+
+    public function test_a_refund_gives_back_the_delivery_too(): void
+    {
+        $this->shippingRules(30);
+        $this->cartOf2();
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->json();
+        $this->postJson("/api/order-groups/{$group['id']}/payments", [])->assertOk();
+        $order = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->first();
+        $expected = (float) $order->total_amount + (float) $order->service_fee_amount + 30;
+
+        $refund = $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/orders/{$order->id}/refund", ['reason' => 'Delivery test'])->assertOk()->json('refund_amount');
+        $this->assertEqualsWithDelta($expected, $refund, 0.001);
+        $seller = \App\Models\Product::find($order->product_id)->seller_id;
+        $this->assertEqualsWithDelta(0, app(Ledger::class)->balance(Accounts::sellerHeld($seller), $order->currency), 0.001);
+    }
+
+    private function promo(array $extra = []): \App\Models\PromoCode
+    {
+        return \App\Models\PromoCode::create($extra + ['code' => 'SAVE10', 'type' => 'percent', 'value' => 10, 'per_customer_limit' => 1]);
+    }
+
+    public function test_a_discount_code_lowers_the_payment_and_the_platform_bears_it(): void
+    {
+        $this->promo();                                                                              // 10% off the items
+        $this->cartOf2();                                                                            // items 450
+        $cart = $this->postJson('/api/cart/promo', ['code' => ' save10 '])->assertOk()->json();
+        $this->assertSame('SAVE10', $cart['promo_code']);
+        $this->assertEquals(45, $cart['discount_amount']);
+        $this->assertEqualsWithDelta(450 + $cart['service_fee_amount'] - 45, $cart['payable_amount'], 0.001);
+
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->assertCreated()->json();
+        $this->assertEqualsWithDelta($cart['payable_amount'], $group['payable_amount'], 0.001);
+        $orders = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->get();
+        $this->assertEqualsWithDelta(45, $orders->sum(fn ($o) => (float) $o->discount_amount), 0.001);           // shared across the orders
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('cart_items')->count());                       // the cart is empty, and the code is spent from it
+        $this->getJson('/api/cart')->assertJsonPath('promo_code', null);
+
+        $this->postJson("/api/order-groups/{$group['id']}/payments", [])->assertOk();
+        $ledger = app(Ledger::class);
+        $this->assertEqualsWithDelta($group['payable_amount'], $ledger->balance(Accounts::GATEWAY, $group['currency']), 0.001);   // the customer paid less
+        $this->assertEqualsWithDelta(45, $ledger->balance(Accounts::EXP_PROMO, $group['currency']), 0.001);                          // the platform paid the difference
+        foreach ($orders as $o) {
+            $seller = \App\Models\Product::find($o->product_id)->seller_id;
+            $commission = (float) \App\Models\Commission::where('order_id', $o->id)->value('amount');
+            $this->assertEqualsWithDelta((float) $o->total_amount - $commission, $ledger->balance(Accounts::sellerHeld($seller), $o->currency), 0.001);   // the seller still gets everything
+        }
+
+        // Refunding an order gives back what the customer paid, and the discount stops being the platform's cost.
+        $first = $orders->first();
+        $paid = (float) $first->total_amount + (float) $first->service_fee_amount - (float) $first->discount_amount;
+        $refund = $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/orders/{$first->id}/refund", ['reason' => 'Discount test'])->assertOk()->json('refund_amount');
+        $this->assertEqualsWithDelta($paid, $refund, 0.001);
+    }
+
+    public function test_a_code_is_refused_with_the_reason_and_limits_are_kept(): void
+    {
+        [$a] = $this->cartOf2();
+        $this->postJson('/api/cart/promo', ['code' => 'NOPE'])->assertUnprocessable()->assertJsonValidationErrors('code');
+
+        $this->promo(['code' => 'BIG', 'min_order' => 1000]);
+        $this->postJson('/api/cart/promo', ['code' => 'BIG'])->assertUnprocessable();                 // the cart is 450
+        $this->promo(['code' => 'OLD', 'ends_at' => now()->subDay()]);
+        $this->postJson('/api/cart/promo', ['code' => 'OLD'])->assertUnprocessable();
+        $this->promo(['code' => 'OFF', 'is_active' => false]);
+        $this->postJson('/api/cart/promo', ['code' => 'OFF'])->assertUnprocessable();
+        $this->promo(['code' => 'FIXED', 'type' => 'fixed', 'value' => 1000]);                        // never more than the items
+        $this->assertEquals(450, $this->postJson('/api/cart/promo', ['code' => 'FIXED'])->assertOk()->json('discount_amount'));
+        $this->promo(['code' => 'CAPPED', 'value' => 50, 'max_discount' => 20]);
+        $this->assertEquals(20, $this->postJson('/api/cart/promo', ['code' => 'CAPPED'])->assertOk()->json('discount_amount'));
+        $this->deleteJson('/api/cart/promo')->assertOk()->assertJsonPath('promo_code', null);
+
+        // One use each: after buying with it, the same customer cannot use it again; cancelling the purchase gives it back.
+        $this->promo(['code' => 'ONCE', 'value' => 10]);
+        $this->postJson('/api/cart/promo', ['code' => 'ONCE'])->assertOk();
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->assertCreated()->json();
+        $this->postJson('/api/cart/items', ['product_id' => $a, 'quantity' => 2])->assertCreated();
+        $this->postJson('/api/cart/promo', ['code' => 'ONCE'])->assertUnprocessable();
+        $this->postJson("/api/order-groups/{$group['id']}/cancel")->assertOk();
+        $this->postJson('/api/cart/promo', ['code' => 'ONCE'])->assertOk();
+    }
+
+    public function test_the_administrator_manages_discount_codes(): void
+    {
+        $this->actingAs($this->customer, 'sanctum')->getJson('/api/admin/promo-codes')->assertForbidden();
+        $this->actingAs($this->admin, 'sanctum');
+        $id = $this->postJson('/api/admin/promo-codes', ['code' => 'ramadan 25', 'type' => 'percent', 'value' => 25, 'max_discount' => 100, 'market' => 'eg'])->assertCreated()->assertJsonPath('code', 'RAMADAN25')->assertJsonPath('market', 'EG')->json('id');
+        $this->postJson('/api/admin/promo-codes', ['code' => 'RAMADAN25', 'type' => 'fixed', 'value' => 5])->assertUnprocessable();       // codes are unique
+        $this->postJson('/api/admin/promo-codes', ['code' => 'TOOMUCH', 'type' => 'percent', 'value' => 150])->assertUnprocessable();
+        $this->putJson("/api/admin/promo-codes/{$id}", ['is_active' => false])->assertOk()->assertJsonPath('is_active', false);
+        $this->getJson('/api/admin/promo-codes')->assertOk()->assertJsonCount(1)->assertJsonPath('0.used', 0);
+    }
+
     public function test_the_purchase_lists_each_orders_statuses(): void
     {
         $this->cartOf2();

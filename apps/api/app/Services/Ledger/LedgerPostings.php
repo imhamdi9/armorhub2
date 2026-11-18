@@ -29,7 +29,7 @@ class LedgerPostings
     {
         $cur = $order->currency;
         $sellerId = $order->product?->seller_id;
-        $net = (float) $order->total_amount - (float) $commission->amount;
+        $net = (float) $order->total_amount - (float) $commission->amount + (float) $order->shipping_amount;   // delivery is the seller's, with no commission
         $holder = $sellerId ? Accounts::sellerHeld($sellerId) : ($partner ? Accounts::servicePayable($partner->id) : null);
 
         $this->ledger->post("order:{$order->id}:paid", 'order_paid', array_filter([
@@ -37,6 +37,7 @@ class LedgerPostings
             $holder ? [$holder, $cur, -$net] : [Accounts::REV_COMMISSION, $cur, -$net],   // no one to owe it to: the platform keeps it until someone is chosen
             [Accounts::REV_COMMISSION, $cur, -(float) $commission->amount],
             [Accounts::REV_SERVICE_FEE, $cur, -(float) $order->service_fee_amount],
+            [Accounts::EXP_PROMO, $cur, (float) $order->discount_amount],     // the customer paid less: the platform bears the discount
         ]), $order, "Order #{$order->id} paid");
 
         // The host store's and the partner's shares of the commission are owed to them, out of the platform's commission.
@@ -62,7 +63,7 @@ class LedgerPostings
         if (! $sellerId || ! $commission) {
             return;
         }
-        $net = (float) $order->total_amount - (float) $commission->amount;
+        $net = (float) $order->total_amount - (float) $commission->amount + (float) $order->shipping_amount;
 
         $this->ledger->post("order:{$order->id}:released", 'seller_released', [
             [Accounts::sellerHeld($sellerId), $order->currency, $net],

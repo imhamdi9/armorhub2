@@ -30,7 +30,7 @@ export function BigShield({ size = 120 }: { size?: number }) {
 }
 
 /** Tab-bar icons: the same line style everywhere. */
-export function TabIcon({ name, active }: { name: "home" | "orders" | "account"; active: boolean }) {
+export function TabIcon({ name, active }: { name: "home" | "orders" | "cart" | "account"; active: boolean }) {
   const stroke = active ? color.blue : color.slate;
   const fill = active ? color.wash : "none";
   const common = { stroke, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill };
@@ -38,6 +38,7 @@ export function TabIcon({ name, active }: { name: "home" | "orders" | "account";
     <Svg width={24} height={24} viewBox="0 0 24 24">
       {name === "home" && <Path {...common} d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z" />}
       {name === "orders" && <Path {...common} d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8" />}
+      {name === "cart" && <Path {...common} d="M3 4h2l2.4 11h10.2L20 7H6.2M9 20a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01" />}
       {name === "account" && (<><Circle {...common} cx="12" cy="8" r="4" /><Path {...common} d="M4 21a8 8 0 0 1 16 0" /></>)}
     </Svg>
   );

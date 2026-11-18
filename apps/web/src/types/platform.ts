@@ -51,6 +51,8 @@ export interface Order {
   status: string;
   created_at?: string;
   quantity?: number;
+  shipping_amount?: string;
+  discount_amount?: string;
   refund_status?: "pending" | "refunded" | null;
   product_id: number;
   subject_type: string | null;

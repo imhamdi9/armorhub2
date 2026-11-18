@@ -12,6 +12,7 @@ import {
   getSurfaceDetail, getSurfaces, publishSurface, rollbackSurface, saveSurfaceDraft,
   type SurfaceDetail, type SurfaceField, type SurfaceInfo,
 } from "@/services/admin.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Values = Record<string, unknown>;
 
@@ -108,7 +109,7 @@ function Editor({ surface, locale, onQueued }: { surface: SurfaceInfo; locale: s
     }
   }
 
-  if (!detail) return error ? <p className="text-sm text-red-500" role="alert">{error}</p> : <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!detail) return error ? <p className="text-sm text-red-500" role="alert">{error}</p> : <LoadingBlock />;
 
   // On/off switches apply to every language, so they are edited with the English content only.
   const fields = Object.entries(surface.fields).filter(([, s]) => locale === "en" || s.type !== "bool");
@@ -166,7 +167,7 @@ export default function ContentPage() {
   }, []);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!surfaces) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!surfaces) return <LoadingBlock />;
   const surface = surfaces.find((s) => s.key === active);
 
   return (

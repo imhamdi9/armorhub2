@@ -13,6 +13,7 @@ class Accounts
     public const REV_SERVICE_FEE = 'revenue:service_fee';
     public const REV_INSTALLATION = 'revenue:installation_fee';
     public const REV_SUBSCRIPTION = 'revenue:subscription';
+    public const EXP_PROMO = 'expense:promotions';          // what discount codes cost the platform
 
     public static function sellerHeld(int $company): string { return "seller:{$company}:held"; }
     public static function sellerAvailable(int $company): string { return "seller:{$company}:available"; }
@@ -34,6 +35,7 @@ class Accounts
             $code === self::REV_COMMISSION => ['type' => 'revenue', 'name' => 'Sales and service commission'],
             $code === self::REV_SERVICE_FEE => ['type' => 'revenue', 'name' => 'Customer platform fee'],
             $code === self::REV_INSTALLATION => ['type' => 'revenue', 'name' => 'Installation platform fee'],
+            $code === self::EXP_PROMO => ['type' => 'expense', 'name' => 'Discount codes paid by the platform'],
             $code === self::REV_SUBSCRIPTION => ['type' => 'revenue', 'name' => 'Subscriptions'],
             $p[0] === 'seller' => ['type' => 'liability', 'name' => "Owed to seller {$p[1]} ({$p[2]})", 'owner' => ['seller', (int) $p[1]]],
             $p[0] === 'centre' => ['type' => 'liability', 'name' => "Owed to centre {$p[1]} ({$p[2]})", 'owner' => ['centre', (int) $p[1]]],

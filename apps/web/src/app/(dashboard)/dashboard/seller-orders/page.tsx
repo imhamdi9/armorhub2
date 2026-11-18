@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { statusLabel } from "@/lib/orders";
 import { getSellerOrders, type SellerOrder } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Paid orders for the signed-in seller's own products: these are the ones to ship. */
 export default function SellerOrdersPage() {
@@ -26,7 +27,7 @@ export default function SellerOrdersPage() {
       <p className="mb-4 text-sm text-muted-foreground">{tr("Orders for your products appear here once the customer has paid. Open one to see the delivery address and book the shipment.")}</p>
 
       {orders === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : orders.length === 0 ? (
         <EmptyState>{tr("No paid orders yet.")}</EmptyState>
       ) : (

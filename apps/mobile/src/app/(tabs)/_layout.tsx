@@ -12,6 +12,7 @@ export default function TabsLayout() {
     }}>
       <Tabs.Screen name="index" options={{ title: t("Home"), tabBarIcon: ({ focused }) => <TabIcon name="home" active={focused} /> }} />
       <Tabs.Screen name="orders" options={{ title: t("Orders"), tabBarIcon: ({ focused }) => <TabIcon name="orders" active={focused} /> }} />
+      <Tabs.Screen name="cart" options={{ title: t("Cart"), tabBarIcon: ({ focused }) => <TabIcon name="cart" active={focused} /> }} />
       <Tabs.Screen name="account" options={{ title: t("Account"), tabBarIcon: ({ focused }) => <TabIcon name="account" active={focused} /> }} />
     </Tabs>
   );

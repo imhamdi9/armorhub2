@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { getAdminWithdrawals, payWithdrawal, rejectWithdrawal } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Row = Awaited<ReturnType<typeof getAdminWithdrawals>>[number];
 
@@ -41,7 +42,7 @@ export default function AdminWithdrawalsPage() {
   useEffect(() => { load(); }, []);
 
   if (forbidden) return <EmptyState>{tr("Only platform admins can open this page.")}</EmptyState>;
-  if (!rows) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!rows) return <LoadingBlock />;
 
   return (
     <div className="max-w-3xl">

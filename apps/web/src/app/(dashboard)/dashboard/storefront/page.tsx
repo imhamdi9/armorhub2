@@ -13,6 +13,7 @@ import { tr } from "@/lib/i18n";
 import { hasRole } from "@/lib/navigation";
 import { getProducts, getStorefront, saveStorefront, type StorefrontSettings } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function StorefrontPage() {
   return (
@@ -42,7 +43,7 @@ function StorefrontEditor() {
 
   if (!companyId) return <EmptyState>Open this page from the Companies list to choose a company.</EmptyState>;
   if (failed) return <EmptyState>You cannot edit this storefront.</EmptyState>;
-  if (!form) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!form) return <LoadingBlock />;
 
   const set = <K extends keyof StorefrontSettings>(key: K, value: StorefrontSettings[K]) => {
     setMessage(null);

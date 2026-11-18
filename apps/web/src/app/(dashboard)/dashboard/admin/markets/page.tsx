@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { tr, useLocale } from "@/lib/i18n";
 import { addMarketAdmin, consolidateMarkets, getMarketAdmins, removeMarketAdmin, type MarketAdmin, getCountries, getMarkets, openMarket, updateMarket, type MarketRow } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** A flag from the two-letter country code (regional indicator symbols). */
 const flag = (code: string) => String.fromCodePoint(...code.toUpperCase().split("").map((c) => 127397 + c.charCodeAt(0)));
@@ -163,7 +164,7 @@ export default function MarketsPage() {
   const duplicated = (markets ?? []).some((m, i, all) => all.findIndex((x) => x.country === m.country) !== i);
 
   if (forbidden) return <EmptyState>{tr("Only platform admins can open this page.")}</EmptyState>;
-  if (!markets) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!markets) return <LoadingBlock />;
 
   return (
     <div className="max-w-4xl">

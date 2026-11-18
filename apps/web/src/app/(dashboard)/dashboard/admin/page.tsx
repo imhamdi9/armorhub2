@@ -9,6 +9,7 @@ import { formatDateTime, formatNumber, tr } from "@/lib/i18n";
 import { statusLabel } from "@/lib/orders";
 import { getOverview } from "@/services/admin.service";
 import type { Overview } from "@/types/admin";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const SEVERITY: Record<string, string> = {
   fail: "border-red-300 bg-red-50",
@@ -28,7 +29,7 @@ export default function AdminOverviewPage() {
   }, []);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!data) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!data) return <LoadingBlock />;
 
   return (
     <div>

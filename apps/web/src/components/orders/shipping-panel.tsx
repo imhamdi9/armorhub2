@@ -26,6 +26,25 @@ const STATUS_LABELS: Record<string, string> = {
   returned: "Returned",
   cancelled: "Cancelled",
 };
+const STEPS = ["created", "in_transit", "out_for_delivery", "delivered"] as const;
+
+/** Where the parcel is on its way: four steps, the finished ones filled. A failed, returned or cancelled parcel shows its badge instead. */
+function Progress({ status }: { status: string }) {
+  const at = STEPS.indexOf(status as (typeof STEPS)[number]);
+  if (at < 0) return null;
+
+  return (
+    <ol className="mt-3 flex items-center gap-1 text-xs" aria-label={tr("Delivery progress")} data-testid="shipment-progress">
+      {STEPS.map((step, i) => (
+        <li key={step} className="flex flex-1 flex-col items-center gap-1 text-center" aria-current={i === at ? "step" : undefined}>
+          <span className={`h-1.5 w-full rounded-full ${i <= at ? "bg-primary" : "bg-muted"}`} />
+          <span className={i <= at ? "font-semibold" : "text-muted-foreground"}>{tr(STATUS_LABELS[step])}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const NEXT_STATUSES = ["in_transit", "out_for_delivery", "delivered", "failed", "returned"];
 
 /**
@@ -162,6 +181,8 @@ function ShipmentView({
         {s.tracking_url && <a className="underline" href={s.tracking_url} target="_blank" rel="noopener noreferrer">{tr("Track with the carrier")}</a>}
         {canManage && s.label_url && <a className="underline" href={s.label_url} target="_blank" rel="noopener noreferrer">{tr("Shipping label")}</a>}
       </div>
+
+      <Progress status={s.status} />
 
       {s.events.length > 0 && (
         <ol className="mt-3 space-y-2 border-s ps-3">

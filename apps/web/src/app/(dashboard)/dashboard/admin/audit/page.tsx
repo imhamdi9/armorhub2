@@ -9,6 +9,7 @@ import { formatDateTime, tr } from "@/lib/i18n";
 import { getAuditLogs } from "@/services/admin.service";
 import type { AuditEntry } from "@/types/admin";
 import type { Paginated } from "@/types/platform";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const QUICK = ["", "auth.", "settings.", "payments.", "user.", "security."];
 
@@ -42,7 +43,7 @@ export default function AdminAuditPage() {
       </div>
 
       {!result ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : result.data.length === 0 ? (
         <EmptyState>No matching entries.</EmptyState>
       ) : (

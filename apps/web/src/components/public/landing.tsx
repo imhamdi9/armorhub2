@@ -64,6 +64,7 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
   const subtitle = useSiteText("home", "hero_subtitle", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
   const cta = useSiteText("home", "primary_cta", "Browse markets");
   const heroImage = useSiteValue("home", "hero_image_url");
+  const cur = useSiteText("home", "example_currency", "SAR");   // the sample prices speak the market's own currency
   const ed = useEditable();
   const proof = [
     ["shield", "Verified partners", "ID and commercial registration checked"],
@@ -146,7 +147,7 @@ export function Hero({ facts, firstStore }: { facts: Facts; firstStore?: { name:
                     <span className="block truncate text-[15px] font-semibold text-obsidian">{q.name}</span>
                     <span className="block truncate text-xs text-slate">{tr("Verified")} · {tr("{n} km", { n: formatNumber(q.km) })}</span>
                   </span>
-                  <span className="font-display text-end text-[21px] font-bold leading-none text-obsidian" dir="ltr">SAR {formatNumber(q.price)}</span>
+                  <span className="font-display text-end text-[21px] font-bold leading-none text-obsidian" dir="ltr">{cur} {formatNumber(q.price)}</span>
                 </div>
               ))}
             </div>
@@ -236,15 +237,17 @@ export function QuoteFeature() {
   const title = useSiteText("home", "quote_title", "Describe the job once. Get prices from experts nearby.");
   const text = useSiteText("home", "quote_text", "Choose a service and your options. Nearby, vetted professionals send you their price. You compare, accept the one you like and pay online.");
   const cta = useSiteText("home", "quote_cta", "Browse markets");
+  const cur = useSiteText("home", "example_currency", "SAR");
+  const city = useSiteText("home", "example_city", "Riyadh");
   return (
     <section className="bg-white py-16">
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 md:grid-cols-2">
         <div className="relative">
           <div className="bg-dark rounded-[28px] p-6 font-mono text-sm shadow-lift" dir="ltr">
             <p className="text-white/70">{tr("Example request")}</p>
-            <p className="mt-2 text-white">&gt; Paint protection film · Hood · Riyadh</p>
+            <p className="mt-2 text-white">&gt; Paint protection film · Hood · {city}</p>
             <div className="mt-4 space-y-2">
-              {[["Shop One", "SAR 1,450", "2 km"], ["Garage 2", "SAR 1,520", "5 km"], ["Garage 3", "SAR 1,390", "8 km"]].map(([n, p, d]) => (
+              {[["Shop One", `${cur} 1,450`, "2 km"], ["Garage 2", `${cur} 1,520`, "5 km"], ["Garage 3", `${cur} 1,390`, "8 km"]].map(([n, p, d]) => (
                 <div key={n} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-2.5">
                   <span className="text-white">{n} <span className="text-white/70">· {d}</span></span>
                   <span className="font-bold text-on-dark-accent">{p}</span>
@@ -270,6 +273,7 @@ export function DashboardFeature() {
   const title = useSiteText("home", "biz_title", "Run your whole business from one dashboard.");
   const text = useSiteText("home", "biz_text", "Open a branded store, receive quote requests, schedule the work, manage your team and track payouts and shipments.");
   const cta = useSiteText("home", "biz_cta", "For businesses: sign in");
+  const cur = useSiteText("home", "example_currency", "SAR");
   return (
     <section className="bg-white py-16">
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 md:grid-cols-2">
@@ -283,7 +287,7 @@ export function DashboardFeature() {
           <div className="overflow-hidden rounded-[28px] border border-fog bg-white shadow-lift" dir="ltr">
             <div className="flex items-center gap-1.5 border-b border-fog bg-fog px-4 py-3"><span className="h-2.5 w-2.5 rounded-full bg-pebble/50" /><span className="h-2.5 w-2.5 rounded-full bg-pebble/50" /><span className="h-2.5 w-2.5 rounded-full bg-pebble/50" /></div>
             <div className="grid grid-cols-3 gap-3 p-4">
-              {[["Orders", "128"], ["Quotes", "42"], ["Paid", "SAR 38k"]].map(([k, v]) => (
+              {[["Orders", "128"], ["Quotes", "42"], ["Paid", `${cur} 38k`]].map(([k, v]) => (
                 <div key={k} className="rounded-2xl bg-linen p-3"><p className="text-xs text-slate">{k}</p><p className="text-xl font-black text-forest">{v}</p></div>
               ))}
               <div className="col-span-3 space-y-2">

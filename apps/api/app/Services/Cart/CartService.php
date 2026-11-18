@@ -67,9 +67,25 @@ class CartService
         CartItem::whereIn('cart_id', Cart::where('customer_id', $user->id)->select('id'))->whereKey($itemId)->delete();
     }
 
+    /** Applies a discount code to the cart (checked against what is in it now; refused with the reason if it does not qualify). */
+    public function setPromo(User $user, string $code): void
+    {
+        $cart = $this->cartOf($user);
+        $view = $this->view($user, ignorePromo: true);
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        $checked = app(\App\Services\PromoCodes::class)->check($code, $user, (float) $view['items_amount'], $market);
+        $cart->update(['promo_code' => $checked['code']->code]);
+    }
+
+    public function clearPromo(User $user): void
+    {
+        $this->cartOf($user)->update(['promo_code' => null]);
+    }
+
     public function clear(User $user): void
     {
         CartItem::whereIn('cart_id', Cart::where('customer_id', $user->id)->select('id'))->delete();
+        Cart::where('customer_id', $user->id)->update(['promo_code' => null]);
     }
 
     /**
@@ -77,12 +93,13 @@ class CartService
      *
      * @return array{items: list<array<string, mixed>>, currency: ?string, items_amount: float, service_fee_amount: float, payable_amount: float, can_checkout: bool}
      */
-    public function view(User $user): array
+    public function view(User $user, bool $ignorePromo = false): array
     {
         $items = [];
         $currency = null;
         $sum = $fee = 0.0;
         $ok = true;
+        $bySeller = [];
 
         foreach ($this->cartOf($user)->items()->with('product')->get() as $item) {
             $row = ['id' => $item->id, 'product_id' => $item->product_id, 'name' => $item->product?->name, 'image' => ($item->product?->images ?? [])[0] ?? null,
@@ -94,6 +111,7 @@ class CartService
                 $row += ['option' => $line['rule']->target_type.':'.$line['rule']->target_id, 'unit_price' => $unit, 'line_total' => round($unit * $item->quantity, 2), 'currency' => $line['price']['currency'], 'problem' => null, 'fit' => $this->fitment->checkVehicle($line['product'], $line['vehicle']), 'vehicle' => $line['vehicle']?->label()];
                 $currency ??= $line['price']['currency'];
                 $sum += $row['line_total'];
+                $bySeller[(int) $item->product?->seller_id] = ($bySeller[(int) $item->product?->seller_id] ?? 0.0) + $row['line_total'];
                 $fee += $feeRate['service_fee_amount'];
             } catch (ValidationException $e) {
                 $row += ['problem' => collect($e->errors())->flatten()->first(), 'unit_price' => null, 'line_total' => null, 'currency' => null];
@@ -102,7 +120,31 @@ class CartService
             $items[] = $row;
         }
 
-        return ['items' => $items, 'currency' => $currency, 'items_amount' => round($sum, 2), 'service_fee_amount' => round($fee, 2), 'payable_amount' => round($sum + $fee, 2), 'can_checkout' => $ok && $items !== []];
+        // Delivery: a flat fee for each seller's parcel, free above a threshold (set per market).
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        $shipping = app(\App\Services\ShippingFees::class);
+        $shippingTotal = round(array_sum(array_map(fn ($sub) => $shipping->forSeller($market, $sub), $bySeller)), 2);
+        $rules = $shipping->rules($market);
+
+        // A discount code, if one is applied and still qualifies (otherwise it is dropped, with the reason shown once).
+        $discount = 0.0;
+        $promo = null;
+        $promoProblem = null;
+        $cart = $this->cartOf($user);
+        if (! $ignorePromo && $cart->promo_code) {
+            try {
+                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round($sum, 2), $market);
+                $discount = $checked['discount'];
+                $promo = $checked['code']->code;
+            } catch (ValidationException $e) {
+                $promoProblem = collect($e->errors())->flatten()->first();
+                $cart->update(['promo_code' => null]);
+            }
+        }
+
+        return ['items' => $items, 'currency' => $currency, 'items_amount' => round($sum, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => $shippingTotal,
+            'discount_amount' => $discount, 'promo_code' => $promo, 'promo_problem' => $promoProblem,
+            'eta_days' => $rules['eta_days'], 'free_shipping_over' => $rules['free_over'], 'payable_amount' => round($sum + $fee + $shippingTotal - $discount, 2), 'can_checkout' => $ok && $items !== []];
     }
 
     /**

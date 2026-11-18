@@ -20,6 +20,7 @@ import { bulkSetInstallation, bulkSetPageTemplate, createProduct, getProducts } 
 import type { Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -160,7 +161,7 @@ export default function ProductsPage() {
       )}
 
       {products === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : products.length === 0 ? (
         <EmptyState>
           {tr("No products found.")}

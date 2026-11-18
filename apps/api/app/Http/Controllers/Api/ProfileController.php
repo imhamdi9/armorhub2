@@ -39,6 +39,22 @@ class ProfileController extends Controller
         return ['name' => $user->name, 'phone' => $user->phone];
     }
 
+    public function preferences(Request $request)
+    {
+        $u = $request->user();
+
+        return ['notify_email' => (bool) $u->notify_email, 'notify_push' => (bool) $u->notify_push];
+    }
+
+    public function savePreferences(Request $request)
+    {
+        $data = $request->validate(['notify_email' => 'sometimes|boolean', 'notify_push' => 'sometimes|boolean']);
+        $u = $request->user();
+        $u->forceFill($data)->save();
+
+        return ['notify_email' => (bool) $u->notify_email, 'notify_push' => (bool) $u->notify_push];
+    }
+
     public function password(Request $request)
     {
         $user = $request->user();

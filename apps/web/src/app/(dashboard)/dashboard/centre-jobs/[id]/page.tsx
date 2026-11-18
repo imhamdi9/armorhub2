@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/errors";
 import { askLocation, DISPUTE_TYPES } from "@/lib/installation";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { disputeCentreJob, getCentreJob, sendEvidence, sendProof, startCentreJob, type CentreJob } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CentreJobPage() {
   const id = Number(useParams<{ id: string }>().id);
@@ -32,7 +33,7 @@ export default function CentreJobPage() {
   }
 
   if (error && !job) return <p role="alert" className="text-red-600">{error}</p>;
-  if (!job) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!job) return <LoadingBlock />;
   const cur = job.currency ?? "EGP";
   const money = { held: "Held by the platform", available: "Available in your wallet", void: "Refunded to the customer" } as Record<string, string>;
 

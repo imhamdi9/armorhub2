@@ -14,6 +14,7 @@ import {
 } from "@/services/platform.service";
 import type { CommissionDistribution, Earnings } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CommissionsPage() {
   const user = useCurrentUser();
@@ -55,7 +56,7 @@ export default function CommissionsPage() {
       )}
 
       {rows === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : rows.length === 0 ? (
         <EmptyState>{tr("No commission payouts yet.")}</EmptyState>
       ) : (

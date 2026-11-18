@@ -19,6 +19,7 @@ import {
 } from "@/services/platform.service";
 import type { Tenant } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Companies are the businesses on the platform. Customers sign up under a company's ID. */
 export default function CompaniesPage() {
@@ -95,7 +96,7 @@ export default function CompaniesPage() {
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {companies === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : companies.length === 0 ? (
         <EmptyState>{tr("No companies yet. Create a market first, then add a company.")}</EmptyState>
       ) : (

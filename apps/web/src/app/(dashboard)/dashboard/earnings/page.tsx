@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { getSellerEarnings } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Earnings = Awaited<ReturnType<typeof getSellerEarnings>>;
 
@@ -19,7 +20,7 @@ export default function EarningsPage() {
   }, []);
 
   if (forbidden) return <EmptyState>{tr("You do not have access to earnings.")}</EmptyState>;
-  if (!data) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!data) return <LoadingBlock />;
 
   const currencies = Object.keys(data.balances);
   const cards: [keyof Earnings["balances"][string], string][] = [["held", "Held until delivery"], ["available", "Available to pay out"], ["in_payout", "In a payout"], ["paid", "Paid out"]];

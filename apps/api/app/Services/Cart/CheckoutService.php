@@ -63,21 +63,47 @@ class CheckoutService
                 'payable_amount' => 0, 'status' => OrderGroup::AWAITING, 'shipping_address' => $ship,
             ]);
 
+            // Delivery is charged once per seller, on that seller's first order, and goes to that seller.
+            $market = $this->markets->forCompany($company)?->code;
+            $perSeller = [];
+            foreach ($lines as $l) {
+                $perSeller[(int) $l['product']->seller_id] = ($perSeller[(int) $l['product']->seller_id] ?? 0.0) + round((float) $l['price']['total'] * $l['quantity'], 2);
+            }
+            $charged = [];
+            $shippingTotal = 0.0;
+
+            // A discount code is checked again now and shared across the orders in proportion to what each costs.
+            $promo = null;
+            $discount = 0.0;
+            if ($cart->promo_code) {
+                $checked = app(\App\Services\PromoCodes::class)->check($cart->promo_code, $user, round(array_sum($perSeller), 2), $market);
+                $promo = $checked['code'];
+                $discount = $checked['discount'];
+            }
+            $shares = app(\App\Services\PromoCodes::class)->allocate($discount, array_map(fn ($l) => round((float) $l['price']['total'] * $l['quantity'], 2), $lines));
+
             $items = $fee = 0.0;
-            foreach ($lines as $line) {
+            foreach ($lines as $idx => $line) {
                 $total = round((float) $line['price']['total'] * $line['quantity'], 2);
+                $sellerKey = (int) $line['product']->seller_id;
+                $shipping = isset($charged[$sellerKey]) ? 0.0 : app(\App\Services\ShippingFees::class)->forSeller($market, $perSeller[$sellerKey]);
+                $charged[$sellerKey] = true;
+                $shippingTotal += $shipping;
                 $order = Order::create([
                     'company_id' => $user->company_id, 'customer_id' => $user->id, 'group_id' => $group->id, 'product_id' => $line['product']->id, 'quantity' => $line['quantity'],
                     'subject_type' => $line['vehicle'] ? 'vehicle_model' : null, 'subject_id' => $line['vehicle']?->vehicle_model_id,
                     'status' => OrderStatus::AwaitingPayment, 'product_amount' => $total, 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $total,
-                    'currency' => $line['price']['currency'], 'shipping_address' => $ship,
+                    'currency' => $line['price']['currency'], 'shipping_address' => $ship, 'shipping_amount' => $shipping, 'discount_amount' => $shares[$idx], 'promo_code' => $promo?->code,
                 ] + $this->markets->taxFor($company, $total) + $this->fees->forInvoice($total));
                 OrderEvent::record($order, 'created', $user, ['direct_sale' => true, 'group_id' => $group->id, 'quantity' => $line['quantity']] + ($line['vehicle'] ? ['vehicle' => $line['vehicle']->label()] : []));
                 $items += (float) $order->total_amount;
                 $fee += (float) $order->service_fee_amount;
             }
 
-            $group->update(['items_amount' => round($items, 2), 'service_fee_amount' => round($fee, 2), 'payable_amount' => round($items + $fee, 2)]);
+            $group->update(['items_amount' => round($items, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => round($shippingTotal, 2), 'discount_amount' => round($discount, 2), 'payable_amount' => round($items + $fee + $shippingTotal - $discount, 2)]);
+            if ($promo && $discount > 0) {
+                \Illuminate\Support\Facades\DB::table('promo_redemptions')->insert(['promo_code_id' => $promo->id, 'user_id' => $user->id, 'group_id' => $group->id, 'amount' => $discount, 'status' => 'reserved', 'created_at' => now(), 'updated_at' => now()]);
+            }
             $this->carts->clear($user);
 
             return $group->fresh();

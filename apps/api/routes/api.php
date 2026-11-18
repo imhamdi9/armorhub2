@@ -88,6 +88,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::put('/me/profile', [\App\Http\Controllers\Api\ProfileController::class, 'update'])->middleware('throttle:30,1');
+    Route::get('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'preferences']);
+    Route::put('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'savePreferences'])->middleware('throttle:30,1');
     Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
     Route::get('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'index']);
     Route::get('/favourites/ids', [\App\Http\Controllers\Api\FavouriteController::class, 'ids']);
@@ -325,6 +327,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
 
     // Orders, quotes, payments
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'index'])->whereNumber('id');
+    Route::post('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
     Route::get('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'show'])->whereNumber('id');
     Route::post('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
@@ -352,6 +356,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/cart/items', [\App\Http\Controllers\Api\CartController::class, 'add'])->middleware('throttle:60,1');
     Route::put('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'update'])->whereNumber('id');
     Route::delete('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->whereNumber('id');
+    Route::post('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'applyPromo'])->middleware('throttle:20,1');
+    Route::delete('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'removePromo']);
     Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear']);
     Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'checkout'])->middleware('throttle:orders');
     Route::get('/order-groups', [\App\Http\Controllers\Api\CheckoutController::class, 'index']);
@@ -365,6 +371,17 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
 
+    Route::middleware('role:platform-admin')->prefix('admin/promo-codes')->group(function () {
+        $pc = \App\Http\Controllers\Api\Admin\PromoCodeController::class;
+        Route::get('/', [$pc, 'index']);
+        Route::post('/', [$pc, 'store']);
+        Route::put('/{id}', [$pc, 'update'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin')->prefix('admin/order-problems')->group(function () {
+        $op = \App\Http\Controllers\Api\Admin\OrderProblemController::class;
+        Route::get('/', [$op, 'index']);
+        Route::post('/{id}/handled', [$op, 'handled'])->whereNumber('id');
+    });
     Route::middleware('role:platform-admin')->prefix('admin/refund-requests')->group(function () {
         $rq = \App\Http\Controllers\Api\Admin\RefundRequestAdminController::class;
         Route::get('/', [$rq, 'index']);

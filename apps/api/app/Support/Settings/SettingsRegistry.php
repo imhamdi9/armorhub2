@@ -70,6 +70,11 @@ class SettingsRegistry
             ...collect(config('markets.markets'))->map(fn ($m, $code) => new Definition(
                 "installation.fee_percent.{$code}", 'installation', "Installation fee: {$m['name']['en']} (%)", 'float', null,
                 'Leave empty to use the all-markets fee above.', rules: ['min:0', 'max:30']))->values()->all(),
+            ...collect(config('markets.markets'))->flatMap(fn ($m, $code) => [
+                new Definition("shipping.flat_fee.{$code}", 'shipping', "Delivery fee per seller: {$m['name']['en']} (currency units)", 'float', null, 'What the customer pays for each seller\x27s parcel. Empty or 0 means free delivery.', rules: ['min:0']),
+                new Definition("shipping.free_over.{$code}", 'shipping', "Free delivery over: {$m['name']['en']} (currency units)", 'float', null, 'A seller\x27s part of the cart at or above this amount ships free. Empty means never free.', rules: ['min:0']),
+                new Definition("shipping.eta_days.{$code}", 'shipping', "Usual delivery time: {$m['name']['en']} (days)", 'int', null, 'Shown to the customer in the cart.', rules: ['min:1', 'max:60']),
+            ])->values()->all(),
             new Definition('platform.commission_split.platform', 'platform', 'Commission share: platform', 'float',
                 fn () => config('platform.commission_split.platform'), 'The three shares must add up to 1 (e.g. 0.35).', rules: ['min:0', 'max:1']),
             new Definition('platform.commission_split.company', 'platform', 'Commission share: partner company', 'float',

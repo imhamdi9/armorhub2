@@ -13,7 +13,8 @@ import { errorMessage, fieldErrors } from "@/lib/errors";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
 import { addAddress, getAddresses, type Address } from "@/services/ops.service";
-import { checkoutCart, getCart, payPurchase, removeCartItem, setCartQuantity, type CartView } from "@/services/cart.service";
+import { applyPromo, checkoutCart, getCart, removePromo, payPurchase, removeCartItem, setCartQuantity, type CartView } from "@/services/cart.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const MAX = 50;
 
@@ -30,6 +31,8 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<Address[]>([]);
   const [saveIt, setSaveIt] = useState(true);
+  const [code, setCode] = useState("");
+  const [promoErr, setPromoErr] = useState<string | null>(null);
   useEffect(() => {
     getAddresses().then((list) => {
       setSaved(list);
@@ -40,7 +43,7 @@ export default function CartPage() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => getCart().then(setCart).catch(() => setCart({ items: [], currency: null, items_amount: 0, service_fee_amount: 0, payable_amount: 0, can_checkout: false })), []);
+  const load = useCallback(() => getCart().then(setCart).catch(() => setCart({ items: [], currency: null, items_amount: 0, service_fee_amount: 0, shipping_amount: 0, discount_amount: 0, promo_code: null, promo_problem: null, eta_days: null, free_shipping_over: null, payable_amount: 0, can_checkout: false })), []);
   useEffect(() => { void load(); }, [load]);
 
   async function change(id: number, quantity: number) {
@@ -77,7 +80,7 @@ export default function CartPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => { setForm((f) => ({ ...f, [k]: e.target.value })); setFields((f) => ({ ...f, [`shipping_address.${k}`]: "" })); };
   const err = (k: string) => fields[`shipping_address.${k}`] && <p role="alert" className="mt-1 text-sm text-red-600">{fields[`shipping_address.${k}`]}</p>;
 
-  if (cart === null) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (cart === null) return <LoadingBlock />;
 
   return (
     <div>
@@ -123,12 +126,28 @@ export default function CartPage() {
             <div><Label htmlFor="c-line1">{tr("Address")}</Label><Input id="c-line1" required value={form.line1} onChange={set("line1")} />{err("line1")}</div>
             <div><Label htmlFor="c-city">{tr("City")}</Label><Input id="c-city" required value={form.city} onChange={set("city")} />{err("city")}</div>
 
+            <div className="grid gap-1" data-testid="promo">
+              {cart.promo_code ? (
+                <p className="flex items-center justify-between text-sm"><span>{tr("Code")} <b>{cart.promo_code}</b></span><Button type="button" size="sm" variant="outline" onClick={async () => setCart(await removePromo())}>{tr("Remove")}</Button></p>
+              ) : (
+                <div className="flex gap-2">
+                  <Input aria-label={tr("Discount code")} placeholder={tr("Discount code")} value={code} onChange={(e) => setCode(e.target.value)} />
+                  <Button type="button" variant="outline" disabled={!code.trim()} onClick={async () => { setPromoErr(null); try { setCart(await applyPromo(code)); setCode(""); } catch (e) { setPromoErr(errorMessage(e)); } }}>{tr("Apply")}</Button>
+                </div>
+              )}
+              {(promoErr || cart.promo_problem) && <p className="text-sm text-red-600" role="alert">{promoErr ?? cart.promo_problem}</p>}
+            </div>
+
             <dl className="space-y-1 border-t pt-3 text-sm">
               <div className="flex justify-between"><dt>{tr("Items")}</dt><dd>{formatMoney(cart.items_amount, cart.currency ?? "")}</dd></div>
+              {cart.discount_amount > 0 && <div className="flex justify-between text-green-700" data-testid="discount"><dt>{tr("Discount")}</dt><dd>−{formatMoney(cart.discount_amount, cart.currency ?? "")}</dd></div>}
+              <div className="flex justify-between" data-testid="delivery"><dt>{tr("Delivery")}</dt><dd>{cart.shipping_amount > 0 ? formatMoney(cart.shipping_amount, cart.currency ?? "") : tr("Free")}</dd></div>
               {cart.service_fee_amount > 0 && <div className="flex justify-between" data-testid="platform-fee"><dt>{tr("Platform fee")}</dt><dd>{formatMoney(cart.service_fee_amount, cart.currency ?? "")}</dd></div>}
               <div className="flex justify-between text-base font-bold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(cart.payable_amount, cart.currency ?? "")}</dd></div>
             </dl>
             {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+            {cart.eta_days && <p className="text-sm text-muted-foreground" data-testid="eta">{tr("Usually delivered in about {days} days.", { days: cart.eta_days })}</p>}
+            {cart.shipping_amount > 0 && cart.free_shipping_over && <p className="text-sm text-muted-foreground">{tr("Delivery is free for a seller's part of the cart worth {amount} or more.", { amount: formatMoney(cart.free_shipping_over, cart.currency ?? "") })}</p>}
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saveIt} onChange={(e) => setSaveIt(e.target.checked)} />{tr("Save this address for next time")}</label>
             <Button type="submit" className="w-full" disabled={busy || !cart.can_checkout}>{tr("Place order and pay")}</Button>
             {!cart.can_checkout && <p className="text-xs text-muted-foreground">{tr("Remove the items that cannot be bought to continue.")}</p>}

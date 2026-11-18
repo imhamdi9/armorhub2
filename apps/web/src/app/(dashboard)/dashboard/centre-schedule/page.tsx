@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import { addTimeOff, getCalendar, getCentreSettings, removeTimeOff, saveCentreSettings, saveHours, type CalendarItem, type CentreSettings } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -41,7 +42,7 @@ export default function CentreSchedulePage() {
   }
 
   if (forbidden) return <EmptyState>{tr("This page is for service centres.")}</EmptyState>;
-  if (!s) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!s) return <LoadingBlock />;
 
   return (
     <div className="space-y-8">

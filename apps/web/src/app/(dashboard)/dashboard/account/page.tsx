@@ -9,19 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { addAddress, changePassword, deleteAccount, getAddresses, removeAddress, saveProfile, updateAddress, type Address } from "@/services/ops.service";
+import { addAddress, changePassword, getNotificationPrefs, saveNotificationPrefs, type NotificationPrefs, deleteAccount, getAddresses, removeAddress, saveProfile, updateAddress, type Address } from "@/services/ops.service";
 
 type Msg = { tone: "ok" | "warn"; text: string } | null;
 
 /** The customer's own details: who they are, how to sign in, where to deliver, and how to leave. */
 export default function AccountPage() {
   const user = useCurrentUser();
+  // Addresses and self-service deletion belong to shoppers; business and staff accounts are closed with support.
+  const personal = !!user?.roles?.includes("customer") && !user.roles.some((r) => r !== "customer");
   const [profile, setProfile] = useState<Msg>(null);
   const [pw, setPw] = useState<Msg>(null);
   const [addr, setAddr] = useState<Msg>(null);
   const [danger, setDanger] = useState<Msg>(null);
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [adding, setAdding] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
+  useEffect(() => { getNotificationPrefs().then(setPrefs).catch(() => {}); }, []);
   const load = () => getAddresses().then(setAddresses).catch(() => setAddresses([]));
   useEffect(() => { load(); }, []);
 
@@ -71,7 +75,20 @@ export default function AccountPage() {
         </form>
       </section>
 
-      <section className="rounded-xl border p-4" data-testid="addresses">
+      {prefs && (
+        <section className="rounded-xl border p-4" data-testid="notification-prefs">
+          <h2 className="mb-1 text-lg font-semibold">{tr("How we tell you")}</h2>
+          <p className="mb-3 text-sm text-muted-foreground">{tr("You always see updates inside the app. Choose what else reaches you.")}</p>
+          {([["notify_email", "By e-mail"], ["notify_push", "On my phone (push)"]] as const).map(([key, label]) => (
+            <label key={key} className="mb-2 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={prefs[key]} onChange={async (e) => setPrefs(await saveNotificationPrefs({ [key]: e.target.checked }))} />
+              {tr(label)}
+            </label>
+          ))}
+        </section>
+      )}
+
+      {personal && <section className="rounded-xl border p-4" data-testid="addresses">
         <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">{tr("Delivery addresses")}</h2><Button size="sm" onClick={() => setAdding(true)}>{tr("Add an address")}</Button></div>
         {addr && <Note tone={addr.tone}>{addr.text}</Note>}
         {adding && (
@@ -107,9 +124,9 @@ export default function AccountPage() {
             ))}
           </ul>
         )}
-      </section>
+      </section>}
 
-      <section className="rounded-xl border border-red-200 p-4" data-testid="danger">
+      {personal ? <section className="rounded-xl border border-red-200 p-4" data-testid="danger">
         <h2 className="mb-1 text-lg font-semibold">{tr("Delete my account")}</h2>
         <p className="mb-3 text-sm text-muted-foreground">{tr("Your personal details are removed. Past orders stay as financial records, without your name. You cannot do this while an order is in progress.")}</p>
         {danger && <Note tone={danger.tone}>{danger.text}</Note>}
@@ -126,7 +143,9 @@ export default function AccountPage() {
           <input name="confirm" className={`${field} max-w-xs`} placeholder={tr("Type DELETE if you signed in with Google, Facebook or Apple")} />
           <Button type="submit" variant="outline">{tr("Delete my account")}</Button>
         </form>
-      </section>
+      </section> : (
+        <p className="rounded-xl border p-4 text-sm text-muted-foreground">{tr("Business and staff accounts are closed through support. Please contact us.")}</p>
+      )}
     </div>
   );
 }

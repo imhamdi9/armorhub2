@@ -14,7 +14,8 @@ class InstallationUpdate extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        // The notification inside the app is always kept; e-mail only if the person has not switched it off.
+        return ($notifiable->notify_email ?? true) ? ['database', 'mail'] : ['database'];
     }
 
     public function toDatabase(object $notifiable): array

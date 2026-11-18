@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
 import { getFavourites, removeFavourite, type FavouriteProduct } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Products the customer kept to come back to. */
 export default function FavouritesPage() {
@@ -21,7 +22,7 @@ export default function FavouritesPage() {
   return (
     <div>
       <PageHeader title={tr("Favourites")} />
-      {rows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : rows.length === 0 ? <EmptyState>{tr("Nothing saved yet. Tap the heart on a product to keep it here.")}</EmptyState> : (
+      {rows === null ? <LoadingBlock /> : rows.length === 0 ? <EmptyState>{tr("Nothing saved yet. Tap the heart on a product to keep it here.")}</EmptyState> : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((p) => (
             <div key={p.id} className="overflow-hidden rounded-xl border" data-testid="favourite-item">

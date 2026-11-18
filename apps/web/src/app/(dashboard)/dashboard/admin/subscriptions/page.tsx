@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { getSubscriptionPlans, updateSubscriptionPlan, type SubscriptionPlan } from "@/services/platform.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Draft = { name: string; price_monthly: string; customer_limit: string; commission_percentage: string; team_seats: string; is_active: boolean };
 
@@ -37,7 +38,7 @@ export default function SubscriptionPlansPage() {
     }
   }
 
-  if (!plans) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!plans) return <LoadingBlock />;
 
   const set = (id: number, k: keyof Draft, v: string | boolean) => setDrafts((d) => ({ ...d, [id]: { ...d[id], [k]: v } }));
 

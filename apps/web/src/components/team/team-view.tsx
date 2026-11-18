@@ -21,6 +21,7 @@ import {
 import type { Partner, StaffUser } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 import { getRoles } from "@/services/admin.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const ROLE_LABELS: Record<string, string> = {
   "platform-admin": "Platform admin",
@@ -141,7 +142,7 @@ export function TeamView({ scope }: { scope?: "platform" | "users" }) {
       {!showForm && error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {users === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : users.length === 0 ? (
         <EmptyState>{tr("No team members found.")}</EmptyState>
       ) : (

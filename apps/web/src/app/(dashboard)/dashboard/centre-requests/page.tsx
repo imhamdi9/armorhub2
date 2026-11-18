@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { getOpenRequests, sendOffer, type OpenRequest } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 function OfferForm({ r, onDone }: { r: OpenRequest; onDone: () => void }) {
   const [price, setPrice] = useState(r.my_offer ? String(r.my_offer.price) : "");
@@ -44,7 +45,7 @@ export default function CentreRequestsPage() {
     <div className="max-w-3xl">
       <PageHeader title="Installation requests" />
       <Note>{tr("You see what must be done and roughly how far away it is. Customer details are shared after the customer accepts your offer and pays. Do not put phone numbers or links in offers.")}</Note>
-      {failed ? <EmptyState>{tr("Could not load requests.")}</EmptyState> : rows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p>
+      {failed ? <EmptyState>{tr("Could not load requests.")}</EmptyState> : rows === null ? <LoadingBlock />
         : rows.length === 0 ? <EmptyState>{tr("No open requests near you right now.")}</EmptyState>
         : (
           <ul className="space-y-3">

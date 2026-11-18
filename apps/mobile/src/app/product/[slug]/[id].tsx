@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/api";
 import { Picture, Price, SaveTag, Stars, savingPercent } from "@/components/brand";
-import { Button, Card, Loading, Problem } from "@/components/ui";
+import { Button, Card, Loading, Problem, messageOf } from "@/components/ui";
 import { WEB_URL, imageUrl } from "@/config";
 import { money, t } from "@/i18n";
 import { useSession } from "@/session";
@@ -23,12 +23,17 @@ export default function ProductScreen() {
   const [error, setError] = useState<unknown>(null);
   const [picked, setPicked] = useState<number | null>(null);
   const [slide, setSlide] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setError(null);
     api<ProductPage>(`/public/storefronts/${encodeURIComponent(slug)}/products/${id}`).then(setData).catch(setError);
   }, [slug, id]);
   useEffect(load, [load]);
+  useEffect(() => {
+    if (user) api<number[]>("/favourites/ids").then((ids) => setSaved(ids.includes(Number(id)))).catch(() => {});
+  }, [user, id]);
 
   if (error) return <Problem error={error} retry={load} />;
   if (!data) return <Loading />;
@@ -48,6 +53,20 @@ export default function ProductScreen() {
   function buy() {
     if (!user) return router.push("/login");
     router.push({ pathname: "/checkout/[slug]/[id]", params: { slug, id: String(p.id), option: picked !== null ? String(picked) : "" } });
+  }
+  async function toggleSaved() {
+    if (!user) return router.push("/login");
+    const next = !saved;
+    setSaved(next);
+    try { await (next ? api("/favourites", { method: "POST", body: { product_id: p.id } }) : api(`/favourites/${p.id}`, { method: "DELETE" })); } catch { setSaved(!next); }
+  }
+  async function addToCart() {
+    if (!user) return router.push("/login");
+    setNote(null);
+    try {
+      await api("/cart/items", { method: "POST", body: { product_id: p.id, quantity: 1, ...(picked !== null && options[picked]?.target_id ? { option_id: options[picked].target_id } : {}) } });
+      setNote(t("Added to your cart."));
+    } catch (e) { setNote(messageOf(e)); }
   }
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => setSlide(Math.round(e.nativeEvent.contentOffset.x / galleryWidth));
 
@@ -80,6 +99,9 @@ export default function ProductScreen() {
             </View>
           )}
 
+          <Button title={saved ? `♥  ${t("Saved to favourites")}` : `♡  ${t("Save to favourites")}`} kind="outline" onPress={toggleSaved} style={{ minHeight: 44, marginTop: 6 }} />
+          {goods && !onWebOnly && stock ? <Button title={t("Add to cart")} kind="outline" onPress={addToCart} style={{ minHeight: 44 }} /> : null}
+          {note ? <Text style={s.note} accessibilityRole="alert">{note}</Text> : null}
           <Text style={[s.stock, !stock && { color: color.red }]}>{stock ? t("In stock") : t("Out of stock")}{goods && stock ? ` · ${t("Free delivery")}` : ""}</Text>
           <View style={s.trust}>
             <Trust icon="🔒" text={t("Secure payment")} />

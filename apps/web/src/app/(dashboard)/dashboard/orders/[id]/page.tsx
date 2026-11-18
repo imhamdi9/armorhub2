@@ -23,6 +23,9 @@ import type { Order, PartnerQuote } from "@/types/platform";
 import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { OrderStatusStrip } from "@/components/orders/status-strip";
 import { BuyAgain, RefundPanel } from "@/components/orders/refund-panel";
+import { OrderMessages } from "@/components/orders/order-messages";
+import { RateOrder } from "@/components/orders/rate-order";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function OrderDetailPage() {
   return (
@@ -86,7 +89,7 @@ function OrderDetail() {
     }
   }
 
-  if (!order) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!order) return <LoadingBlock />;
 
   const submitted = quotes.filter((q) => q.status !== "pending");
   const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
@@ -114,6 +117,8 @@ function OrderDetail() {
         {Number(order.service_amount) > 0 && <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>}
         <div className="my-2"><OrderStatusStrip statuses={order.statuses} /></div>
         <p className="mt-1 font-semibold">{tr("Invoice")}: {formatMoney(order.total_amount, order.currency)}</p>
+        {Number(order.discount_amount) > 0 && <p className="text-green-700" data-testid="discount">{tr("Discount")}: −{formatMoney(order.discount_amount ?? 0, order.currency)}</p>}
+        {Number(order.shipping_amount) > 0 && <p data-testid="delivery">{tr("Delivery")}: {formatMoney(order.shipping_amount ?? 0, order.currency)}</p>}
         {Number(order.service_fee_amount) > 0 && (
           <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>
         )}
@@ -138,6 +143,8 @@ function OrderDetail() {
       )}
 
       {user?.roles?.includes("customer") && order.product?.requires_shipping && order.product_id && ["paid", "completed"].includes(order.status) && <BuyAgain productId={order.product_id} quantity={order.quantity} />}
+      {user?.roles?.includes("customer") && order.status === "completed" && order.product_id && <RateOrder productId={order.product_id} />}
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && order.status !== "awaiting_payment" && <OrderMessages orderId={order.id} canFlag />}
       {user?.roles?.includes("customer") && order.product?.requires_shipping && <RefundPanel orderId={order.id} currency={order.currency} onChange={() => getOrder(id).then(setOrder)} />}
       <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
 

@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/errors";
 import { DISPUTE_TYPES } from "@/lib/installation";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { decideDispute, decideViolation, getAdminDisputes, getViolations, markRefundPaid, type AdminDispute } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 function Decide({ d, onDone }: { d: AdminDispute; onDone: () => void }) {
   const [decision, setDecision] = useState("release");
@@ -56,7 +57,7 @@ export default function AdminDisputesPage() {
   useEffect(() => { load(); }, []);
 
   if (forbidden) return <EmptyState>{tr("Only platform admins can open this page.")}</EmptyState>;
-  if (!rows) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!rows) return <LoadingBlock />;
 
   return (
     <div className="max-w-4xl">

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { ShellStore } from "@/components/public/shell";
 import { ShopProductCard } from "@/components/shop/shop-product-card";
+import { FitFilter } from "@/components/shop/fit-filter";
 import { ShopSearch } from "@/components/shop/shop-search";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { categoryLabel } from "@/lib/category";
@@ -14,8 +15,9 @@ const SORTS = [["", "Featured"], ["price_asc", "Price: low to high"], ["price_de
 
 /** Search and browse a store's products. All filtering and sorting is server-side, so it works without JavaScript. */
 export function Catalog({
-  store, result, categories, counts = {}, industries = [], industryCounts = {}, industry = "", q, category, sort = "",
+  store, result, categories, counts = {}, industries = [], industryCounts = {}, industry = "", q, category, sort = "", fit,
 }: {
+  fit?: { vehicle_model_id: string; year: string; compatible: string };
   store: ShellStore;
   result: PublicProducts | null;
   categories: string[];
@@ -29,7 +31,7 @@ export function Catalog({
 }) {
   const base = `/s/${store.slug}/products`;
   const link = (params: Record<string, string | number>) => {
-    const merged: Record<string, string | number> = { ...params, ...(industry ? { industry } : {}), ...(sort && !("sort" in params) ? { sort } : {}) };
+    const merged: Record<string, string | number> = { ...params, ...(industry ? { industry } : {}), ...(sort && !("sort" in params) ? { sort } : {}), ...(fit ?? {}) };
     const query = new URLSearchParams(Object.entries(merged).filter(([, v]) => v !== "" && v !== 0).map(([k, v]) => [k, String(v)])).toString();
     return query ? `${base}?${query}` : base;
   };
@@ -77,6 +79,7 @@ export function Catalog({
           </aside>
 
           <div>
+            <FitFilter base={base} q={q} category={category} sort={sort} industry={industry} fit={fit} />
             <nav aria-label={tr("Sort")} className="mb-5 flex flex-wrap items-center gap-2 text-sm">
               <span className="text-slate">{tr("Sort")}:</span>
               {SORTS.map(([key, label]) => (

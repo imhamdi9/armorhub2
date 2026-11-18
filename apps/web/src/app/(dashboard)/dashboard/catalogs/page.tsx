@@ -8,6 +8,7 @@ import { aliasLabel } from "@/lib/navigation";
 import { getIndustries } from "@/services/platform.service";
 import type { Industry } from "@/types/auth";
 import { tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Every industry's shared lists in one place (platform admins). */
 export default function CatalogsPage() {
@@ -22,7 +23,7 @@ export default function CatalogsPage() {
       <PageHeader title={tr("Catalogs")} />
 
       {industries === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : industries.length === 0 ? (
         <EmptyState>{tr("No industries are set up.")}</EmptyState>
       ) : (

@@ -52,6 +52,8 @@ final class Surfaces
                 'section' => ['type' => 'select', 'label' => 'Section', 'options' => self::SECTIONS, 'required' => true],
             ]],
             'footer_blurb' => ['type' => 'longtext', 'label' => 'Footer description', 'max' => 300],
+            'example_currency' => ['type' => 'text', 'label' => 'Sample prices on the page: currency code (e.g. EGP)', 'max' => 3],
+            'example_city' => ['type' => 'text', 'label' => 'Sample request on the page: city', 'max' => 40],
             'quote_title' => ['type' => 'text', 'label' => 'Compare quotes: title', 'max' => 120],
             'quote_text' => ['type' => 'longtext', 'label' => 'Compare quotes: text', 'max' => 300],
             'quote_cta' => ['type' => 'text', 'label' => 'Compare quotes: button', 'max' => 40],

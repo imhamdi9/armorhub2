@@ -37,6 +37,9 @@ class SellerLedgerSubscriber implements EventSubscriber
             $commission = (float) (Commission::where('order_id', $order->id)->value('amount') ?? 0);
 
             SellerLedgerEntry::firstOrCreate(['order_id' => $order->id, 'type' => 'sale'], ['company_id' => $sellerId, 'amount' => (float) $order->total_amount, 'currency' => $order->currency, 'status' => 'held']);
+            if ((float) $order->shipping_amount > 0) {
+                SellerLedgerEntry::firstOrCreate(['order_id' => $order->id, 'type' => 'shipping'], ['company_id' => $sellerId, 'amount' => (float) $order->shipping_amount, 'currency' => $order->currency, 'status' => 'held']);
+            }
             SellerLedgerEntry::firstOrCreate(['order_id' => $order->id, 'type' => 'commission'], ['company_id' => $sellerId, 'amount' => -$commission, 'currency' => $order->currency, 'status' => 'held']);
 
             return;

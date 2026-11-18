@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { getWallet, withdraw, type Wallet } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** What the centre has earned: held until the work is proven, available, and withdrawn by bank transfer or wallet. */
 export default function WalletPage() {
@@ -23,7 +24,7 @@ export default function WalletPage() {
   useEffect(() => { load(); }, []);
 
   if (forbidden) return <EmptyState>{tr("You do not have access to the wallet.")}</EmptyState>;
-  if (!w) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!w) return <LoadingBlock />;
   const currencies = Object.keys(w.balances);
   const cards: [keyof Wallet["balances"][string], string][] = [["held", "Held until the work is confirmed"], ["available", "Available to withdraw"], ["pending_withdrawal", "In a withdrawal"], ["withdrawn", "Withdrawn"]];
 

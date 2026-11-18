@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { deleteZone, getDemand, getZones, saveZone, type Zone } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Where each market is open. A zone starts closed and is opened once it has trusted centres in it. */
 export default function ZonesPage() {
@@ -27,7 +28,7 @@ export default function ZonesPage() {
     <div className="space-y-8">
       <PageHeader title={tr("Service zones")} />
       {err && <Note tone="warn">{err}</Note>}
-      {zones === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : zones.length === 0 ? <EmptyState>{tr("No zones yet. Until you add one, the market is open everywhere.")}</EmptyState> : (
+      {zones === null ? <LoadingBlock /> : zones.length === 0 ? <EmptyState>{tr("No zones yet. Until you add one, the market is open everywhere.")}</EmptyState> : (
         <ul className="divide-y rounded-xl border" data-testid="zones">
           {zones.map((z) => (
             <li key={z.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">

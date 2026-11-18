@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { addVehicle, getGarage, getMakes, getModels, removeVehicle, updateVehicle, type MakeOrModel, type Vehicle } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** The customer's cars: saved once, used to show only the parts that fit and to start a request faster. */
 export default function GaragePage() {
@@ -54,7 +55,7 @@ export default function GaragePage() {
           <div className="flex gap-2"><Button type="submit">{tr("Save vehicle")}</Button><Button type="button" variant="outline" onClick={() => setAdding(false)}>{tr("Cancel")}</Button></div>
         </form>
       )}
-      {cars === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : cars.length === 0 ? (
+      {cars === null ? <LoadingBlock /> : cars.length === 0 ? (
         <EmptyState>{tr("Add your car to see only the parts that fit it.")}</EmptyState>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

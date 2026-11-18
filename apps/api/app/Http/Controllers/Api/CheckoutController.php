@@ -62,6 +62,8 @@ class CheckoutController extends Controller
                 $lifecycle->cancel($order, $request->user(), 'Purchase cancelled by the customer');
             }
             $group->update(['status' => OrderGroup::CANCELLED]);
+            // The discount code can be used again: the purchase it was reserved for will not happen.
+            DB::table('promo_redemptions')->where('group_id', $group->id)->update(['status' => 'released', 'updated_at' => now()]);
         });
 
         return $this->present($group->fresh());
@@ -79,7 +81,7 @@ class CheckoutController extends Controller
 
         return [
             'id' => $g->id, 'status' => $g->status, 'currency' => $g->currency, 'items_amount' => (float) $g->items_amount, 'service_fee_amount' => (float) $g->service_fee_amount,
-            'payable_amount' => (float) $g->payable_amount, 'paid_at' => $g->paid_at?->toIso8601String(), 'created_at' => $g->created_at?->toIso8601String(),
+            'shipping_amount' => (float) $g->shipping_amount, 'discount_amount' => (float) $g->discount_amount, 'payable_amount' => (float) $g->payable_amount, 'paid_at' => $g->paid_at?->toIso8601String(), 'created_at' => $g->created_at?->toIso8601String(),
             'orders' => $orders->map(fn ($o) => [
                 'id' => $o->id, 'product' => $o->product?->name, 'image' => ($o->product?->images ?? [])[0] ?? null, 'quantity' => $o->quantity, 'total_amount' => (float) $o->total_amount,
                 'service_fee_amount' => (float) $o->service_fee_amount, 'status' => $o->status instanceof OrderStatus ? $o->status->value : $o->status,

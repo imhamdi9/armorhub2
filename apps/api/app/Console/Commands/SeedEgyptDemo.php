@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class SeedEgyptDemo extends Command
 {
-    protected $signature = 'platform:demo-egypt {--password=password123 : Password for every demo login} {--force : Allow it in production} {--no-site : Do not change the platform home page}';
+    protected $signature = 'platform:demo-egypt {--password=password123 : Password for every demo login} {--force : Allow it in production} {--no-site : Do not change the platform home page} {--shipping : Also set demo delivery fees for Egypt}';
 
     protected $description = 'Create an Egyptian demo marketplace: stores, partners, sellers, customers, products and images';
 
@@ -70,6 +70,16 @@ class SeedEgyptDemo extends Command
                 'latitude' => $lat, 'longitude' => $lng, 'city' => $city, 'country' => 'EG', 'location_enabled' => true,
             ]);
             $u->assignRole('customer');
+        }
+
+        // Delivery in Egypt: a flat fee per seller's parcel, free from 1,500 and usually 3 days.
+        if ($this->option('shipping')) {
+            $settings = app(\App\Support\Settings\Settings::class);
+            foreach (['shipping.flat_fee.EG' => 60, 'shipping.free_over.EG' => 1500, 'shipping.eta_days.EG' => 3] as $key => $value) {
+                if ($settings->get($key) === null) {
+                    $settings->set($key, $value);
+                }
+            }
         }
 
         if (! $this->option('no-site')) {
@@ -246,7 +256,7 @@ class SeedEgyptDemo extends Command
         };
 
         $set('site.home', [
-            'badge_text' => 'Egypt · مصر', 'hero_title' => 'Trusted services and made-in-Egypt goods, near you',
+            'badge_text' => 'Egypt · مصر', 'example_currency' => 'EGP', 'example_city' => 'Cairo', 'hero_title' => 'Trusted services and made-in-Egypt goods, near you',
             'hero_subtitle' => 'Book vetted professionals in Cairo, Giza and Alexandria, and shop Egyptian crafts, cotton and care products from local sellers.',
             'hero_image_url' => $this->media['hero-cairo.jpg'] ?? '', 'banner_image_url' => $this->media['hero-cairo.jpg'] ?? '',
         ]);

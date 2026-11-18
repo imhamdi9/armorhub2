@@ -29,6 +29,7 @@ import {
 } from "@/services/admin.service";
 import { getTenants } from "@/services/platform.service";
 import type { Tenant } from "@/types/platform";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 type Catalog = Awaited<ReturnType<typeof getEventCatalog>>;
 const STATUSES = ["", "pending", "delivered", "failed", "dead", "skipped"];
@@ -182,7 +183,7 @@ export default function PlatformPage() {
             </select>
           </div>
           {modules === null ? (
-            <p className="text-muted-foreground">{tr("Loading...")}</p>
+            <LoadingBlock />
           ) : (
             <div className="space-y-3">
               {modules.map((m) => (
@@ -216,7 +217,7 @@ export default function PlatformPage() {
               {tr("Market launched.")} {launched.store_slug && <a className="underline" href={`/s/${launched.store_slug}`} target="_blank" rel="noopener noreferrer">{tr("Open its store")}</a>}
             </p>
           )}
-          {blueprints === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : (
+          {blueprints === null ? <LoadingBlock /> : (
             <div className="space-y-4">
               {blueprints.map((b) => (
                 <article key={b.id} className="rounded-xl border p-5">
@@ -262,7 +263,7 @@ export default function PlatformPage() {
             </select>
           </div>
           {note && <p className="mb-3 text-sm text-green-600" role="status">{note}</p>}
-          {workflows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : workflows.map((w) => (
+          {workflows === null ? <LoadingBlock /> : workflows.map((w) => (
             <article key={w.key} className="mb-4 rounded-xl border p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-bold"><code>{w.key}</code> <span className="text-sm font-normal text-muted-foreground">{w.owner}</span></h2>
@@ -289,7 +290,7 @@ export default function PlatformPage() {
 
       {tab === "catalog" && (
         <section>
-          {catalog === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : (
+          {catalog === null ? <LoadingBlock /> : (
             <div className="divide-y rounded-xl border text-sm">
               {catalog.map((c) => (
                 <div key={c.name} className="grid gap-1 p-4 md:grid-cols-[14rem_1fr]">
@@ -314,7 +315,7 @@ export default function PlatformPage() {
             </select>
           </div>
 
-          {events === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : events.length === 0 ? <EmptyState>{tr("No events yet.")}</EmptyState> : (
+          {events === null ? <LoadingBlock /> : events.length === 0 ? <EmptyState>{tr("No events yet.")}</EmptyState> : (
             <div className="divide-y rounded-xl border text-sm">
               {events.map((e) => (
                 <button key={e.event_id} type="button" onClick={() => show(e)} className="flex w-full flex-wrap items-center justify-between gap-2 p-3 text-start hover:bg-muted">

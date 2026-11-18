@@ -85,6 +85,13 @@ const AR: Record<string, string> = {
   "We could not find your location. Choose your market.": "تعذّر تحديد موقعك. اختر سوقك.",
   "Popular products": "الأكثر رواجًا",
   "Free": "مجاني", "Not signed in": "غير مسجّل", "Open the website": "فتح الموقع",
+  "Cart": "السلة", "Sign in to use your cart": "سجّل الدخول لتستخدم السلة", "Your cart is empty.": "سلتك فارغة.", "Fewer": "أقل", "More": "أكثر", "Remove": "حذف",
+  "Code": "الكود", "Discount code": "كود الخصم", "Apply": "تطبيق", "Discount": "الخصم", "Usually delivered in about {n} days.": "يصل عادةً خلال نحو {n} أيام.",
+  "Favourites": "المفضلة", "Sign in to see your favourites": "سجّل الدخول لترى المفضلة", "Nothing saved yet. Tap the heart on a product to keep it here.": "لا شيء محفوظ بعد. اضغط القلب على أي منتج ليظهر هنا.",
+  "Saved to favourites": "محفوظ في المفضلة", "Save to favourites": "احفظ في المفضلة", "Add to cart": "أضف إلى السلة", "Added to your cart.": "أُضيف إلى سلتك.",
+  "Your refund is being sent back to you.": "جارٍ إرجاع مبلغك إليك.", "Your refund was sent.": "تم إرسال مبلغك.", "We received your return request. We will answer soon.": "استلمنا طلب الإرجاع. سنرد قريباً.",
+  "Why do you want to cancel or return it?": "لماذا تريد الإلغاء أو الإرجاع؟", "Send request": "إرسال الطلب", "Cancel or return this order": "إلغاء الطلب أو إرجاعه",
+  "Messages about this order": "رسائل حول هذا الطلب", "Write a message": "اكتب رسالة", "Send": "إرسال",
 };
 
 /** Translates a phrase. `{n}`-style holes are filled from `vars`. */

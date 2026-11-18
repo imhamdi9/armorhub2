@@ -12,6 +12,7 @@ import {
 } from "@/services/platform.service";
 import type { AppNotification } from "@/types/platform";
 import { formatDateTime, tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function NotificationsPage() {
       />
 
       {items === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : items.length === 0 ? (
         <EmptyState>Nothing yet. You will be told here (and by email) when something needs you.</EmptyState>
       ) : (

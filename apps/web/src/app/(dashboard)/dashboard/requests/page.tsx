@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { getPartnerRequests, submitQuote } from "@/services/platform.service";
 import type { PartnerQuote } from "@/types/platform";
 import { formatMoney, tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Service requests sent to the signed-in partner, to be priced. */
 export default function RequestsPage() {
@@ -44,7 +45,7 @@ export default function RequestsPage() {
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {quotes === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : quotes.length === 0 ? (
         <EmptyState>{tr("No requests right now.")}</EmptyState>
       ) : (

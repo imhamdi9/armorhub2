@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/installations/shared";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { formatMoney, tr } from "@/lib/i18n";
 import { getCentreJobs, type CentreJob } from "@/services/installation.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CentreJobsPage() {
   const [rows, setRows] = useState<CentreJob[] | null>(null);
@@ -16,7 +17,7 @@ export default function CentreJobsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Installation jobs" />
-      {failed ? <EmptyState>{tr("Could not load jobs.")}</EmptyState> : rows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p>
+      {failed ? <EmptyState>{tr("Could not load jobs.")}</EmptyState> : rows === null ? <LoadingBlock />
         : rows.length === 0 ? <EmptyState>{tr("No accepted jobs yet.")}</EmptyState>
         : (
           <div className="space-y-3">

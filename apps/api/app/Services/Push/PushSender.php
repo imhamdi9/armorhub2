@@ -22,7 +22,7 @@ class PushSender
     /** @param array<string, mixed> $data what the app needs to open the right screen (a path) */
     public function toUser(User $user, string $title, string $body, array $data = []): void
     {
-        if (! $this->enabled()) {
+        if (! $this->enabled() || ! ($user->notify_push ?? true)) {
             return;
         }
 

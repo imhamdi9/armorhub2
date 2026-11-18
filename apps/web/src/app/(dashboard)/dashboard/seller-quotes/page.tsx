@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import { getSellerRequests, sendSellerQuote, withdrawSellerQuote, type SellerRequest } from "@/services/ops.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Price requests sent to this seller. The buyer's identity is never shown. */
 export default function SellerQuotesPage() {
@@ -26,7 +27,7 @@ export default function SellerQuotesPage() {
     <div className="space-y-4">
       <PageHeader title={tr("Price requests for you")} />
       {err && <Note tone="warn">{err}</Note>}
-      {rows === null ? <p className="text-muted-foreground">{tr("Loading...")}</p> : rows.length === 0 ? <EmptyState>{tr("No open price requests.")}</EmptyState> : rows.map((r) => (
+      {rows === null ? <LoadingBlock /> : rows.length === 0 ? <EmptyState>{tr("No open price requests.")}</EmptyState> : rows.map((r) => (
         <section key={r.id} className="rounded-xl border p-4" data-testid="seller-request">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold">{r.number} · {r.title ?? r.category} × {r.quantity}</p>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { createPayout, getPayouts, markPayoutPaid, type Balances, type Payout } from "@/services/admin.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Pay sellers out. Money moves by bank transfer outside the platform; here you gather what is owed and record the reference. */
 export default function PayoutsPage() {
@@ -34,7 +35,7 @@ export default function PayoutsPage() {
   }
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!sellers) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!sellers) return <LoadingBlock />;
 
   return (
     <div className="max-w-4xl">

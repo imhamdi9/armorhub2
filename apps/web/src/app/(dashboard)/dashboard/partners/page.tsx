@@ -18,6 +18,7 @@ import {
 } from "@/services/platform.service";
 import type { Partner } from "@/types/platform";
 import { tr } from "@/lib/i18n";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const FIELDS = ["name", "city", "country", "phone", "latitude", "longitude"] as const;
 type Draft = Record<(typeof FIELDS)[number], string>;
@@ -147,7 +148,7 @@ export default function PartnersPage() {
       {forbidden ? (
         <EmptyState>{tr("You do not have access to partners.")}</EmptyState>
       ) : partners === null ? (
-        <p className="text-muted-foreground">{tr("Loading...")}</p>
+        <LoadingBlock />
       ) : partners.length === 0 ? (
         <EmptyState>{tr("No partners found.")}</EmptyState>
       ) : (

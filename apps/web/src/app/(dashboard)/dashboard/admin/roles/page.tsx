@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { createRole, deleteRole, getRoles, updateRole, type RoleInfo } from "@/services/admin.service";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 const PERMISSION_LABELS: Record<string, string> = {
   "dashboard.view": "See the dashboard", "orders.view": "See orders", "products.view": "See products", "products.create": "Create products",
@@ -56,7 +57,7 @@ export default function RolesPage() {
   }
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
-  if (!roles) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!roles) return <LoadingBlock />;
 
   return (
     <div className="max-w-3xl">

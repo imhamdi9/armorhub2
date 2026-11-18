@@ -70,6 +70,13 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
  * screens only show for the roles that can use them.
  */
 export function buildNavigation(user: User | null): NavItem[] {
+  const items = buildNavigationFor(user);
+  if (user && !items.some((i) => i.href === "/dashboard/account")) items.push({ title: "Account", href: "/dashboard/account", icon: "users" });
+
+  return items;
+}
+
+function buildNavigationFor(user: User | null): NavItem[] {
   const items: NavItem[] = [{ title: "Dashboard", href: "/dashboard", icon: "dashboard" }];
 
   // Anyone who may bring people into a team sees "Invitations" (the API refuses everyone else); heads of departments also see theirs.
@@ -230,6 +237,7 @@ export function buildNavigation(user: User | null): NavItem[] {
     items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "admin", icon: "security" });
     items.push({ title: "Withdrawals", href: "/dashboard/admin/withdrawals", section: "admin", icon: "commissions" });
     items.push({ title: "Business numbers", href: "/dashboard/admin/kpis", section: "admin", icon: "admin" });
+    items.push({ title: "Promo codes", href: "/dashboard/admin/promo-codes", section: "admin", icon: "payments" });
     items.push({ title: "Service zones", href: "/dashboard/admin/zones", section: "admin", icon: "tenants" });
     items.push({ title: "Operations tools", href: "/dashboard/admin/tools", section: "admin", icon: "settings" });
     items.push({ title: "Shipping", href: "/dashboard/admin/shipping", section: "admin", icon: "shipping" });

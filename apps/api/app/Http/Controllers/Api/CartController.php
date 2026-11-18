@@ -41,6 +41,21 @@ class CartController extends Controller
         return $this->carts->view($request->user());
     }
 
+    public function applyPromo(Request $request)
+    {
+        $data = $request->validate(['code' => 'required|string|max:40']);
+        $this->carts->setPromo($request->user(), $data['code']);
+
+        return $this->carts->view($request->user());
+    }
+
+    public function removePromo(Request $request)
+    {
+        $this->carts->clearPromo($request->user());
+
+        return $this->carts->view($request->user());
+    }
+
     public function clear(Request $request)
     {
         $this->carts->clear($request->user());

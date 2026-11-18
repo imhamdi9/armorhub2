@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatMoney, tr } from "@/lib/i18n";
 import { getOrder } from "@/services/platform.service";
 import type { Order } from "@/types/platform";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** A plain receipt for a paid order: what was bought, what was paid and where it goes. Printed or saved as a PDF from the browser. */
 export default function ReceiptPage() {
@@ -16,7 +17,7 @@ export default function ReceiptPage() {
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
   useEffect(() => { getOrder(id).then(setOrder).catch(() => setOrder(null)); }, [id]);
 
-  if (order === undefined) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (order === undefined) return <LoadingBlock />;
   if (!order) return <EmptyState>{tr("This order was not found.")}</EmptyState>;
 
   const a = (order as Order & { shipping_address?: { name: string; line1: string; city: string; phone: string } }).shipping_address;

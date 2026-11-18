@@ -95,6 +95,18 @@ class AccountTest extends TestCase
         $this->getJson('/api/favourites')->assertOk()->assertJsonCount(0);
     }
 
+    public function test_a_person_chooses_how_to_be_told_and_the_app_notice_is_always_kept(): void
+    {
+        $this->me()->getJson('/api/me/notification-preferences')->assertOk()->assertExactJson(['notify_email' => true, 'notify_push' => true]);
+        $this->putJson('/api/me/notification-preferences', ['notify_email' => false])->assertOk()->assertExactJson(['notify_email' => false, 'notify_push' => true]);
+        $this->putJson('/api/me/notification-preferences', ['notify_push' => 'maybe'])->assertUnprocessable();
+
+        $user = User::where('email', self::EMAIL)->firstOrFail();
+        $this->assertSame(['database'], (new \App\Notifications\InstallationUpdate('t', 'b', '/x'))->via($user));         // no e-mail now
+        $user->forceFill(['notify_email' => true])->save();
+        $this->assertSame(['database', 'mail'], (new \App\Notifications\InstallationUpdate('t', 'b', '/x'))->via($user->fresh()));
+    }
+
     public function test_the_car_fit_of_a_product_is_told_per_car(): void
     {
         $product = \App\Models\Product::withoutGlobalScopes()->where('is_active', true)->firstOrFail();

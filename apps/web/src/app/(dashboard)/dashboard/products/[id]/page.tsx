@@ -29,6 +29,7 @@ import {
 import type { CatalogItem, PriceRule, Product } from "@/types/platform";
 import { tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
+import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -143,7 +144,7 @@ export default function ProductDetailPage() {
     }
   }
 
-  if (!product) return <p className="text-muted-foreground">{tr("Loading...")}</p>;
+  if (!product) return <LoadingBlock />;
 
   return (
     <div>
