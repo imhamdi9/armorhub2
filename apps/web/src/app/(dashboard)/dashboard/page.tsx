@@ -110,7 +110,7 @@ function ActivityRail({ items }: { items: AppNotification[] | null }) {
               <Link href={n.path || "/dashboard/notifications"} className="flex items-start gap-3 py-3 text-sm hover:opacity-80">
                 <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read ? "bg-[#cfe0ff]" : "bg-[#2f6bff]"}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{n.title}</span>
+                  <span className="block truncate font-medium">{tr(n.title)}</span>
                   <span className="block text-xs text-muted-foreground">{formatDateTime(n.created_at)}</span>
                 </span>
               </Link>

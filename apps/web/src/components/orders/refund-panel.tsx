@@ -72,6 +72,7 @@ export function RefundPanel({ orderId, currency, onChange }: { orderId: number; 
           >
             <p className="font-semibold">{tr("Cancel or return this order")}</p>
             <p className="text-muted-foreground">{tr("Before it ships, you are refunded at once. After it ships, we review your request. You can return goods up to {days} days after delivery.", { days: s.return_days })}</p>
+            {s.return_to && <p className="text-muted-foreground" data-testid="return-to">{s.return_to.kind === "armorhub" ? tr("Returned goods go back to the ArmorHub warehouse") : tr("Returned goods go back to the seller")}{s.return_to.city ? ` · ${s.return_to.city}` : ""}</p>}
             {err && <Note tone="warn">{err}</Note>}
             <textarea name="reason" required minLength={3} maxLength={300} className="rounded-[10px] border p-2" placeholder={tr("Why do you want to cancel or return it?")} />
             <div className="flex flex-wrap items-center gap-2" data-testid="refund-photos">

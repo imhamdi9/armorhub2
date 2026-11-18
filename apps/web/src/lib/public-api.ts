@@ -33,7 +33,7 @@ async function fetchPublic<T>(path: string): Promise<{ value: T | null; down: bo
   if (!base) return { value: null, down: true };
 
   try {
-    const res = await fetch(`${base}/api/public${path}`, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(API_PATIENCE_MS) });
+    const res = await fetch(`${base}/api/public${path}`, { headers: { Accept: "application/json", "Accept-Language": await language() }, cache: "no-store", signal: AbortSignal.timeout(API_PATIENCE_MS) });
     if (res.status >= 500) return { value: null, down: true };
 
     return { value: res.ok ? ((await res.json()) as T) : null, down: false };
@@ -42,8 +42,19 @@ async function fetchPublic<T>(path: string): Promise<{ value: T | null; down: bo
   }
 }
 
+/** The visitor's language, from the cookie the browser keeps (English when there is none, e.g. a crawler). */
+async function language(): Promise<"ar" | "en"> {
+  try {
+    const { cookies } = await import("next/headers");
+    return (await cookies()).get("locale")?.value === "ar" ? "ar" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 async function get<T>(path: string): Promise<T | null> {
-  const hit = cache.get(path);
+  const key = `${await language()}|${path}`;
+  const hit = cache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value as T | null;
 
   const { value, down } = await fetchPublic<T>(path);
@@ -51,7 +62,7 @@ async function get<T>(path: string): Promise<T | null> {
   if (down) return null;
 
   if (cache.size >= MAX_ENTRIES) cache.clear();
-  cache.set(path, { expires: Date.now() + TTL_MS, value });
+  cache.set(key, { expires: Date.now() + TTL_MS, value });
 
   return value;
 }

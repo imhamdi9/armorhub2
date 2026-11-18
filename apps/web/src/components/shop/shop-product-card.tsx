@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { price, savingPercent } from "@/components/public/product-card";
 import { CompareToggle } from "@/components/shop/compare";
+import { BundleBadge } from "@/components/shop/bundle-badge";
+import { QuickAdd } from "@/components/shop/quick-add";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
@@ -31,6 +33,7 @@ export function ShopProductCard({ product, slug, headingLevel = 3 }: { product: 
     <Link href={`/s/${slug}/products/${product.id}`} className="group block rounded-[28px] bg-white p-2 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black" style={{ boxShadow: SHOP_SHADOW }}>
       <div className="relative aspect-square">
         <ProductTile product={product} />
+        {product.is_bundle && <BundleBadge className="absolute bottom-2 start-2" />}
         {saving && <span className="absolute start-2 top-2 rounded-full bg-black px-2.5 py-1 text-xs text-white">−{saving}%</span>}
       </div>
       <div className="px-3 pb-3 pt-3">
@@ -45,6 +48,7 @@ export function ShopProductCard({ product, slug, headingLevel = 3 }: { product: 
       </div>
     </Link>
     <CompareToggle slug={slug} id={product.id} className="absolute end-4 top-4" />
+    <div className="px-4 pb-3"><QuickAdd product={product} slug={slug} wide /></div>
     </div>
   );
 }

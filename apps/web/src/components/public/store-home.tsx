@@ -90,7 +90,7 @@ export function StoreHome({ data }: { data: PublicStore }) {
             {tr("{n} vetted professionals are ready to quote your job.", { n: formatNumber(partners.count) })}
           </p>
           {partners.cities.length > 0 && (
-            <p className="mt-2 text-sm text-slate">{tr("Available in")}: {partners.cities.join(" · ")}</p>
+            <p className="mt-2 text-sm text-slate">{tr("Available in")}: {partners.cities.map((c) => tr(c)).join(" · ")}</p>
           )}
         </section>
       )}

@@ -1,11 +1,16 @@
 export interface Product {
   id: number;
+  /** draft | pending | approved | rejected: a seller's product is shown only once ArmorHub approves it. */
+  review_status?: "draft" | "pending" | "approved" | "rejected";
+  review_note?: string | null;
   industry_id: number | null;
   category: string | null;
   brand: string | null;
   name: string;
   slug: string;
   description: string | null;
+  name_ar?: string | null;
+  description_ar?: string | null;
   images?: string[] | null;
   compare_at_price?: string | null;
   base_price: string;

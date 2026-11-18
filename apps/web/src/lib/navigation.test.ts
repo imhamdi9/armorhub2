@@ -73,7 +73,7 @@ describe("buildNavigation", () => {
   });
 
   it("gives sellers only their sales and products", () => {
-    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Shop profile", "Products", "Warehouse", "Price requests", "Questions", "Warranty claims", "Earnings", "Subscription", "Invitations", "Account"]);
+    expect(titles(user(["seller"]))).toEqual(["Dashboard", "Sales", "Shop profile", "Discount codes", "Bundles", "Products", "Warehouse", "Price requests", "Questions", "Warranty claims", "Earnings", "Subscription", "Invitations", "Account"]);
   });
 
   it("gives technicians only their jobs, and customers their warranties", () => {
@@ -99,7 +99,7 @@ describe("buildNavigation", () => {
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
-      "Overview", "Subscription plans", "Markets", "Categories", "Catalog requests", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Business numbers", "Sent e-mails", "Promo codes", "Service zones", "Operations tools", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
+      "Overview", "Subscription plans", "Markets", "Categories", "Catalog requests", "Product reviews", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Business numbers", "Sent e-mails", "Promo codes", "Service zones", "Operations tools", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
     ]);
     expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
 

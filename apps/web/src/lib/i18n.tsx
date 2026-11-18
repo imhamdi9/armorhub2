@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 
+import { categoryNamesReady, loadCategoryNames } from "@/lib/category-names";
 import { AR } from "@/lib/i18n-ar";
 
 export type Locale = "en" | "ar";
@@ -46,13 +47,23 @@ export function formatMoney(amount: number | string, currency: string, whole = f
 
 // Also records the locale for tr(). It runs as the external-store snapshot reader (never on the
 // server and not during hydration, which uses the English server snapshot), so text matches SSR.
+export const currentLocale = (): Locale => current;
+
 export function applyLocale(locale: Locale): Locale {
   current = locale;
   return current;
 }
 
+// The server renders the public pages too, and it cannot read localStorage: the language also travels in a cookie, so product names and
+// categories come back in the visitor's language from the very first byte.
+function rememberForServer(locale: Locale) {
+  try { document.cookie = `${STORAGE_KEY}=${locale}; path=/; max-age=31536000; SameSite=Lax`; } catch { /* cookies unavailable */ }
+}
+
 function readLocale(): Locale {
-  return applyLocale(window.localStorage.getItem(STORAGE_KEY) === "ar" ? "ar" : "en");
+  const locale = window.localStorage.getItem(STORAGE_KEY) === "ar" ? "ar" : "en";
+  if (!document.cookie.includes(`${STORAGE_KEY}=${locale}`)) rememberForServer(locale);
+  return applyLocale(locale);
 }
 
 function serverLocale(): Locale {
@@ -70,6 +81,7 @@ function subscribe(onChange: () => void) {
 
 export function setLocale(locale: Locale) {
   window.localStorage.setItem(STORAGE_KEY, locale);
+  rememberForServer(locale);
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
@@ -95,16 +107,34 @@ export function I18nProvider({ children, gate = true }: { children: React.ReactN
   // The server (and the first client render) is English; the stored choice applies right after.
   const locale = useSyncExternalStore(subscribe, readLocale, serverLocale);
   const hydrated = useHydrated();
+  // Category names (in both languages) come from the API once; screens that print a category draw again when they arrive.
+  const [namesReady, setNamesReady] = useState(categoryNamesReady());
+  useEffect(() => { if (!namesReady) loadCategoryNames().then((ok) => ok && setNamesReady(true)); }, [namesReady]);
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", locale);
     document.documentElement.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
   }, [locale]);
 
+  // Page titles are set by the server in English ("Your cart", "Products — <store>"): the tab says the same in the reader's language.
+  useEffect(() => {
+    const translateTitle = () => {
+      const now = document.title;
+      const next = now.split(" — ").map((part) => tr(part)).join(" — ");
+      if (next !== now) document.title = next;
+    };
+    translateTitle();
+    const el = document.querySelector("title");
+    if (!el) return;
+    const watch = new MutationObserver(translateTitle);
+    watch.observe(el, { childList: true, characterData: true, subtree: true });
+    return () => watch.disconnect();
+  }, [locale]);
+
   return (
     <LocaleContext.Provider value={locale}>
       {(hydrated || !gate) && (
-        <div key={locale} className="contents">
+        <div key={`${locale}-${namesReady}`} className="contents">
           {children}
         </div>
       )}

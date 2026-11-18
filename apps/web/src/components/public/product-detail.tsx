@@ -5,7 +5,7 @@ import {
 } from "@/components/public/product-page/layouts";
 import { useProductModel, type ProductModel } from "@/components/public/product-page/model";
 import { Crumbs, ReviewsSection, SafetyBlock, StickyBar } from "@/components/public/product-page/parts";
-import { DeliveryEstimate, QuestionsSection } from "@/components/public/product-page/questions";
+import { QuestionsSection } from "@/components/public/product-page/questions";
 import { CompareToggle } from "@/components/shop/compare";
 import { RecentlyViewed, RememberView, Shelf } from "@/components/shop/memory";
 import type { ShellStore } from "@/components/public/shell";
@@ -42,7 +42,6 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
       <div className="my-6 rounded-[28px] bg-white p-4 md:p-8" style={{ boxShadow: SHOP_SHADOW }} data-page-template={key}>
         {!OWN_CRUMBS.includes(key) && key !== "story" && <Crumbs m={m} />}
         <Layout m={m} />
-        <DeliveryEstimate estimate={data.delivery_estimate} />
         <SafetyBlock m={m} />
         <ReviewsSection m={m} />
         <QuestionsSection productId={data.product.id} items={data.questions ?? []} />

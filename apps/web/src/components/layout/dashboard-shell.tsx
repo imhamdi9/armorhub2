@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import type { ReactNode } from "react";
 
 const focus = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2";
@@ -48,7 +49,7 @@ export function DashboardShell({ brand, nav, user, title, action, kpis, children
       <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col border-e border-neutral-200 bg-white lg:flex" aria-label="Sidebar">
         <div className="flex h-16 shrink-0 items-center gap-2.5 px-5">
           <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-neutral-900 text-sm font-bold text-white">{brand[0]}</span>
-          <span className="text-base font-semibold tracking-tight text-neutral-900">{brand}</span>
+          <span className="text-base font-semibold tracking-tight text-neutral-900">{tr(brand)}</span>
         </div>
 
         <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 py-2">

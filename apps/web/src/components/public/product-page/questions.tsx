@@ -10,12 +10,12 @@ import { askQuestion, getMyQuestions, type ProductQuestionRow } from "@/services
 import type { PublicProductPage } from "@/types/public";
 
 /** What delivery should look like for an order placed today: a day or a short range, from the market's usual days. */
-export function DeliveryEstimate({ estimate }: { estimate?: PublicProductPage["delivery_estimate"] }) {
+export function DeliveryEstimate({ estimate, compact = false }: { estimate?: PublicProductPage["delivery_estimate"]; compact?: boolean }) {
   if (!estimate) return null;
   const range = estimate.from === estimate.to ? formatDate(estimate.from) : `${formatDate(estimate.from)} – ${formatDate(estimate.to)}`;
 
   return (
-    <p className="mt-6 flex items-center gap-3 rounded-2xl bg-brand-wash px-5 py-4 text-sm" data-testid="delivery-estimate">
+    <p className={`${compact ? "" : "mt-6"} flex items-center gap-3 rounded-2xl bg-brand-wash px-5 py-4 text-sm`} data-testid="delivery-estimate">
       <span aria-hidden="true" className="text-xl">📦</span>
       <span>{tr("Order today and it arrives")} <b>{range}</b>.</span>
     </p>

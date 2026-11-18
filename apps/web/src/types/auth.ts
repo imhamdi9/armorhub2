@@ -30,6 +30,8 @@ export interface User {
   is_department_head?: boolean;
   industry?: Industry | null;
   phone?: string | null;
+  /** Shopping without an account: a quiet session that can become a full account. */
+  is_guest?: boolean;
   market?: { code: string; currency: string } | null;
   /** The store the account belongs to: where a customer goes shopping. */
   store_slug?: string | null;

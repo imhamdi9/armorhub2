@@ -82,5 +82,5 @@ export function useProductModel(store: ShellStore, data: PublicProductPage) {
   const phoneDigits = (data.store.contact_phone ?? store.contact_phone ?? "").replace(/\D/g, "");
   const whatsapp = phoneDigits.length >= 8 ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(`${p.name}`)}` : null;
 
-  return { p, store, page, lead, reviews, whatsapp, feePercent: data.customer_fee_percentage ?? 0, goods, links, parts, setParts, mode, href, options, picked, setPicked, chosen, shown, was, saving, cta, stuck, paragraphs, multiOptions: options.length > 1, others, cheaper, pricier, pairs, sameCategory };
+  return { p, store, page, lead, reviews, whatsapp, feePercent: data.customer_fee_percentage ?? 0, delivery: data.delivery_estimate, goods, links, parts, setParts, mode, href, options, picked, setPicked, chosen, shown, was, saving, cta, stuck, paragraphs, multiOptions: options.length > 1, others, cheaper, pricier, pairs, sameCategory };
 }

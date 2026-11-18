@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { hasRole } from "@/lib/navigation";
 import { bulkSetInstallation, bulkSetPageTemplate, createProduct, getProducts } from "@/services/platform.service";
 import type { Product } from "@/types/platform";
+import { errorMessage } from "@/lib/errors";
+import { categoryLabel } from "@/lib/category";
 import { tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
 import { LoadingBlock } from "@/components/ui/loading-block";
@@ -33,7 +35,14 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
+  // Every product is written twice: English for the English platform, Arabic for the Arabic one.
+  const [nameAr, setNameAr] = useState("");
+  const [descEn, setDescEn] = useState("");
+  const [descAr, setDescAr] = useState("");
   const [category, setCategory] = useState("");
+  // A market that runs several industries asks which one the product belongs to; with one there is nothing to ask.
+  const [industryId, setIndustryId] = useState<number | null>(null);
+  const industries = user?.industries ?? [];
   const [price, setPrice] = useState("");
   const [installation, setInstallation] = useState<InstallationMode>("none");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
@@ -84,17 +93,22 @@ export default function ProductsPage() {
     try {
       const product = await createProduct({
         name,
+        name_ar: nameAr,
+        description: descEn,
+        description_ar: descAr,
         slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
         category,
         installation,
-        ...(hasRole(user, "platform-admin") ? { page_template: pageTemplate, attributes: { page: cleanContent(content) } } : {}),
+        ...(hasRole(user, "platform-admin", "seller") ? { page_template: pageTemplate, attributes: { page: cleanContent(content) } } : {}),
         base_price: price,
-        industry_id: user?.industry?.id ?? null,
+        is_active: false,                       // a new product starts as a draft until it has a photo and a description
+        industry_id: industryId ?? (industries.length > 1 ? null : user?.industry?.id ?? industries[0]?.id ?? null),
       });
       // A new product can't be ordered until it has prices (and ideally a photo), so go straight to where those are set.
       router.push(`/dashboard/products/${product.id}?new=1`);
-    } catch {
-      setError(tr("Could not save the product. Check the fields and try again."));
+    } catch (x) {
+      // Say what is wrong (the server's own message), not only that something is.
+      setError(`${tr("Could not save the product. Check the fields and try again.")} ${errorMessage(x)}`.trim());
     }
   }
 
@@ -108,16 +122,37 @@ export default function ProductsPage() {
       {showForm && (
         <form onSubmit={onSubmit} className="mb-6 space-y-4 rounded-lg border p-4">
           <div>
-            <Label htmlFor="name">{tr("Name")}</Label>
-            <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+            <Label htmlFor="name">{tr("Name in English")}</Label>
+            <Input id="name" required dir="ltr" lang="en" placeholder="Olive oil soap" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
+            <Label htmlFor="name_ar">{tr("Name in Arabic")}</Label>
+            <Input id="name_ar" required dir="rtl" lang="ar" placeholder="صابون زيت الزيتون" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="desc_en">{tr("Description in English")}</Label>
+            <textarea id="desc_en" required minLength={20} dir="ltr" lang="en" rows={3} className="w-full rounded-lg border px-3 py-2 text-sm" value={descEn} onChange={(e) => setDescEn(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="desc_ar">{tr("Description in Arabic")}</Label>
+            <textarea id="desc_ar" required minLength={20} dir="rtl" lang="ar" rows={3} className="w-full rounded-lg border px-3 py-2 text-sm" value={descAr} onChange={(e) => setDescAr(e.target.value)} />
+          </div>
+          <div>
+            {industries.length > 1 && (
+              <div className="grid gap-1" data-testid="industry-pick">
+                <Label htmlFor="industry">{tr("What kind of product is it?")}</Label>
+                <select id="industry" name="industry" required className="h-10 rounded-[10px] border bg-background px-2 text-sm" value={industryId ?? ""} onChange={(e) => setIndustryId(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">{tr("Choose an industry")}</option>
+                  {industries.map((i) => <option key={i.id} value={i.id}>{tr(i.name)}</option>)}
+                </select>
+              </div>
+            )}
             <Label htmlFor="category">{tr("Category")}</Label>
             <CategoryField id="category" value={category} onChange={setCategory} />
           </div>
           <InstallationField value={installation} onChange={setInstallation} />
-          {hasRole(user, "platform-admin") && <PageTemplateField value={pageTemplate} onChange={setPageTemplate} />}
-          {hasRole(user, "platform-admin") && <PageContentFields template={pageTemplate} value={content} onChange={setContent} />}
+          {hasRole(user, "platform-admin", "seller") && <PageTemplateField value={pageTemplate} onChange={setPageTemplate} />}
+          {hasRole(user, "platform-admin", "seller") && <PageContentFields template={pageTemplate} value={content} onChange={setContent} />}
           <div>
             <Label htmlFor="price">{tr("Base price")}</Label>
             <Input id="price" type="number" min="0" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} />
@@ -189,12 +224,12 @@ export default function ProductsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="truncate font-semibold">
-                      {p.name} {!p.is_active && <span className="text-xs text-muted-foreground">{tr("(hidden)")}</span>}
+                      {p.name} {p.review_status && p.review_status !== "approved" ? <span className="text-xs text-amber-700" data-testid="review-badge">{tr(p.review_status === "pending" ? "Waiting for review" : p.review_status === "rejected" ? "Sent back" : "Draft")}</span> : !p.is_active && <span className="text-xs text-muted-foreground">{tr("(hidden)")}</span>}
                     </h2>
                     <span className="shrink-0 text-sm">{p.base_price}</span>
                   </div>
                   <p className="truncate text-sm text-muted-foreground">
-                    {[p.brand, p.category].filter(Boolean).join(" · ") || p.slug}
+                    {[p.brand, p.category ? categoryLabel(p.category) : null].filter(Boolean).join(" · ") || p.slug}
                   </p>
                   {p.requires_shipping && <p className="mt-1 text-xs text-muted-foreground" data-testid="installation-badge">{tr(INSTALLATION_LABEL[(p.installation ?? "none") as InstallationMode])}</p>}
                   {canManage && p.readiness && !p.readiness.ready && (

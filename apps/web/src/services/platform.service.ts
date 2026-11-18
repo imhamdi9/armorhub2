@@ -478,3 +478,19 @@ export const requestPayout = async (currency: string) => (await api.post("/selle
 export interface SellerProfile { about: string | null; city: string | null; hours: string | null; logo: string | null; ships_within_days: number | null; return_address: { line1: string | null; city: string | null; notes: string | null } }
 export const getSellerProfile = async () => (await api.get<{ name: string; profile: SellerProfile }>("/seller/profile")).data;
 export const saveSellerProfile = async (profile: Partial<SellerProfile>) => (await api.put<{ name: string; profile: SellerProfile }>("/seller/profile", profile)).data;
+
+export interface SellerPromo { id: number; code: string; type: "percent" | "fixed"; value: number; max_discount: number | null; min_order: number | null; starts_at: string | null; ends_at: string | null; usage_limit: number | null; per_customer_limit: number; is_active: boolean; used: number; given: number; product_ids?: number[]; products?: Record<string, string> }
+export const getSellerPromos = async () => (await api.get<SellerPromo[]>("/seller/promo-codes")).data;
+export const createSellerPromo = async (body: Partial<SellerPromo>) => (await api.post<SellerPromo>("/seller/promo-codes", body)).data;
+export const updateSellerPromo = async (id: number, body: Partial<SellerPromo>) => (await api.put<SellerPromo>(`/seller/promo-codes/${id}`, body)).data;
+
+export interface SellerBundle { id: number; name: string; name_ar: string | null; description: string | null; base_price: number; worth: number; is_active: boolean; items: { product_id: number; name: string | null; quantity: number; price: number }[] }
+export const getSellerBundles = async () => (await api.get<SellerBundle[]>("/seller/bundles")).data;
+export const createSellerBundle = async (body: { name: string; name_ar?: string; description?: string; base_price: number; items: { product_id: number; quantity: number }[] }) => (await api.post<SellerBundle>("/seller/bundles", body)).data;
+export const updateSellerBundle = async (id: number, body: { base_price?: number; is_active?: boolean }) => (await api.put<SellerBundle>(`/seller/bundles/${id}`, body)).data;
+
+export const submitProductReview = async (id: number) => (await api.post<{ id: number; review_status: string }>(`/products/${id}/submit-review`)).data;
+export interface ReviewRow { id: number; seller: string | null; status: string; note: string | null; submitted_at: string | null; name: string; name_ar: string | null; description: string | null; description_ar: string | null; category: string | null; brand: string | null; price: number; images: string[]; fits_note: string | null; bundle: { name: string | null; quantity: number }[] }
+export const getProductReviews = async (status = "pending") => (await api.get<ReviewRow[]>("/admin/product-reviews", { params: { status } })).data;
+export const approveProduct = async (id: number) => (await api.post(`/admin/product-reviews/${id}/approve`)).data;
+export const rejectProduct = async (id: number, note: string) => (await api.post(`/admin/product-reviews/${id}/reject`, { note })).data;

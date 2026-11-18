@@ -34,7 +34,7 @@ function Heading({ id, children, href, more }: { id?: string; children: React.Re
 
 /** A market's front page in the Shop style, in the store's own accent colour. Any industry or market uses the same layout. */
 export function ShopStoreHome({ data }: { data: PublicStore }) {
-  const { store, industry, industries = [], featured, categories, partners, sections = [], category_counts: counts = {} } = data;
+  const { store, industry, industries = [], featured, categories, category_labels: labels = {}, partners, sections = [], category_counts: counts = {} } = data;
   const products = `/s/${store.slug}/products`;
   const stats = [
     { v: partners.count, l: "Vetted professionals" },
@@ -65,7 +65,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
           <div className="mt-8 max-w-xl [&_form]:mx-0 [&_form]:max-w-none"><ShopSearch action={products} slug={store.slug} /></div>
           {categories.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
-              {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
+              {categories.map((c) => <Link key={c} href={`${products}?category=${encodeURIComponent(c)}`} className={pillCls} style={pillShadow}>{labels[c] ?? categoryLabel(c)} <span className="text-xs text-[#5f5c5b]">{counts[c] ?? ""}</span></Link>)}
             </div>
           )}
         </div>
@@ -104,7 +104,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
       {sections.map((sec) => (
         <section key={sec.category} className="mt-16" aria-labelledby={`cat-${sec.category}`}>
           <Heading id={`cat-${sec.category}`} href={`${products}?category=${encodeURIComponent(sec.category)}`} more={sec.count > sec.products.length ? tr("See all") : undefined}>
-            {categoryLabel(sec.category)} <span className="text-sm text-[#5f5c5b]">· {sec.count}</span>
+            {labels[sec.category] ?? categoryLabel(sec.category)} <span className="text-sm text-[#5f5c5b]">· {sec.count}</span>
           </Heading>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{sec.products.map((p) => <ShopProductCard key={p.id} product={p} slug={store.slug} />)}</div>
         </section>
@@ -128,7 +128,7 @@ export function ShopStoreHome({ data }: { data: PublicStore }) {
           <div className={card} style={{ boxShadow: SHOP_SHADOW }}>
             <h2 id="pros" className="text-xl tracking-[-0.05em]">{tr("Professionals near you")}</h2>
             <p className="mt-2 text-[#5f5c5b]">{tr("{n} vetted professionals are ready to quote your job.", { n: formatNumber(partners.count) })}</p>
-            {partners.cities.length > 0 && <p className="mt-2 text-sm text-[#5f5c5b]">{tr("Available in")}: {partners.cities.join(" · ")}</p>}
+            {partners.cities.length > 0 && <p className="mt-2 text-sm text-[#5f5c5b]">{tr("Available in")}: {partners.cities.map((c) => tr(c)).join(" · ")}</p>}
           </div>
         </section>
       )}

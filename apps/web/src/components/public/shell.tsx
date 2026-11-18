@@ -102,7 +102,7 @@ function Header({ store }: { store?: ShellStore }) {
       <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between gap-3 px-4 md:px-10">
         <Link href={home} className="flex items-center gap-2.5 font-[family-name:var(--font-display)] text-[21px] font-bold tracking-tight text-obsidian">
           <Logo store={shownStore} />
-          <span>{store?.name ?? siteName}</span>
+          <span>{store?.name ?? tr(siteName)}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-full border border-[#dce3f1] bg-white/70 p-1 text-[14.5px] md:flex" aria-label={tr("Main")}>
@@ -146,7 +146,7 @@ function Footer({ store }: { store?: ShellStore }) {
   const siteName = useSiteText("brand", "name", "ArmorHub");
   const siteLogo = useSiteValue("brand", "logo_url");
   const blurb = useSiteText("home", "footer_blurb", "A marketplace that connects customers with trusted service providers, across automotive, home services, beauty, devices and more.");
-  const name = store?.name ?? siteName;
+  const name = store?.name ?? tr(siteName);
   const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
   const col = "text-sm font-bold text-on-dark-accent";
   const link = "block py-1 text-sm text-white/75 hover:text-white hover:underline";

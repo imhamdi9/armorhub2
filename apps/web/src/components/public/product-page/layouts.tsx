@@ -10,6 +10,7 @@ import {
 } from "@/components/public/product-page/parts";
 import { ShopProductCard } from "@/components/shop/shop-product-card";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
+import { categoryLabel } from "@/lib/category";
 import { formatMoney, tr } from "@/lib/i18n";
 import { imageSrc } from "@/lib/surfaces";
 
@@ -89,7 +90,7 @@ export function TiersLayout({ m }: { m: ProductModel }) {
     <>
       <Crumbs m={m} />
       <div className="mx-auto max-w-3xl text-center">
-        {p.category && <span className="text-xs font-bold uppercase tracking-wider text-brand-ink">{p.category.replace(/-/g, " ")}</span>}
+        {p.category && <span className="text-xs font-bold uppercase tracking-wider text-brand-ink">{p.category_name ?? categoryLabel(p.category)}</span>}
         <h1 className="display display-lg mt-1">{p.name}</h1>
         {m.lead && <p className="mt-3 text-lg text-slate">{m.lead}</p>}
       </div>
@@ -197,7 +198,7 @@ export function StoryLayout({ m }: { m: ProductModel }) {
       <div className="bg-dark bg-grid-dark -mx-4 overflow-hidden rounded-[28px] px-6 pt-10 md:-mx-8 md:px-12">
         <div className="grid items-center gap-8 lg:grid-cols-2">
           <div className="pb-10">
-            {p.category && <span className="rounded-full bg-white/15 px-3 py-1 text-sm">{p.category.replace(/-/g, " ")}</span>}
+            {p.category && <span className="rounded-full bg-white/15 px-3 py-1 text-sm">{p.category_name ?? categoryLabel(p.category)}</span>}
             <h1 className="display display-lg mt-4 !text-white">{p.name}</h1>
             {m.lead && <p className="mt-4 max-w-md text-lg text-white/80">{m.lead}</p>}
             <div className="mt-6 flex flex-wrap items-center gap-4">

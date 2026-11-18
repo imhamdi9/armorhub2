@@ -30,6 +30,17 @@ const EVENT_LABELS: Record<string, string> = {
   shipment_delivered: "Delivered",
   shipment_failed: "Delivery failed",
   shipment_returned: "Returned to sender",
+  auto_cancelled: "Cancelled because the seller did not ship in time",
+  delivery_rescheduled: "Delivery day changed",
+  partially_refunded: "Part of the payment is being refunded",
+  partial_refund_sent: "Part of the payment was sent back",
+  refund_requested: "Refund requested",
+  refund_rejected: "Refund request declined",
+  refunded: "Refund approved",
+  refund_sent: "Refund sent",
+  return_approved: "Return approved",
+  return_collected: "Return collected",
+  return_failed: "Return failed inspection",
 };
 
 export function eventLabel(event: OrderEvent): string {

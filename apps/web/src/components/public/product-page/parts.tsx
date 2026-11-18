@@ -6,10 +6,15 @@ import { useEffect, useState } from "react";
 
 import { price } from "@/components/public/product-card";
 import type { ProductModel } from "@/components/public/product-page/model";
+import { BundleBadge } from "@/components/shop/bundle-badge";
+import { DeliveryEstimate } from "@/components/public/product-page/questions";
+import { QuickAdd } from "@/components/shop/quick-add";
 import { ProductTile } from "@/components/shop/shop-product-card";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
+import { categoryLabel } from "@/lib/category";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
+import { ensureShopperSession } from "@/lib/guest";
 import { addToCart } from "@/services/cart.service";
 import { addFavourite, getFavouriteIds, getFit, getGarage, removeFavourite, type Vehicle, type VehicleFit } from "@/services/ops.service";
 import { getMyReview, saveReview, uploadReviewPhoto } from "@/services/platform.service";
@@ -92,7 +97,7 @@ export function Crumbs({ m }: { m: ProductModel }) {
     <nav aria-label={tr("Breadcrumb")} className="mb-5 flex flex-wrap items-center gap-1.5 text-sm text-slate">
       <Link href={`/s/${store.slug}`} className="hover:text-obsidian">{store.name}</Link><span aria-hidden="true">/</span>
       <Link href={`/s/${store.slug}/products`} className="hover:text-obsidian">{tr("All products")}</Link>
-      {p.category && <><span aria-hidden="true">/</span><Link href={`/s/${store.slug}/products?category=${encodeURIComponent(p.category)}`} className="hover:text-obsidian">{p.category.replace(/-/g, " ")}</Link></>}
+      {p.category && <><span aria-hidden="true">/</span><Link href={`/s/${store.slug}/products?category=${encodeURIComponent(p.category)}`} className="hover:text-obsidian">{p.category_name ?? categoryLabel(p.category)}</Link></>}
       <span aria-hidden="true">/</span><span className="text-obsidian">{p.name}</span>
     </nav>
   );
@@ -104,9 +109,11 @@ export function Heading({ m, size = "md" }: { m: ProductModel; size?: "md" | "lg
 
   return (
     <>
-      {p.category && <span className="text-xs font-bold uppercase tracking-wider text-brand-ink">{p.category.replace(/-/g, " ")}</span>}
+      {p.is_bundle && <div className="mb-1"><BundleBadge seller={p.seller} /></div>}
+      {p.category && <span className="text-xs font-bold uppercase tracking-wider text-brand-ink">{p.category_name ?? categoryLabel(p.category)}</span>}
       <h1 className={`display mt-1 ${size === "lg" ? "display-lg" : "display-md"}`}>{p.name}</h1>
       <Rating m={m} />
+      {p.fits_note && <p className="mt-2 rounded-lg border border-obsidian/20 bg-fog/60 px-3 py-2 text-base font-bold text-obsidian" data-testid="fits-note">{p.fits_note}</p>}
       <p className="mt-1 text-sm text-slate">
         {p.brand}{p.brand && p.seller ? " · " : ""}
         {p.seller && (p.seller_id
@@ -114,6 +121,41 @@ export function Heading({ m, size = "md" }: { m: ProductModel; size?: "md" | "lg
           : `${tr("Sold by")} ${p.seller}`)}
       </p>
     </>
+  );
+}
+
+/** What a bundle contains: every product with its photo and details, shown right under the bundle's price. */
+export function BundleContents({ m }: { m: ProductModel }) {
+  const { p } = m;
+  if ((p.bundle_items ?? []).length === 0) return null;
+
+  return (
+    <section className="mt-4" aria-label={tr("What is in this bundle")}>
+      <h2 className="mb-2 text-base font-bold text-obsidian">{tr("What is in this bundle")}</h2>
+      <ul className="grid gap-3" data-testid="bundle-contents">
+        {(p.bundle_items ?? []).map((i) => (
+          <li key={i.id}>
+            <Link href={`/s/${m.store.slug}/products/${i.id}`} className="flex gap-3 rounded-2xl border border-fog bg-white p-3 hover:border-obsidian/30" data-testid="bundle-item">
+              <span className="size-20 shrink-0 overflow-hidden rounded-xl bg-linen">
+                {i.image && imageSrc(i.image)
+                  // eslint-disable-next-line @next/next/no-img-element -- the seller's own product photo
+                  ? <img src={imageSrc(i.image) ?? ""} alt={i.name ?? ""} className="size-full object-cover" />
+                  : <span aria-hidden="true" className="grid size-full place-items-center text-2xl font-bold text-brand-ink/40">{(i.name ?? "?").slice(0, 1)}</span>}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-obsidian">{i.quantity} × {i.name}</span>
+                {i.brand && <span className="block text-xs text-slate">{i.brand}</span>}
+                {i.description && <span className="mt-1 block text-sm text-slate">{i.description}</span>}
+                <span className="mt-1 block text-xs text-slate">
+                  {typeof i.price === "number" ? `${formatMoney(i.price, p.currency, true)} ${tr("each, if bought alone")}` : ""}
+                  {i.warranty_years ? ` · ${tr("{n}-year warranty", { n: i.warranty_years })}` : ""}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -133,6 +175,7 @@ export function PriceLine({ m, size = "text-3xl" }: { m: ProductModel; size?: st
         )}
       </div>
       <p className="mt-1 text-xs text-slate">{tr("VAT is included where it applies.")}{m.feePercent > 0 && <> {tr("A platform fee of {n}% is added at payment and shown before you pay.", { n: formatNumber(m.feePercent) })}</>}</p>
+      <BundleContents m={m} />
     </>
   );
 }
@@ -224,6 +267,7 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
       <div className="grid gap-3" data-testid="buy-buttons">
         <Link ref={cta} href={links.quote} className={cls} data-testid="request-price">{tr("Request a price")}</Link>
         <p className="text-center text-xs text-slate">{tr("Sellers send you their price. You compare, accept one and pay only then.")}</p>
+        <DeliveryEstimate estimate={m.delivery} compact />
         <FavouriteButton m={m} />
       </div>
     );
@@ -232,6 +276,7 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
   return (
     <div className="grid gap-3" data-testid="buy-buttons">
       {m.p.units_left ? <p className="text-center text-sm font-semibold text-amber-700" data-testid="units-left">{tr("Only {n} left", { n: m.p.units_left })}</p> : null}
+      <DeliveryEstimate estimate={m.delivery} compact />
       <FavouriteButton m={m} />
       {m.whatsapp && (
         <a href={m.whatsapp} target="_blank" rel="noopener noreferrer" className="order-last text-center text-sm font-semibold text-brand-ink underline underline-offset-4" data-testid="ask-whatsapp">{tr("Have a question? Ask the store on WhatsApp")}</a>
@@ -285,14 +330,15 @@ export function AddToCart({ m }: { m: ProductModel }) {
     getGarage().then((v) => { setCars(v); setCar(String(v.find((c) => c.is_default)?.id ?? "")); }).catch(() => {});
     getFit(m.p.id).then(setFits).catch(() => {});
   }, [m.links.signedIn]);
-  if (!m.goods || m.mode === "required" || !m.links.signedIn) return null;
+  if (!m.goods || m.mode === "required") return null;
 
   async function add() {
     setBusy(true);
     setError(null);
     try {
+      await ensureShopperSession(m.store.slug);
       await addToCart(m.p.id, m.chosen?.target_id, 1, car ? Number(car) : null);
-      router.push("/dashboard/cart");
+      router.push(`/s/${m.store.slug}/cart`);
     } catch (e) {
       setError(errorMessage(e));
       setBusy(false);
@@ -374,15 +420,19 @@ export function DetailsAccordions({ m }: { m: ProductModel }) {
 /** A small product card that links to that product's page, for up- and cross-sells. */
 export function MiniProduct({ product, slug, tag }: { product: PublicProduct; slug: string; tag?: string }) {
   return (
-    <Link href={`/s/${slug}/products/${product.id}`} className="group flex items-center gap-3 rounded-2xl border border-fog bg-white p-3 transition hover:-translate-y-0.5 hover:border-obsidian/30" style={{ boxShadow: SHOP_SHADOW }}>
-      <span className="size-16 shrink-0"><ProductTile product={product} /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold text-obsidian">{product.name}</span>
-        <span className="block truncate text-xs text-slate">{product.brand ?? product.seller ?? ""}</span>
-        <span className="text-sm font-bold text-obsidian">{price(product)}</span>
-      </span>
+    <div className="group flex items-center gap-3 rounded-2xl border border-fog bg-white p-3 transition hover:border-obsidian/30" style={{ boxShadow: SHOP_SHADOW }}>
+      <Link href={`/s/${slug}/products/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="size-16 shrink-0"><ProductTile product={product} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-obsidian">{product.name}</span>
+          {product.is_bundle && <BundleBadge className="my-0.5 !px-2 !py-0.5 !text-[10px]" />}
+          <span className="block truncate text-xs text-slate">{product.brand ?? product.seller ?? ""}</span>
+          <span className="text-sm font-bold text-obsidian">{price(product)}</span>
+        </span>
+      </Link>
       {tag && <span className="shrink-0 rounded-md bg-brand-wash px-2 py-1 text-[11px] font-bold text-brand-ink">{tr(tag)}</span>}
-    </Link>
+      <QuickAdd product={product} slug={slug} />
+    </div>
   );
 }
 

@@ -18,13 +18,14 @@ type Filters = { min_price: string; max_price: string; brand: string; min_rating
 
 /** Search and browse a store's products. All filtering and sorting is server-side, so it works without JavaScript. */
 export function Catalog({
-  store, result, categories, counts = {}, industries = [], industryCounts = {}, industry = "", q, category, sort = "", fit, filters = { min_price: "", max_price: "", brand: "", min_rating: "" },
+  store, result, categories, labels = {}, counts = {}, industries = [], industryCounts = {}, industry = "", q, category, sort = "", fit, filters = { min_price: "", max_price: "", brand: "", min_rating: "" },
 }: {
   filters?: Filters;
   fit?: { vehicle_model_id: string; year: string; compatible: string };
   store: ShellStore;
   result: PublicProducts | null;
   categories: string[];
+  labels?: Record<string, string>;
   counts?: Record<string, number>;
   industries?: { key: string; name: string }[];
   industryCounts?: Record<string, number>;
@@ -49,7 +50,7 @@ export function Catalog({
       <div className="pt-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="display display-md">{category ? categoryLabel(category) : tr("Products")}</h1>
+            <h1 className="display display-md">{category ? labels[category] ?? categoryLabel(category) : tr("Products")}</h1>
             {result && <p className="mt-1 text-sm text-slate" data-testid="result-count">{tr("{n} products", { n: formatNumber(result.total ?? result.data.length) })}</p>}
           </div>
           <div className="w-full max-w-md"><ShopSearch action={base} q={q} category={category} slug={store.slug} /></div>
@@ -58,7 +59,7 @@ export function Catalog({
         {/* On small screens the filters are pills; from large screens they are a column on the side. */}
         <div className="mb-6 flex flex-wrap gap-2 lg:hidden">
           <Link href={link({ q })} className={pill(category === "")}>{tr("All")}</Link>
-          {categories.map((c) => <Link key={c} href={link({ q, category: c })} className={pill(category === c)}>{categoryLabel(c)} <span className="text-xs opacity-70">{counts[c] ?? ""}</span></Link>)}
+          {categories.map((c) => <Link key={c} href={link({ q, category: c })} className={pill(category === c)}>{labels[c] ?? categoryLabel(c)} <span className="text-xs opacity-70">{counts[c] ?? ""}</span></Link>)}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[230px_1fr]">
@@ -68,7 +69,7 @@ export function Catalog({
                 <nav aria-label={tr("Categories")}>
                   <p className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-slate">{tr("Categories")}</p>
                   <Link href={link({ q })} className={side(category === "")}>{tr("All")} <span className="text-xs text-slate">{total || ""}</span></Link>
-                  {categories.map((c) => <Link key={c} href={link({ q, category: c })} className={side(category === c)}>{categoryLabel(c)} <span className="text-xs text-slate">{counts[c] ?? ""}</span></Link>)}
+                  {categories.map((c) => <Link key={c} href={link({ q, category: c })} className={side(category === c)}>{labels[c] ?? categoryLabel(c)} <span className="text-xs text-slate">{counts[c] ?? ""}</span></Link>)}
                 </nav>
               )}
               {industries.length > 1 && (
@@ -145,8 +146,8 @@ export function Catalog({
                   if (last && last.cat === cat) last.items.push(p); else groups.push({ cat, items: [p] });
                   return groups;
                 }, [])).map((g) => (
-                  <section key={g.cat || "all"} className="mb-10" aria-label={g.cat ? categoryLabel(g.cat) : tr("Products")}>
-                    {!category && g.cat && <h2 className="font-display mb-4 text-xl font-semibold">{categoryLabel(g.cat)}</h2>}
+                  <section key={g.cat || "all"} className="mb-10" aria-label={g.cat ? labels[g.cat] ?? categoryLabel(g.cat) : tr("Products")}>
+                    {!category && g.cat && <h2 className="font-display mb-4 text-xl font-semibold">{labels[g.cat] ?? categoryLabel(g.cat)}</h2>}
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       {g.items.map((p) => <ShopProductCard key={p.id} product={p} slug={store.slug} headingLevel={category ? 2 : 3} />)}
                     </div>

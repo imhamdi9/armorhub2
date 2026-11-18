@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { useCurrentUser } from "@/components/providers/current-user";
 import { hasRole } from "@/lib/navigation";
+import { submitProductReview } from "@/services/platform.service";
 import { FitmentEditor } from "@/components/products/fitment-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,8 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const user = useCurrentUser();
+  // A seller's goods have one price (the base price): no price-per-option or fitment tables, which only confuse. Administrators keep them.
+  const sellerView = hasRole(user, "seller") && !hasRole(user, "platform-admin", "company-owner");
   const targets = user?.industry?.targets ?? [];
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -47,7 +50,7 @@ export default function ProductDetailPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [details, setDetails] = useState({
-    name: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", sale_mode: "fixed" as "fixed" | "quote", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
+    name: "", name_ar: "", description_ar: "", fits_note: "", highlights_ar: "", brand: "", category: "", base_price: "", compare_at_price: "", warranty_years: "", description: "", is_active: true, requires_shipping: false, fulfilment: "seller" as "seller" | "armorhub", sale_mode: "fixed" as "fixed" | "quote", installation: "none" as InstallationMode, page_template: DEFAULT_TEMPLATE as PageTemplate, images: [] as string[], highlights: "",
   });
   const [content, setContent] = useState<PageContent>({});
   const [carton, setCarton] = useState<CartonValues>(emptyCarton);
@@ -59,12 +62,16 @@ export default function ProductDetailPage() {
       setProduct(p);
       setDetails({
         name: p.name,
+        name_ar: p.name_ar ?? "",
+        description_ar: p.description_ar ?? "",
+        fits_note: (p.attributes?.fits_note as string | undefined) ?? "",
         brand: p.brand ?? "",
         category: p.category ?? "",
         base_price: String(p.base_price),
         compare_at_price: p.compare_at_price == null ? "" : String(p.compare_at_price),
         images: p.images ?? [],
         highlights: ((p.attributes?.highlights as string[] | undefined) ?? []).join("\n"),
+        highlights_ar: ((p.attributes?.highlights_ar as string[] | undefined) ?? []).join("\n"),
         warranty_years: p.warranty_years == null ? "" : String(p.warranty_years),
         description: p.description ?? "",
         is_active: p.is_active,
@@ -112,19 +119,21 @@ export default function ProductDetailPage() {
     try {
       const updated = await updateProduct(Number(id), {
         name: details.name,
+        name_ar: details.name_ar || null,
+        description_ar: details.description_ar || null,
         brand: details.brand || null,
         category: details.category,
         base_price: details.base_price,
         compare_at_price: details.compare_at_price === "" ? null : details.compare_at_price,
         images: details.images,
-        attributes: { highlights: details.highlights.split("\n").map((l) => l.trim()).filter(Boolean), page: cleanContent(content) },
+        attributes: { highlights: details.highlights.split("\n").map((l) => l.trim()).filter(Boolean), highlights_ar: details.highlights_ar.split("\n").map((l) => l.trim()).filter(Boolean), fits_note: details.fits_note.trim() || undefined, page: cleanContent(content) },
         warranty_years: details.warranty_years === "" ? null : Number(details.warranty_years),
         description: details.description || null,
         is_active: details.is_active,
         requires_shipping: details.requires_shipping,
         installation: details.installation,
         sale_mode: details.sale_mode,
-        ...(hasRole(user, "platform-admin") ? { page_template: details.page_template } : {}),
+        ...(hasRole(user, "platform-admin", "seller") ? { page_template: details.page_template } : {}),
         fulfilment: details.fulfilment,
         ...cartonPayload(carton),
       });
@@ -152,7 +161,7 @@ export default function ProductDetailPage() {
       <PageHeader title={product.name} />
       {canEdit && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1" && (
         <p role="note" className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
-          {tr("Your product is saved. Add a price for each option below, and a photo, so customers can order it.")}
+          {sellerView ? tr("Your product is saved as a draft. Add at least one photo and a description, then switch it on to publish it.") : tr("Your product is saved. Add a price for each option below, and a photo, so customers can order it.")}
         </p>
       )}
       <p className="mb-6 text-muted-foreground">{tr("Base price")}: {product.base_price}</p>
@@ -161,15 +170,26 @@ export default function ProductDetailPage() {
       {canEdit && (
         <form onSubmit={saveDetails} className="mb-8 grid grid-cols-2 gap-3 rounded-lg border p-4">
           <Input aria-label={tr("Name")} required value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
+          <Input aria-label={tr("Name in Arabic")} placeholder={tr("Name in Arabic")} dir="rtl" maxLength={255} value={details.name_ar} onChange={(e) => setDetails({ ...details, name_ar: e.target.value })} />
           <Input aria-label={tr("Brand")} placeholder={tr("Brand")} value={details.brand} onChange={(e) => setDetails({ ...details, brand: e.target.value })} />
           <CategoryField value={details.category} onChange={(v) => setDetails({ ...details, category: v })} />
           <Input aria-label={tr("Base price")} type="number" min="0" step="0.01" required value={details.base_price} onChange={(e) => setDetails({ ...details, base_price: e.target.value })} />
           <Input aria-label={tr("Warranty years")} type="number" min="0" placeholder={tr("Warranty (years)")} value={details.warranty_years} onChange={(e) => setDetails({ ...details, warranty_years: e.target.value })} />
           <Input aria-label={tr("Was price (shown struck through)")} type="number" min="0" step="0.01" placeholder={tr("Was price (shown struck through)")} value={details.compare_at_price} onChange={(e) => setDetails({ ...details, compare_at_price: e.target.value })} />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
-            {tr("Visible to customers")}
-          </label>
+          {sellerView && product.review_status && product.review_status !== "approved" ? (
+            <div className="col-span-2 rounded-lg border p-3 text-sm" data-testid="review-status">
+              <p className="font-semibold">{product.review_status === "pending" ? tr("Waiting for ArmorHub's review: it appears in the shop once approved.") : product.review_status === "rejected" ? tr("ArmorHub sent it back. Fix what is asked, then submit it again.") : tr("Draft: not shown in the shop yet. Submit it for ArmorHub's review when it is ready.")}</p>
+              {product.review_status === "rejected" && product.review_note && <p className="mt-1 text-red-700" role="alert">{product.review_note}</p>}
+              {product.review_status !== "pending" && (
+                <Button type="button" size="sm" className="mt-2" onClick={async () => { try { const r = await submitProductReview(product.id); setProduct({ ...product, review_status: r.review_status as typeof product.review_status }); setDetailsMsg(tr("Submitted for review")); } catch (x) { setDetailsMsg(errorMessage(x)); } }}>{tr("Submit for review")}</Button>
+              )}
+            </div>
+          ) : (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={details.is_active} onChange={(e) => setDetails({ ...details, is_active: e.target.checked })} />
+              {tr("Visible to customers")}
+            </label>
+          )}
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" id="requires_shipping" checked={details.requires_shipping} onChange={(e) => setDetails({ ...details, requires_shipping: e.target.checked })} />
             {tr("Physical product: needs a delivery address and shipping")}
@@ -181,7 +201,7 @@ export default function ProductDetailPage() {
             </label>
           )}
           <div className="col-span-2"><InstallationField value={details.installation} onChange={(v) => setDetails({ ...details, installation: v })} /></div>
-          {hasRole(user, "platform-admin") && <div className="col-span-2"><PageTemplateField value={details.page_template} onChange={(v) => setDetails({ ...details, page_template: v })} /></div>}
+          {hasRole(user, "platform-admin", "seller") && <div className="col-span-2"><PageTemplateField value={details.page_template} onChange={(v) => setDetails({ ...details, page_template: v })} /></div>}
           <div className="col-span-2"><PageContentFields template={details.page_template} value={content} onChange={setContent} selfId={Number(id)} /></div>
           <CartonFields value={carton} onChange={setCarton} />
           {details.requires_shipping && (
@@ -206,12 +226,42 @@ export default function ProductDetailPage() {
             onChange={(e) => setDetails({ ...details, description: e.target.value })}
           />
           <textarea
+            aria-label={tr("Description in Arabic")}
+            placeholder={tr("Description in Arabic")}
+            dir="rtl"
+            className="col-span-2 rounded-lg border px-3 py-2"
+            value={details.description_ar}
+            onChange={(e) => setDetails({ ...details, description_ar: e.target.value })}
+          />
+          <label className="col-span-2 grid gap-1 text-sm" data-testid="fits-note">
+            <span className="font-medium">{tr("Which cars or motorcycles does it fit? (optional)")}</span>
+            <textarea
+              aria-label={tr("Which cars or motorcycles does it fit? (optional)")}
+              placeholder={tr("For example: Toyota Corolla 2018-2023, Honda CB500 2020. Leave empty if it does not depend on a vehicle.")}
+              className="rounded-lg border px-3 py-2"
+              rows={2}
+              maxLength={300}
+              value={details.fits_note}
+              onChange={(e) => setDetails({ ...details, fits_note: e.target.value })}
+            />
+            <span className="text-xs text-muted-foreground">{tr("Shoppers see this in bold on the product page.")}</span>
+          </label>
+          <textarea
             aria-label={tr("Highlights (one per line)")}
             placeholder={tr("Highlights (one per line)")}
             className="col-span-2 rounded-lg border px-3 py-2"
             rows={3}
             value={details.highlights}
             onChange={(e) => setDetails({ ...details, highlights: e.target.value })}
+          />
+          <textarea
+            aria-label={tr("Highlights in Arabic (one per line)")}
+            placeholder={tr("Highlights in Arabic (one per line)")}
+            dir="rtl"
+            className="col-span-2 rounded-lg border px-3 py-2"
+            rows={3}
+            value={details.highlights_ar}
+            onChange={(e) => setDetails({ ...details, highlights_ar: e.target.value })}
           />
           <div className="col-span-2 space-y-2">
             <p className="text-sm font-medium">{tr("Images (the first is the main picture)")}</p>
@@ -249,6 +299,7 @@ export default function ProductDetailPage() {
 
       {!canEdit && product.seller_id && <p className="mb-6 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">{tr("This product is managed by its seller, so you can see it but not change it.")}</p>}
 
+      {!sellerView && (<>
       <h2 className="mb-3 text-xl font-semibold">{canEdit ? tr("Price rules") : tr("Prices")}</h2>
 
       {targets.length === 0 ? (
@@ -300,7 +351,8 @@ export default function ProductDetailPage() {
           )}
         </>
       )}
-      {product && canEdit && <div className="mt-8"><FitmentEditor productId={product.id} /></div>}
+      </>)}
+      {product && canEdit && !sellerView && <div className="mt-8"><FitmentEditor productId={product.id} /></div>}
     </div>
   );
 }

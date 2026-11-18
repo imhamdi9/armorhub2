@@ -71,6 +71,7 @@ export interface RefundState {
   refund_amount: number | null;
   can_request: boolean;
   return_days: number;
+  return_to?: { kind: "armorhub" | "seller"; city: string | null };
 }
 export const getRefundState = async (orderId: number) => (await api.get<RefundState>(`/orders/${orderId}/refund-request`)).data;
 export const requestRefund = async (orderId: number, reason: string, photos: string[] = []) => (await api.post<{ id: number; kind: "cancel" | "return"; status: string }>(`/orders/${orderId}/refund-request`, { reason, photos })).data;

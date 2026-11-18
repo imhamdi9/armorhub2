@@ -58,6 +58,10 @@ export interface PublicBranding {
 
 export interface PublicProduct {
   id: number;
+  /** The category's name in the language being browsed. */
+  category_name?: string | null;
+  /** Several of the seller's own products sold together at one price. */
+  is_bundle?: boolean;
   /** How many are left, shown only when ArmorHub holds the stock and it is running low. */
   units_left?: number | null;
   /** A part that must be checked against the customer's car before it can be bought. */
@@ -94,6 +98,8 @@ export interface PublicStore {
   market: PublicMarket | null;
   featured: PublicProduct[];
   categories: string[];
+  /** Each category's name in the language being browsed (slug -> name). */
+  category_labels?: Record<string, string>;
   category_counts: Record<string, number>;
   industries?: PublicIndustry[];
   industry_counts?: Record<string, number>;
@@ -117,6 +123,8 @@ export interface PublicProductPage {
   product: PublicProduct & {
     prices: { target_type: string; target_id?: number; target: string; price: number; duration_minutes: number | null }[];
     highlights?: string[];
+    fits_note?: string | null;
+    bundle_items?: { id: number; name: string | null; quantity: number; image: string | null; description?: string | null; brand?: string | null; price?: number; warranty_years?: number | null }[];
     page?: import("@/lib/product-content").PageContent;
     addons?: PublicProduct[];
     page_template?: string;

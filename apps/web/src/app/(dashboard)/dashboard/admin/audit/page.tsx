@@ -11,6 +11,9 @@ import type { AuditEntry } from "@/types/admin";
 import type { Paginated } from "@/types/platform";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
+/** "Product#60" -> "منتج #60": the record's kind is named in the reader's language. */
+const subjectLabel = (s?: string | null) => (s ? s.replace(/^([A-Za-z]+)#(\d+)/, (_, kind: string, id: string) => `${tr(kind)} #${id}`) : "");
+
 const QUICK = ["", "auth.", "settings.", "payments.", "user.", "security."];
 
 /** Who did what, and which attempts failed. Entries cannot be edited or deleted. */
@@ -36,7 +39,7 @@ export default function AdminAuditPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {QUICK.map((q) => (
           <Button key={q || "all"} size="sm" variant={action === q ? "default" : "outline"} onClick={() => { setAction(q); setPage(1); }}>
-            {q === "" ? tr("All") : q.replace(/\.$/, "")}
+            {q === "" ? tr("All") : tr(q.replace(/\.$/, ""))}
           </Button>
         ))}
         <Input className="max-w-xs" placeholder={tr("Search details")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
@@ -52,7 +55,7 @@ export default function AdminAuditPage() {
             {result.data.map((e) => (
               <div key={e.id} className="min-w-0 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span><code className="rounded bg-muted px-1">{e.action}</code> {e.subject ?? ""}</span>
+                  <span><span className="rounded bg-muted px-1" title={e.action}>{tr(e.action)}</span> {subjectLabel(e.subject)}</span>
                   <span className="text-muted-foreground">{formatDateTime(e.created_at)}</span>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">

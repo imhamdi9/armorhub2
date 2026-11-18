@@ -53,7 +53,7 @@ export function aliasSingular(alias: string): string {
     .join(" ");
 }
 
-const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent", "support-agent"];
+const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent", "support-agent", "catalog-reviewer"];
 
 /** Someone whose only roles are ones an admin created. */
 export function isCustomRole(user: User | null): boolean {
@@ -92,6 +92,8 @@ function buildNavigationFor(user: User | null): NavItem[] {
   if (hasRole(user, "seller") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Sales", href: "/dashboard/seller-orders", icon: "orders" });
     items.push({ title: "Shop profile", href: "/dashboard/seller-profile", icon: "companies" });
+    items.push({ title: "Discount codes", href: "/dashboard/promotions", icon: "commissions" });
+    items.push({ title: "Bundles", href: "/dashboard/bundles", icon: "items" });
     items.push({ title: "Products", href: "/dashboard/products", icon: "products" });
     items.push({ title: "Warehouse", href: "/dashboard/seller-warehouse", icon: "catalog" });
     items.push({ title: "Price requests", href: "/dashboard/seller-quotes", icon: "requests" });
@@ -113,6 +115,11 @@ function buildNavigationFor(user: User | null): NavItem[] {
     if (can("commissions.view")) items.push({ title: "Commissions", href: "/dashboard/commissions", icon: "commissions" });
 
     return withInvites(items);
+  }
+
+  // ArmorHub's catalogue team looks at the products sellers submit.
+  if (hasRole(user, "catalog-reviewer") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Product reviews", href: "/dashboard/admin/product-reviews", icon: "products" });
   }
 
   // Technicians only work assigned jobs; everyone else deals with orders.
@@ -240,6 +247,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Markets", href: "/dashboard/admin/markets", section: "admin", icon: "tenants" });
     items.push({ title: "Categories", href: "/dashboard/admin/categories", section: "admin", icon: "products" });
     items.push({ title: "Catalog requests", href: "/dashboard/admin/catalog-changes", section: "admin", icon: "applications" });
+    items.push({ title: "Product reviews", href: "/dashboard/admin/product-reviews", section: "admin", icon: "products" });
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });

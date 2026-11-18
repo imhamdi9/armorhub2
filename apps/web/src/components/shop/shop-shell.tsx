@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { themeVars, type ShellStore } from "@/components/public/shell";
+import { categoryNamesReady, loadCategoryNames } from "@/lib/category";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -33,13 +34,16 @@ function useSession() {
  */
 export function ShopShell({ store, active, children }: { store: ShellStore; active?: "home" | "products"; children: React.ReactNode }) {
   const user = useSession();
+  // Category names come in both languages from the API; the page draws once they are here.
+  const [namesReady, setNamesReady] = useState(categoryNamesReady());
+  useEffect(() => { if (!namesReady) loadCategoryNames().then((ok) => ok && setNamesReady(true)); }, [namesReady]);
   const home = `/s/${store.slug}`;
   // So the sign-in / sign-up pages can show this market's logo.
   useEffect(() => { if (store.slug) try { localStorage.setItem("last-store", store.slug); } catch { /* storage unavailable */ } }, [store.slug]);
   const nav = [
     { key: "home", href: home, label: tr("Home"), icon: ICONS.home },
     { key: "products", href: `${home}/products`, label: tr("Products"), icon: ICONS.grid },
-    { key: "account", href: user ? "/dashboard" : "/login", label: tr("Account"), icon: ICONS.user },
+    { key: "account", href: user && !user.is_guest ? "/dashboard" : "/login", label: tr("Account"), icon: ICONS.user },
   ] as const;
   const signup = `/register?store=${encodeURIComponent(store.slug)}`;
   const link = "block py-1 text-sm text-white/70 hover:text-white hover:underline";
@@ -74,11 +78,9 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
           </nav>
           {store.market && <span dir="ltr" className="hidden rounded-full bg-fog px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
           <LanguageSwitcher />
-          {user ? (
-            <>
-              <Link href="/dashboard/cart" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold" data-testid="shop-cart">{tr("Cart")}</Link>
-              <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
-            </>
+          <Link href={`${home}/cart`} className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold" data-testid="shop-cart">{tr("Cart")}</Link>
+          {user && !user.is_guest ? (
+            <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
           ) : user === undefined ? null : (
             <>
               <Link href="/login" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold">{tr("Sign in")}</Link>
@@ -88,7 +90,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
         </header>
         </div>
 
-        <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pb-16">{children}</main>
+        <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pb-16"><div key={String(namesReady)} className="contents">{children}</div></main>
 
         <footer className="bg-dark bg-grid-dark text-white">
           <div className="mx-auto grid max-w-[1200px] gap-8 px-6 py-12 sm:grid-cols-3">
