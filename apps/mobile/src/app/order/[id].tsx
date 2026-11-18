@@ -7,7 +7,9 @@ import { api } from "@/api";
 import { Button, Card, Field, Loading, Problem, messageOf } from "@/components/ui";
 import { money, t } from "@/i18n";
 import { color } from "@/theme";
-import { STATUS_TEXT, type Order, type OrderMessage, type RefundState } from "@/types";
+import { STATUS_TEXT, type Order, type OrderMessage, type RefundState, type ShipmentView } from "@/types";
+
+const SHIPMENT_TEXT: Record<string, string> = { created: "Ordered", in_transit: "In transit", out_for_delivery: "Out for delivery", delivered: "Delivered", failed: "Delivery failed", returned: "Returned", cancelled: "Cancelled" };
 
 /** One order: where it is, what it cost and, if it waits for payment, a way to pay. */
 export default function OrderScreen() {
@@ -21,12 +23,16 @@ export default function OrderScreen() {
   const [asking, setAsking] = useState(false);
   const [chat, setChat] = useState<OrderMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [shipment, setShipment] = useState<ShipmentView | null>(null);
+  const [day, setDay] = useState("");
+  const [pickup, setPickup] = useState("");
 
   const load = useCallback(() => {
     setError(null);
     api<Order>(`/orders/${id}`).then(setOrder).catch(setError);
     api<RefundState>(`/orders/${id}/refund-request`).then(setRefund).catch(() => setRefund(null));
     api<OrderMessage[]>(`/orders/${id}/messages`).then(setChat).catch(() => setChat([]));
+    api<{ shipments: ShipmentView[] }>(`/orders/${id}/shipments`).then((r) => setShipment(r.shipments[0] ?? null)).catch(() => setShipment(null));
   }, [id]);
   // Reloads whenever the screen is shown again, so the result of a payment made in the browser is there when the person returns.
   useFocusEffect(load);
@@ -62,6 +68,50 @@ export default function OrderScreen() {
         <View style={s.row}><Text style={[s.key, s.total]}>{t("Total to pay")}</Text><Text style={[s.val, s.total]}>{money(payable, order.currency)}</Text></View>
       </Card>
       {message ? <Text style={{ color: color.red }} accessibilityRole="alert">{message}</Text> : null}
+      {shipment ? (
+        <Card style={{ gap: 8 }} >
+          <Text style={s.total}>{t("Delivery")}</Text>
+          <Text style={s.val}>{shipment.carrier ?? ""} {shipment.tracking_number ?? ""} · {t(SHIPMENT_TEXT[shipment.status] ?? shipment.status)}</Text>
+          {order.delivery_speed === "express" ? <Text style={s.val}>⚡ {t("Express delivery")}</Text> : null}
+          {order.preferred_day ? <Text style={s.val}>📅 {t("Preferred day")}: {order.preferred_day}</Text> : null}
+          {order.gift_note ? <Text style={s.val}>🎁 {order.gift_note}</Text> : null}
+          {shipment.delivery_code ? (
+            <View style={{ backgroundColor: color.wash, borderRadius: 14, padding: 12, gap: 4 }} testID="delivery-code">
+              <Text style={{ color: color.slate }}>{t("Give this code to the courier when you receive the parcel. Do not share it before.")}</Text>
+              <Text style={{ color: color.navy, fontSize: 28, fontWeight: "800", letterSpacing: 6 }}>{shipment.delivery_code}</Text>
+            </View>
+          ) : null}
+          {shipment.status === "failed" && shipment.attempts < 3 ? (
+            <View style={{ gap: 8 }} testID="reschedule">
+              <Text style={{ color: color.red }}>{t("The delivery attempt failed")}{shipment.failed_reason ? `: ${shipment.failed_reason}` : ""}</Text>
+              <Field label={t("New delivery day")} value={day} onChangeText={setDay} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+              <Button title={t("Reschedule delivery")} disabled={!/^\d{4}-\d{2}-\d{2}$/.test(day)} onPress={async () => {
+                try { await api(`/shipments/${shipment.id}/reschedule`, { method: "POST", body: { date: day } }); setDay(""); load(); } catch (e) { setMessage(messageOf(e)); }
+              }} />
+            </View>
+          ) : null}
+          {shipment.status !== "failed" && shipment.reschedule_for ? <Text style={s.val}>{t("Delivery is planned for")} {shipment.reschedule_for}</Text> : null}
+        </Card>
+      ) : null}
+      {refund?.request?.status === "awaiting_pickup" ? (
+        <Card style={{ gap: 8 }} >
+          <Text style={s.total}>{t("Your return was approved. Hand the parcel over to the courier.")}</Text>
+          <View style={{ backgroundColor: color.wash, borderRadius: 14, padding: 12, gap: 4 }} testID="return-code">
+            <Text style={{ color: color.slate }}>{t("Give this code to whoever collects the parcel. Do not share it before.")}</Text>
+            <Text style={{ color: color.navy, fontSize: 28, fontWeight: "800", letterSpacing: 6 }}>{refund.request.return_code}</Text>
+          </View>
+          {refund.request.pickup_day ? <Text style={s.val}>{t("Collection day")}: {refund.request.pickup_day}</Text> : (
+            <View style={{ gap: 8 }}>
+              <Field label={t("Choose a collection day")} value={pickup} onChangeText={setPickup} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+              <Button title={t("Confirm day")} disabled={!/^\d{4}-\d{2}-\d{2}$/.test(pickup)} onPress={async () => {
+                try { await api(`/orders/${id}/return-pickup`, { method: "POST", body: { day: pickup } }); setPickup(""); load(); } catch (e) { setMessage(messageOf(e)); }
+              }} />
+            </View>
+          )}
+        </Card>
+      ) : refund?.request?.status === "collected" ? (
+        <Card><Text style={s.val}>{t("We collected your parcel and are inspecting it. Your refund follows once it passes.")}</Text></Card>
+      ) : null}
       {refund?.refund_status ? (
         <Card><Text style={s.val}>{refund.refund_status === "pending" ? t("Your refund is being sent back to you.") : t("Your refund was sent.")}</Text></Card>
       ) : refund?.request?.status === "requested" ? (

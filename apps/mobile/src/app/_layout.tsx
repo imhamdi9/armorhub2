@@ -41,6 +41,10 @@ function Shell() {
           <Stack.Screen name="garage" options={{ title: "Garage" }} />
           <Stack.Screen name="quotes" options={{ title: "Price requests" }} />
           <Stack.Screen name="addresses" options={{ title: "Addresses" }} />
+          <Stack.Screen name="help" options={{ title: "Help" }} />
+          <Stack.Screen name="preferences" options={{ title: "Preferences" }} />
+          <Stack.Screen name="invite" options={{ title: "Invite friends" }} />
+          <Stack.Screen name="warranties" options={{ title: "Warranties" }} />
         </Stack>
   );
 }

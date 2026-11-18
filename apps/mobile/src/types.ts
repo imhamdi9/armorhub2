@@ -24,7 +24,10 @@ export type Paginated<T> = { data: T[]; current_page: number; last_page: number 
 export type Order = {
   id: number; status: string; product_id: number; currency: string; total_amount: string; service_fee_rate?: string; service_fee_amount?: string; payable_amount?: number;
   created_at?: string; product?: { name: string; images?: string[] };
+  delivery_speed?: string; preferred_day?: string | null; gift_note?: string | null;
 };
+
+export type ShipmentView = { id: number; status: string; carrier: string | null; tracking_number: string | null; delivery_code?: string; attempts: number; failed_reason: string | null; reschedule_for: string | null };
 
 export type GuestOrder = {
   id: number; status: string; currency: string; total: number; service_fee?: number; service_fee_rate?: number; payable?: number;
@@ -44,9 +47,11 @@ export type CartLine = { id: number; product_id: number; name: string | null; qu
 export type CartView = {
   items: CartLine[]; currency: string | null; items_amount: number; service_fee_amount: number; shipping_amount: number; discount_amount: number;
   promo_code: string | null; promo_problem: string | null; eta_days: number | null; free_shipping_over: number | null; payable_amount: number; can_checkout: boolean;
+  delivery_options?: { key: "standard" | "express"; extra_fee: number; eta_days: number | null }[];
+  points?: { balance: number; max_use: number; value: number } | null;
 };
 export type Address = { id: number; label: string | null; name: string; phone: string; line1: string; line2: string | null; city: string; is_default: boolean };
-export type RefundState = { request: { kind: string; status: string; note: string | null } | null; refund_status: string | null; refund_amount: number | null; can_request: boolean; return_days: number };
+export type RefundState = { request: { kind: string; status: string; note: string | null; return_code?: string | null; pickup_day?: string | null; inspection?: string | null; inspection_note?: string | null } | null; refund_status: string | null; refund_amount: number | null; can_request: boolean; return_days: number };
 export type OrderMessage = { id: number; side: string; mine: boolean; kind: string; body: string; created_at: string };
 
 export type Vehicle = { id: number; label: string; nickname: string | null; is_default: boolean };

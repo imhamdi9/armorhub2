@@ -68,6 +68,10 @@ export default function AccountScreen() {
       <Button title={t("Garage")} kind="outline" onPress={() => router.push("/garage")} />
       <Button title={t("Price requests")} kind="outline" onPress={() => router.push("/quotes")} />
       <Button title={t("Addresses")} kind="outline" onPress={() => router.push("/addresses")} />
+      <Button title={t("Warranties")} kind="outline" onPress={() => router.push("/warranties")} />
+      <Button title={t("Invite friends")} kind="outline" onPress={() => router.push("/invite")} />
+      <Button title={t("Preferences")} kind="outline" onPress={() => router.push("/preferences")} />
+      <Button title={t("Help")} kind="outline" onPress={() => router.push("/help")} />
       <Button title={t("Open the website")} kind="outline" onPress={() => Linking.openURL(WEB_URL)} />
       <Button title={t("Sign out")} kind="outline" onPress={() => void signOut()} />
 

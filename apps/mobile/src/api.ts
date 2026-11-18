@@ -1,4 +1,5 @@
 import { API_URL } from "@/config";
+import { isArabic } from "@/i18n";
 import { storeGet, storeRemove, storeSet } from "@/storage";
 
 const TOKEN_KEY = "armorhub.token";
@@ -31,7 +32,7 @@ type Options = { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; par
 /** One call to the platform. Always JSON; the signed-in person's token is added; a refused token signs the person out. */
 export async function api<T = unknown>(path: string, { method = "GET", body, params }: Options = {}): Promise<T> {
   const query = params ? "?" + Object.entries(params).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`).join("&") : "";
-  const headers: Record<string, string> = { Accept: "application/json", "X-Client": "mobile" };
+  const headers: Record<string, string> = { Accept: "application/json", "X-Client": "mobile", "Accept-Language": isArabic() ? "ar" : "en" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
 

@@ -20,6 +20,10 @@ export default function CartScreen() {
   const [form, setForm] = useState({ name: "", phone: "", line1: "", city: "" });
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [speed, setSpeed] = useState<"standard" | "express">("standard");
+  const [day, setDay] = useState("");
+  const [gift, setGift] = useState("");
+  const [usePoints, setUsePoints] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -44,7 +48,7 @@ export default function CartScreen() {
     setBusy(true);
     setMessage(null);
     try {
-      const group = await api<{ id: number }>("/checkout", { method: "POST", body: { shipping_address: form } });
+      const group = await api<{ id: number }>("/checkout", { method: "POST", body: { shipping_address: form, delivery_speed: speed, ...(/^\d{4}-\d{2}-\d{2}$/.test(day) ? { preferred_day: day } : {}), ...(gift.trim() ? { gift_note: gift.trim() } : {}), ...(usePoints && cart?.points?.max_use ? { use_points: cart.points.max_use } : {}) } });
       const res = await api<{ checkout_url?: string }>(`/order-groups/${group.id}/payments`, { method: "POST", body: { payment_method: "card" } });
       if (res.checkout_url) await WebBrowser.openBrowserAsync(res.checkout_url);
       setCart(null);
@@ -71,6 +75,9 @@ export default function CartScreen() {
   if (!cart) return <Loading />;
 
   const cur = cart.currency ?? "";
+  const extra = speed === "express" ? (cart.delivery_options ?? []).find((o) => o.key === "express")?.extra_fee ?? 0 : 0;
+  const pointsOff = usePoints && cart.points ? cart.points.max_use * cart.points.value : 0;
+  const payable = cart.payable_amount + extra - pointsOff;
 
   return (
     <SafeAreaView edges={["top"]} style={s.page}>
@@ -111,6 +118,24 @@ export default function CartScreen() {
             <Field label={t("City")} value={form.city} onChangeText={(v) => setForm({ ...form, city: v })} />
           </Card>
 
+          {(cart.delivery_options ?? []).length > 0 && (
+            <Card style={{ gap: 10 }}>
+              <Text style={s.h}>{t("How fast, and when?")}</Text>
+              {cart.delivery_options!.map((o) => (
+                <Pressable key={o.key} accessibilityRole="radio" accessibilityState={{ selected: speed === o.key }} onPress={() => setSpeed(o.key)} style={[s.chip, speed === o.key && s.chipOn, { borderRadius: 12 }]}>
+                  <Text style={s.chipText}>{o.key === "express" ? t("Express delivery") : t("Standard delivery")}{o.eta_days ? ` · ${t("about {n} days", { n: o.eta_days })}` : ""}{o.extra_fee > 0 ? ` · +${money(o.extra_fee, cur)}` : ""}</Text>
+                </Pressable>
+              ))}
+              <Field label={t("Preferred delivery day (optional)")} value={day} onChangeText={setDay} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+              <Field label={t("Gift note (optional)")} value={gift} onChangeText={setGift} maxLength={200} multiline />
+            </Card>
+          )}
+          {cart.points && cart.points.max_use > 0 ? (
+            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: usePoints }} onPress={() => setUsePoints(!usePoints)} style={[s.chip, usePoints && s.chipOn, { borderRadius: 12 }]}>
+              <Text style={s.chipText}>{usePoints ? "☑ " : "☐ "}{t("Use {n} points", { n: cart.points.max_use })} · {t("Takes {amount} off. You have {balance} points.", { amount: money(cart.points.max_use * cart.points.value, cur), balance: cart.points.balance })}</Text>
+            </Pressable>
+          ) : null}
+
           <Card style={{ gap: 10 }}>
             {cart.promo_code ? (
               <View style={s.row}>
@@ -131,12 +156,12 @@ export default function CartScreen() {
             {cart.discount_amount > 0 && <View style={s.row}><Text style={[s.key, { color: color.green }]}>{t("Discount")}</Text><Text style={[s.val, { color: color.green }]}>−{money(cart.discount_amount, cur)}</Text></View>}
             <View style={s.row}><Text style={s.key}>{t("Delivery")}</Text><Text style={s.val}>{cart.shipping_amount > 0 ? money(cart.shipping_amount, cur) : t("Free")}</Text></View>
             {cart.service_fee_amount > 0 && <View style={s.row}><Text style={s.key}>{t("Platform fee")}</Text><Text style={s.val}>{money(cart.service_fee_amount, cur)}</Text></View>}
-            <View style={s.row}><Text style={[s.key, s.total]}>{t("Total to pay")}</Text><Text style={[s.val, s.total]}>{money(cart.payable_amount, cur)}</Text></View>
+            <View style={s.row}><Text style={[s.key, s.total]}>{t("Total to pay")}</Text><Text style={[s.val, s.total]}>{money(payable, cur)}</Text></View>
             {cart.eta_days ? <Text style={s.muted}>{t("Usually delivered in about {n} days.", { n: cart.eta_days })}</Text> : null}
           </Card>
 
           {message ? <Text style={s.error} accessibilityRole="alert">{message}</Text> : null}
-          <Button title={`${t("Place order")} · ${money(cart.payable_amount, cur)}`} busy={busy} disabled={!cart.can_checkout || !form.line1 || !form.phone} onPress={placeOrder} />
+          <Button title={`${t("Place order")} · ${money(payable, cur)}`} busy={busy} disabled={!cart.can_checkout || !form.line1 || !form.phone} onPress={placeOrder} />
         </ScrollView>
       )}
     </SafeAreaView>
