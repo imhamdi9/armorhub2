@@ -100,3 +100,11 @@ export const removeAddress = async (id: number) => (await api.delete(`/addresses
 export const saveProfile = async (body: { name?: string; phone?: string | null }) => (await api.put<{ name: string; phone: string | null }>("/me/profile", body)).data;
 export const changePassword = async (body: { current_password: string; password: string; password_confirmation: string }) => (await api.put<{ message: string }>("/me/password", body)).data;
 export const deleteAccount = async (body: { password?: string; confirm?: string }) => (await api.delete("/me", { data: body })).data;
+export interface VehicleFit { vehicle_id: number; label: string; is_default: boolean; status: "fits" | "does_not_fit" | "universal" | "unknown" }
+export const getFit = async (productId: number) => (await api.get<VehicleFit[]>(`/garage/fit/${productId}`)).data;
+
+export interface FavouriteProduct { id: number; name: string; images: string[]; from_price: number | null; currency: string; seller_id: number | null }
+export const getFavourites = async () => (await api.get<FavouriteProduct[]>("/favourites")).data;
+export const getFavouriteIds = async () => (await api.get<number[]>("/favourites/ids")).data;
+export const addFavourite = async (productId: number) => (await api.post("/favourites", { product_id: productId })).data;
+export const removeFavourite = async (productId: number) => (await api.delete(`/favourites/${productId}`)).data;

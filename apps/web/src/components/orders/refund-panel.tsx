@@ -6,6 +6,7 @@ import { Note } from "@/components/installations/shared";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatMoney, tr } from "@/lib/i18n";
+import { addToCart } from "@/services/cart.service";
 import { getRefundState, requestRefund, type RefundState } from "@/services/ops.service";
 
 /** Cancelling a paid order or returning it, and where the customer's money stands. Goods only; services have their own protections. */
@@ -52,5 +53,29 @@ export function RefundPanel({ orderId, currency, onChange }: { orderId: number; 
         )
       ) : null}
     </section>
+  );
+}
+
+/** Puts the same goods back in the cart, so a repeat purchase is one tap. */
+export function BuyAgain({ productId, quantity }: { productId: number; quantity?: number }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  return (
+    <div className="mb-6">
+      {err && <Note tone="warn">{err}</Note>}
+      <Button
+        variant="outline"
+        disabled={busy}
+        data-testid="buy-again"
+        onClick={async () => {
+          setBusy(true);
+          setErr(null);
+          try { await addToCart(productId, null, quantity ?? 1); window.location.assign("/dashboard/cart"); } catch (e) { setErr(errorMessage(e)); setBusy(false); }
+        }}
+      >
+        {tr("Buy again")}
+      </Button>
+    </div>
   );
 }

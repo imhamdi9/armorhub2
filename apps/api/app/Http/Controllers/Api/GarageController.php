@@ -18,6 +18,16 @@ class GarageController extends Controller
         return CustomerVehicle::where('customer_id', $request->user()->id)->with('model.make')->orderByDesc('is_default')->orderBy('id')->get()->map(fn ($v) => $this->present($v))->values();
     }
 
+    /** Whether one product fits each of the customer's cars, so the product page can say so. */
+    public function fit(Request $request, int $productId, \App\Services\Fitment\FitmentService $fitment)
+    {
+        $product = \App\Models\Product::withoutGlobalScopes()->where('is_active', true)->findOrFail($productId);
+
+        return CustomerVehicle::where('customer_id', $request->user()->id)->with('model.make')->orderByDesc('is_default')->orderBy('id')->get()->map(fn ($v) => [
+            'vehicle_id' => $v->id, 'label' => $v->nickname ?: $v->label(), 'is_default' => $v->is_default, 'status' => $fitment->checkVehicle($product, $v),
+        ])->values();
+    }
+
     public function store(Request $request)
     {
         $data = $this->validated($request);

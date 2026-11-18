@@ -89,7 +89,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::put('/me/location', [AuthController::class, 'updateLocation']);
     Route::put('/me/profile', [\App\Http\Controllers\Api\ProfileController::class, 'update'])->middleware('throttle:30,1');
     Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
-    Route::get('/addresses', [\App\Http\Controllers\Api\AddressController::class, 'index']);
+    Route::get('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'index']);
+    Route::get('/favourites/ids', [\App\Http\Controllers\Api\FavouriteController::class, 'ids']);
+    Route::post('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'store'])->middleware('throttle:60,1');
+    Route::delete('/favourites/{productId}', [\App\Http\Controllers\Api\FavouriteController::class, 'destroy'])->whereNumber('productId');
+    Route::get('/addresses',[\App\Http\Controllers\Api\AddressController::class, 'index']);
     Route::post('/addresses', [\App\Http\Controllers\Api\AddressController::class, 'store'])->middleware('throttle:30,1');
     Route::put('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'update'])->whereNumber('id');
     Route::delete('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'destroy'])->whereNumber('id');
@@ -328,6 +332,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     // The cart, and buying it: one purchase (an order group), paid once, one order per line.
     // The customer's cars.
     Route::get('/garage', [\App\Http\Controllers\Api\GarageController::class, 'index']);
+    Route::get('/garage/fit/{productId}', [\App\Http\Controllers\Api\GarageController::class, 'fit'])->whereNumber('productId');
     Route::post('/garage', [\App\Http\Controllers\Api\GarageController::class, 'store'])->middleware('throttle:30,1');
     Route::put('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'update'])->whereNumber('id');
     Route::delete('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'destroy'])->whereNumber('id');

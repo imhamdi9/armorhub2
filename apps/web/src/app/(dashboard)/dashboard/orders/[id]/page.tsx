@@ -22,7 +22,7 @@ import {
 import type { Order, PartnerQuote } from "@/types/platform";
 import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
 import { OrderStatusStrip } from "@/components/orders/status-strip";
-import { RefundPanel } from "@/components/orders/refund-panel";
+import { BuyAgain, RefundPanel } from "@/components/orders/refund-panel";
 
 export default function OrderDetailPage() {
   return (
@@ -137,6 +137,7 @@ function OrderDetail() {
         </div>
       )}
 
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && order.product_id && ["paid", "completed"].includes(order.status) && <BuyAgain productId={order.product_id} quantity={order.quantity} />}
       {user?.roles?.includes("customer") && order.product?.requires_shipping && <RefundPanel orderId={order.id} currency={order.currency} onChange={() => getOrder(id).then(setOrder)} />}
       <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
 

@@ -1848,5 +1848,12 @@ export const AR: Record<string, string> = {
   "Quantity": "الكمية",
   "Back to the order": "العودة إلى الطلب",
   "Garage": "الجراج",
+  "Fits your {car}": "يناسب سيارتك {car}",
+  "Does not fit your {car}": "لا يناسب سيارتك {car}",
+  "Buy again": "اشترِ مرة أخرى",
+  "Saved to favourites": "محفوظ في المفضلة",
+  "Save to favourites": "احفظ في المفضلة",
+  "Favourites": "المفضلة",
+  "Nothing saved yet. Tap the heart on a product to keep it here.": "لا شيء محفوظ بعد. اضغط القلب على أي منتج ليظهر هنا.",
 };
 

@@ -11,7 +11,7 @@ import { SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { addToCart } from "@/services/cart.service";
-import { getGarage, type Vehicle } from "@/services/ops.service";
+import { addFavourite, getFavouriteIds, getFit, getGarage, removeFavourite, type Vehicle, type VehicleFit } from "@/services/ops.service";
 import { getMyReview, saveReview } from "@/services/platform.service";
 import { imageSrc } from "@/lib/surfaces";
 import type { PublicProduct } from "@/types/public";
@@ -189,6 +189,31 @@ export function Fulfilled({ m }: { m: ProductModel }) {
 const BIG = "btn-brand inline-flex items-center justify-center px-8 py-4 text-lg";
 
 /** The real buying actions of the product, whatever the layout: quote, buy, buy with optional installation, or installation first. */
+/** A heart that saves the product for later. Signed-in customers only. */
+export function FavouriteButton({ m }: { m: ProductModel }) {
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (m.links.signedIn) getFavouriteIds().then((ids) => setSaved(ids.includes(m.p.id))).catch(() => {});
+  }, [m.links.signedIn, m.p.id]);
+  if (!m.links.signedIn) return null;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={saved}
+      data-testid="favourite"
+      onClick={async () => {
+        const next = !saved;
+        setSaved(next);
+        try { await (next ? addFavourite(m.p.id) : removeFavourite(m.p.id)); } catch { setSaved(!next); }
+      }}
+      className="inline-flex items-center justify-center gap-2 rounded-full border border-fog px-6 py-2.5 text-sm font-semibold text-obsidian hover:bg-fog"
+    >
+      <span aria-hidden="true">{saved ? "♥" : "♡"}</span>{saved ? tr("Saved to favourites") : tr("Save to favourites")}
+    </button>
+  );
+}
+
 export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }) {
   const { goods, mode, links, href, cta } = m;
   const cls = big ? BIG : "btn-brand inline-flex items-center justify-center px-6 py-3 text-base";
@@ -199,12 +224,14 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
       <div className="grid gap-3" data-testid="buy-buttons">
         <Link ref={cta} href={links.quote} className={cls} data-testid="request-price">{tr("Request a price")}</Link>
         <p className="text-center text-xs text-slate">{tr("Sellers send you their price. You compare, accept one and pay only then.")}</p>
+        <FavouriteButton m={m} />
       </div>
     );
   }
 
   return (
     <div className="grid gap-3" data-testid="buy-buttons">
+      <FavouriteButton m={m} />
       {m.whatsapp && (
         <a href={m.whatsapp} target="_blank" rel="noopener noreferrer" className="order-last text-center text-sm font-semibold text-brand-ink underline underline-offset-4" data-testid="ask-whatsapp">{tr("Have a question? Ask the store on WhatsApp")}</a>
       )}
@@ -247,9 +274,11 @@ export function AddToCart({ m }: { m: ProductModel }) {
   // The customer's cars: the default one is chosen, so the server can refuse parts that do not fit it.
   const [cars, setCars] = useState<Vehicle[]>([]);
   const [car, setCar] = useState("");
+  const [fits, setFits] = useState<VehicleFit[]>([]);
   useEffect(() => {
     if (!m.links.signedIn) return;
     getGarage().then((v) => { setCars(v); setCar(String(v.find((c) => c.is_default)?.id ?? "")); }).catch(() => {});
+    getFit(m.p.id).then(setFits).catch(() => {});
   }, [m.links.signedIn]);
   if (!m.goods || m.mode === "required" || !m.links.signedIn) return null;
 
@@ -275,6 +304,12 @@ export function AddToCart({ m }: { m: ProductModel }) {
           </select>
         </label>
       )}
+      {(() => {
+        const f = fits.find((x) => String(x.vehicle_id) === car);
+        if (!f || f.status === "unknown") return null;
+        const ok = f.status === "fits" || f.status === "universal";
+        return <p role="status" data-testid="fit-badge" className={`mb-2 rounded-lg px-3 py-2 text-sm ${ok ? "bg-green-50 text-green-900" : "bg-amber-50 text-amber-900"}`}>{f.status === "universal" ? tr("Fits every car") : ok ? tr("Fits your {car}", { car: f.label }) : tr("Does not fit your {car}", { car: f.label })}</p>;
+      })()}
       <button type="button" onClick={add} disabled={busy} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
       {error && <p role="alert" className="mt-1 text-center text-sm text-red-600">{error}</p>}
     </div>

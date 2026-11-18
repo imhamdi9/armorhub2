@@ -120,6 +120,7 @@ export function buildNavigation(user: User | null): NavItem[] {
   if (hasRole(user, "customer") && !hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager", "technician")) {
     items.push({ title: "Cart", href: "/dashboard/cart", icon: "orders" });
     items.push({ title: "Garage", href: "/dashboard/garage", icon: "items" });
+    items.push({ title: "Favourites", href: "/dashboard/favourites", icon: "products" });
     items.push({ title: "Price requests", href: "/dashboard/quotes", icon: "requests" });
   }
 

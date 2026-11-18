@@ -77,6 +77,33 @@ class AccountTest extends TestCase
         $this->assertTrue(CustomerAddress::find($work)->fresh()->is_default);                             // another one becomes the default
     }
 
+    public function test_favourites_are_saved_listed_and_removed_per_person(): void
+    {
+        $this->getJson('/api/favourites')->assertUnauthorized();
+        $product = \App\Models\Product::withoutGlobalScopes()->where('market', 'EG')->where('is_active', true)->whereNull('seller_id')->orWhereNotNull('seller_id')->firstOrFail();
+
+        $this->me()->postJson('/api/favourites', ['product_id' => $product->id])->assertCreated();
+        $this->postJson('/api/favourites', ['product_id' => $product->id])->assertCreated();                 // saving twice keeps one
+        $this->getJson('/api/favourites/ids')->assertOk()->assertExactJson([$product->id]);
+        $this->getJson('/api/favourites')->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $product->id);
+        $this->postJson('/api/favourites', ['product_id' => 99999999])->assertUnprocessable();
+
+        $stranger = User::where('email', 'seller.khan@demo.eg')->firstOrFail();
+        $this->actingAs($stranger, 'sanctum')->getJson('/api/favourites/ids')->assertOk()->assertExactJson([]);   // not shared
+
+        $this->me()->deleteJson("/api/favourites/{$product->id}")->assertOk();
+        $this->getJson('/api/favourites')->assertOk()->assertJsonCount(0);
+    }
+
+    public function test_the_car_fit_of_a_product_is_told_per_car(): void
+    {
+        $product = \App\Models\Product::withoutGlobalScopes()->where('is_active', true)->firstOrFail();
+        $this->me()->getJson("/api/garage/fit/{$product->id}")->assertOk()->assertJsonCount(0);             // no cars yet
+        $model = \App\Modules\Automotive\Models\VehicleModel::where('is_active', true)->firstOrFail();
+        $this->postJson('/api/garage', ['vehicle_model_id' => $model->id, 'year' => 2020])->assertCreated();
+        $this->getJson("/api/garage/fit/{$product->id}")->assertOk()->assertJsonCount(1)->assertJsonPath('0.status', 'universal');
+    }
+
     public function test_at_most_ten_addresses_and_only_signed_in_people(): void
     {
         $this->getJson('/api/addresses')->assertUnauthorized();
