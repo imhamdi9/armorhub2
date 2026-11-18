@@ -34,7 +34,7 @@ class GarageController extends Controller
         $user = $request->user();
 
         if (CustomerVehicle::where('customer_id', $user->id)->count() >= self::MAX_VEHICLES) {
-            throw ValidationException::withMessages(['vehicle' => ['You can keep up to '.self::MAX_VEHICLES.' cars. Remove one first.']]);
+            throw ValidationException::withMessages(['vehicle' => [__('You can keep up to :n cars. Remove one first.', ['n' => self::MAX_VEHICLES])]]);
         }
 
         $first = ! CustomerVehicle::where('customer_id', $user->id)->exists();

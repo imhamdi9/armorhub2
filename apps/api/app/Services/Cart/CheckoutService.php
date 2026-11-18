@@ -26,7 +26,7 @@ class CheckoutService
     }
 
     /** @param array{name: string, phone: string, line1: string, line2?: ?string, city: string, region?: ?string, postal_code?: ?string} $address */
-    public function checkout(User $user, array $address): OrderGroup
+    public function checkout(User $user, array $address, array $choices = []): OrderGroup
     {
         if (! $this->settings->bool('platform.orders_enabled')) {
             throw ValidationException::withMessages(['cart' => ['New orders are paused for now. Please try again later.']]);
@@ -57,11 +57,25 @@ class CheckoutService
             $this->plans->assertCanTakeCustomers('seller', $sellerId);
         }
 
-        return DB::transaction(function () use ($user, $company, $lines, $ship, $cart) {
+        // Faster delivery only where the market offers it, and only for goods that are shipped.
+        $speed = ($choices['delivery_speed'] ?? 'standard') === 'express' ? 'express' : 'standard';
+        $express = $speed === 'express' ? app(\App\Services\ShippingFees::class)->express($this->markets->forCompany($company)?->code) : null;
+        if ($speed === 'express' && (! $express || collect($lines)->contains(fn ($l) => ! $l['product']->requires_shipping))) {
+            throw ValidationException::withMessages(['delivery_speed' => ['Express delivery is not available for this purchase.']]);
+        }
+        $extras = ['delivery_speed' => $speed, 'preferred_day' => $choices['preferred_day'] ?? null, 'gift_note' => ($choices['gift_note'] ?? null) ?: null];
+
+        return DB::transaction(function () use ($user, $company, $lines, $ship, $cart, $express, $extras, $choices) {
+            // The last unit can only be sold once: lock the products and look again, now that nobody else can be taking them at the same moment.
+            \App\Models\Product::withoutGlobalScopes()->whereIn('id', collect($lines)->pluck('product.id'))->orderBy('id')->lockForUpdate()->get();
+            foreach ($lines as $l) {
+                $this->stock->assertInStock($l['product'], $l['quantity']);
+            }
+
             $group = OrderGroup::create([
                 'company_id' => $user->company_id, 'customer_id' => $user->id, 'currency' => $lines[0]['price']['currency'], 'items_amount' => 0, 'service_fee_amount' => 0,
                 'payable_amount' => 0, 'status' => OrderGroup::AWAITING, 'shipping_address' => $ship,
-            ]);
+            ] + $extras);
 
             // Delivery is charged once per seller, on that seller's first order, and goes to that seller.
             $market = $this->markets->forCompany($company)?->code;
@@ -80,13 +94,24 @@ class CheckoutService
                 $promo = $checked['code'];
                 $discount = $checked['discount'];
             }
+            $promoDiscount = $discount;
+
+            // Points the customer chose to spend are a discount too, capped at a share of the purchase.
+            $loyalty = app(\App\Services\Loyalty::class);
+            $pointsUsed = max(0, (int) ($choices['use_points'] ?? 0));
+            if ($pointsUsed > 0) {
+                if ($pointsUsed > $loyalty->redeemable($user, round(array_sum($perSeller), 2))['max_use']) {
+                    throw ValidationException::withMessages(['use_points' => ['You cannot use that many points on this purchase.']]);
+                }
+                $discount += $loyalty->worth($pointsUsed);
+            }
             $shares = app(\App\Services\PromoCodes::class)->allocate($discount, array_map(fn ($l) => round((float) $l['price']['total'] * $l['quantity'], 2), $lines));
 
             $items = $fee = 0.0;
             foreach ($lines as $idx => $line) {
                 $total = round((float) $line['price']['total'] * $line['quantity'], 2);
                 $sellerKey = (int) $line['product']->seller_id;
-                $shipping = isset($charged[$sellerKey]) ? 0.0 : app(\App\Services\ShippingFees::class)->forSeller($market, $perSeller[$sellerKey]);
+                $shipping = isset($charged[$sellerKey]) ? 0.0 : (app(\App\Services\ShippingFees::class)->forSeller($market, $perSeller[$sellerKey]) + ($express['fee'] ?? 0.0));
                 $charged[$sellerKey] = true;
                 $shippingTotal += $shipping;
                 $order = Order::create([
@@ -94,16 +119,17 @@ class CheckoutService
                     'subject_type' => $line['vehicle'] ? 'vehicle_model' : null, 'subject_id' => $line['vehicle']?->vehicle_model_id,
                     'status' => OrderStatus::AwaitingPayment, 'product_amount' => $total, 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $total,
                     'currency' => $line['price']['currency'], 'shipping_address' => $ship, 'shipping_amount' => $shipping, 'discount_amount' => $shares[$idx], 'promo_code' => $promo?->code,
-                ] + $this->markets->taxFor($company, $total) + $this->fees->forInvoice($total));
+                ] + $extras + $this->markets->taxFor($company, $total) + $this->fees->forInvoice($total));
                 OrderEvent::record($order, 'created', $user, ['direct_sale' => true, 'group_id' => $group->id, 'quantity' => $line['quantity']] + ($line['vehicle'] ? ['vehicle' => $line['vehicle']->label()] : []));
                 $items += (float) $order->total_amount;
                 $fee += (float) $order->service_fee_amount;
             }
 
             $group->update(['items_amount' => round($items, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => round($shippingTotal, 2), 'discount_amount' => round($discount, 2), 'payable_amount' => round($items + $fee + $shippingTotal - $discount, 2)]);
-            if ($promo && $discount > 0) {
-                \Illuminate\Support\Facades\DB::table('promo_redemptions')->insert(['promo_code_id' => $promo->id, 'user_id' => $user->id, 'group_id' => $group->id, 'amount' => $discount, 'status' => 'reserved', 'created_at' => now(), 'updated_at' => now()]);
+            if ($promo && $promoDiscount > 0) {
+                \Illuminate\Support\Facades\DB::table('promo_redemptions')->insert(['promo_code_id' => $promo->id, 'user_id' => $user->id, 'group_id' => $group->id, 'amount' => $promoDiscount, 'status' => 'reserved', 'created_at' => now(), 'updated_at' => now()]);
             }
+            $loyalty->spend($user, $pointsUsed, $group);
             $this->carts->clear($user);
 
             return $group->fresh();

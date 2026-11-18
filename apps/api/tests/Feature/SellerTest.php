@@ -147,7 +147,7 @@ class SellerTest extends TestCase
         $ship = $this->actingAs($this->seller, 'sanctum')->postJson("/api/orders/{$orderId}/shipments", ['provider' => 'manual', 'carrier' => 'SMSA', 'tracking_number' => 'S1'])
             ->assertCreated()->json();
         $this->assertSame(1, $this->customer->notifications()->where('data->kind', 'shipped')->count());
-        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertOk();
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered', 'code' => \App\Models\Shipment::find($ship['id'])->delivery_code])->assertOk();
         $this->assertSame(OrderStatus::Completed, Order::withoutGlobalScopes()->find($orderId)->status);
 
         // The seller's home screen counts it.

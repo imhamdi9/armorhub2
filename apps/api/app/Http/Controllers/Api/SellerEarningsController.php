@@ -18,7 +18,7 @@ class SellerEarningsController extends Controller
 
         return [
             'balances' => (object) $service->balances($user->company_id),
-            'entries' => SellerLedgerEntry::where('company_id', $user->company_id)->latest('id')->limit(100)->get(['id', 'order_id', 'type', 'amount', 'currency', 'status', 'available_at', 'payout_id', 'created_at']),
+            'entries' => SellerLedgerEntry::where('company_id', $user->company_id)->latest('id')->limit(100)->get(['id', 'order_id', 'type', 'amount', 'currency', 'status', 'available_at', 'release_at', 'payout_id', 'created_at']),
             'payouts' => SellerPayout::where('company_id', $user->company_id)->latest('id')->limit(50)->get(['id', 'amount', 'currency', 'status', 'reference', 'paid_at', 'created_at']),
         ];
     }

@@ -25,7 +25,7 @@ class LedgerPostings
      * A customer paid an order. The gateway holds what they paid; it is owed to the seller (or the partner who does the job) less the commission,
      * the commission and the customer's platform fee are the platform's revenue.
      */
-    public function orderPaid(Order $order, Commission $commission, ?Partner $partner = null): void
+    public function orderPaid(Order $order, Commission $commission, ?Partner $partner = null, bool $cod = false): void
     {
         $cur = $order->currency;
         $sellerId = $order->product?->seller_id;
@@ -33,7 +33,7 @@ class LedgerPostings
         $holder = $sellerId ? Accounts::sellerHeld($sellerId) : ($partner ? Accounts::servicePayable($partner->id) : null);
 
         $this->ledger->post("order:{$order->id}:paid", 'order_paid', array_filter([
-            [Accounts::GATEWAY, $cur, (float) $order->payable_amount],
+            [$cod ? Accounts::COD_RECEIVABLE : Accounts::GATEWAY, $cur, (float) $order->payable_amount],   // pay on delivery: the courier owes it until delivery
             $holder ? [$holder, $cur, -$net] : [Accounts::REV_COMMISSION, $cur, -$net],   // no one to owe it to: the platform keeps it until someone is chosen
             [Accounts::REV_COMMISSION, $cur, -(float) $commission->amount],
             [Accounts::REV_SERVICE_FEE, $cur, -(float) $order->service_fee_amount],
@@ -53,6 +53,16 @@ class LedgerPostings
         if ($lines) {
             $this->ledger->post("order:{$order->id}:commission_shares", 'commission_shared', $lines, $order, "Commission shares of order #{$order->id}");
         }
+    }
+
+    /** The courier handed over the cash collected at the door. */
+    public function codCollected(Order $order): void
+    {
+        $amount = (float) $order->payable_amount;
+        $this->ledger->post("order:{$order->id}:cod_collected", 'cod_collected', [
+            [Accounts::GATEWAY, $order->currency, $amount],
+            [Accounts::COD_RECEIVABLE, $order->currency, -$amount],
+        ], $order, "Cash on delivery collected for order #{$order->id}");
     }
 
     /** The goods arrived: what the seller is owed moves from held to available. */

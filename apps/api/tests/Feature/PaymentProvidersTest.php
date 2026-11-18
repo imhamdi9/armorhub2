@@ -95,7 +95,7 @@ class PaymentProvidersTest extends TestCase
         $this->assertStringNotContainsString('gw_secret_key', $body);
 
         $providers = collect($response->json('providers'))->keyBy('key');
-        $this->assertSame(['simulated', 'stripe', 'http'], $providers->keys()->all());
+        $this->assertSame(['simulated', 'sandbox', 'stripe', 'http'], $providers->keys()->all());
         $this->assertSame('simulated', $response->json('active'));
         $this->assertTrue($providers['stripe']['configured']);
         $this->assertFalse($providers['http']['configured']);

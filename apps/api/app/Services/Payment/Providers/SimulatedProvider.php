@@ -63,4 +63,10 @@ class SimulatedProvider implements PaymentProvider
     {
         return ['ok' => true, 'message' => 'Nothing to check: no money moves with this provider.'];
     }
+
+    /** No money moved, so none goes back: only a reference is recorded. @return array{ok: bool, reference: string, message: string} */
+    public function refund(string $transactionId, float $amount, string $currency, array $config): array
+    {
+        return ['ok' => true, 'reference' => 'SIM-RF-'.Str::upper(Str::random(10)), 'message' => 'The demo refund was recorded.'];
+    }
 }

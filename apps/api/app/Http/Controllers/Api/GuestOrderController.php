@@ -102,7 +102,7 @@ class GuestOrderController extends Controller
             $order = Order::create([
                 'company_id' => $company->id, 'customer_id' => null, 'product_id' => $product->id, 'status' => OrderStatus::AwaitingPayment,
                 'product_amount' => $price['total'], 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $price['total'], 'currency' => $price['currency'],
-                'shipping_address' => $address, 'shipping_amount' => $shipping, 'guest_name' => $data['name'], 'guest_email' => strtolower($data['email']), 'guest_token' => Str::random(48),
+                'shipping_address' => $address, 'shipping_amount' => $shipping, 'guest_name' => $data['name'], 'guest_email' => strtolower($data['email']), 'guest_token' => Str::random(48), 'guest_locale' => app()->getLocale(),
             ] + $markets->taxFor($company, (float) $price['total']) + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $price['total']));
             OrderEvent::record($order, 'created', null, ['direct_sale' => true, 'guest' => true]);
 
@@ -115,6 +115,38 @@ class GuestOrderController extends Controller
     public function show(string $token)
     {
         return $this->view($this->find($token));
+    }
+
+    /** What was written about this order, for the person holding its link. */
+    public function messages(string $token)
+    {
+        $order = $this->find($token);
+
+        return \App\Models\OrderMessage::where('order_id', $order->id)->orderBy('id')->limit(300)->get()
+            ->map(fn ($m) => ['id' => $m->id, 'side' => $m->side, 'mine' => $m->side === 'customer', 'kind' => $m->kind, 'body' => $m->body, 'created_at' => $m->created_at?->toIso8601String()])->values();
+    }
+
+    /** The guest writes to the seller and ArmorHub, and may flag a problem for ArmorHub to look at. */
+    public function message(Request $request, string $token)
+    {
+        $order = $this->find($token);
+        $data = $request->validate(['body' => 'required|string|min:2|max:1000', 'problem' => 'sometimes|boolean']);
+        $body = trim(strip_tags($data['body']));
+        if (\App\Support\ContactGuard::contains($body)) {
+            throw ValidationException::withMessages(['body' => ['Please do not share phone numbers, e-mails or links. Everyone is reachable here on the platform.']]);
+        }
+        $problem = $request->boolean('problem');
+        $m = \App\Models\OrderMessage::create(['order_id' => $order->id, 'user_id' => null, 'side' => 'customer', 'kind' => $problem ? 'problem' : 'message', 'body' => $body]);
+
+        $order->loadMissing('product:id,seller_id');
+        $title = $problem ? "A problem with order #{$order->id}" : "New message about order #{$order->id}";
+        $sellerTitle = $problem ? 'A problem with order #:id' : 'New message about order #:id';
+        \App\Models\User::withoutGlobalScopes()->where('company_id', $order->product?->seller_id)->role('seller')->get()->each(fn ($u) => app(\App\Services\InstallationNotifier::class)->user($u->id, $sellerTitle, ':text', '/dashboard/seller-orders', ['id' => (string) $order->id, 'text' => mb_substr($body, 0, 120)]));
+        if ($problem) {
+            app(\App\Services\InstallationNotifier::class)->admins($sellerTitle, ':text', '/dashboard/admin/tools', ['id' => (string) $order->id, 'text' => mb_substr($body, 0, 120)]);
+        }
+
+        return response()->json(['id' => $m->id, 'side' => 'customer', 'mine' => true, 'kind' => $m->kind, 'body' => $m->body, 'created_at' => $m->created_at?->toIso8601String()], 201);
     }
 
     public function pay(Request $request, string $token, PaymentFinalizer $finalizer, PaymentGateway $gateway)

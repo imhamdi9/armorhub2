@@ -66,14 +66,15 @@ class InstallationPresenter
             'can_confirm' => $r->status === 'proof_submitted',
             'can_dispute' => in_array($r->status, ['paid', 'in_progress'], true) || ($r->status === 'proof_submitted' && $r->objection_deadline?->isFuture()),
             'can_cancel' => in_array($r->status, ['open', 'offers_received', 'selected', 'awaiting_payment'], true),
-            'review' => ($rv = InstallationReview::where('request_id', $r->id)->first()) ? ['rating' => $rv->rating, 'comment' => $rv->comment] : null,
+            'review' => ($rv = InstallationReview::where('request_id', $r->id)->first()) ? ['rating' => $rv->rating, 'comment' => $rv->comment, 'reply' => $rv->reply] : null,
+            'booking' => ($bk = \App\Models\InstallationBooking::where('request_id', $r->id)->where('status', 'booked')->first()) ? ['starts_at' => $bk->starts_at?->toIso8601String(), 'on_the_way_at' => $bk->on_the_way_at?->toIso8601String()] : null,
             'can_review' => $r->status === 'released' && ! InstallationReview::where('request_id', $r->id)->exists(),
         ];
 
         if ($r->selected_offer_id) {
             $centre = $this->jobs->centreOf($r);
             $out['centre'] = ['code' => \App\Http\Controllers\Api\InstallationRequestController::alias($centre->id), 'tier' => $centre->tier,
-                'rating' => $centre->rating_count >= 3 ? (float) $centre->rating_avg : null, 'rating_count' => (int) $centre->rating_count, 'completed_jobs' => (int) $centre->completed_jobs];
+                'price_list' => $centre->price_list ?? [], 'rating' => $centre->rating_count >= 3 ? (float) $centre->rating_avg : null, 'rating_count' => (int) $centre->rating_count, 'completed_jobs' => (int) $centre->completed_jobs];
 
             // After payment the customer gets the centre's details, the Google Maps place, and a substitute number instead of the phone.
             if ($r->paid_at) {

@@ -51,6 +51,12 @@ class Product extends Model
     ];
 
 
+    /** Customers' reviews of it. */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
     /** Which cars it fits (none = fits everything, unless fitment is required). */
     public function fitments(): HasMany
     {

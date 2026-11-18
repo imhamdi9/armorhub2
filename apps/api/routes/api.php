@@ -49,6 +49,9 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/zones', [PublicStorefrontController::class, 'zones']);
     Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
+    Route::get('/storefronts/{slug}/suggest', [PublicStorefrontController::class, 'suggest']);
+    Route::get('/storefronts/{slug}/products-by-ids', [PublicStorefrontController::class, 'byIds']);
+    Route::get('/storefronts/{slug}/recommendations', [PublicStorefrontController::class, 'recommendations']);
     Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
     Route::get('/storefronts/{slug}/sellers/{id}', [PublicStorefrontController::class, 'seller'])->whereNumber('id');
 });
@@ -60,6 +63,8 @@ Route::prefix('guest-orders')->group(function () {
     Route::get('/{token}', [$g, 'show'])->middleware('throttle:public');
     Route::post('/{token}/pay', [$g, 'pay'])->middleware('throttle:guest-orders');
     Route::post('/{token}/cancel', [$g, 'cancel'])->middleware('throttle:guest-orders');
+    Route::get('/{token}/messages', [$g, 'messages'])->middleware('throttle:public');
+    Route::post('/{token}/messages', [$g, 'message'])->middleware('throttle:guest-orders');
 });
 
 Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
@@ -74,6 +79,13 @@ Route::post('/auth/social', [\App\Http\Controllers\Api\SocialAuthController::cla
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
 // Called by Stripe, authenticated by its signature
+// The sandbox provider's hosted checkout page (test cards): addressed by an unguessable reference.
+Route::prefix('public/sandbox')->group(function () {
+    $sb = \App\Http\Controllers\Api\SandboxCheckoutController::class;
+    Route::get('/{ref}', [$sb, 'show'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:60,1');
+    Route::post('/{ref}/pay', [$sb, 'pay'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:30,1');
+    Route::post('/{ref}/cancel', [$sb, 'cancel'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:30,1');
+});
 Route::post('/webhooks/shipping/{provider}/{market}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
 Route::post('/webhooks/shipping/{provider}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
 Route::post('/webhooks/{provider}/{market}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
@@ -93,6 +105,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
     Route::get('/support', [\App\Http\Controllers\Api\SupportController::class, 'index']);
     Route::post('/support', [\App\Http\Controllers\Api\SupportController::class, 'store'])->middleware('throttle:5,60');
+    Route::post('/support/{id}/messages', [\App\Http\Controllers\Api\SupportController::class, 'message'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/support/{id}/close', [\App\Http\Controllers\Api\SupportController::class, 'close'])->whereNumber('id');
     Route::get('/favourites',[\App\Http\Controllers\Api\FavouriteController::class, 'index']);
     Route::get('/favourites/ids', [\App\Http\Controllers\Api\FavouriteController::class, 'ids']);
@@ -106,6 +119,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     // The mobile app: where to send this phone's push notifications, and deleting the account from inside the app.
     Route::post('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store'])->middleware('throttle:30,1');
     Route::delete('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'destroy']);
+    Route::get('/me/export', [\App\Http\Controllers\Api\AccountController::class, 'export'])->middleware('throttle:3,60');
     Route::delete('/me', [\App\Http\Controllers\Api\AccountController::class, 'destroy'])->middleware('throttle:5,1');
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:resend');
 
@@ -183,6 +197,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::post('/installation-violations/{id}/decide', [$ia, 'decideViolation'])->whereNumber('id');
         Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
         Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
+        Route::get('/payout-accounts', [\App\Http\Controllers\Api\Admin\PayoutAccountController::class, 'index']);
+        Route::post('/payout-accounts/{id}/decide', [\App\Http\Controllers\Api\Admin\PayoutAccountController::class, 'decide'])->whereNumber('id');
         Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
     });
@@ -302,11 +318,18 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/products/bulk-page-template', [ProductController::class, 'bulkPageTemplate'])->middleware('permission:products.update');
     // Reviews: a customer who received a product can rate it; a platform administrator can hide a review.
     Route::get('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'mine'])->whereNumber('id');
+    Route::post('/products/{id}/review-photos', [\App\Http\Controllers\Api\ProductReviewController::class, 'photo'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/products/{id}/questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'ask'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::get('/products/{id}/questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'mine'])->whereNumber('id');
+    Route::get('/product-questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'index']);
+    Route::put('/product-questions/{id}/answer', [\App\Http\Controllers\Api\ProductQuestionController::class, 'answer'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::put('/product-questions/{id}/status', [\App\Http\Controllers\Api\ProductQuestionController::class, 'moderate'])->whereNumber('id');
     Route::post('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/reviews/{id}/moderate', [\App\Http\Controllers\Api\ProductReviewController::class, 'moderate'])->whereNumber('id');
     Route::get('/products/categories', [ProductController::class, 'categories'])->middleware('permission:products.view');
     Route::post('/product-images', [\App\Http\Controllers\Api\ProductImageController::class, 'store'])->middleware(['permission:products.update', 'throttle:30,1']);
     Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create');
+    Route::get('/products/{product}/readiness', [ProductController::class, 'readiness'])->middleware('permission:products.update');
     Route::get('/products/{product}', [ProductController::class, 'show'])->middleware('permission:products.view');
     Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete');
@@ -332,7 +355,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'index'])->whereNumber('id');
     Route::post('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
-    Route::get('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'show'])->whereNumber('id');
+    Route::get('/orders/{order}/invoice.pdf', [\App\Http\Controllers\Api\OrderController::class, 'invoice'])->whereNumber('order')->middleware('throttle:30,1');
+    Route::get('/orders/{id}/refund-request',[\App\Http\Controllers\Api\RefundRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/orders/{id}/refund-photos', [\App\Http\Controllers\Api\RefundRequestController::class, 'photo'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/orders/{id}/return-pickup', [\App\Http\Controllers\Api\RefundRequestController::class, 'pickup'])->whereNumber('id')->middleware('throttle:10,1');
     Route::post('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
     Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
@@ -372,9 +398,16 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);
     Route::post('/orders/{id}/cancel', [OrderLifecycleController::class, 'cancel']);
     Route::get('/warranties', [WarrantyController::class, 'index']);
+    Route::post('/warranties/{id}/claims', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/warranty-claims', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'index']);
+    Route::put('/warranty-claims/{id}', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'decide'])->whereNumber('id')->middleware('throttle:60,1');
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
 
-    Route::middleware('role:platform-admin')->prefix('admin/support')->group(function () {
+    Route::middleware('role:platform-admin')->prefix('admin/outbox')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'index']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'show'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/support')->group(function () {
         $sa = \App\Http\Controllers\Api\Admin\SupportAdminController::class;
         Route::get('/', [$sa, 'index']);
         Route::post('/{id}/reply', [$sa, 'reply'])->whereNumber('id');
@@ -385,21 +418,28 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::post('/', [$pc, 'store']);
         Route::put('/{id}', [$pc, 'update'])->whereNumber('id');
     });
-    Route::middleware('role:platform-admin')->prefix('admin/order-problems')->group(function () {
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/order-problems')->group(function () {
         $op = \App\Http\Controllers\Api\Admin\OrderProblemController::class;
         Route::get('/', [$op, 'index']);
         Route::post('/{id}/handled', [$op, 'handled'])->whereNumber('id');
     });
-    Route::middleware('role:platform-admin')->prefix('admin/refund-requests')->group(function () {
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/refund-requests')->group(function () {
         $rq = \App\Http\Controllers\Api\Admin\RefundRequestAdminController::class;
         Route::get('/', [$rq, 'index']);
         Route::post('/{id}/approve', [$rq, 'approve'])->whereNumber('id');
         Route::post('/{id}/reject', [$rq, 'reject'])->whereNumber('id');
+        Route::post('/{id}/collect', [$rq, 'collect'])->whereNumber('id');
+        Route::post('/{id}/inspect', [$rq, 'inspect'])->whereNumber('id');
     });
+    Route::post('/admin/orders/{id}/goodwill', [\App\Http\Controllers\Api\Admin\GoodwillController::class, 'store'])->whereNumber('id')->middleware(['role:platform-admin|support-agent', 'throttle:30,1']);
     Route::middleware('role:platform-admin')->prefix('admin/orders')->group(function () {
         $r =\App\Http\Controllers\Api\Admin\OrderRefundController::class;
         Route::post('/{id}/refund', [$r, 'refund'])->whereNumber('id');
         Route::post('/{id}/refund-sent', [$r, 'sent'])->whereNumber('id');
+        Route::post('/{id}/partial-refund', [$r, 'partial'])->whereNumber('id')->middleware('throttle:30,1');
+        Route::post('/{id}/partial-refund-sent', [$r, 'partialSent'])->whereNumber('id');
+        Route::post('/{id}/partial-refund-send', [$r, 'partialSendThrough'])->whereNumber('id');
+        Route::post('/{id}/refund-send', [$r, 'sendThrough'])->whereNumber('id');
     });
 
     // The numbers that say whether the business works (platform administrators).
@@ -431,6 +471,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/installation-requests/{id}/disputes', [\App\Http\Controllers\Api\InstallationFlowController::class, 'dispute'])->whereNumber('id');
     Route::post('/installation-requests/{id}/evidence', [\App\Http\Controllers\Api\InstallationFlowController::class, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/installation-requests/{id}/report-contact', [\App\Http\Controllers\Api\InstallationFlowController::class, 'reportContact'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/referral', fn (\Illuminate\Http\Request $r) => app(\App\Services\Loyalty::class)->referral($r->user()));
     Route::get('/loyalty', [\App\Http\Controllers\Api\InstallationFlowController::class, 'loyalty']);
     Route::get('/installation-files/{id}', [\App\Http\Controllers\Api\InstallationFlowController::class, 'file'])->whereNumber('id');
     // A centre's own rules, hours, days off and calendar.
@@ -443,6 +484,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::delete('/time-off/{id}', [$cs, 'removeTimeOff'])->whereNumber('id');
         Route::get('/calendar', [$cs, 'calendar']);
         Route::post('/installation-jobs/{id}/booking/cancel', [$cs, 'cancelBooking'])->whereNumber('id');
+        $ct = \App\Http\Controllers\Api\CentreToolsController::class;
+        Route::get('/price-list', [$ct, 'priceList']);
+        Route::put('/price-list', [$ct, 'savePriceList'])->middleware('throttle:20,1');
+        Route::get('/reviews', [$ct, 'reviews']);
+        Route::post('/reviews/{id}/reply', [$ct, 'reply'])->whereNumber('id')->middleware('throttle:30,1');
         Route::get('/technicians', [\App\Http\Controllers\Api\WorkOrderController::class, 'technicians']);
         Route::post('/installation-jobs/{id}/assign', [\App\Http\Controllers\Api\WorkOrderController::class, 'assign'])->whereNumber('id');
     });
@@ -451,6 +497,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::get('/', [$c, 'index']);
         Route::get('/{id}', [$c, 'show'])->whereNumber('id');
         Route::post('/{id}/start', [$c, 'start'])->whereNumber('id');
+        Route::post('/{id}/on-the-way', [\App\Http\Controllers\Api\CentreToolsController::class, 'onTheWay'])->whereNumber('id')->middleware('throttle:20,1');
         Route::get('/{id}/work-order', [\App\Http\Controllers\Api\WorkOrderController::class, 'show'])->whereNumber('id');
         Route::post('/{id}/materials', [\App\Http\Controllers\Api\WorkOrderController::class, 'addMaterial'])->whereNumber('id')->middleware('throttle:60,1');
         Route::delete('/{id}/materials/{materialId}', [\App\Http\Controllers\Api\WorkOrderController::class, 'removeMaterial'])->whereNumber(['id', 'materialId']);
@@ -473,12 +520,18 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::post('/orders/{id}/shipping-rates', [\App\Http\Controllers\Api\ShipmentController::class, 'rates'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/shipments/{id}/reschedule', [\App\Http\Controllers\Api\ShipmentController::class, 'reschedule'])->whereNumber('id')->middleware('throttle:20,1');
     Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
 
     // Published content of non-public editable surfaces (e.g. the dashboard menu names)
     Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'signedIn'])->where('key', '[a-z0-9_.]+');
 
     // Sellers: the orders for their own products, and their earnings
+    Route::get('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'show']);
+    Route::put('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'update'])->middleware('throttle:20,1');
+    Route::get('/seller/payout-account', [\App\Http\Controllers\Api\SellerPayoutController::class, 'account']);
+    Route::put('/seller/payout-account', [\App\Http\Controllers\Api\SellerPayoutController::class, 'saveAccount'])->middleware('throttle:10,1');
+    Route::post('/seller/payouts/request', [\App\Http\Controllers\Api\SellerPayoutController::class, 'request'])->middleware('throttle:10,1');
     Route::get('/seller/earnings', [\App\Http\Controllers\Api\SellerEarningsController::class, 'show']);
     Route::get('/seller/orders', [\App\Http\Controllers\Api\SellerOrderController::class, 'index']);
     Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\SellerOrderController::class, 'show'])->whereNumber('id');

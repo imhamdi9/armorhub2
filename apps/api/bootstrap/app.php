@@ -37,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // instead of a redirect to an undefined "login" route, which used to end as a 500 when no JSON Accept header was sent.
         $middleware->redirectGuestsTo(fn () => null);
 
+        // The API answers in the language of the app that asks (and remembers each person's language for the e-mails written about them).
+        $middleware->append(\App\Http\Middleware\SetLocale::class);
+
         $middleware->alias([
            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

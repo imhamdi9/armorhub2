@@ -40,9 +40,23 @@ class ProductController extends Controller
                 ! $this->isSeller($request->user()) && ! ($request->boolean('include_inactive') && $request->user()->can('products.update')),
                 fn ($q) => $q->where('is_active', true)
             )
-            ->withCount('priceRules')
+            ->withCount(['priceRules', 'fitments'])
             ->orderBy('name')
-            ->get();
+            ->get()
+            // People who manage products also see how complete each one is.
+            ->when($request->user()->can('products.update'), fn ($rows) => $rows->map(function ($p) {
+                $r = app(\App\Services\ProductReadiness::class)->check($p);
+
+                return $p->toArray() + ['readiness' => ['score' => $r['score'], 'ready' => $r['ready'], 'missing' => $r['total'] - $r['done']]];
+            }));
+    }
+
+    /** The checklist for one product: what is done and what is still missing. */
+    public function readiness(Request $request, Product $product)
+    {
+        abort_unless($request->user()->can('products.update') && $this->mayChange($request->user(), $product), 404);
+
+        return app(\App\Services\ProductReadiness::class)->check($product);
     }
 
     /** The platform's category tree (groups with their categories), so forms offer a fixed list and nobody types a category. */

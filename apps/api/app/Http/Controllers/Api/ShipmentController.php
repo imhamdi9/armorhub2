@@ -43,7 +43,10 @@ class ShipmentController extends Controller
             'requires_shipping' => (bool) $order->product?->requires_shipping,
             'can_manage' => $role === 'staff',
             'address' => $order->makeVisible('shipping_address')->shipping_address,
-            'shipments' => Shipment::where('order_id', $order->id)->with('events')->latest('id')->get(),
+            'delivery_speed' => $order->delivery_speed, 'preferred_day' => $order->preferred_day?->toDateString(), 'gift_note' => $order->gift_note,
+            'shipments' => Shipment::where('order_id', $order->id)->with('events')->latest('id')->get()
+                // The code is for the person who receives the parcel, while it is still on its way.
+                ->each(fn (Shipment $s) => $role === 'customer' && ! $s->isFinal() && $s->status !== Shipment::FAILED ? $s->makeVisible('delivery_code') : null),
         ];
     }
 
@@ -102,12 +105,34 @@ class ShipmentController extends Controller
     {
         $shipment = Shipment::findOrFail($id);
         $this->managedOrder($request, $shipment->order_id);
-        $data = $request->validate(['status' => ['required', Rule::in(Shipment::STATUSES)], 'description' => 'nullable|string|max:250', 'location' => 'nullable|string|max:120']);
+        $data = $request->validate(['status' => ['required', Rule::in(Shipment::STATUSES)], 'description' => 'nullable|string|max:250', 'location' => 'nullable|string|max:120', 'code' => 'nullable|string|max:8']);
+
+        // Delivered means the customer gave the courier the code (an administrator may close it without one, and it is written down).
+        if ($data['status'] === Shipment::DELIVERED && $shipment->delivery_code && ! $shipment->isFinal()) {
+            if (hash_equals($shipment->delivery_code, trim((string) ($data['code'] ?? '')))) {
+                $data['description'] = $data['description'] ?? 'Delivered: the customer gave the delivery code';
+            } elseif ($request->user()->hasRole('platform-admin')) {
+                $data['description'] = ($data['description'] ?? 'Delivered').' (closed by an administrator without the code)';
+            } else {
+                return response()->json(['message' => 'The delivery code is wrong.', 'errors' => ['code' => ['The delivery code is wrong.']]], 422);
+            }
+        }
 
         $this->shipments->apply($shipment, new TrackingEvent($data['status'], $shipment->tracking_number, $shipment->reference, $data['description'] ?? null, $data['location'] ?? null, now()), $request->user());
         Audit::record('shipment.status_set', $shipment, ['status' => $data['status']]);
 
         return $shipment->fresh('events');
+    }
+
+    /** The customer chooses another day after a failed attempt. */
+    public function reschedule(Request $request, int $id)
+    {
+        $shipment = Shipment::findOrFail($id);
+        $order = Order::withoutGlobalScopes()->findOrFail($shipment->order_id);
+        abort_unless($this->role($request->user(), $order) === 'customer', 404);
+        $data = $request->validate(['date' => 'required|date_format:Y-m-d|after:today|before:'.now()->addDays(15)->toDateString(), 'note' => 'nullable|string|max:200']);
+
+        return $this->shipments->reschedule($shipment, $data['date'], $data['note'] ?? null, $request->user());
     }
 
     /** @return 'staff'|'customer'|null */

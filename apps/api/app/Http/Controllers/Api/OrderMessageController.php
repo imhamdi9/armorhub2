@@ -41,17 +41,22 @@ class OrderMessageController extends Controller
         $message = OrderMessage::create(['order_id' => $order->id, 'user_id' => $request->user()->id, 'side' => $side, 'kind' => $problem ? 'problem' : 'message', 'body' => $body]);
 
         $path = $side === 'seller' ? "/dashboard/seller-orders" : "/dashboard/orders/{$order->id}";
-        $title = $problem ? "A problem with order #{$order->id}" : "New message about order #{$order->id}";
+        $title = $problem ? 'A problem with order #:id' : 'New message about order #:id';
+        $replace = ['id' => (string) $order->id, 'text' => mb_substr($body, 0, 120)];
         if ($side !== 'customer') {
-            $this->notify->user($order->customer_id, $title, mb_substr($body, 0, 120), "/dashboard/orders/{$order->id}");
+            $this->notify->user($order->customer_id, $title, ':text', "/dashboard/orders/{$order->id}", $replace);
         }
         if ($side !== 'seller') {
             foreach ($this->sellerUsers($order) as $u) {
-                $this->notify->user($u->id, $title, mb_substr($body, 0, 120), '/dashboard/seller-orders');
+                $this->notify->user($u->id, $title, ':text', '/dashboard/seller-orders', $replace);
             }
         }
         if ($problem) {
-            $this->notify->admins($title, mb_substr($body, 0, 120), '/dashboard/admin/tools');
+            $this->notify->admins($title, ':text', '/dashboard/admin/tools', $replace);
+        }
+        // Someone who bought without an account hears the answer by e-mail.
+        if ($side !== 'customer' && $order->isGuest() && $order->guest_email) {
+            \Illuminate\Support\Facades\Notification::route('mail', $order->guest_email)->notify(new \App\Notifications\GuestOrderUpdate($title, $body, $order->guest_token, $order->guest_locale));
         }
 
         return response()->json($this->present($message, $request->user()), 201);
@@ -66,7 +71,7 @@ class OrderMessageController extends Controller
         if ($order->customer_id !== null && $order->customer_id === $user->id) {
             return [$order, 'customer'];
         }
-        if ($user->hasRole('platform-admin')) {
+        if ($user->hasRole('platform-admin') || ($user->hasRole('support-agent') && in_array((int) $order->company_id, \App\Support\MarketScope::companyIds($user) ?? [], true))) {
             return [$order, 'support'];
         }
         if ($user->hasRole('seller') && $user->company_id && (int) $order->product?->seller_id === (int) $user->company_id) {

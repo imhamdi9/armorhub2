@@ -40,9 +40,9 @@ class SellerPayoutService
     }
 
     /** Gathers everything the seller can be paid right now into one payout. */
-    public function create(Company $seller, string $currency, User $by): SellerPayout
+    public function create(Company $seller, string $currency, User $by, string $source = 'admin'): SellerPayout
     {
-        return DB::transaction(function () use ($seller, $currency, $by) {
+        return DB::transaction(function () use ($seller, $currency, $by, $source) {
             $entries = SellerLedgerEntry::where('company_id', $seller->id)->where('currency', $currency)->where('status', 'available')->whereNull('payout_id')->lockForUpdate()->get();
             $total = round((float) $entries->sum('amount'), 2);
 
@@ -50,7 +50,9 @@ class SellerPayoutService
                 throw ValidationException::withMessages(['payout' => ['Nothing is available to pay out for this seller.']]);
             }
 
-            $payout = SellerPayout::create(['company_id' => $seller->id, 'amount' => $total, 'currency' => $currency, 'status' => 'pending', 'created_by' => $by->id]);
+            $account = \App\Models\PayoutAccount::where('company_id', $seller->id)->first();
+            $payout = SellerPayout::create(['company_id' => $seller->id, 'amount' => $total, 'currency' => $currency, 'status' => 'pending', 'created_by' => $by->id, 'source' => $source,
+                'account' => $account?->status === 'verified' ? $account->forPayer() : null]);   // where it goes, as it is today
             SellerLedgerEntry::whereIn('id', $entries->pluck('id'))->update(['payout_id' => $payout->id]);
             app(\App\Services\Ledger\LedgerPostings::class)->payoutCreated($payout);
 

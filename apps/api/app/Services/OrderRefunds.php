@@ -33,7 +33,7 @@ class OrderRefunds
                 throw ValidationException::withMessages(['order' => ['This order was already refunded.']]);
             }
             $commission = Commission::where('order_id', $o->id)->first();
-            if (! $commission || ! \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->where('status', 'completed')->exists()) {
+            if (! $commission || ! \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->whereIn('status', ['completed', 'cod_due'])->exists()) {
                 throw ValidationException::withMessages(['order' => ['Only a paid order can be refunded.']]);
             }
             if (CommissionDistribution::where('commission_id', $commission->id)->whereIn('type', ['company', 'partner'])->where('amount', '>', 0)->exists()) {
@@ -48,32 +48,53 @@ class OrderRefunds
             $entries = collect();
             if ($sellerId) {
                 $entries = SellerLedgerEntry::where('order_id', $o->id)->whereIn('type', ['sale', 'commission', 'shipping'])->get();
-                if ($entries->contains(fn ($e) => ! in_array($e->status, ['held', 'available'], true) || $e->payout_id !== null)) {
-                    throw ValidationException::withMessages(['order' => ['The seller was already paid for this order; settle it with the seller first.']]);
-                }
-                $bucket = $entries->first()?->status === 'available' ? Accounts::sellerAvailable($sellerId) : Accounts::sellerHeld($sellerId);
+                // Already paid out (or in a payout): the customer is refunded now and the seller owes it back, taken from what they earn next.
+                $paidOut = $entries->contains(fn ($e) => $e->status === 'paid' || $e->payout_id !== null);
+                $bucket = $paidOut || $entries->first()?->status === 'available' ? Accounts::sellerAvailable($sellerId) : Accounts::sellerHeld($sellerId);
             }
 
             $cur = $o->currency;
             $payable = (float) $o->payable_amount;
+
+            // Part of this order was already refunded: only what is left goes back now, and each side gives up only what it still holds.
+            $partial = $o->partial_refund_status ? (float) $o->partial_refund_amount : 0.0;
+            $partialEntry = $partial > 0 ? SellerLedgerEntry::where('order_id', $o->id)->where('type', 'partial_refund')->first() : null;
+            $r = $partial > 0 ? $partial / $payable : 0.0;
+            $sellerPartial = $partialEntry ? round(-(float) $partialEntry->amount, 2) : 0.0;
+            $cutPartial = $partial > 0 ? (float) $commission->refunded_amount : 0.0;
+            $feePartial = round((float) $o->service_fee_amount * $r, 2);
+            $promoPartial = round((float) $o->discount_amount * $r, 2);
+            // Paid on delivery and not yet delivered: no money was taken, so nothing goes back.
+            $codDue = \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->where('status', 'cod_due')->first();
             $net = (float) $o->total_amount - (float) $commission->amount + (float) $o->shipping_amount;
 
             $this->ledger->post("order:{$o->id}:refunded", 'order_refunded', array_filter([
-                $sellerId ? [$bucket, $cur, $net] : [Accounts::REV_COMMISSION, $cur, $net],
-                [Accounts::REV_COMMISSION, $cur, (float) $commission->amount],
-                [Accounts::REV_SERVICE_FEE, $cur, (float) $o->service_fee_amount],
-                [Accounts::EXP_PROMO, $cur, -(float) $o->discount_amount],        // the discount is no longer the platform's cost
-                [Accounts::REFUND_DUE, $cur, -$payable],
+                // The seller's share of an earlier partial refund was taken from their available balance: give it back when the earnings leave from "held".
+                $sellerId ? [$bucket, $cur, $paidOut ?? false ? $net - $sellerPartial : $net] : [Accounts::REV_COMMISSION, $cur, $net],
+                $sellerId && $sellerPartial > 0 && ! ($paidOut ?? false) ? [Accounts::sellerAvailable($sellerId), $cur, -$sellerPartial] : null,
+                [Accounts::REV_COMMISSION, $cur, (float) $commission->amount - $cutPartial],
+                [Accounts::REV_SERVICE_FEE, $cur, (float) $o->service_fee_amount - $feePartial],
+                [Accounts::EXP_PROMO, $cur, -((float) $o->discount_amount - $promoPartial)],        // the discount is no longer the platform's cost
+                [$codDue ? Accounts::COD_RECEIVABLE : Accounts::REFUND_DUE, $cur, -($payable - $partial)],
             ]), $o, "Order #{$o->id} refunded");
 
-            foreach ($entries as $e) {
-                $e->update(['status' => 'refunded']);
+            if ($paidOut ?? false) {
+                // What the seller already received becomes a debt: it lowers their available balance until it is covered by later sales.
+                \App\Models\SellerLedgerEntry::create(['company_id' => $sellerId, 'order_id' => $o->id, 'type' => 'refund_debt', 'amount' => -round((float) $entries->sum('amount') - $sellerPartial, 2), 'currency' => $cur, 'status' => 'available']);
+                \App\Models\User::where('company_id', $sellerId)->role('seller')->get()->each(fn ($u) => $u->notify(new \App\Notifications\SimpleNotice('An order you were paid for was refunded', "Order #{$o->id}: the amount will be taken from your next earnings.", '/dashboard/earnings')));
+            } else {
+                foreach ($entries as $e) {
+                    $e->update(['status' => 'refunded']);
+                }
+                $partialEntry?->update(['status' => 'refunded']);
             }
             $commission->update(['status' => 'cancelled']);
             CommissionDistribution::where('commission_id', $commission->id)->update(['status' => 'cancelled']);
 
-            $o->forceFill(['refund_amount' => $payable, 'refund_status' => 'pending', 'refund_reason' => $reason, 'refunded_at' => now()])->save();
-            OrderEvent::record($o, 'refunded', $by, ['amount' => (string) $payable, 'reason' => $reason]);
+            $codDue?->update(['status' => 'void']);
+            $o->forceFill(['refund_amount' => round($payable - $partial, 2), 'refund_status' => $codDue ? 'refunded' : 'pending', 'refund_reason' => $reason, 'refunded_at' => now()])->save();
+            OrderEvent::record($o, 'refunded', $by, ['amount' => (string) round($payable - $partial, 2), 'reason' => $reason]);
+            app(\App\Services\Loyalty::class)->refunded($o);
 
             return $o;
         });

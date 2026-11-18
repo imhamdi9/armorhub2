@@ -48,6 +48,7 @@ class RolesAndPermissionsSeeder extends Seeder
     'market.settings',
     // Running the day-to-day of a market: watching orders and requests, the business numbers (operations agents)
     'operations.manage',
+    'support.manage',
     // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
     'warehouse.manage',
     // Platform administration (admins only: they get every permission)
@@ -145,6 +146,13 @@ class RolesAndPermissionsSeeder extends Seeder
 // The team of a market's warehouse: receives sellers' cartons, counts stock, packs and ships orders.
 'warehouse-staff' => [
     'warehouse.manage',
+    'orders.view',
+    'dashboard.view',
+],
+
+// ArmorHub's support agent: answers help requests, looks at problems customers flag and decides returns; sees no money, settings or sellers' accounts.
+'support-agent' => [
+    'support.manage',
     'orders.view',
     'dashboard.view',
 ],

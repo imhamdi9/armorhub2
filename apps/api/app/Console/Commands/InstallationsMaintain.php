@@ -17,8 +17,9 @@ class InstallationsMaintain extends Command
     {
         $released = $jobs->releaseDue();
         $expired = $jobs->expireOld();
+        $flagged = app(\App\Services\BookingNoShows::class)->run();
         Partner::withoutGlobalScopes()->each(fn (Partner $p) => $reputation->refresh($p));
-        $this->info("Released {$released}, expired {$expired}.");
+        $this->info("Released {$released}, expired {$expired}, flagged {$flagged} possible no-show(s).");
 
         return self::SUCCESS;
     }

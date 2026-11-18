@@ -46,7 +46,7 @@ class FavouriteController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
         if (DB::table('favourites')->where('user_id', $user->id)->count() >= self::MAX) {
-            throw ValidationException::withMessages(['product_id' => ['You can keep up to '.self::MAX.' favourites. Remove some first.']]);
+            throw ValidationException::withMessages(['product_id' => [__('You can keep up to :n favourites. Remove some first.', ['n' => self::MAX])]]);
         }
         DB::table('favourites')->updateOrInsert(['user_id' => $user->id, 'product_id' => $data['product_id']], ['created_at' => now(), 'updated_at' => now()]);
 

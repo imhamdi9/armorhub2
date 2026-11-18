@@ -27,6 +27,10 @@ class GroupPayments
             throw ValidationException::withMessages(['group' => ['This purchase is not waiting for payment.']]);
         }
 
+        if ($method === 'cod') {
+            return $this->payOnDelivery($group, $by);
+        }
+
         $pseudo = new Order(['currency' => $group->currency, 'company_id' => $group->company_id]);
         $pseudo->id = $group->paymentId();
         $charge = $this->gateway->charge($pseudo, (float) $group->payable_amount, $method);
@@ -41,6 +45,45 @@ class GroupPayments
         }
 
         $this->complete($group, $charge['transaction_id'] ?? null, $charge['provider'] ?? null, $by);
+
+        return ['status' => 'paid'];
+    }
+
+    /** Whether this purchase may be paid in cash at the door: the market allows it, the amount is within the limit, and everything in it is shipped goods. */
+    public function codAvailable(OrderGroup|float $group, ?bool $allGoods = null): bool
+    {
+        $settings = app(\App\Support\Settings\Settings::class);
+        if (! $settings->get('payments.cod_enabled')) {
+            return false;
+        }
+        $amount = $group instanceof OrderGroup ? (float) $group->payable_amount : $group;
+        $max = (float) ($settings->get('payments.cod_max_amount') ?? 0);
+        if ($max > 0 && $amount > $max) {
+            return false;
+        }
+        if ($group instanceof OrderGroup) {
+            $allGoods = ! $group->orders()->whereDoesntHave('product', fn ($q) => $q->where('requires_shipping', true))->exists();
+        }
+
+        return $allGoods ?? true;
+    }
+
+    /** The orders are confirmed now and the money is collected at the door; the seller can ship them. */
+    public function payOnDelivery(OrderGroup $group, ?User $by = null): array
+    {
+        if (! $this->codAvailable($group)) {
+            throw ValidationException::withMessages(['payment' => ['Cash on delivery is not available for this purchase.']]);
+        }
+        DB::transaction(function () use ($group, $by) {
+            $locked = OrderGroup::lockForUpdate()->findOrFail($group->id);
+            if ($locked->status !== OrderGroup::AWAITING) {
+                return;
+            }
+            foreach ($locked->orders()->get() as $order) {
+                $this->finalizer->complete($order, ['transaction_id' => 'COD-'.$locked->id, 'provider' => 'cod', 'cod' => true], 'cod', $by);
+            }
+            $locked->update(['status' => OrderGroup::PAID, 'paid_at' => now(), 'transaction_id' => 'COD-'.$locked->id, 'provider' => 'cod']);
+        });
 
         return ['status' => 'paid'];
     }

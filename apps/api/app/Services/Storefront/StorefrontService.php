@@ -90,6 +90,10 @@ class StorefrontService
         $market = $this->markets->forCompany($company)?->code;
 
         return Product::query()->where('is_active', true)
+            ->with('seller:id,name')
+            ->withMin(['priceRules as lowest_price' => fn ($q) => $q->where('is_active', true)], 'price')
+            ->withCount(['reviews as reviews_count' => fn ($q) => $q->published()])
+            ->withAvg(['reviews as reviews_avg' => fn ($q) => $q->published()], 'rating')
             ->visibleInTenant($company->tenant_id)
             ->where(fn ($q) => $q->whereNull('market')->when($market, fn ($w) => $w->orWhere('market', $market)))
             ->where(fn ($q) => $q->whereNull('industry_id')->when($industries, fn ($w) => $w->orWhereIn('industry_id', $industries)));
@@ -149,9 +153,9 @@ class StorefrontService
             'requires_shipping' => (bool) $product->requires_shipping,
             'installation' => $product->installation ?? 'none',
             'fulfilled_by_armorhub' => $product->fulfilment === 'armorhub',
-            'in_stock' => $product->fulfilment !== 'armorhub' || app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product) > 0,
+            'in_stock' => $product->fulfilment !== 'armorhub' || app(\App\Services\Warehouse\WarehouseService::class)->availableOf($product) > 0,
             // "Only N left": shown when ArmorHub holds the stock and it is running low.
-            'units_left' => $product->fulfilment === 'armorhub' ? (($u = app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product)) > 0 && $u <= 5 ? $u : null) : null,
+            'units_left' => $product->fulfilment === 'armorhub' ? (($u = app(\App\Services\Warehouse\WarehouseService::class)->availableOf($product)) > 0 && $u <= 5 ? $u : null) : null,
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
             'rating' => $this->rating($product),
@@ -162,6 +166,12 @@ class StorefrontService
     /** The stars shown on a product card: the average of the published reviews and how many there are (null average while there are none). */
     private function rating(Product $product): array
     {
+        // Already counted by the query that loaded the product (see products()).
+        if (array_key_exists('reviews_count', $product->getAttributes())) {
+            $count = (int) $product->reviews_count;
+
+            return ['count' => $count, 'average' => $count > 0 ? round((float) $product->reviews_avg, 1) : null];
+        }
         $row = \App\Models\ProductReview::where('product_id', $product->id)->published()->selectRaw('count(*) as c, avg(rating) as a')->first();
         $count = (int) ($row?->c ?? 0);
 
@@ -171,6 +181,9 @@ class StorefrontService
     /** The lowest public price: the cheapest rule, or the base price when no rules exist. */
     public function fromPrice(Product $product): float
     {
+        if (array_key_exists('lowest_price', $product->getAttributes())) {
+            return round((float) ($product->lowest_price ?? $product->base_price), 2);
+        }
         $min = ProductPriceRule::where('product_id', $product->id)->where('is_active', true)->min('price');
 
         return round((float) ($min ?? $product->base_price), 2);

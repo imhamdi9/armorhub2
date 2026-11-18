@@ -160,7 +160,7 @@ class CentreJobController extends Controller
                 'account_name' => $data['account_name'], 'account_number' => $data['account_number'], 'bank_name' => $data['bank_name'] ?? null]);
             CentreWalletEntry::create(['company_id' => $company, 'amount' => -1 * (float) $data['amount'], 'currency' => $currency, 'status' => 'in_withdrawal', 'withdrawal_id' => $w->id]);
             app(\App\Services\Ledger\LedgerPostings::class)->withdrawalRequested($w);
-            app(\App\Services\InstallationNotifier::class)->admins('A centre asked to withdraw money', "{$data['amount']} {$currency}", '/dashboard/admin/withdrawals');
+            app(\App\Services\InstallationNotifier::class)->admins('A centre asked to withdraw money', ':amount :currency', '/dashboard/admin/withdrawals', ['amount' => (string) $data['amount'], 'currency' => (string) $currency]);
 
             return response()->json(['id' => $w->id, 'status' => $w->status], 201);
         });

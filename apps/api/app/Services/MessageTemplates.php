@@ -13,7 +13,7 @@ class MessageTemplates
 {
     public const KINDS = [
         'quote_requested', 'quote_received', 'quote_accepted', 'job_ready', 'order_to_ship', 'payment_received', 'scheduled', 'started',
-        'completed', 'shipped', 'shipment_out_for_delivery', 'shipment_delivered', 'shipment_failed', 'cancelled', 'payout_paid',
+        'completed', 'shipped', 'shipment_out_for_delivery', 'shipment_delivered', 'shipment_failed', 'delivery_rescheduled', 'return_approved', 'return_collected', 'return_failed', 'cancelled', 'payout_paid',
     ];
 
     /** @var array<string, array{title?: string, body?: string}>|null */
@@ -35,6 +35,14 @@ class MessageTemplates
             $this->fill($template['title'] ?? '', $vars) ?: $title,
             $this->fill($template['body'] ?? '', $vars) ?: $body,
         ];
+    }
+
+    /** Whether an administrator published their own wording for this kind (which then wins over the built-in Arabic). */
+    public function has(string $kind): bool
+    {
+        $t = $this->templates()[$kind] ?? [];
+
+        return trim((string) ($t['title'] ?? '')) !== '' || trim((string) ($t['body'] ?? '')) !== '';
     }
 
     /** @param array<string, scalar|null> $vars */

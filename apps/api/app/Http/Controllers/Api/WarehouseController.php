@@ -87,13 +87,21 @@ class WarehouseController extends Controller
         if ($inbound->status !== 'announced') {
             throw ValidationException::withMessages(['status' => ['This delivery was already handled.']]);
         }
-        $data = $request->validate(['items' => 'required|array|min:1', 'items.*.id' => 'required|integer', 'items.*.cartons_received' => 'required|integer|min:0|max:1000000']);
+        $data = $request->validate(['items' => 'required|array|min:1', 'items.*.id' => 'required|integer', 'items.*.cartons_received' => 'required|integer|min:0|max:1000000', 'items.*.note' => 'nullable|string|max:200']);
+
+        // A count that differs from the announcement needs a reason: the seller is told exactly what was short, and why.
+        foreach ($data['items'] as $row) {
+            $line = $inbound->items->firstWhere('id', $row['id']);
+            if ($line && (int) $row['cartons_received'] !== (int) $line->cartons_expected && trim((string) ($row['note'] ?? '')) === '') {
+                throw ValidationException::withMessages(['items' => ['Say why the count differs from what the seller announced.']]);
+            }
+        }
 
         DB::transaction(function () use ($inbound, $data, $request) {
             foreach ($data['items'] as $row) {
                 $item = $inbound->items->firstWhere('id', $row['id']) ?? throw ValidationException::withMessages(['items' => ['Unknown line.']]);
                 $units = $row['cartons_received'] * (int) ($item->product->units_per_carton ?: 1);
-                $item->update(['cartons_received' => $row['cartons_received']]);
+                $item->update(['cartons_received' => $row['cartons_received'], 'note' => isset($row['note']) ? trim(strip_tags($row['note'])) : null]);
                 if ($units > 0) {
                     $this->stock->move($inbound->warehouse_id, $item->product_id, $units, 'received', $request->user(), 'inbound', $inbound->id);
                 }
@@ -101,6 +109,15 @@ class WarehouseController extends Controller
             $inbound->update(['status' => 'received', 'received_by' => $request->user()->id, 'received_at' => now()]);
         });
         Audit::record('warehouse.received', $inbound, [], $request->user());
+
+        // The seller hears about every shortfall or surplus, line by line.
+        $inbound->load('items.product:id,name');
+        $diffs = $inbound->items->filter(fn ($i) => (int) $i->cartons_received !== (int) $i->cartons_expected)
+            ->map(fn ($i) => "{$i->product?->name}: {$i->cartons_expected} → {$i->cartons_received}".($i->note ? " ({$i->note})" : ''))->values();
+        if ($diffs->isNotEmpty()) {
+            \App\Models\User::withoutGlobalScopes()->where('company_id', $inbound->seller_id)->role('seller')->get()
+                ->each(fn ($u) => $u->notify(new \App\Notifications\SimpleNotice('Delivery #:id arrived with differences', ':lines', '/dashboard/seller-warehouse', ['id' => (string) $inbound->id, 'lines' => $diffs->implode('; ')])));
+        }
 
         return $inbound->fresh('items.product:id,name,sku,units_per_carton');
     }

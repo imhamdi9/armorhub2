@@ -28,6 +28,17 @@ class OrderController extends Controller
         return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
     }
 
+    /** The invoice as a PDF, for the customer who paid (and the people who may see the order). Only paid orders have one. */
+    public function invoice(Order $order)
+    {
+        $this->authorize('view', $order);
+        abort_unless(\App\Models\Payment::withoutGlobalScopes()->where('order_id', $order->id)->whereIn('status', ['completed', 'cod_due'])->exists(), 404, 'This order has no invoice yet.');
+
+        $file = \App\Services\Pdf\InvoicePdf::number($order).'.pdf';
+
+        return response((new \App\Services\Pdf\InvoicePdf())->render($order), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => "attachment; filename=\"{$file}\"", 'X-Content-Type-Options' => 'nosniff']);
+    }
+
     /** Purchases made without an account with this e-mail: they join the account once the e-mail is verified, so say so instead of hiding them. */
     public function waitingForVerification(Request $request)
     {

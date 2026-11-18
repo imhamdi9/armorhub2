@@ -70,7 +70,7 @@ class ShipmentService
                 'order_id' => $locked->id, 'provider' => $providerKey, 'carrier' => $made['carrier'] ?? null, 'service' => $input['service'] ?? null,
                 'reference' => $made['reference'] ?? null, 'tracking_number' => $made['tracking_number'] ?? null, 'tracking_url' => $made['tracking_url'] ?? null,
                 'label_url' => $made['label_url'] ?? null, 'status' => Shipment::CREATED, 'cost' => $made['cost'] ?? null,
-                'currency' => $locked->currency, 'created_by' => $by?->id,
+                'currency' => $locked->currency, 'created_by' => $by?->id, 'delivery_code' => (string) random_int(1000, 9999),
             ]);
             ShipmentEvent::create(['shipment_id' => $shipment->id, 'status' => Shipment::CREATED, 'description' => 'Shipment booked', 'occurred_at' => now(), 'dedupe_key' => 'created']);
 
@@ -101,23 +101,61 @@ class ShipmentService
 
             if ($event->status !== $locked->status) {
                 $locked->update(['status' => $event->status, 'delivered_at' => $event->status === Shipment::DELIVERED ? $at : $locked->delivered_at]);
+                if ($event->status === Shipment::FAILED) {
+                    $locked->update(['attempts' => $locked->attempts + 1, 'failed_reason' => $event->description ? mb_substr($event->description, 0, 250) : null]);
+                }
 
                 $type = match ($event->status) {
                     Shipment::OUT_FOR_DELIVERY => 'shipment_out_for_delivery', Shipment::DELIVERED => 'shipment_delivered', Shipment::FAILED => 'shipment_failed',
                     Shipment::RETURNED => 'shipment_returned', default => null,
                 };
                 if ($type) {
-                    OrderEvent::record($locked->order, $type, $by, ['tracking_number' => $locked->tracking_number]);
+                    OrderEvent::record($locked->order, $type, $by, ['tracking_number' => $locked->tracking_number, 'reason' => $locked->failed_reason, 'attempts_left' => max(0, Shipment::MAX_ATTEMPTS - $locked->attempts)]);
                 }
 
                 // A seller's product is complete once it is delivered (there is no job for a partner to finish).
                 if ($event->status === Shipment::DELIVERED && $locked->order->product?->seller_id !== null && $locked->order->status === OrderStatus::Paid) {
                     $locked->order->update(['status' => OrderStatus::Completed, 'completed_at' => $at]);
                 }
+
+                // Goods that arrived earn points (and may pay a referral reward).
+                if ($event->status === Shipment::DELIVERED) {
+                    app(\App\Services\Loyalty::class)->goodsDelivered($locked->order);
+                }
+
+                // Pay on delivery: the cash was collected at the door, so the payment is complete now.
+                if ($event->status === Shipment::DELIVERED) {
+                    $due = \App\Models\Payment::withoutGlobalScopes()->where('order_id', $locked->order_id)->where('status', 'cod_due')->first();
+                    if ($due) {
+                        $due->update(['status' => 'completed']);
+                        app(\App\Services\Ledger\LedgerPostings::class)->codCollected($locked->order);
+                    }
+                }
             }
 
             return true;
         });
+    }
+
+    /**
+     * After a failed attempt the customer picks another day. The parcel goes back on its way and the people who ship it are told.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function reschedule(Shipment $shipment, string $date, ?string $note, User $by): Shipment
+    {
+        if ($shipment->status !== Shipment::FAILED) {
+            throw ValidationException::withMessages(['shipment' => ['Only a delivery that failed can be rescheduled.']]);
+        }
+        if ($shipment->attempts >= Shipment::MAX_ATTEMPTS) {
+            throw ValidationException::withMessages(['shipment' => ['There were too many failed attempts. Please contact support.']]);
+        }
+
+        $this->apply($shipment, new TrackingEvent(Shipment::IN_TRANSIT, $shipment->tracking_number, $shipment->reference, "Delivery rescheduled for {$date} (after attempt {$shipment->attempts})", null, now()), $by);
+        $shipment->update(['reschedule_for' => $date, 'reschedule_note' => $note ? mb_substr($note, 0, 200) : null]);
+        OrderEvent::record($shipment->order, 'delivery_rescheduled', $by, ['date' => $date, 'note' => $note, 'tracking_number' => $shipment->tracking_number]);
+
+        return $shipment->fresh('events');
     }
 
     /** Pull the carrier's latest tracking and apply it. Returns how many updates were new. */

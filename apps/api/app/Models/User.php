@@ -11,7 +11,7 @@ use App\Models\Company;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Partner;
 
-class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVerifyEmail
+class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVerifyEmail, \Illuminate\Contracts\Translation\HasLocalePreference
 {
     use \App\Models\Concerns\Auditable;
     use HasApiTokens;
@@ -21,6 +21,7 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
 
 
     protected $fillable = [
+        'referred_by',
       'name',
       'email',
         'phone',
@@ -37,6 +38,12 @@ class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVer
       'country',
       'location_enabled',
     ];
+
+    /** E-mails and notices written about this person use the language they last used. */
+    public function preferredLocale(): ?string
+    {
+        return in_array($this->locale, ['ar', 'en'], true) ? $this->locale : null;
+    }
 
     protected static function booted(): void
     {

@@ -38,8 +38,8 @@ class OrderUpdate extends Notification
     {
         return (new MailMessage)
             ->subject($this->title)
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting(__('Hello :name,', ['name' => $notifiable->name]))
             ->line($this->body)
-            ->action('Open in ArmorHub', rtrim(config('platform.web_url'), '/').$this->path);
+            ->action(__('Open in ArmorHub'), rtrim(config('platform.web_url'), '/').$this->path);
     }
 }

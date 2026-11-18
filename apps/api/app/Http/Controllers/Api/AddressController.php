@@ -21,7 +21,7 @@ class AddressController extends Controller
     {
         $user = $request->user();
         if (CustomerAddress::where('user_id', $user->id)->count() >= self::MAX) {
-            throw ValidationException::withMessages(['address' => ['You can keep up to '.self::MAX.' addresses. Remove one first.']]);
+            throw ValidationException::withMessages(['address' => [__('You can keep up to :n addresses. Remove one first.', ['n' => self::MAX])]]);
         }
         $data = $this->validated($request);
         $first = ! CustomerAddress::where('user_id', $user->id)->exists();

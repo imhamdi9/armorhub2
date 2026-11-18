@@ -10,7 +10,9 @@ class SellerPayout extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['amount' => 'decimal:2', 'paid_at' => 'datetime'];
+    protected $casts = ['amount' => 'decimal:2', 'paid_at' => 'datetime', 'account' => 'encrypted:array'];
+
+    protected $hidden = ['account'];
 
     public function company()
     {

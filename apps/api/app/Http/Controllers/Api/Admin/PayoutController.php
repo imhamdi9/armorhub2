@@ -20,7 +20,8 @@ class PayoutController extends Controller
 
         return [
             'sellers' => $sellers->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'balances' => (object) $service->balances($c->id)])->values(),
-            'payouts' => SellerPayout::with('company:id,name')->when($ids !== null, fn ($q) => $q->whereIn('company_id', $ids))->latest('id')->limit(50)->get(),
+            // The person who pays sees where each payout goes.
+            'payouts' => SellerPayout::with('company:id,name')->when($ids !== null, fn ($q) => $q->whereIn('company_id', $ids))->latest('id')->limit(50)->get()->map(fn ($p) => $p->makeVisible('account')->toArray()),
         ];
     }
 

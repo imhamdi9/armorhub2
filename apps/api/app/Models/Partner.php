@@ -32,6 +32,7 @@ class Partner extends Model
      'min_job_price',
      'accepts_requests',
      'work_types',
+     'price_list',
     ];
 
 
@@ -40,6 +41,7 @@ class Partner extends Model
         'public_profile'=>'boolean',
         'accepts_requests'=>'boolean',
         'work_types'=>'array',
+        'price_list'=>'array',
     ];
 
 

@@ -13,9 +13,9 @@ class OrderGroup extends Model
     /** A group is paid through the payment providers under this id range (an installation job uses small negative ids). */
     public const PAYMENT_ID_OFFSET = 1_000_000_000;
 
-    protected $fillable = ['company_id', 'customer_id', 'currency', 'items_amount', 'service_fee_amount', 'shipping_amount', 'discount_amount', 'payable_amount', 'status', 'shipping_address', 'provider', 'transaction_id', 'paid_at'];
+    protected $fillable = ['company_id', 'customer_id', 'currency', 'items_amount', 'service_fee_amount', 'shipping_amount', 'discount_amount', 'payable_amount', 'status', 'shipping_address', 'delivery_speed', 'preferred_day', 'gift_note', 'provider', 'transaction_id', 'paid_at'];
 
-    protected $casts = ['items_amount' => 'decimal:2', 'service_fee_amount' => 'decimal:2', 'payable_amount' => 'decimal:2', 'shipping_address' => 'array', 'paid_at' => 'datetime'];
+    protected $casts = ['items_amount' => 'decimal:2', 'service_fee_amount' => 'decimal:2', 'payable_amount' => 'decimal:2', 'shipping_address' => 'array', 'paid_at' => 'datetime', 'preferred_day' => 'date'];
 
     protected $hidden = ['shipping_address'];
 

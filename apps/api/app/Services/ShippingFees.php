@@ -27,6 +27,38 @@ class ShippingFees
         return ['flat' => max(0.0, $flat ?? 0.0), 'free_over' => $over !== null && $over > 0 ? $over : null, 'eta_days' => $eta !== null && $eta > 0 ? (int) $eta : null];
     }
 
+    /**
+     * When a parcel ordered today should arrive: the market's usual delivery days, plus two days for a seller to pack it (goods ArmorHub keeps ship at once).
+     * Null when the market has not said how long delivery takes.
+     *
+     * @return array{min_days: int, max_days: int, from: string, to: string}|null
+     */
+    public function estimate(?string $market, string $fulfilment = 'seller'): ?array
+    {
+        $eta = $this->rules($market)['eta_days'];
+        if ($eta === null) {
+            return null;
+        }
+        $max = $eta + ($fulfilment === 'armorhub' ? 0 : 2);
+
+        return ['min_days' => $eta, 'max_days' => $max, 'from' => now()->addDays($eta)->toDateString(), 'to' => now()->addDays($max)->toDateString()];
+    }
+
+    /**
+     * Faster delivery, when the market offers it: the extra fee for each seller's parcel and the days it takes.
+     *
+     * @return array{fee: float, eta_days: ?int}|null
+     */
+    public function express(?string $market): ?array
+    {
+        if (! $market) {
+            return null;
+        }
+        $fee = $this->number("shipping.express_fee.{$market}");
+
+        return $fee === null ? null : ['fee' => max(0.0, $fee), 'eta_days' => ($d = $this->number("shipping.express_eta_days.{$market}")) !== null && $d > 0 ? (int) $d : null];
+    }
+
     /** The fee for one seller's part of a purchase. */
     public function forSeller(?string $market, float $sellerSubtotal): float
     {

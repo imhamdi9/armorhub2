@@ -39,10 +39,10 @@ class OrderRefundRequests
             if ($o->refund_status) {
                 throw ValidationException::withMessages(['order' => ['A refund was already made for this order.']]);
             }
-            if (! \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->where('status', 'completed')->exists()) {
+            if (! \App\Models\Payment::withoutGlobalScopes()->where('order_id', $o->id)->whereIn('status', ['completed', 'cod_due'])->exists()) {
                 throw ValidationException::withMessages(['order' => ['This order is not paid. Cancel it instead.']]);
             }
-            if (\App\Models\OrderRefundRequest::where('order_id', $o->id)->where('status', 'requested')->exists()) {
+            if (\App\Models\OrderRefundRequest::where('order_id', $o->id)->whereIn('status', ['requested', 'awaiting_pickup', 'collected'])->exists()) {
                 throw ValidationException::withMessages(['order' => ['You already asked for a refund. We will answer soon.']]);
             }
 
@@ -52,7 +52,7 @@ class OrderRefundRequests
             if ($shipments->contains(fn ($s) => $s->status === Shipment::DELIVERED)) {
                 $deliveredAt = $shipments->where('status', Shipment::DELIVERED)->map(fn ($s) => $s->delivered_at ?? $s->updated_at)->max();
                 if ($deliveredAt && now()->diffInDays($deliveredAt, true) > self::RETURN_DAYS) {
-                    throw ValidationException::withMessages(['order' => ['The '.self::RETURN_DAYS.'-day return period for this order has ended.']]);
+                    throw ValidationException::withMessages(['order' => [__('The :n-day return period for this order has ended.', ['n' => self::RETURN_DAYS])]]);
                 }
             }
 
@@ -72,11 +72,83 @@ class OrderRefundRequests
         });
     }
 
+    /**
+     * Approving a return of goods that already left does not refund yet: the parcel has to come back and pass inspection first. The customer gets a
+     * code to give whoever collects it. Cancelling before shipping is different: nothing travels, so the refund is immediate.
+     */
     public function approve(\App\Models\OrderRefundRequest $req, User $by, ?string $note = null): \App\Models\OrderRefundRequest
     {
+        if ($req->kind !== 'return') {
+            return $this->refundNow($req, $by, $note);
+        }
+
         return DB::transaction(function () use ($req, $by, $note) {
             $r = \App\Models\OrderRefundRequest::lockForUpdate()->findOrFail($req->id);
             if ($r->status !== 'requested') {
+                throw ValidationException::withMessages(['request' => ['This request was already decided.']]);
+            }
+            $r->update(['status' => 'awaiting_pickup', 'decided_by' => $by->id, 'decided_at' => now(), 'decision_note' => $note, 'return_code' => (string) random_int(100000, 999999)]);
+            OrderEvent::record(Order::withoutGlobalScopes()->findOrFail($r->order_id), 'return_approved', $by, []);
+
+            return $r;
+        });
+    }
+
+    /** The customer picks the day the parcel can be collected. */
+    public function schedulePickup(\App\Models\OrderRefundRequest $req, User $customer, string $day, ?string $note): \App\Models\OrderRefundRequest
+    {
+        if ($req->customer_id !== $customer->id) {
+            abort(404);
+        }
+        if ($req->status !== 'awaiting_pickup') {
+            throw ValidationException::withMessages(['request' => ['This return is not waiting for a collection.']]);
+        }
+        $req->update(['pickup_day' => $day, 'pickup_note' => $note ? mb_substr(trim(strip_tags($note)), 0, 200) : null]);
+
+        return $req;
+    }
+
+    /** Whoever collects the parcel types the code the customer gave them: that is the proof it was handed over. */
+    public function collect(\App\Models\OrderRefundRequest $req, User $by, string $code): \App\Models\OrderRefundRequest
+    {
+        if ($req->status !== 'awaiting_pickup') {
+            throw ValidationException::withMessages(['request' => ['This return is not waiting for a collection.']]);
+        }
+        if (! $req->return_code || ! hash_equals($req->return_code, trim($code))) {
+            throw ValidationException::withMessages(['code' => ['The return code is wrong.']]);
+        }
+        $req->update(['status' => 'collected', 'collected_at' => now(), 'collected_by' => $by->id]);
+        OrderEvent::record(Order::withoutGlobalScopes()->findOrFail($req->order_id), 'return_collected', $by, []);
+
+        return $req;
+    }
+
+    /** The parcel is checked. Passed: the money goes back. Failed: the customer is told why and gets the parcel back, with no refund. */
+    public function inspect(\App\Models\OrderRefundRequest $req, User $by, bool $passed, ?string $note): \App\Models\OrderRefundRequest
+    {
+        if ($req->status !== 'collected') {
+            throw ValidationException::withMessages(['request' => ['Only a collected parcel can be inspected.']]);
+        }
+        if (! $passed && ! filled($note)) {
+            throw ValidationException::withMessages(['note' => ['Say what is wrong with the parcel.']]);
+        }
+        $req->update(['inspection' => $passed ? 'passed' : 'failed', 'inspection_note' => $note ? mb_substr(trim(strip_tags($note)), 0, 300) : null, 'inspected_at' => now(), 'inspected_by' => $by->id]);
+
+        if ($passed) {
+            return $this->refundNow($req->fresh(), $by, $note ?: 'The returned parcel passed inspection.', ['collected']);
+        }
+        $req->update(['status' => 'rejected', 'decision_note' => $req->inspection_note]);
+        OrderEvent::record(Order::withoutGlobalScopes()->findOrFail($req->order_id), 'return_failed', $by, ['note' => $req->inspection_note, 'reason' => $req->inspection_note]);
+
+        return $req;
+    }
+
+    /** @param list<string> $from the statuses this request may be in */
+    private function refundNow(\App\Models\OrderRefundRequest $req, User $by, ?string $note = null, array $from = ['requested']): \App\Models\OrderRefundRequest
+    {
+        return DB::transaction(function () use ($req, $by, $note, $from) {
+            $r = \App\Models\OrderRefundRequest::lockForUpdate()->findOrFail($req->id);
+            if (! in_array($r->status, $from, true)) {
                 throw ValidationException::withMessages(['request' => ['This request was already decided.']]);
             }
             $order = Order::withoutGlobalScopes()->findOrFail($r->order_id);

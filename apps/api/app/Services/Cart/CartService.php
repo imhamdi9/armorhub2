@@ -27,6 +27,17 @@ class CartService
     {
     }
 
+    /** How the customer may have goods delivered: the usual way, and a faster one when the market offers it (its fee is added per seller). @return list<array<string, mixed>> */
+    private function deliveryOptions(\App\Services\ShippingFees $shipping, ?string $market, int $sellers, ?int $eta): array
+    {
+        $options = [['key' => 'standard', 'extra_fee' => 0.0, 'eta_days' => $eta]];
+        if ($express = $shipping->express($market)) {
+            $options[] = ['key' => 'express', 'extra_fee' => round($express['fee'] * $sellers, 2), 'eta_days' => $express['eta_days']];
+        }
+
+        return $options;
+    }
+
     public function cartOf(User $user): Cart
     {
         return Cart::firstOrCreate(['customer_id' => $user->id]);
@@ -100,6 +111,7 @@ class CartService
         $sum = $fee = 0.0;
         $ok = true;
         $bySeller = [];
+        $allGoods = true;
 
         foreach ($this->cartOf($user)->items()->with('product')->get() as $item) {
             $row = ['id' => $item->id, 'product_id' => $item->product_id, 'name' => $item->product?->name, 'image' => ($item->product?->images ?? [])[0] ?? null,
@@ -111,6 +123,7 @@ class CartService
                 $row += ['option' => $line['rule']->target_type.':'.$line['rule']->target_id, 'unit_price' => $unit, 'line_total' => round($unit * $item->quantity, 2), 'currency' => $line['price']['currency'], 'problem' => null, 'fit' => $this->fitment->checkVehicle($line['product'], $line['vehicle']), 'vehicle' => $line['vehicle']?->label()];
                 $currency ??= $line['price']['currency'];
                 $sum += $row['line_total'];
+                $allGoods = $allGoods && (bool) $item->product?->requires_shipping;
                 $bySeller[(int) $item->product?->seller_id] = ($bySeller[(int) $item->product?->seller_id] ?? 0.0) + $row['line_total'];
                 $fee += $feeRate['service_fee_amount'];
             } catch (ValidationException $e) {
@@ -143,8 +156,8 @@ class CartService
         }
 
         return ['items' => $items, 'currency' => $currency, 'items_amount' => round($sum, 2), 'service_fee_amount' => round($fee, 2), 'shipping_amount' => $shippingTotal,
-            'discount_amount' => $discount, 'promo_code' => $promo, 'promo_problem' => $promoProblem,
-            'eta_days' => $rules['eta_days'], 'free_shipping_over' => $rules['free_over'], 'payable_amount' => round($sum + $fee + $shippingTotal - $discount, 2), 'can_checkout' => $ok && $items !== []];
+            'discount_amount' => $discount, 'cod_available' => app(\App\Services\Payment\GroupPayments::class)->codAvailable(round($sum + $fee + $shippingTotal - $discount, 2), $allGoods && $items !== []), 'promo_code' => $promo, 'promo_problem' => $promoProblem,
+            'points' => $allGoods && $items !== [] ? app(\App\Services\Loyalty::class)->redeemable($user, round($sum, 2)) : null, 'delivery_options' => $allGoods && $items !== [] ? $this->deliveryOptions($shipping, $market, count($bySeller), $rules['eta_days']) : [], 'eta_days' => $rules['eta_days'], 'free_shipping_over' => $rules['free_over'], 'payable_amount' => round($sum + $fee + $shippingTotal - $discount, 2), 'can_checkout' => $ok && $items !== []];
     }
 
     /**
@@ -155,7 +168,7 @@ class CartService
     public function resolve(User $user, int $productId, ?int $optionId, int $quantity, ?int $vehicleId = null): array
     {
         if ($quantity < 1 || $quantity > self::MAX_QUANTITY) {
-            throw ValidationException::withMessages(['quantity' => ['Choose between 1 and '.self::MAX_QUANTITY.'.']]);
+            throw ValidationException::withMessages(['quantity' => [__('Choose between 1 and :n.', ['n' => self::MAX_QUANTITY])]]);
         }
         if (! $user->company_id) {
             throw ValidationException::withMessages(['company' => ['Your account is not linked to a store.']]);

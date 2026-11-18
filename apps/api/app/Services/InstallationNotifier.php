@@ -8,10 +8,10 @@ use App\Notifications\InstallationUpdate;
 
 class InstallationNotifier
 {
-    public function user(?int $userId, string $title, string $body, string $path): void
+    public function user(?int $userId, string $title, string $body, string $path, array $replace = []): void
     {
         if ($userId && ($user = User::withoutGlobalScopes()->find($userId))) {
-            $user->notify(new InstallationUpdate($title, $body, $path));
+            $user->notify(new InstallationUpdate($title, $body, $path, $replace));
         }
     }
 
@@ -21,8 +21,8 @@ class InstallationNotifier
             ->each(fn (User $u) => $u->notify(new InstallationUpdate($title, $body, $path)));
     }
 
-    public function admins(string $title, string $body, string $path): void
+    public function admins(string $title, string $body, string $path, array $replace = []): void
     {
-        User::withoutGlobalScopes()->role('platform-admin')->get()->each(fn (User $u) => $u->notify(new InstallationUpdate($title, $body, $path)));
+        User::withoutGlobalScopes()->role('platform-admin')->get()->each(fn (User $u) => $u->notify(new InstallationUpdate($title, $body, $path, $replace)));
     }
 }

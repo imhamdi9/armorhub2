@@ -23,10 +23,27 @@ class WarehouseService
         return (int) DB::table('warehouse_stock')->where('product_id', $product->id)->sum('units');
     }
 
-    /** A product kept by ArmorHub can only be bought while the warehouse holds some. */
+    /**
+     * Units promised to buyers but still on the shelf: orders waiting for payment (held for an hour) and paid orders the warehouse has not shipped.
+     * Without this two buyers could both pay for the last unit.
+     */
+    public function reservedOf(Product $product): int
+    {
+        return (int) \App\Models\Order::withoutGlobalScopes()->where('product_id', $product->id)->where('fulfilment', 'armorhub')
+            ->where(fn ($q) => $q->where('status', 'paid')->orWhere(fn ($w) => $w->where('status', 'awaiting_payment')->where('created_at', '>=', now()->subHour())))
+            ->whereNull('refund_status')->whereDoesntHave('shipments', fn ($s) => $s->whereNotIn('status', ['cancelled']))->sum('quantity');
+    }
+
+    /** What a buyer can still get: what the warehouse holds less what is already promised. */
+    public function availableOf(Product $product): int
+    {
+        return max(0, $this->unitsOf($product) - $this->reservedOf($product));
+    }
+
+    /** A product kept by ArmorHub can only be bought while the warehouse has units that nobody else has been promised. */
     public function assertInStock(Product $product, int $quantity = 1): void
     {
-        if ($product->fulfilment === 'armorhub' && $this->unitsOf($product) < max(1, $quantity)) {
+        if ($product->fulfilment === 'armorhub' && $this->availableOf($product) < max(1, $quantity)) {
             throw ValidationException::withMessages(['product_id' => ['This product is out of stock.']]);
         }
     }
@@ -58,7 +75,7 @@ class WarehouseService
         if ($restocked) {
             $name = (string) Product::withoutGlobalScopes()->whereKey($productId)->value('name');
             foreach (DB::table('favourites')->where('product_id', $productId)->pluck('user_id') as $userId) {
-                app(\App\Services\InstallationNotifier::class)->user((int) $userId, 'Back in stock', "{$name} is available again.", '/dashboard/favourites');
+                app(\App\Services\InstallationNotifier::class)->user((int) $userId, 'Back in stock', ':name is available again.', '/dashboard/favourites', ['name' => (string) $name]);
             }
         }
     }

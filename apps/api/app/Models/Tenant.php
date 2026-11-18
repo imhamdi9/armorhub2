@@ -38,8 +38,12 @@ public function industries(): \Illuminate\Database\Eloquent\Relations\BelongsToM
 /** @return list<int> ids of every industry of this market (the single legacy industry counts too) */
 public function industryIds(): array
 {
-    return collect($this->industries()->pluck('industries.id')->all())->when($this->industry_id, fn ($c) => $c->push($this->industry_id))->unique()->values()->all();
+    // Asked several times while one page is built: read once per loaded market.
+    return $this->industryIdsMemo ??= collect($this->industries()->pluck('industries.id')->all())->when($this->industry_id, fn ($c) => $c->push($this->industry_id))->unique()->values()->all();
 }
+
+/** @var list<int>|null */
+private ?array $industryIdsMemo = null;
 
 public function companies(): HasMany
 {

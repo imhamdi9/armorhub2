@@ -8,7 +8,8 @@ use Illuminate\Notifications\Notification;
 /** One notification type for everything that happens in an installation job; the words are chosen by the service that sends it. */
 class InstallationUpdate extends Notification
 {
-    public function __construct(public string $title, public string $body, public string $path)
+    /** @param array<string, string> $replace values for ":name" placeholders in the title and the body (both are translated for the person who receives it) */
+    public function __construct(public string $title, public string $body, public string $path, public array $replace = [])
     {
     }
 
@@ -20,12 +21,17 @@ class InstallationUpdate extends Notification
 
     public function toDatabase(object $notifiable): array
     {
-        return ['kind' => 'installation', 'title' => $this->title, 'body' => $this->body, 'path' => $this->path];
+        $locale = method_exists($notifiable, 'preferredLocale') ? ($notifiable->preferredLocale() ?? 'en') : 'en';
+
+        return ['kind' => 'installation', 'title' => \Illuminate\Support\Facades\Lang::get($this->title, $this->replace, $locale), 'body' => \Illuminate\Support\Facades\Lang::get($this->body, $this->replace, $locale), 'path' => $this->path];
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)->subject($this->title)->greeting("Hello {$notifiable->name},")->line($this->body)
+        // The same words as in the app, with their placeholders filled in (never the raw ":text" / "#:id").
+        $locale = method_exists($notifiable, 'preferredLocale') ? ($notifiable->preferredLocale() ?? 'en') : 'en';
+
+        return (new MailMessage)->subject(\Illuminate\Support\Facades\Lang::get($this->title, $this->replace, $locale))->greeting("Hello {$notifiable->name},")->line(\Illuminate\Support\Facades\Lang::get($this->body, $this->replace, $locale))
             ->action('Open', rtrim(config('platform.web_url'), '/').$this->path);
     }
 }

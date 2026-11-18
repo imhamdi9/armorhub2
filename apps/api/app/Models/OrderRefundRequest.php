@@ -8,7 +8,9 @@ class OrderRefundRequest extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['decided_at' => 'datetime'];
+    protected $casts = ['photos' => 'array', 'decided_at' => 'datetime', 'collected_at' => 'datetime', 'inspected_at' => 'datetime', 'pickup_day' => 'date'];
+
+    protected $hidden = ['return_code'];
 
     public function order()
     {

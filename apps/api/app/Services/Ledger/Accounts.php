@@ -8,6 +8,7 @@ class Accounts
     public const GATEWAY = 'gateway';
     public const PAYOUT_PENDING = 'payout_pending';        // + :<company>, a seller payout approved and not yet sent
     public const WITHDRAWAL_PENDING = 'withdrawal_pending'; // + :<company>, a centre withdrawal asked for and not yet sent
+    public const COD_RECEIVABLE = 'cod_receivable';         // cash couriers still owe us for orders paid on delivery
     public const REFUND_DUE = 'refund_due';                // money owed back to customers
     public const REV_COMMISSION = 'revenue:commission';
     public const REV_SERVICE_FEE = 'revenue:service_fee';
@@ -31,6 +32,7 @@ class Accounts
 
         return match (true) {
             $code === self::GATEWAY => ['type' => 'asset', 'name' => 'Customer money held with the payment provider'],
+            $code === self::COD_RECEIVABLE => ['type' => 'asset', 'name' => 'Cash to be collected by couriers (pay on delivery)'],
             $code === self::REFUND_DUE => ['type' => 'liability', 'name' => 'Refunds owed to customers'],
             $code === self::REV_COMMISSION => ['type' => 'revenue', 'name' => 'Sales and service commission'],
             $code === self::REV_SERVICE_FEE => ['type' => 'revenue', 'name' => 'Customer platform fee'],

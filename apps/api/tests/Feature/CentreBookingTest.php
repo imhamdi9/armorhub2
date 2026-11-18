@@ -152,13 +152,58 @@ class CentreBookingTest extends TestCase
         $this->assertTrue($times->every(fn ($t) => CarbonImmutable::parse($t)->gte(now()->addHours(12))));
 
         $start = $times->first();
-        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $start])->assertCreated()->assertJsonPath('booking.status', 'booked');
+        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $start])->assertCreated()->assertJsonPath('booking.status', 'booked')->assertJsonPath('booking.timezone', 'Africa/Cairo');
         $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $times->last()])->assertUnprocessable();               // already has a time
 
         // A time the centre never offered is refused (3 a.m., a Friday, the past).
         $this->putJson("/api/installation-requests/{$id}/booking", ['starts_at' => '2026-12-09T01:00:00Z'])->assertUnprocessable();
         $this->putJson("/api/installation-requests/{$id}/booking", ['starts_at' => '2026-12-11T09:00:00Z'])->assertUnprocessable();
         $this->putJson("/api/installation-requests/{$id}/booking", ['starts_at' => '2020-12-09T09:00:00Z'])->assertUnprocessable();
+    }
+
+    public function test_a_booked_time_that_passes_without_proof_asks_the_customer_whether_the_centre_came(): void
+    {
+        $id = $this->paidJob();
+        $times = collect($this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}/slots")->json('days'))->flatMap(fn ($d) => $d['times']);
+        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $times->first()])->assertCreated();
+        $run = fn () => app(\App\Services\BookingNoShows::class)->run();
+
+        $this->assertSame(0, $run());                                                                    // still in the future
+        CarbonImmutable::setTestNow(CarbonImmutable::parse($times->first())->addHours(3 + \App\Services\BookingNoShows::GRACE_HOURS + 1));
+        $this->assertSame(1, $run());
+        $customer = User::where('email', self::CUSTOMER)->firstOrFail();
+        $this->assertTrue($customer->notifications()->get()->contains(fn ($n) => ($n->data['title'] ?? '') === 'Did the centre come?'));
+        $this->assertSame(0, $run());                                                                    // asked once
+    }
+
+    public function test_a_centre_can_say_it_is_on_its_way_and_answer_a_review(): void
+    {
+        $id = $this->paidJob();
+        $times = collect($this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}/slots")->json('days'))->flatMap(fn ($d) => $d['times']);
+        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $times->first()])->assertCreated();
+        $customer = User::where('email', self::CUSTOMER)->firstOrFail();
+
+        $this->as($this->centreEmail());
+        $this->postJson("/api/partner/installation-jobs/{$id}/on-the-way")->assertUnprocessable();       // far too early
+        CarbonImmutable::setTestNow(CarbonImmutable::parse($times->first())->subHour());
+        $this->postJson("/api/partner/installation-jobs/{$id}/on-the-way")->assertOk()->assertJsonStructure(['on_the_way_at']);
+        $this->postJson("/api/partner/installation-jobs/{$id}/on-the-way")->assertOk();                  // once only
+        $this->assertSame(1, $customer->notifications()->get()->filter(fn ($n) => ($n->data['title'] ?? '') === 'The centre is on its way')->count());
+        $this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}")->assertOk()->assertJsonPath('booking.on_the_way_at', fn ($v) => $v !== null);
+
+        // The price list is the centre's own, validated and free of contact details.
+        $this->as($this->centreEmail());
+        $this->putJson('/api/partner/price-list', ['items' => [['service' => 'Full hood film', 'price' => 1500, 'note' => 'Matte']]])->assertOk();
+        $this->putJson('/api/partner/price-list', ['items' => [['service' => 'Call me 01012345678', 'price' => 1]]])->assertUnprocessable();
+        $this->getJson('/api/partner/price-list')->assertOk()->assertJsonPath('items.0.price', 1500);
+
+        // Reviews: only its own, answered publicly, and the customer is told.
+        $partnerId = $this->centre()->id;
+        $rv = \App\Models\InstallationReview::create(['request_id' => $id, 'partner_id' => $partnerId, 'customer_id' => $customer->id, 'rating' => 4, 'comment' => 'Good work']);
+        $this->getJson('/api/partner/reviews')->assertOk()->assertJsonPath('0.id', $rv->id);
+        $this->postJson("/api/partner/reviews/{$rv->id}/reply", ['reply' => 'Thank you!'])->assertOk();
+        $this->assertSame('Thank you!', $rv->fresh()->reply);
+        $this->as($this->centreEmail('Zamalek Detailing Studio'))->postJson("/api/partner/reviews/{$rv->id}/reply", ['reply' => 'Not mine'])->assertNotFound();
     }
 
     public function test_a_booked_time_is_taken_and_a_bay_count_allows_overlap(): void
@@ -235,7 +280,7 @@ class CentreBookingTest extends TestCase
 
         // The customer is asked to choose again and can.
         $this->as(self::CUSTOMER)->getJson("/api/installation-requests/{$id}/booking")->assertJsonPath('booking.status', 'cancelled')->assertJsonPath('booking.cancel_reason', 'A technician is ill');
-        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $start])->assertCreated()->assertJsonPath('booking.status', 'booked');
+        $this->postJson("/api/installation-requests/{$id}/booking", ['starts_at' => $start])->assertCreated()->assertJsonPath('booking.status', 'booked')->assertJsonPath('booking.timezone', 'Africa/Cairo');
     }
 
     public function test_only_the_customer_of_a_paid_job_can_book(): void

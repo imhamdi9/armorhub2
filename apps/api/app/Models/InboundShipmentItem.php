@@ -9,7 +9,7 @@ class InboundShipmentItem extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['inbound_shipment_id', 'product_id', 'cartons_expected', 'cartons_received'];
+    protected $fillable = ['inbound_shipment_id', 'product_id', 'cartons_expected', 'cartons_received', 'note'];
 
     public function product(): BelongsTo
     {

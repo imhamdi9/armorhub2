@@ -45,6 +45,7 @@ class AuthController extends Controller
             // Either the store the visitor came from (its public address) or a company id.
             'store' => 'nullable|string|max:60',
             'company_id' => 'required_without:store|nullable|integer|exists:companies,id',
+            'referral' => 'nullable|string|max:12',
             'phone' => 'nullable|string|max:30',
             'city' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
@@ -81,7 +82,7 @@ class AuthController extends Controller
             $phone = app(\App\Support\Markets\Markets::class)->phoneFor($company, $data['phone']);
 
             if (! $phone) {
-                throw ValidationException::withMessages(['phone' => ['Please enter a valid '.($market?->name() ?? '').' mobile number.']]);
+                throw ValidationException::withMessages(['phone' => [__('Please enter a valid :market mobile number.', ['market' => $market?->name() ?? ''])]]);
             }
         }
 
@@ -98,6 +99,8 @@ class AuthController extends Controller
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'location_enabled' => $hasLocation,
+            // A friend's code is remembered; the reward comes only when this customer's first order arrives.
+            'referred_by' => app(\App\Services\Loyalty::class)->owner($data['referral'] ?? null)?->id,
         ]);
 
         $user->assignRole('customer');

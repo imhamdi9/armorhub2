@@ -123,10 +123,10 @@ class AccountTest extends TestCase
         $told = User::where('email', self::EMAIL)->firstOrFail()->notifications()->count();
         $this->postJson("/api/admin/support/{$id}/reply", ['reply' => ''])->assertUnprocessable();
         $this->postJson("/api/admin/support/{$id}/reply", ['reply' => 'It ships tomorrow.'])->assertOk()->assertJsonPath('status', 'answered');
-        $this->postJson("/api/admin/support/{$id}/reply", ['reply' => 'again'])->assertNotFound();           // answered once
-        $this->assertSame($told + 1, User::where('email', self::EMAIL)->firstOrFail()->notifications()->count());
+        $this->postJson("/api/admin/support/{$id}/reply", ['reply' => 'Anything else?'])->assertOk();         // a conversation: ArmorHub may write again
+        $this->assertSame($told + 2, User::where('email', self::EMAIL)->firstOrFail()->notifications()->count());
 
-        $this->me()->getJson('/api/support')->assertOk()->assertJsonPath('0.reply', 'It ships tomorrow.')->assertJsonPath('0.status', 'answered');
+        $this->me()->getJson('/api/support')->assertOk()->assertJsonPath('0.reply', 'Anything else?')->assertJsonPath('0.status', 'answered');
         $this->postJson("/api/support/{$id}/close")->assertOk()->assertJsonPath('status', 'closed');
     }
 

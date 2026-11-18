@@ -16,6 +16,20 @@ use Illuminate\Validation\ValidationException;
 /** A customer can delete their own account from the app (the stores require it). Orders are financial records, so they stay, without the person. */
 class AccountController extends Controller
 {
+    /** Everything held about the signed-in customer, as a file they can keep. Staff and business accounts ask support: their data includes other people's. */
+    public function export(Request $request, \App\Services\DataExport $export)
+    {
+        $user = $request->user();
+        if ($user->getRoleNames()->diff(['customer'])->isNotEmpty() || $user->partner_id !== null) {
+            throw ValidationException::withMessages(['account' => ['Business and staff accounts ask support for their data.']]);
+        }
+        Audit::record('account.exported', $user, [], $user);
+
+        return response()->json($export->of($user), 200, [
+            'Content-Disposition' => 'attachment; filename="armorhub-my-data.json"', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store',
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     public function destroy(Request $request)
     {
         $user = $request->user();

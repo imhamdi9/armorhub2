@@ -52,7 +52,7 @@ class PaymentFinalizer
                 'amount' => $locked->payable_amount,
                 'currency' => $locked->currency,
                 'payment_method' => $method ?? $payment?->payment_method,
-                'status' => 'completed',
+                'status' => ($charge['cod'] ?? false) ? 'cod_due' : 'completed',   // pay on delivery: paid when the courier hands the cash over
                 'transaction_id' => $charge['transaction_id'] ?? null,
                 'provider' => $charge['provider'] ?? $payment?->provider,
             ];
@@ -93,7 +93,7 @@ class PaymentFinalizer
 
             $locked->update(['status' => OrderStatus::Paid]);
             OrderEvent::record($locked, 'paid', $by, ['amount' => (string) $locked->payable_amount]);
-            app(\App\Services\Ledger\LedgerPostings::class)->orderPaid($locked->loadMissing('product'), $commission, $partner);
+            app(\App\Services\Ledger\LedgerPostings::class)->orderPaid($locked->loadMissing('product'), $commission, $partner, (bool) ($charge['cod'] ?? false));
 
             return [$payment, $commission];
         });

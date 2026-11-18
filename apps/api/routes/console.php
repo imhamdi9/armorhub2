@@ -20,3 +20,10 @@ Artisan::command('inspire', function () {
 
 // Installation requests that get too few answers are widened to the next best centres.
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\InstallationMatching::class)->widenDue())->everyThirtyMinutes()->name('installations:widen')->withoutOverlapping();
+
+// Customers who left something in their cart get one reminder.
+\Illuminate\Support\Facades\Schedule::command('carts:remind')->hourly();
+
+// Paid orders that sellers have not shipped: remind them, then cancel and refund.
+\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\SellerEarningsRelease::class)->run())->hourly()->name('earnings:release')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\ShippingDeadlines::class)->run())->hourly()->name('orders:ship-deadlines')->withoutOverlapping();

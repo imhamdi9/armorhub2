@@ -72,6 +72,47 @@ class RefundImportIdempotencyTest extends TestCase
         $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}")->assertOk()->assertJsonPath('statuses.payment', 'refunded');
     }
 
+    public function test_part_of_a_paid_order_goes_back_and_every_side_gives_up_its_share(): void
+    {
+        [$group, $order] = $this->paidOrder();
+        $ledger = app(Ledger::class);
+        $sellerId = $this->seller->company_id;
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/admin/orders/{$order->id}/partial-refund", ['amount' => 10, 'reason' => 'Scratched box'])->assertForbidden();
+        $this->actingAs($this->admin, 'sanctum');
+        $paid = (float) $group['payable_amount'];
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund", ['amount' => $paid, 'reason' => 'All of it'])->assertUnprocessable()->assertJsonValidationErrors('amount');   // that is a full refund
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund", ['amount' => 20.01, 'reason' => 'Scratched box'])->assertOk()->assertJsonPath('partial_refund_status', 'pending');
+
+        $this->assertEqualsWithDelta(20.01, $ledger->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+        $this->assertGreaterThan(0, (float) \App\Models\Commission::where('order_id', $order->id)->value('refunded_amount'));
+        $this->assertSame(1, SellerLedgerEntry::where('order_id', $order->id)->where('type', 'partial_refund')->count());
+        $this->assertLessThan(0, (float) SellerLedgerEntry::where('order_id', $order->id)->where('type', 'partial_refund')->value('amount'));
+        $this->assertNotNull($this->customer->notifications()->get()->first(fn ($n) => str_contains($n->data['title'] ?? '', 'refunded')));
+
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund", ['amount' => 5, 'reason' => 'Twice'])->assertUnprocessable();      // one per order
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund-sent", ['reference' => 'P-1'])->assertOk()->assertJsonPath('partial_refund_status', 'refunded');
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+        // A later full refund (a return, say) gives back only what is left, and the seller's books return to zero.
+        $this->postJson("/api/admin/orders/{$order->id}/refund", ['reason' => 'Returned'])->assertOk()->assertJsonPath('refund_amount', round($paid - 20.01, 2));
+        $this->assertEqualsWithDelta($paid - 20.01, $ledger->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::sellerHeld($this->seller->company_id), $order->currency), 0.001);
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::sellerAvailable($this->seller->company_id), $order->currency), 0.001);
+        $this->postJson("/api/admin/orders/{$order->id}/refund-sent", ['reference' => 'F-1'])->assertOk();
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::GATEWAY, $order->currency), 0.001);
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund-sent", ['reference' => 'P-2'])->assertUnprocessable();
+    }
+
+    public function test_a_partial_refund_can_be_sent_through_the_payment_provider(): void
+    {
+        [, $order] = $this->paidOrder();
+        $this->actingAs($this->admin, 'sanctum');
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund-send")->assertUnprocessable();                    // nothing owed yet
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund", ['amount' => 15, 'reason' => 'Late delivery'])->assertOk();
+        $this->postJson("/api/admin/orders/{$order->id}/partial-refund-send")->assertOk()->assertJsonPath('partial_refund_status', 'refunded');
+        $this->assertNotEmpty($order->fresh()->partial_refund_reference);
+        $this->assertEqualsWithDelta(0, app(Ledger::class)->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+    }
+
     public function test_only_administrators_refund_and_only_orders_that_were_paid(): void
     {
         [, $order] = $this->paidOrder();
@@ -80,12 +121,32 @@ class RefundImportIdempotencyTest extends TestCase
         $this->postJson("/api/admin/orders/{$order->id}/refund-sent", ['reference' => 'R'])->assertUnprocessable();
     }
 
-    public function test_an_order_the_seller_was_already_paid_for_is_not_refunded_here(): void
+    public function test_an_order_the_seller_was_already_paid_for_is_refunded_and_becomes_the_sellers_debt(): void
     {
         [, $order] = $this->paidOrder();
-        SellerLedgerEntry::where('order_id', $order->id)->update(['status' => 'paid']);
-        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/orders/{$order->id}/refund", ['reason' => 'late request'])->assertUnprocessable();
-        SellerLedgerEntry::where('order_id', $order->id)->update(['status' => 'held']);
+        $ledger = app(Ledger::class);
+        $ship = $this->actingAs($this->seller, 'sanctum')->postJson("/api/orders/{$order->id}/shipments", ['provider' => 'manual', 'carrier' => 'SMSA', 'tracking_number' => 'D1'])->assertCreated()->json();
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered', 'code' => \App\Models\Shipment::find($ship['id'])->delivery_code])->assertOk();
+
+        // The platform pays the seller out.
+        $sellerCo = $this->seller->company_id;
+        $payout = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/payouts', ['company_id' => $sellerCo, 'currency' => $order->currency])->assertCreated()->json();
+        $this->postJson("/api/admin/payouts/{$payout['id']}/paid", ['reference' => 'BANK-1'])->assertOk();
+        $net = (float) $payout['amount'];
+
+        // A late refund is no longer blocked: the customer is made whole and the seller owes the money back.
+        $this->postJson("/api/admin/orders/{$order->id}/refund", ['reason' => 'late request'])->assertOk()->assertJsonPath('refund_status', 'pending');
+        $debt = SellerLedgerEntry::where('order_id', $order->id)->where('type', 'refund_debt')->first();
+        $this->assertNotNull($debt);
+        $this->assertEqualsWithDelta(-$net, (float) $debt->amount, 0.001);
+        $this->assertTrue($this->seller->fresh()->notifications()->get()->contains(fn ($n) => str_contains($n->data['title'] ?? '', 'refunded')));
+
+        $balances = $this->actingAs($this->seller, 'sanctum')->getJson('/api/seller/earnings')->json('balances');
+        $this->assertEqualsWithDelta(-$net, $balances[$order->currency]['available'], 0.001);                 // what they owe shows as a negative available balance
+        $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/payouts', ['company_id' => $sellerCo, 'currency' => $order->currency])->assertUnprocessable();   // nothing to pay while they owe
+
+        // The books balance (the ledger reconciler runs after every test) and the next sale covers the debt.
+        $this->assertEqualsWithDelta(-$net, $ledger->balance(Accounts::sellerAvailable($sellerCo), $order->currency), 0.001);
     }
 
     public function test_the_same_idempotency_key_pays_once(): void
@@ -171,10 +232,60 @@ class RefundImportIdempotencyTest extends TestCase
         $this->actingAs($this->admin, 'sanctum');
         $id = $this->getJson('/api/admin/refund-requests')->assertOk()->assertJsonCount(1)->json('0.id');
         $this->postJson("/api/admin/refund-requests/{$id}/reject", [])->assertUnprocessable();
-        $this->postJson("/api/admin/refund-requests/{$id}/approve")->assertOk()->assertJsonPath('status', 'approved');
-        $this->assertSame('pending', Order::withoutGlobalScopes()->find($order->id)->refund_status);
+        $this->postJson("/api/admin/refund-requests/{$id}/approve")->assertOk()->assertJsonPath('status', 'awaiting_pickup');
+        $this->assertNull(Order::withoutGlobalScopes()->find($order->id)->refund_status);                          // approved, but the parcel has to come back first
         $this->postJson("/api/admin/refund-requests/{$id}/approve")->assertUnprocessable();                       // decided once
         $this->assertNotNull($shipment->fresh());
+    }
+
+    /** @return array{0: Order, 1: int, 2: string} an approved return waiting for collection: the order, the request id and the customer's code */
+    private function approvedReturn(): array
+    {
+        [, $order] = $this->paidOrder();
+        \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::DELIVERED, 'delivered_at' => now()->subDay()]);
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'It does not fit'])->assertCreated();
+        $id = \App\Models\OrderRefundRequest::firstOrFail()->id;
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/refund-requests/{$id}/approve")->assertOk();
+
+        return [$order, $id, $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}/refund-request")->json('request.return_code')];
+    }
+
+    public function test_an_approved_return_is_collected_with_the_customers_code_and_refunded_after_it_passes_inspection(): void
+    {
+        [$order, $id, $code] = $this->approvedReturn();
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $code);                                                 // only the customer sees the code
+        $this->assertArrayNotHasKey('return_code', $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/refund-requests')->json('0'));
+        $this->assertTrue($this->customer->notifications()->get()->contains(fn ($n) => ($n->data['kind'] ?? null) === 'return_approved' && str_contains($n->data['body'], $code)));
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'again please'])->assertUnprocessable();   // one at a time
+
+        // The customer picks a collection day (in the future, within a week).
+        $day = now()->addDays(2)->toDateString();
+        $this->postJson("/api/orders/{$order->id}/return-pickup", ['day' => now()->toDateString()])->assertUnprocessable();
+        $this->postJson("/api/orders/{$order->id}/return-pickup", ['day' => $day, 'note' => 'Ring the bell twice'])->assertOk()->assertJsonPath('pickup_day', $day);
+        $this->assertSame($day, $this->getJson("/api/orders/{$order->id}/refund-request")->json('request.pickup_day'));
+
+        // Collection needs the right code; nothing can be inspected before it.
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/refund-requests/{$id}/inspect", ['passed' => true])->assertUnprocessable();
+        $this->postJson("/api/admin/refund-requests/{$id}/collect", ['code' => '000000'])->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->postJson("/api/admin/refund-requests/{$id}/collect", ['code' => $code])->assertOk()->assertJsonPath('status', 'collected');
+        $this->assertNull(Order::withoutGlobalScopes()->find($order->id)->refund_status);                          // still no money back
+
+        $this->postJson("/api/admin/refund-requests/{$id}/inspect", ['passed' => true, 'note' => 'As new'])->assertOk()->assertJsonPath('status', 'approved')->assertJsonPath('inspection', 'passed');
+        $this->assertSame('pending', Order::withoutGlobalScopes()->find($order->id)->refund_status);               // now the refund is owed
+        $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}/refund-request")->assertJsonPath('request.status', 'approved')->assertJsonPath('request.return_code', null);
+    }
+
+    public function test_a_return_that_fails_inspection_is_not_refunded_and_the_customer_is_told_why(): void
+    {
+        [$order, $id, $code] = $this->approvedReturn();
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/refund-requests/{$id}/collect", ['code' => $code])->assertOk();
+
+        $this->postJson("/api/admin/refund-requests/{$id}/inspect", ['passed' => false])->assertUnprocessable()->assertJsonValidationErrors('note');   // say why
+        $this->postJson("/api/admin/refund-requests/{$id}/inspect", ['passed' => false, 'note' => 'Used and scratched'])->assertOk()->assertJsonPath('status', 'rejected');
+        $this->assertNull(Order::withoutGlobalScopes()->find($order->id)->refund_status);
+        $view = $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}/refund-request")->assertJsonPath('request.inspection', 'failed')->json();
+        $this->assertSame('Used and scratched', $view['request']['inspection_note']);
+        $this->assertTrue($this->customer->notifications()->get()->contains(fn ($n) => ($n->data['kind'] ?? null) === 'return_failed' && str_contains($n->data['body'], 'Used and scratched')));
     }
 
     public function test_a_rejected_request_leaves_the_order_as_it_was_and_only_the_owner_can_ask(): void

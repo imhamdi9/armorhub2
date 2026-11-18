@@ -178,4 +178,24 @@ class GuestCheckoutTest extends TestCase
         $this->postJson('/api/orders', ['product_id' => $lantern->id, 'target_type' => $rule->target_type, 'targets' => [$rule->target_id],
             'shipping_address' => ['name' => 'Khaled', 'phone' => '01012345678', 'line1' => '1 Street', 'city' => 'Giza', 'country' => 'EG']])->assertCreated();
     }
+
+    public function test_a_guest_writes_about_the_order_flags_a_problem_and_hears_back_by_email(): void
+    {
+        config(['mail.default' => 'outbox']);
+        $o = $this->order();
+        $t = $o['token'];
+
+        $this->postJson("/api/guest-orders/{$t}/messages", ['body' => 'Call me on 01012345678'])->assertUnprocessable();                 // no way around the platform
+        $this->postJson("/api/guest-orders/{$t}/messages", ['body' => 'The box arrived open', 'problem' => true])->assertCreated()->assertJsonPath('kind', 'problem');
+        $this->getJson("/api/guest-orders/{$t}/messages")->assertOk()->assertJsonCount(1)->assertJsonPath('0.mine', true);
+        $this->getJson('/api/guest-orders/not-a-real-token/messages')->assertNotFound();
+
+        // ArmorHub sees it, handles it, and the guest is told by e-mail.
+        $admin = User::role('platform-admin')->firstOrFail();
+        $id = $this->actingAs($admin, 'sanctum')->getJson('/api/admin/order-problems')->assertOk()->json('0.id');
+        $this->postJson("/api/admin/order-problems/{$id}/handled", ['note' => 'We are sending a replacement.'])->assertOk();
+        $mail = \Illuminate\Support\Facades\DB::table('mail_outbox')->where('to', 'salma.guest@example.org')->latest('id')->first();
+        $this->assertNotNull($mail);
+        $this->assertStringContainsString('We are sending a replacement.', $mail->html);
+    }
 }

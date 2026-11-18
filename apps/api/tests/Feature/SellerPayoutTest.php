@@ -48,7 +48,7 @@ class SellerPayoutTest extends TestCase
 
         if ($deliver) {
             $ship = $this->actingAs($this->seller, 'sanctum')->postJson("/api/orders/{$orderId}/shipments", ['provider' => 'manual', 'carrier' => 'SMSA', 'tracking_number' => 'T'.$orderId])->assertCreated()->json();
-            $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertOk();
+            $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered', 'code' => \App\Models\Shipment::find($ship['id'])->delivery_code])->assertOk();
         }
 
         return $orderId;
@@ -71,10 +71,39 @@ class SellerPayoutTest extends TestCase
         $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'in_transit'])->assertOk();
         $this->assertSame('held', SellerLedgerEntry::where('order_id', $id)->first()->status);   // in transit is not delivered yet
 
-        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertOk();
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered', 'code' => \App\Models\Shipment::find($ship['id'])->delivery_code])->assertOk();
         $bal = $this->getJson('/api/seller/earnings')->json('balances');
         $this->assertEquals(180, $bal['USD']['available']);
         $this->assertEquals(0, $bal['USD']['held']);
+    }
+
+    public function test_when_the_market_holds_earnings_they_unlock_only_after_the_days_pass(): void
+    {
+        app(\App\Support\Settings\Settings::class)->set('payouts.hold_days', 14);
+        $id = $this->sale(true);
+        $bal = $this->getJson('/api/seller/earnings')->json('balances');
+        $this->assertEquals(0, $bal['USD']['available'] ?? 0);                                       // delivered, but still held
+        $this->assertEquals(180, $bal['USD']['held']);
+        $this->assertNotNull(SellerLedgerEntry::where('order_id', $id)->first()->release_at);
+
+        $release = app(\App\Services\SellerEarningsRelease::class);
+        $this->assertSame(0, $release->run());                                                       // too early
+        $this->travel(15)->days();
+        $this->assertSame(1, $release->run());
+        $this->assertSame(0, $release->run());                                                       // once only
+        $bal = $this->actingAs($this->seller, 'sanctum')->getJson('/api/seller/earnings')->json('balances');
+        $this->assertEquals(180, $bal['USD']['available']);
+        $this->assertEquals(0, $bal['USD']['held']);
+    }
+
+    public function test_the_admin_chooses_the_hold_days_and_zero_means_at_once(): void
+    {
+        $this->actingAs($this->admin, 'sanctum')->putJson('/api/admin/settings', ['values' => ['payouts.hold_days' => 7]])->assertOk();
+        $this->assertSame(7, (int) app(\App\Support\Settings\Settings::class)->get('payouts.hold_days'));
+        $this->putJson('/api/admin/settings', ['values' => ['payouts.hold_days' => 400]])->assertUnprocessable();
+        $this->putJson('/api/admin/settings', ['values' => ['payouts.hold_days' => 0]])->assertOk();
+        $this->sale(true);
+        $this->assertEquals(180, $this->actingAs($this->seller, 'sanctum')->getJson('/api/seller/earnings')->json('balances.USD.available'));
     }
 
     public function test_service_jobs_create_no_ledger_and_replaying_events_never_duplicates(): void

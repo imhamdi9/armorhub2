@@ -39,7 +39,7 @@ class OverviewController extends Controller
         return [
             'numbers' => [
                 ['key' => 'revenue', 'label' => 'Revenue', 'value' => round($revenue, 2), 'format' => 'money'],
-                ['key' => 'commission', 'label' => 'Platform commission', 'value' => round((float) Commission::sum('amount'), 2), 'format' => 'money'],
+                ['key' => 'commission', 'label' => 'Platform commission', 'value' => round((float) Commission::sum(\Illuminate\Support\Facades\DB::raw('amount - refunded_amount')), 2), 'format' => 'money'],
                 ['key' => 'subscription_revenue', 'label' => 'Subscription revenue (this month)', 'value' => round((float) \App\Models\SubscriptionInvoice::where('status', 'paid')->where('paid_at', '>=', now()->startOfMonth())->sum('amount'), 2), 'format' => 'money'],
                 ['key' => 'orders', 'label' => 'Orders', 'value' => Order::count(), 'format' => 'number'],
                 ['key' => 'customers', 'label' => 'Customers', 'value' => User::role('customer')->count(), 'format' => 'number'],

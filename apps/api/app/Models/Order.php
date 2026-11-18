@@ -67,6 +67,11 @@ class Order extends Model
         'guest_name',
         'guest_email',
         'guest_token',
+        'guest_locale',
+        'delivery_speed',
+        'preferred_day',
+        'gift_note',
+        'ship_reminded_at',
     ];
 
     /** The delivery address is only sent to the customer and the staff handling the parcel. */
@@ -84,6 +89,7 @@ class Order extends Model
     {
         return [
             'shipping_address' => 'array',
+            'preferred_day' => 'date',
             'status' => OrderStatus::class,
             'scheduled_at' => 'datetime',
             'started_at' => 'datetime',

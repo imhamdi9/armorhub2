@@ -95,6 +95,41 @@ class ShippingTest extends TestCase
 
     // ------------------------------------------------------------------ manual carrier (any carrier)
 
+    public function test_the_delivery_code_belongs_to_the_customer_and_a_failed_delivery_can_be_rescheduled(): void
+    {
+        $id = $this->parcelOrder();
+        $ship = $this->actingAs($this->manager, 'sanctum')->postJson("/api/orders/{$id}/shipments", ['provider' => 'manual', 'carrier' => 'SMSA', 'tracking_number' => 'R1'])->assertCreated()->json();
+        $this->assertArrayNotHasKey('delivery_code', $ship);                                                       // staff never see the code
+        $code = Shipment::find($ship['id'])->delivery_code;
+        $this->assertMatchesRegularExpression('/^\d{4}$/', $code);
+
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'out_for_delivery'])->assertOk();
+        $note = $this->customer->notifications()->get()->first(fn ($n) => ($n->data['kind'] ?? null) === 'shipment_out_for_delivery')->data;
+        $this->assertStringContainsString($code, $note['body']);                                                   // the customer is told the code
+        $this->assertSame($code, $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$id}/shipments")->json('shipments.0.delivery_code'));
+        $this->assertArrayNotHasKey('delivery_code', $this->actingAs($this->manager, 'sanctum')->getJson("/api/orders/{$id}/shipments")->json('shipments.0'));
+
+        // Not failed yet: nothing to reschedule.
+        $tomorrow = now()->addDay()->toDateString();
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/shipments/{$ship['id']}/reschedule", ['date' => $tomorrow])->assertUnprocessable();
+
+        $this->actingAs($this->manager, 'sanctum')->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'failed', 'description' => 'Nobody at home'])->assertOk()->assertJsonPath('attempts', 1)->assertJsonPath('failed_reason', 'Nobody at home');
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/shipments/{$ship['id']}/reschedule", ['date' => now()->toDateString()])->assertUnprocessable();      // a day in the future only
+        $this->postJson("/api/shipments/{$ship['id']}/reschedule", ['date' => $tomorrow, 'note' => 'After 5 pm please'])->assertOk()->assertJsonPath('status', 'in_transit')->assertJsonPath('reschedule_for', $tomorrow);
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/shipments/{$ship['id']}/reschedule", ['date' => $tomorrow])->assertNotFound();                          // only the customer asks
+
+        // Three failures and the customer has to talk to support.
+        foreach ([2, 3] as $n) {
+            $this->actingAs($this->manager, 'sanctum')->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'failed', 'description' => "Attempt {$n} failed"])->assertOk()->assertJsonPath('attempts', $n);
+            $r = $this->actingAs($this->customer, 'sanctum')->postJson("/api/shipments/{$ship['id']}/reschedule", ['date' => $tomorrow]);
+            $n < 3 ? $r->assertOk() : $r->assertUnprocessable();
+        }
+
+        // Closing it needs the code; an administrator may close it without, and that is written down.
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertOk()->assertJsonPath('status', 'delivered');
+        $this->assertStringContainsString('without the code', collect($this->getJson("/api/orders/{$id}/shipments")->json('shipments.0.events'))->last()['description']);
+    }
+
     public function test_staff_record_a_manual_shipment_and_the_customer_follows_it(): void
     {
         app(Settings::class)->set('shipping.manual.tracking_url_template', 'https://track.example.com/?n={tracking}');
@@ -109,7 +144,8 @@ class ShippingTest extends TestCase
         $this->postJson("/api/orders/{$id}/shipments", ['provider' => 'manual', 'carrier' => 'SMSA', 'tracking_number' => 'Z'])->assertUnprocessable(); // one live parcel per order
 
         $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'in_transit', 'location' => 'Riyadh hub'])->assertOk()->assertJsonPath('status', 'in_transit');
-        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertOk()->assertJsonPath('status', 'delivered');
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered'])->assertUnprocessable()->assertJsonPath('errors.code.0', 'The delivery code is wrong.');
+        $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'delivered', 'code' => Shipment::find($ship['id'])->delivery_code])->assertOk()->assertJsonPath('status', 'delivered');
         $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'in_transit'])->assertOk()->assertJsonPath('status', 'delivered'); // a finished parcel stays finished
         $this->postJson("/api/shipments/{$ship['id']}/status", ['status' => 'teleported'])->assertUnprocessable();
 

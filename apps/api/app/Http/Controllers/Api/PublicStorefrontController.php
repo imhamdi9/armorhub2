@@ -101,29 +101,99 @@ class PublicStorefrontController extends Controller
 
     public function products(Request $request, string $slug)
     {
-        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50', 'sort' => 'nullable|in:category,price_asc,price_desc,name']);
+        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50',
+            'sort' => 'nullable|in:category,price_asc,price_desc,name,rating', 'min_price' => 'nullable|numeric|min:0', 'max_price' => 'nullable|numeric|min:0', 'brand' => 'nullable|string|max:200', 'min_rating' => 'nullable|integer|min:1|max:5']);
+        $company = $this->stores->find($slug) ?? abort(404);
+        $search = app(\App\Services\Storefront\ProductSearch::class);
+        $lowest = \App\Services\Storefront\ProductSearch::LOWEST_PRICE;
+        $rating = \App\Services\Storefront\ProductSearch::AVERAGE_RATING;
+
+        // What the shop sells that matches the words typed: every word must appear in the name, the brand or the category.
+        $matching = fn ($q, ?string $text) => $q->when(filled($text), function ($q) use ($text, $search) {
+            $words = $search->tokens((string) $text);
+            if ($words === []) {
+                $q->whereRaw('1 = 0');   // only symbols were typed: nothing can match them
+            }
+            foreach ($words as $word) {
+                $like = '%'.addcslashes($word, '%_\\').'%';
+                $q->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('brand', 'like', $like)->orWhere('category', 'like', $like));
+            }
+        });
+        $scoped = fn (?string $text) => $this->stores->products($company)
+            ->tap(fn ($q) => $matching($q, $text))
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            ->when($request->filled('industry'), fn ($q) => $q->whereIn('industry_id', \App\Models\Industry::where('key', $request->industry)->select('id')));
+        $page = function (?string $text) use ($request, $scoped, $lowest, $rating) {
+            return $scoped($text)
+                ->when($request->filled('min_price'), fn ($q) => $q->whereRaw("$lowest >= ".$this->number($request->min_price)))
+                ->when($request->filled('max_price'), fn ($q) => $q->whereRaw("$lowest <= ".$this->number($request->max_price)))
+                ->when($request->filled('brand'), fn ($q) => $q->whereIn('brand', array_filter(array_map('trim', explode(',', (string) $request->brand)))))
+                ->when($request->filled('min_rating'), fn ($q) => $q->whereRaw("$rating >= ".$this->number($request->min_rating)))
+                // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle; or by price, rating or name when asked.
+                ->when($request->input('sort') === 'price_asc', fn ($q) => $q->orderByRaw("$lowest asc")->orderBy('name'))
+                ->when($request->input('sort') === 'price_desc', fn ($q) => $q->orderByRaw("$lowest desc")->orderBy('name'))
+                ->when($request->input('sort') === 'rating', fn ($q) => $q->orderByRaw("coalesce($rating, 0) desc")->orderBy('name'))
+                ->when($request->input('sort') === 'name', fn ($q) => $q->orderBy('name'))
+                ->when(! in_array($request->input('sort'), ['price_asc', 'price_desc', 'rating', 'name'], true), fn ($q) => $q->orderBy('category')->orderBy('name'))
+                // "Only what fits my car" (and what fits everything), for a make/model and year.
+                ->when($request->filled('vehicle_model_id') && $request->filled('year') && $request->boolean('compatible'), fn ($q) => app(\App\Services\Fitment\FitmentService::class)->scopeFitting($q, (int) $request->input('vehicle_model_id'), (int) $request->input('year')))
+                ->paginate((int) $request->input('per_page', 12));
+        };
+
+        $typed = trim((string) $request->input('q', ''));
+        $results = $page($typed);
+        $corrected = null;
+        // Nothing matched: read the words as the closest ones the shop really uses, and say so.
+        if ($typed !== '' && $results->total() === 0 && ($fixed = $search->correct($typed, $search->vocabulary($this->stores->products($company))))) {
+            $corrected = $fixed;
+            $results = $page($fixed);
+        }
+
+        $out = $results->through(fn ($p) => $this->stores->card($p, $company) + $this->fits($p, $request))->toArray();
+        $out['search'] = ['q' => $typed, 'corrected' => $corrected];
+        $out['facets'] = $search->facets($scoped($corrected ?? $typed));
+
+        return $this->cached($out);
+    }
+
+    /**
+     * Products by id, in the order asked: what someone viewed lately, or wants to compare. With detail=1 each also carries what a comparison needs
+     * (features and specifications). Ids that are not for sale here are left out.
+     */
+    public function byIds(Request $request, string $slug)
+    {
+        $request->validate(['ids' => 'required|string|max:200', 'detail' => 'nullable|boolean']);
+        $company = $this->stores->find($slug) ?? abort(404);
+        $ids = collect(explode(',', (string) $request->input('ids')))->map(fn ($i) => (int) $i)->filter()->unique()->take($request->boolean('detail') ? 4 : 12)->values();
+        $found = $this->stores->products($company)->whereIn('id', $ids)->get()->keyBy('id');
+
+        $rows = $ids->filter(fn ($id) => $found->has($id))->map(function ($id) use ($found, $company, $request) {
+            $p = $found[$id];
+            $card = $this->stores->card($p, $company);
+
+            return $request->boolean('detail') ? $card + ['highlights' => array_values($p->attributes['highlights'] ?? []), 'specs' => $this->pageContent($p)['specs'] ?? [], 'seller_name' => $card['seller']] : $card;
+        })->values();
+
+        return $this->cached(['products' => $rows]);
+    }
+
+    /** Picks for someone who looked at the products in ?ids=. */
+    public function recommendations(Request $request, string $slug)
+    {
+        $request->validate(['ids' => 'nullable|string|max:200']);
+        $company = $this->stores->find($slug) ?? abort(404);
+        $ids = collect(explode(',', (string) $request->input('ids')))->map(fn ($i) => (int) $i)->filter()->unique()->take(12)->values()->all();
+
+        return $this->cached(['products' => app(\App\Services\Storefront\ProductRecommendations::class)->forYou($ids, $company)->map(fn ($p) => $this->stores->card($p, $company))->all()]);
+    }
+
+    /** What to type next: names, brands and categories that match the first letters (and the closest words for a typo). */
+    public function suggest(Request $request, string $slug)
+    {
+        $request->validate(['q' => 'nullable|string|max:80']);
         $company = $this->stores->find($slug) ?? abort(404);
 
-        // The lowest public price: the cheapest active price rule, or the base price when there are none.
-        $lowest = '(select coalesce(min(r.price), products.base_price) from product_price_rules r where r.product_id = products.id and r.is_active = 1)';
-
-        $page = $this->stores->products($company)
-            ->when($request->filled('q'), fn ($q) => $q->where(fn ($w) => $w
-                ->where('name', 'like', '%'.addcslashes($request->q, '%_\\').'%')
-                ->orWhere('brand', 'like', '%'.addcslashes($request->q, '%_\\').'%')))
-            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
-            ->when($request->filled('industry'), fn ($q) => $q->whereIn('industry_id', \App\Models\Industry::where('key', $request->industry)->select('id')))
-            // Grouped by category, then A to Z, so the list reads as sections rather than a shuffle; or by price or name when asked.
-            ->when($request->input('sort') === 'price_asc', fn ($q) => $q->orderByRaw("$lowest asc")->orderBy('name'))
-            ->when($request->input('sort') === 'price_desc', fn ($q) => $q->orderByRaw("$lowest desc")->orderBy('name'))
-            ->when($request->input('sort') === 'name', fn ($q) => $q->orderBy('name'))
-            ->when(! in_array($request->input('sort'), ['price_asc', 'price_desc', 'name'], true), fn ($q) => $q->orderBy('category')->orderBy('name'))
-            // "Only what fits my car" (and what fits everything), for a make/model and year.
-            ->when($request->filled('vehicle_model_id') && $request->filled('year') && $request->boolean('compatible'), fn ($q) => app(\App\Services\Fitment\FitmentService::class)->scopeFitting($q, (int) $request->input('vehicle_model_id'), (int) $request->input('year')))
-            ->paginate((int) $request->input('per_page', 12))
-            ->through(fn ($p) => $this->stores->card($p, $company) + $this->fits($p, $request));
-
-        return $this->cached($page);
+        return $this->cached(['suggestions' => app(\App\Services\Storefront\ProductSearch::class)->suggest($this->stores->products($company), (string) $request->input('q', ''))]);
     }
 
     /** A seller's page inside the market ("Sold by ..."): who they are and what they sell here. A seller has no store of its own. */
@@ -136,7 +206,14 @@ class PublicStorefrontController extends Controller
         $page = $this->stores->products($company)->where('seller_id', $seller->id)->orderBy('category')->orderBy('name')->paginate(12)
             ->through(fn ($p) => $this->stores->card($p, $company));
 
-        return $this->cached(['seller' => ['id' => $seller->id, 'name' => $seller->name, 'city' => $seller->city ?? null, 'since' => $seller->created_at?->format('Y-m')], 'store' => ['name' => $company->name, 'slug' => $company->slug], 'products' => $page]);
+        // What the seller says about the shop, and how shoppers rated what it sold (only published reviews of its own products).
+        $profile = $seller->settings['profile'] ?? [];
+        $rows = \App\Models\ProductReview::published()->whereIn('product_id', \App\Models\Product::withoutGlobalScopes()->where('seller_id', $seller->id)->select('id'))->selectRaw('count(*) as c, avg(rating) as a')->first();
+        $delivered = \App\Models\Order::withoutGlobalScopes()->whereIn('product_id', \App\Models\Product::withoutGlobalScopes()->where('seller_id', $seller->id)->select('id'))->where('status', 'completed')->count();
+
+        return $this->cached(['seller' => ['id' => $seller->id, 'name' => $seller->name, 'city' => $profile['city'] ?? null, 'since' => $seller->created_at?->format('Y-m'),
+            'about' => $profile['about'] ?? null, 'logo' => $profile['logo'] ?? null, 'hours' => $profile['hours'] ?? null, 'ships_within_days' => $profile['ships_within_days'] ?? null,
+            'rating' => ['count' => (int) ($rows->c ?? 0), 'average' => ($rows->c ?? 0) > 0 ? round((float) $rows->a, 1) : null], 'delivered_orders' => $delivered], 'store' => ['name' => $company->name, 'slug' => $company->slug], 'products' => $page]);
     }
 
     /** The content the page layout asks for, with only the known keys (older products have none). */
@@ -181,7 +258,14 @@ class PublicStorefrontController extends Controller
         return $this->cached([
             'product' => $this->stores->card($product, $company) + ['prices' => $this->stores->priceList($product), 'highlights' => array_values($product->attributes['highlights'] ?? []), 'fitment_required' => (bool) $product->fitment_required, 'fitments' => app(\App\Services\Fitment\FitmentService::class)->describe($product) + [], 'page' => $this->pageContent($product), 'addons' => $this->addons($product, $company), 'page_template' => in_array($product->page_template, \App\Models\Product::PAGE_TEMPLATES, true) ? $product->page_template : 'classic'],
             'related' => $related,
+            'recommended' => [
+                'also_bought' => app(\App\Services\Storefront\ProductRecommendations::class)->alsoBought($product, $company)->map(fn ($p) => $this->stores->card($p, $company))->all(),
+                'similar' => app(\App\Services\Storefront\ProductRecommendations::class)->similar($product, $company)->map(fn ($p) => $this->stores->card($p, $company))->all(),
+            ],
             'reviews' => $this->reviews($product->id),
+            'questions' => \App\Models\ProductQuestion::where('product_id', $product->id)->public()->with('user:id,name')->orderByDesc('answered_at')->limit(10)->get()
+                ->map(fn ($q) => ['id' => $q->id, 'question' => $q->question, 'answer' => $q->answer, 'asker' => explode(' ', trim((string) $q->user?->name))[0] ?: 'Customer', 'answered_at' => $q->answered_at?->toDateString()])->all(),
+            'delivery_estimate' => $product->requires_shipping ? app(\App\Services\ShippingFees::class)->estimate(app(\App\Support\Markets\Markets::class)->forCompany($company)?->code, $product->fulfilment ?? 'seller') : null,
             'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),
             // What delivery costs here: the flat fee, the amount above which it is free, and the usual days.
             'shipping' => app(\App\Services\ShippingFees::class)->rules(app(\App\Support\Markets\Markets::class)->forCompany($company)?->code),
@@ -227,11 +311,18 @@ class PublicStorefrontController extends Controller
                 'comment' => $r->comment,
                 'author' => explode(' ', trim((string) $r->user?->name))[0] ?: 'Customer',
                 'date' => $r->created_at?->toDateString(),
+                'photos' => array_values($r->photos ?? []),
             ])->all(),
         ];
     }
 
     /** Public data may be cached by browsers and CDNs for a minute. */
+    /** A checked number written into the SQL itself: bound as text, SQLite would compare it as larger than any figure. */
+    private function number(mixed $value): string
+    {
+        return number_format((float) $value, 2, '.', '');
+    }
+
     private function cached($data)
     {
         return response()->json($data)->header('Cache-Control', 'public, max-age=60, s-maxage=60');

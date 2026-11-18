@@ -346,7 +346,7 @@ class InstallationJobs
             $side === 'customer'
                 ? $this->notify->centre($this->centreOf($r)->id, 'The customer opened a dispute', 'The payment is on hold while the platform reviews the job. Please add your evidence.', "/dashboard/centre-jobs/{$r->id}")
                 : $this->notify->user($r->customer_id, 'The centre opened a dispute', 'The payment stays on hold while the platform reviews the job. Please add your evidence.', "/dashboard/installations/{$r->id}");
-            $this->notify->admins('A dispute needs a decision', "Job #{$r->id}: {$type}.", '/dashboard/admin/disputes');
+            $this->notify->admins('A dispute needs a decision', 'Job #:id: :type.', '/dashboard/admin/disputes', ['id' => (string) $r->id, 'type' => (string) $type]);
 
             return $d;
         });

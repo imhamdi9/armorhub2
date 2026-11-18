@@ -22,7 +22,7 @@ class PriceAlerts
         $now = number_format($new, 2).($currency !== '' ? " {$currency}" : '');
 
         foreach (DB::table('favourites')->where('product_id', $product->id)->pluck('user_id') as $userId) {
-            $this->notify->user((int) $userId, 'Price drop', "{$product->name} is now {$now}.", '/dashboard/favourites');
+            $this->notify->user((int) $userId, 'Price drop', ':name is now :price.', '/dashboard/favourites', ['name' => (string) $product->name, 'price' => (string) $now]);
         }
     }
 }

@@ -297,6 +297,39 @@ class CartCheckoutTest extends TestCase
         $this->assertEqualsWithDelta($cart['payable_amount'], $ledger->balance(Accounts::GATEWAY, $group['currency']), 0.001);
     }
 
+    public function test_the_customer_chooses_express_a_day_and_a_gift_note_and_pays_the_extra_per_seller(): void
+    {
+        $this->shippingRules(30, null, 3);
+        [$a, $b] = $this->cartOf2();
+        $settings = app(\App\Support\Settings\Settings::class);
+
+        // Where the market has no express service, asking for it is refused.
+        $this->assertSame(['standard'], collect($this->getJson('/api/cart')->json('delivery_options'))->pluck('key')->all());
+        $this->postJson('/api/checkout', ['shipping_address' => $this->address, 'delivery_speed' => 'express'])->assertUnprocessable()->assertJsonValidationErrors('delivery_speed');
+
+        $settings->set('shipping.express_fee.SA', 25);
+        $settings->set('shipping.express_eta_days.SA', 1);
+        $cart = $this->getJson('/api/cart')->json();
+        $this->assertSame(['standard', 'express'], collect($cart['delivery_options'])->pluck('key')->all());
+        $this->assertEquals([0, 50], collect($cart['delivery_options'])->pluck('extra_fee')->all());      // 25 for each of the two sellers
+        $this->assertSame(1, $cart['delivery_options'][1]['eta_days']);
+
+        $tomorrow = now()->addDay()->toDateString();
+        $bad = ['shipping_address' => $this->address, 'delivery_speed' => 'express'];
+        $this->postJson('/api/checkout', $bad + ['preferred_day' => now()->toDateString()])->assertUnprocessable();                       // a day in the future only
+        $this->postJson('/api/checkout', $bad + ['preferred_day' => now()->addDays(40)->toDateString()])->assertUnprocessable();         // and not too far away
+        $group = $this->postJson('/api/checkout', $bad + ['preferred_day' => $tomorrow, 'gift_note' => '<b>Happy birthday</b>, Sara!'])->assertCreated()
+            ->assertJsonPath('delivery_speed', 'express')->assertJsonPath('preferred_day', $tomorrow)->assertJsonPath('gift_note', 'Happy birthday, Sara!')->json();
+
+        $orders = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->get();
+        $this->assertSame([55.0, 55.0], $orders->map(fn ($o) => (float) $o->shipping_amount)->all());                                        // 30 usual + 25 express, once per seller
+        $this->assertSame(['express', 'express'], $orders->pluck('delivery_speed')->all());
+        $this->assertSame([$tomorrow, $tomorrow], $orders->map(fn ($o) => $o->preferred_day->toDateString())->all());
+        $this->assertSame('Happy birthday, Sara!', $orders[0]->gift_note);                                                                // the seller sees it on the order
+        $this->assertEqualsWithDelta(450 + (float) $group['service_fee_amount'] + 110, $group['payable_amount'], 0.001);
+        $this->postJson("/api/order-groups/{$group['id']}/payments", [])->assertOk();                                                     // and the books still balance
+    }
+
     public function test_delivery_is_free_above_the_threshold_and_when_no_fee_is_set(): void
     {
         $this->shippingRules(30, 200);
@@ -401,6 +434,56 @@ class CartCheckoutTest extends TestCase
         $this->postJson('/api/admin/promo-codes', ['code' => 'TOOMUCH', 'type' => 'percent', 'value' => 150])->assertUnprocessable();
         $this->putJson("/api/admin/promo-codes/{$id}", ['is_active' => false])->assertOk()->assertJsonPath('is_active', false);
         $this->getJson('/api/admin/promo-codes')->assertOk()->assertJsonCount(1)->assertJsonPath('0.used', 0);
+    }
+
+    public function test_cash_on_delivery_confirms_the_order_and_the_money_is_collected_at_the_door(): void
+    {
+        $this->cartOf2();
+        $this->assertFalse($this->getJson('/api/cart')->json('cod_available'));                                // off until the market allows it
+        $settings = app(\App\Support\Settings\Settings::class);
+        $settings->set('payments.cod_enabled', true);
+        $this->assertTrue($this->getJson('/api/cart')->json('cod_available'));
+        $settings->set('payments.cod_max_amount', 100);
+        $this->assertFalse($this->getJson('/api/cart')->json('cod_available'));                                // over the limit
+        $settings->set('payments.cod_max_amount', null);
+
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->assertCreated()->json();
+        $this->postJson("/api/order-groups/{$group['id']}/payments", ['payment_method' => 'cod'])->assertOk()->assertJsonPath('status', 'paid');
+        $ledger = app(Ledger::class);
+        $this->assertEqualsWithDelta($group['payable_amount'], $ledger->balance(Accounts::COD_RECEIVABLE, $group['currency']), 0.001);   // the couriers owe it
+        $this->assertEqualsWithDelta(0, $ledger->balance(Accounts::GATEWAY, $group['currency']), 0.001);
+
+        $order = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->first();
+        $this->assertSame('cash_on_delivery', $this->getJson("/api/orders/{$order->id}")->json('statuses.payment'));
+        $this->assertSame('paid', Order::withoutGlobalScopes()->find($order->id)->status->value);                // the seller can ship it
+
+        // The parcel is delivered: the cash is in, the payment is complete.
+        $shipment = \App\Models\Shipment::create(['order_id' => $order->id, 'provider' => 'manual', 'status' => \App\Models\Shipment::IN_TRANSIT]);
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/shipments/{$shipment->id}/status", ['status' => 'delivered'])->assertOk();
+        $this->assertSame('paid', $this->actingAs($this->customer, 'sanctum')->getJson("/api/orders/{$order->id}")->json('statuses.payment'));
+        $this->assertEqualsWithDelta((float) $order->payable_amount, $ledger->balance(Accounts::GATEWAY, $order->currency), 0.001);
+    }
+
+    public function test_cancelling_a_cash_on_delivery_order_returns_nothing_because_nothing_was_taken(): void
+    {
+        app(\App\Support\Settings\Settings::class)->set('payments.cod_enabled', true);
+        $this->cartOf2();
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->json();
+        $this->postJson("/api/order-groups/{$group['id']}/payments", ['payment_method' => 'cod'])->assertOk();
+        $order = Order::withoutGlobalScopes()->where('group_id', $group['id'])->orderBy('id')->first();
+
+        $this->postJson("/api/orders/{$order->id}/refund-request", ['reason' => 'Changed my mind'])->assertCreated()->assertJsonPath('status', 'approved');
+        $this->assertSame('refunded', Order::withoutGlobalScopes()->find($order->id)->refund_status);              // nothing to send
+        $this->assertSame('void', \App\Models\Payment::withoutGlobalScopes()->where('order_id', $order->id)->value('status'));
+        $this->assertEqualsWithDelta(0, app(Ledger::class)->balance(Accounts::REFUND_DUE, $order->currency), 0.001);
+    }
+
+    public function test_cash_on_delivery_is_refused_when_it_is_not_allowed(): void
+    {
+        $this->cartOf2();
+        $group = $this->postJson('/api/checkout', ['shipping_address' => $this->address])->json();
+        $this->postJson("/api/order-groups/{$group['id']}/payments", ['payment_method' => 'cod'])->assertUnprocessable();
+        $this->assertSame('awaiting_payment', OrderGroup::find($group['id'])->status);
     }
 
     public function test_people_who_saved_a_product_hear_when_its_price_drops(): void

@@ -22,9 +22,15 @@ class Shipment extends Model
     public const FINAL = [self::DELIVERED, self::RETURNED, self::CANCELLED];
 
     protected $fillable = ['order_id', 'provider', 'carrier', 'service', 'reference', 'tracking_number', 'tracking_url', 'label_url',
-        'status', 'cost', 'currency', 'created_by', 'delivered_at'];
+        'status', 'cost', 'currency', 'created_by', 'delivered_at', 'delivery_code', 'attempts', 'failed_reason', 'reschedule_for', 'reschedule_note'];
 
-    protected $casts = ['cost' => 'decimal:2', 'delivered_at' => 'datetime'];
+    /** A parcel gets this many failed attempts before the customer must contact support. */
+    public const MAX_ATTEMPTS = 3;
+
+    /** The code is the customer's: staff and tracking pages never show it. */
+    protected $hidden = ['delivery_code'];
+
+    protected $casts = ['cost' => 'decimal:2', 'delivered_at' => 'datetime', 'reschedule_for' => 'date:Y-m-d'];
 
     public function order()
     {

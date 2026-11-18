@@ -44,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\Payment\PaymentProviders::class, function ($app) {
             $providers = new \App\Services\Payment\PaymentProviders($app->make(\App\Support\Settings\SettingsRegistry::class), $app->make(\App\Support\Settings\Settings::class));
 
-            foreach ([\App\Services\Payment\Providers\SimulatedProvider::class, \App\Services\Payment\Providers\StripeProvider::class, \App\Services\Payment\Providers\HttpProvider::class] as $driver) {
+            foreach ([\App\Services\Payment\Providers\SimulatedProvider::class, \App\Services\Payment\Providers\SandboxProvider::class, \App\Services\Payment\Providers\StripeProvider::class, \App\Services\Payment\Providers\HttpProvider::class] as $driver) {
                 $providers->register($app->make($driver));
             }
 
@@ -75,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Mail::extend('outbox', fn () => new \App\Mail\OutboxTransport());
         // Every notification kept in the app's inbox is also pushed to the person's phones (a notification already says what to show and where to go).
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSent::class, function ($event) {
             if ($event->channel !== 'database' || ! $event->notifiable instanceof \App\Models\User) {

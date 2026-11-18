@@ -37,9 +37,9 @@ class InstallationBookingController extends Controller
 
     public function show(Request $request, int $id)
     {
-        [$r] = $this->job($request, $id);
+        [$r, $centre] = $this->job($request, $id);
 
-        return ['booking' => $this->present(InstallationBooking::where('request_id', $r->id)->first())];
+        return ['booking' => $this->present(InstallationBooking::where('request_id', $r->id)->first(), $centre)];
     }
 
     public function slots(Request $request, int $id)
@@ -70,7 +70,7 @@ class InstallationBookingController extends Controller
         ]);
         $this->notify->centre($centre->id, 'A job was booked', "{$r->subject}: {$start->setTimezone($this->availability->timezone($centre))->format('D j M, H:i')}", "/dashboard/centre-jobs/{$r->id}");
 
-        return response()->json(['booking' => $this->present($booking)], 201);
+        return response()->json(['booking' => $this->present($booking, $centre)], 201);
     }
 
     public function reschedule(Request $request, int $id)
@@ -82,7 +82,7 @@ class InstallationBookingController extends Controller
             throw ValidationException::withMessages(['starts_at' => ['A booking can be changed twice. Please contact the platform to change it again.']]);
         }
         if ($booking->starts_at->lt(now()->addHours(self::CHANGE_NOTICE_HOURS))) {
-            throw ValidationException::withMessages(['starts_at' => ['A booking can only be changed up to '.self::CHANGE_NOTICE_HOURS.' hours before it starts.']]);
+            throw ValidationException::withMessages(['starts_at' => [__('A booking can only be changed up to :n hours before it starts.', ['n' => self::CHANGE_NOTICE_HOURS])]]);
         }
 
         $start = $this->start($request);
@@ -90,7 +90,7 @@ class InstallationBookingController extends Controller
         $booking->update(['starts_at' => $start, 'ends_at' => $start->addHours($centre->job_hours), 'reschedules' => $booking->reschedules + 1]);
         $this->notify->centre($centre->id, 'A booking was moved', "{$r->subject}: {$start->setTimezone($this->availability->timezone($centre))->format('D j M, H:i')}", "/dashboard/centre-jobs/{$r->id}");
 
-        return ['booking' => $this->present($booking->fresh())];
+        return ['booking' => $this->present($booking->fresh(), $centre)];
     }
 
     private function start(Request $request): CarbonImmutable
@@ -101,9 +101,10 @@ class InstallationBookingController extends Controller
     }
 
     /** @return array<string, mixed>|null */
-    private function present(?InstallationBooking $b): ?array
+    /** The time is also given in the centre's own timezone, so the customer sees it the way the list of free times showed it. */
+    private function present(?InstallationBooking $b, Partner $centre): ?array
     {
-        return $b ? ['starts_at' => $b->starts_at->toIso8601String(), 'ends_at' => $b->ends_at->toIso8601String(), 'status' => $b->status, 'reschedules' => $b->reschedules,
+        return $b ? ['timezone' => $this->availability->timezone($centre), 'starts_at' => $b->starts_at->toIso8601String(), 'ends_at' => $b->ends_at->toIso8601String(), 'status' => $b->status, 'reschedules' => $b->reschedules,
             'can_change' => $b->status === 'booked' && $b->reschedules < self::MAX_RESCHEDULES && $b->starts_at->gte(now()->addHours(self::CHANGE_NOTICE_HOURS)), 'cancel_reason' => $b->cancel_reason] : null;
     }
 }

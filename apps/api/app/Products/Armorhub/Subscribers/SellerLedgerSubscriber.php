@@ -45,7 +45,7 @@ class SellerLedgerSubscriber implements EventSubscriber
             return;
         }
 
-        SellerLedgerEntry::where('order_id', $order->id)->where('status', 'held')->update(['status' => 'available', 'available_at' => now()]);
-        app(\App\Services\Ledger\LedgerPostings::class)->sellerReleased($order);
+        // Unlocked now, or after the days the market holds earnings for (setting payouts.hold_days).
+        app(\App\Services\SellerEarningsRelease::class)->delivered($order);
     }
 }

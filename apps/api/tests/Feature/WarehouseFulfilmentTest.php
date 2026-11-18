@@ -83,7 +83,11 @@ class WarehouseFulfilmentTest extends TestCase
 
         // The warehouse counts 2 cartons (one was missing): 20 units are in stock. Receiving twice is refused.
         $line = $own['items'][0]['id'];
-        $this->actingAs($this->staff, 'sanctum')->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2]]])->assertOk()->assertJsonPath('status', 'received');
+        $this->actingAs($this->staff, 'sanctum')->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2]]])->assertStatus(422);   // a short count needs a reason
+        $this->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2, 'note' => 'One carton crushed']]])->assertOk()->assertJsonPath('status', 'received');
+        $diffNote = $this->seller->notifications()->get()->first(fn ($n) => str_contains($n->data['title'] ?? '', 'differences'));   // the seller hears exactly what was short
+        $this->assertNotNull($diffNote);
+        $this->assertStringContainsString('3 → 2 (One carton crushed)', $diffNote->data['body']);
         $this->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2]]])->assertStatus(422);
         $this->assertSame(20, (int) \DB::table('warehouse_stock')->where('product_id', $id)->value('units'));
         $this->assertSame($told + 1, $this->customer->notifications()->count());                      // "back in stock"
@@ -114,6 +118,32 @@ class WarehouseFulfilmentTest extends TestCase
         $this->postJson('/api/warehouse/stock/adjust', ['warehouse_id' => $wh->id, 'product_id' => $id, 'units' => -5, 'note' => 'Damaged'])->assertOk()->assertJson(['units' => 14]);
         $this->postJson('/api/warehouse/stock/adjust', ['warehouse_id' => $wh->id, 'product_id' => $id, 'units' => -500, 'note' => 'x'])->assertStatus(422);
         $this->postJson('/api/warehouse/stock/adjust', ['warehouse_id' => $wh->id, 'product_id' => $id, 'units' => -1])->assertStatus(422);
+    }
+
+    public function test_the_last_unit_is_promised_to_one_buyer_only(): void
+    {
+        $id = $this->listed($this->carton);
+        $this->actingAs($this->staff, 'sanctum')->postJson('/api/warehouse/warehouses', ['name' => 'Riyadh DC'])->assertCreated();
+        $wh = \App\Models\Warehouse::first();
+        $this->actingAs($this->seller, 'sanctum')->putJson("/api/products/{$id}", ['fulfilment' => 'armorhub'])->assertOk();
+        $this->putJson("/api/products/{$id}/price-rules", ['rules' => [['target_type' => 'vehicle_part', 'target_id' => $this->hood->id, 'price' => 150, 'is_active' => true]]])->assertOk();
+        app(\App\Services\Warehouse\WarehouseService::class)->move($wh->id, $id, 1, 'adjustment');           // exactly one unit on the shelf
+
+        $other = User::factory()->create(['company_id' => $this->customer->company_id]);
+        $other->assignRole('customer');
+        $buy = function (User $who) use ($id) {
+            $this->actingAs($who, 'sanctum')->postJson('/api/cart/items', ['product_id' => $id])->assertCreated();
+
+            return $this->postJson('/api/checkout', ['shipping_address' => $this->address]);
+        };
+        $first = $buy($this->customer)->assertCreated()->json();                                                  // the unit is promised (not yet paid)
+        $this->assertSame(0, (int) $this->getJson("/api/public/storefronts/main-store/products/{$id}")->json('product.units_left'));
+        $this->assertFalse($this->getJson("/api/public/storefronts/main-store/products/{$id}")->json('product.in_stock'));
+        $this->actingAs($other, 'sanctum')->postJson('/api/cart/items', ['product_id' => $id])->assertUnprocessable()->assertJsonValidationErrors('product_id');   // the second buyer is told, before paying
+
+        // The first buyer changes their mind: the unit is free again.
+        $this->actingAs($this->customer, 'sanctum')->postJson("/api/order-groups/{$first['id']}/cancel")->assertOk();
+        $buy($other)->assertCreated();
     }
 
     public function test_warehouse_work_stays_inside_its_own_market_and_sellers_cannot_use_it(): void

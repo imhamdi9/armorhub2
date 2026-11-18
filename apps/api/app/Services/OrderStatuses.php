@@ -58,6 +58,9 @@ class OrderStatuses
         if ($payments->contains('completed')) {
             return 'paid';
         }
+        if ($payments->contains('cod_due')) {
+            return 'cash_on_delivery';
+        }
         if ($s === OrderStatus::Cancelled && $payments->isEmpty()) {
             return 'not_required';
         }
