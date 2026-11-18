@@ -57,12 +57,16 @@ class ProductPriceRuleController extends Controller
             }
         }
 
+        $before = $product->priceRules()->where('is_active', true)->min('price');
+
         DB::transaction(function () use ($product, $data) {
             $product->priceRules()->delete();
             foreach ($data['rules'] as $rule) {
                 $product->priceRules()->create($rule);
             }
         });
+        // People who saved this product hear about a lower price.
+        app(\App\Services\PriceAlerts::class)->dropped($product, $before !== null ? (float) $before : null, ($after = $product->priceRules()->where('is_active', true)->min('price')) !== null ? (float) $after : null);
 
         return $this->index($request, $product);
     }

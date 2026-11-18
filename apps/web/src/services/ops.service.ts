@@ -124,3 +124,12 @@ export const savePromoCode = async (body: Record<string, unknown>, id?: number) 
 export interface NotificationPrefs { notify_email: boolean; notify_push: boolean }
 export const getNotificationPrefs = async () => (await api.get<NotificationPrefs>("/me/notification-preferences")).data;
 export const saveNotificationPrefs = async (body: Partial<NotificationPrefs>) => (await api.put<NotificationPrefs>("/me/notification-preferences", body)).data;
+
+export interface SupportTicket { id: number; subject: string; body: string; status: "open" | "answered" | "closed"; reply: string | null; replied_at: string | null; created_at: string }
+export const getSupportTickets = async () => (await api.get<SupportTicket[]>("/support")).data;
+export const sendSupportTicket = async (subject: string, body: string) => (await api.post<SupportTicket>("/support", { subject, body })).data;
+export const closeSupportTicket = async (id: number) => (await api.post<SupportTicket>(`/support/${id}/close`)).data;
+
+export interface HelpRequest { id: number; subject: string; body: string; customer: string | null; created_at: string }
+export const getHelpRequests = async () => (await api.get<HelpRequest[]>("/admin/support")).data;
+export const answerHelpRequest = async (id: number, reply: string) => (await api.post(`/admin/support/${id}/reply`, { reply })).data;

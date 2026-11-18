@@ -44,6 +44,7 @@ export default function ProductScreen() {
   const goods = !!p.requires_shipping;
   const page = p.page ?? {};
   const onWebOnly = goods && p.installation === "required";
+  const byQuote = p.sale_mode === "quote";
   const fee = data.customer_fee_percentage ?? 0;
   const save = savingPercent(shown, p.compare_at_price);
   const photos = p.images?.length ? p.images : [null];
@@ -59,6 +60,11 @@ export default function ProductScreen() {
     const next = !saved;
     setSaved(next);
     try { await (next ? api("/favourites", { method: "POST", body: { product_id: p.id } }) : api(`/favourites/${p.id}`, { method: "DELETE" })); } catch { setSaved(!next); }
+  }
+  async function requestPrice() {
+    if (!user) return router.push("/login");
+    setNote(null);
+    try { await api("/quote-requests", { method: "POST", body: { product_id: p.id, quantity: 1 } }); router.push("/quotes"); } catch (e) { setNote(messageOf(e)); }
   }
   async function addToCart() {
     if (!user) return router.push("/login");
@@ -100,9 +106,9 @@ export default function ProductScreen() {
           )}
 
           <Button title={saved ? `♥  ${t("Saved to favourites")}` : `♡  ${t("Save to favourites")}`} kind="outline" onPress={toggleSaved} style={{ minHeight: 44, marginTop: 6 }} />
-          {goods && !onWebOnly && stock ? <Button title={t("Add to cart")} kind="outline" onPress={addToCart} style={{ minHeight: 44 }} /> : null}
+          {goods && !onWebOnly && !byQuote && stock ? <Button title={t("Add to cart")} kind="outline" onPress={addToCart} style={{ minHeight: 44 }} /> : null}
           {note ? <Text style={s.note} accessibilityRole="alert">{note}</Text> : null}
-          <Text style={[s.stock, !stock && { color: color.red }]}>{stock ? t("In stock") : t("Out of stock")}{goods && stock ? ` · ${t("Free delivery")}` : ""}</Text>
+          <Text style={[s.stock, !stock && { color: color.red }]}>{stock ? t("In stock") : t("Out of stock")}{stock && p.units_left ? ` · ${t("Only {n} left", { n: p.units_left })}` : ""}</Text>
           <View style={s.trust}>
             <Trust icon="🔒" text={t("Secure payment")} />
             <Trust icon="↩" text={t("Cancel before you pay")} />
@@ -138,7 +144,7 @@ export default function ProductScreen() {
         </View>
         {onWebOnly
           ? <Button title={t("Open the website")} kind="outline" onPress={() => Linking.openURL(`${WEB_URL}/s/${slug}/products/${p.id}`)} style={{ flex: 1 }} />
-          : <Button title={goods ? t("Buy now") : t("Request a quote")} onPress={buy} disabled={!stock} style={{ flex: 1 }} />}
+          : byQuote ? <Button title={t("Request a price")} onPress={requestPrice} style={{ flex: 1 }} /> : <Button title={goods ? t("Buy now") : t("Request a quote")} onPress={buy} disabled={!stock} style={{ flex: 1 }} />}
       </SafeAreaView>
     </View>
   );

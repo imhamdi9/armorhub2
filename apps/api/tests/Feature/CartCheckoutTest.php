@@ -403,6 +403,22 @@ class CartCheckoutTest extends TestCase
         $this->getJson('/api/admin/promo-codes')->assertOk()->assertJsonCount(1)->assertJsonPath('0.used', 0);
     }
 
+    public function test_people_who_saved_a_product_hear_when_its_price_drops(): void
+    {
+        $id = $this->product($this->sellerA, 'Brake pads', 100);
+        \Illuminate\Support\Facades\DB::table('favourites')->insert(['user_id' => $this->customer->id, 'product_id' => $id, 'created_at' => now(), 'updated_at' => now()]);
+        $told = $this->customer->notifications()->count();
+        $rule = fn (int $price) => ['rules' => [['target_type' => 'vehicle_part', 'target_id' => $this->hood->id, 'price' => $price, 'is_active' => true]]];
+
+        $this->actingAs($this->sellerA, 'sanctum')->putJson("/api/products/{$id}/price-rules", $rule(120))->assertOk();      // up: no one is told
+        $this->assertSame($told, $this->customer->notifications()->count());
+        $this->putJson("/api/products/{$id}/price-rules", $rule(90))->assertOk();                                           // down: the customer is told
+        $this->assertSame($told + 1, $this->customer->notifications()->count());
+        $this->putJson("/api/products/{$id}/price-rules", $rule(90))->assertOk();                                           // unchanged: no one is told again
+        $this->assertSame($told + 1, $this->customer->notifications()->count());
+        $this->assertStringContainsString('Brake pads', $this->customer->notifications()->latest()->first()->data['body']);
+    }
+
     public function test_the_purchase_lists_each_orders_statuses(): void
     {
         $this->cartOf2();

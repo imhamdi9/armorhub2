@@ -155,9 +155,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        <Link href="/#faq" className="block rounded-2xl bg-[#0b1b3a] p-4 text-white transition hover:brightness-110">
+        <Link href="/dashboard/help" className="block rounded-2xl bg-[#0b1b3a] p-4 text-white transition hover:brightness-110">
           <span className="block text-sm font-semibold">{tr("Need a hand?")}</span>
-          <span className="block text-xs text-white/70">{tr("Read the FAQ")}</span>
+          <span className="block text-xs text-white/70">{tr("Ask us or read the FAQ")}</span>
         </Link>
       </SidebarFooter>
     </Sidebar>

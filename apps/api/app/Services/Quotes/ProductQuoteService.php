@@ -158,17 +158,19 @@ class ProductQuoteService
 
         return DB::transaction(function () use ($req, $quote, $product, $customer, $company, $vehicle, $address) {
             $total = round((float) $quote->unit_price * $req->quantity, 2);
+            // Delivery costs the same as for any purchase from this seller in this market.
+            $shipping = $product->requires_shipping ? app(\App\Services\ShippingFees::class)->forSeller($this->markets->forCompany($company)?->code, $total) : 0.0;
             $group = OrderGroup::create(['company_id' => $customer->company_id, 'customer_id' => $customer->id, 'currency' => $this->markets->forCompany($company)?->currency() ?? (string) config('platform.currency'),
                 'items_amount' => 0, 'service_fee_amount' => 0, 'payable_amount' => 0, 'status' => OrderGroup::AWAITING, 'shipping_address' => $address]);
 
             $order = Order::create([
                 'company_id' => $customer->company_id, 'customer_id' => $customer->id, 'group_id' => $group->id, 'product_id' => $product->id, 'quantity' => $req->quantity,
                 'subject_type' => $vehicle ? 'vehicle_model' : null, 'subject_id' => $vehicle?->vehicle_model_id, 'status' => OrderStatus::AwaitingPayment, 'product_amount' => $total,
-                'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $total, 'currency' => $group->currency, 'shipping_address' => $address,
+                'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $total, 'currency' => $group->currency, 'shipping_address' => $address, 'shipping_amount' => $shipping,
             ] + $this->markets->taxFor($company, $total) + $this->fees->forInvoice($total));
             OrderEvent::record($order, 'created', $customer, ['direct_sale' => true, 'quote' => $quote->number, 'request' => $req->number]);
 
-            $group->update(['items_amount' => (float) $order->total_amount, 'service_fee_amount' => (float) $order->service_fee_amount, 'payable_amount' => $order->payable_amount]);
+            $group->update(['items_amount' => (float) $order->total_amount, 'service_fee_amount' => (float) $order->service_fee_amount, 'shipping_amount' => $shipping, 'payable_amount' => $order->payable_amount]);
             $quote->update(['status' => 'accepted']);
             ProductQuote::where('request_id', $req->id)->where('id', '!=', $quote->id)->where('status', 'submitted')->update(['status' => 'rejected']);
             $req->update(['status' => 'accepted', 'accepted_quote_id' => $quote->id]);

@@ -101,6 +101,25 @@ class QuoteRequestTest extends TestCase
         $this->postJson("/api/quote-requests/{$req['id']}/accept", ['quote_id' => $quote['id'], 'shipping_address' => $this->address])->assertUnprocessable();   // only once
     }
 
+    public function test_an_accepted_quote_carries_delivery_like_any_purchase(): void
+    {
+        \App\Models\Tenant::whereKey($this->customer->company->tenant_id)->update(['market' => 'SA']);
+        app(\App\Support\Settings\Settings::class)->set('shipping.flat_fee.SA', 35);
+
+        $id = $this->product($this->sellerA, 'Custom exhaust', 'spare-parts', ['sale_mode' => 'quote']);
+        $this->actingAs($this->customer, 'sanctum');
+        $req = $this->postJson('/api/quote-requests', ['product_id' => $id, 'quantity' => 1])->assertCreated()->json();
+        $this->actingAs($this->sellerA, 'sanctum');
+        $quote = $this->postJson("/api/seller/quote-requests/{$req['id']}/quote", ['unit_price' => 400])->assertCreated()->json();
+
+        $this->actingAs($this->customer, 'sanctum');
+        $accepted = $this->postJson("/api/quote-requests/{$req['id']}/accept", ['quote_id' => $quote['id'], 'shipping_address' => $this->address])->assertCreated()->json();
+        $order = Order::withoutGlobalScopes()->where('group_id', $accepted['order_group_id'])->first();
+        $this->assertEquals(35, (float) $order->shipping_amount);
+        $this->assertEqualsWithDelta(400 + (float) $order->service_fee_amount + 35, $accepted['payable_amount'], 0.001);
+        $this->postJson("/api/order-groups/{$accepted['order_group_id']}/payments", [])->assertOk()->assertJsonPath('status', 'paid');
+    }
+
     public function test_a_sourcing_request_asks_the_sellers_of_that_kind_and_the_cheapest_is_shown_first(): void
     {
         $this->product($this->sellerA, 'Brake pads', 'brakes');

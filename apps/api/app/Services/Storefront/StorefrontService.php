@@ -150,6 +150,8 @@ class StorefrontService
             'installation' => $product->installation ?? 'none',
             'fulfilled_by_armorhub' => $product->fulfilment === 'armorhub',
             'in_stock' => $product->fulfilment !== 'armorhub' || app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product) > 0,
+            // "Only N left": shown when ArmorHub holds the stock and it is running low.
+            'units_left' => $product->fulfilment === 'armorhub' ? (($u = app(\App\Services\Warehouse\WarehouseService::class)->unitsOf($product)) > 0 && $u <= 5 ? $u : null) : null,
             'from_price' => $from ?? $this->fromPrice($product),
             'currency' => $this->markets->currencyFor($company),
             'rating' => $this->rating($product),

@@ -118,6 +118,9 @@ class OrderController extends Controller
         $product = \App\Models\Product::visibleInTenant($user->company?->tenant_id)->find($data['product_id'])
             ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        if ($product->fitment_required) {
+            throw ValidationException::withMessages(['product_id' => ['This part is only sold for the cars it fits: sign in, add your car and buy it from the cart.']]);
+        }
         if (($product->sale_mode ?? 'fixed') === 'quote') {
             throw ValidationException::withMessages(['product_id' => ['This product is sold on request: ask the seller for a quote.']]);
         }

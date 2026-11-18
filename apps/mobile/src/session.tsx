@@ -13,6 +13,7 @@ type Session = {
   signInWith: (provider: SocialProvider, credential: string, extra?: { store?: string; name?: string }) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: (proof: { password?: string; confirm?: string }) => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const Ctx = createContext<Session | null>(null);
@@ -55,6 +56,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Session>(() => ({
     user,
     ready,
+    refresh: async () => { setUser(await api<User>("/me")); },
     signIn: async (email, password) => accept(await api<Login>("/login", { method: "POST", body: { email, password } })),
     signInWith: async (provider, credential, extra) => accept(await api<Login>("/auth/social", { method: "POST", body: { provider, credential, ...extra } })),
     signOut: async () => {

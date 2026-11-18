@@ -91,7 +91,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'preferences']);
     Route::put('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'savePreferences'])->middleware('throttle:30,1');
     Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
-    Route::get('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'index']);
+    Route::get('/support', [\App\Http\Controllers\Api\SupportController::class, 'index']);
+    Route::post('/support', [\App\Http\Controllers\Api\SupportController::class, 'store'])->middleware('throttle:5,60');
+    Route::post('/support/{id}/close', [\App\Http\Controllers\Api\SupportController::class, 'close'])->whereNumber('id');
+    Route::get('/favourites',[\App\Http\Controllers\Api\FavouriteController::class, 'index']);
     Route::get('/favourites/ids', [\App\Http\Controllers\Api\FavouriteController::class, 'ids']);
     Route::post('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'store'])->middleware('throttle:60,1');
     Route::delete('/favourites/{productId}', [\App\Http\Controllers\Api\FavouriteController::class, 'destroy'])->whereNumber('productId');
@@ -371,6 +374,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::get('/warranties', [WarrantyController::class, 'index']);
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
 
+    Route::middleware('role:platform-admin')->prefix('admin/support')->group(function () {
+        $sa = \App\Http\Controllers\Api\Admin\SupportAdminController::class;
+        Route::get('/', [$sa, 'index']);
+        Route::post('/{id}/reply', [$sa, 'reply'])->whereNumber('id');
+    });
     Route::middleware('role:platform-admin')->prefix('admin/promo-codes')->group(function () {
         $pc = \App\Http\Controllers\Api\Admin\PromoCodeController::class;
         Route::get('/', [$pc, 'index']);

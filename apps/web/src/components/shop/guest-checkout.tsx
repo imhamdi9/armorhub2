@@ -22,6 +22,11 @@ import type { ShellStore } from "@/components/public/shell";
  */
 export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; data: PublicProductPage; phoneHint?: string }) {
   const p = data.product;
+  // What the customer will pay: the invoice, the platform fee, and delivery when this market charges it.
+  const feeAmount = Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100;
+  const rules = data.shipping;
+  const delivery = p.requires_shipping && rules && rules.flat > 0 && !(rules.free_over && p.from_price >= rules.free_over) ? rules.flat : 0;
+  const payTotal = p.from_price + feeAmount + delivery;
   const [signedIn, setSignedIn] = useState<string | null | undefined>(undefined);
   const [form, setForm] = useState({ name: "", email: "", phone: "", line1: "", line2: "", city: "", region: "", postal_code: "" });
   const [website, setWebsite] = useState("");
@@ -73,11 +78,12 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
           <p className="text-xl tracking-[-0.04em]" data-testid="checkout-total">{formatMoney(p.from_price, p.currency, true)}</p>
         </section>
 
-        {(data.customer_fee_percentage ?? 0) > 0 && (
+        {((data.customer_fee_percentage ?? 0) > 0 || delivery > 0) && (
           <dl className="mb-4 space-y-1 rounded-[28px] bg-white p-4 text-sm" style={{ boxShadow: SHOP_SHADOW }} data-testid="checkout-breakdown">
             <div className="flex justify-between"><dt>{tr("Invoice")}</dt><dd>{formatMoney(p.from_price, p.currency, true)}</dd></div>
-            <div className="flex justify-between"><dt>{tr("Platform fee ({rate}%)", { rate: data.customer_fee_percentage ?? 0 })}</dt><dd data-testid="checkout-fee">{formatMoney(Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}</dd></div>
-            <div className="flex justify-between border-t pt-1 font-semibold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(p.from_price + Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}</dd></div>
+            <div className="flex justify-between"><dt>{tr("Platform fee ({rate}%)", { rate: data.customer_fee_percentage ?? 0 })}</dt><dd data-testid="checkout-fee">{formatMoney(feeAmount, p.currency, true)}</dd></div>
+            {delivery > 0 && <div className="flex justify-between" data-testid="checkout-delivery"><dt>{tr("Delivery")}</dt><dd>{formatMoney(delivery, p.currency, true)}</dd></div>}
+            <div className="flex justify-between border-t pt-1 font-semibold"><dt>{tr("Total to pay")}</dt><dd>{formatMoney(payTotal, p.currency, true)}</dd></div>
           </dl>
         )}
 
@@ -120,7 +126,7 @@ export function GuestCheckout({ store, data, phoneHint }: { store: ShellStore; d
               {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
               {p.installation === "optional" && <p className="rounded-xl bg-[#f2f4f5] p-3 text-sm" data-testid="installation-note">{tr("After you pay, you can also get installation offers from nearby centres, if you want them.")}</p>}
               <p className="text-xs text-[#5f5c5b]">{tr("You pay securely online. The seller ships your order and you follow every step from a private link we e-mail you.")}</p>
-              <Button type="submit" size="lg" disabled={busy || !human.ready} className="btn-brand h-12 w-full rounded-full text-base">{busy ? tr("Please wait...") : `${tr("Pay")} ${formatMoney(p.from_price + Math.round(p.from_price * (data.customer_fee_percentage ?? 0)) / 100, p.currency, true)}`}</Button>
+              <Button type="submit" size="lg" disabled={busy || !human.ready} className="btn-brand h-12 w-full rounded-full text-base">{busy ? tr("Please wait...") : `${tr("Pay")} ${formatMoney(payTotal, p.currency, true)}`}</Button>
             </form>
           </>
         )}

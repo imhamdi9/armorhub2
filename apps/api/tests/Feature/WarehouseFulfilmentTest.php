@@ -77,11 +77,21 @@ class WarehouseFulfilmentTest extends TestCase
         $plain = Product::create(['name' => 'Own ship', 'slug' => 'own-ship', 'base_price' => 1, 'category' => 'x', 'seller_id' => $this->sellerCo->id])->id;
         $this->postJson('/api/seller/inbound-shipments', ['items' => [['product_id' => $plain, 'cartons' => 1]]])->assertStatus(422);
 
+        // A customer saved it while it was out of stock: they are told when it is back.
+        \DB::table('favourites')->insert(['user_id' => $this->customer->id, 'product_id' => $id, 'created_at' => now(), 'updated_at' => now()]);
+        $told = $this->customer->notifications()->count();
+
         // The warehouse counts 2 cartons (one was missing): 20 units are in stock. Receiving twice is refused.
         $line = $own['items'][0]['id'];
         $this->actingAs($this->staff, 'sanctum')->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2]]])->assertOk()->assertJsonPath('status', 'received');
         $this->postJson("/api/warehouse/inbound/{$own['id']}/receive", ['items' => [['id' => $line, 'cartons_received' => 2]]])->assertStatus(422);
         $this->assertSame(20, (int) \DB::table('warehouse_stock')->where('product_id', $id)->value('units'));
+        $this->assertSame($told + 1, $this->customer->notifications()->count());                      // "back in stock"
+        $this->assertNull($this->getJson("/api/public/storefronts/main-store/products/{$id}")->json('product.units_left'));   // plenty left
+        app(\App\Services\Warehouse\WarehouseService::class)->move($wh->id, $id, -17, 'adjustment');
+        $this->assertSame(3, $this->getJson("/api/public/storefronts/main-store/products/{$id}")->json('product.units_left'));  // running low
+        app(\App\Services\Warehouse\WarehouseService::class)->move($wh->id, $id, 17, 'adjustment');
+        $this->assertSame($told + 1, $this->customer->notifications()->count());                      // topping up what was not empty tells no one
         $this->actingAs($this->seller, 'sanctum')->getJson('/api/seller/stock')->assertOk()->assertJsonPath('products.0.units', 20);
 
         // Now it can be bought; the order is stamped for the warehouse and the seller can NOT ship it.
@@ -96,7 +106,7 @@ class WarehouseFulfilmentTest extends TestCase
         $this->actingAs($this->staff, 'sanctum')->getJson('/api/warehouse/orders')->assertOk()->assertJsonCount(1)->assertJsonPath('0.shipping_address.line1', '12 King Road');
         $this->postJson("/api/warehouse/orders/{$orderId}/ship", ['carrier' => 'Aramex', 'tracking_number' => 'A1'])->assertCreated();
         $this->assertSame(19, (int) \DB::table('warehouse_stock')->where('product_id', $id)->value('units'));
-        $this->assertSame(['received', 'shipped'], \DB::table('stock_movements')->orderBy('id')->pluck('type')->all());
+        $this->assertSame(['received', 'shipped'], \DB::table('stock_movements')->where('type', '!=', 'adjustment')->orderBy('id')->pluck('type')->all());
         $this->getJson('/api/warehouse/orders')->assertJsonCount(0);
         $this->assertSame(1, $this->customer->notifications()->where('data->kind', 'shipped')->count());
 

@@ -131,7 +131,9 @@ class ProductController extends Controller
         if (($data['fulfilment'] ?? $product->fulfilment) === 'armorhub') {
             unset($data['stock_cartons']);
         }
+        $oldPrice = (float) $product->base_price;
         $product->update($data);
+        app(\App\Services\PriceAlerts::class)->dropped($product, $oldPrice, (float) $product->base_price);
 
         // The same shape as show(), so a screen that replaces its copy with this one does not lose the edit permission.
         return $product->fresh()->toArray() + ['can_edit' => true];

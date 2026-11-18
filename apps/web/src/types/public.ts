@@ -58,6 +58,10 @@ export interface PublicBranding {
 
 export interface PublicProduct {
   id: number;
+  /** How many are left, shown only when ArmorHub holds the stock and it is running low. */
+  units_left?: number | null;
+  /** A part that must be checked against the customer's car before it can be bought. */
+  fitment_required?: boolean;
   /** fixed: bought at its price; quote: the customer asks sellers for a price first. */
   sale_mode?: "fixed" | "quote";
   name: string;
@@ -114,6 +118,8 @@ export interface PublicProductPage {
   };
   related?: PublicProduct[];
   customer_fee_percentage?: number;
+  /** Delivery in this market: the flat fee, the amount above which it is free, and the usual days. */
+  shipping?: { flat: number; free_over: number | null; eta_days: number | null };
   reviews?: { count: number; average: number | null; items: { id: number; rating: number; comment: string | null; author: string; date: string | null }[] };
   store: { name: string; slug: string; contact_phone?: string | null };
 }

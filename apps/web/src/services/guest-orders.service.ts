@@ -1,7 +1,7 @@
 import { api } from "@/services/api";
 
 export interface GuestOrder {
-  id: number; token?: string; status: string; currency: string; total: number; service_fee?: number; service_fee_rate?: number; payable?: number; tax_amount: number | null; created_at: string; email: string; name: string;
+  id: number; token?: string; status: string; currency: string; total: number; service_fee?: number; shipping?: number; service_fee_rate?: number; payable?: number; tax_amount: number | null; created_at: string; email: string; name: string;
   product: { name: string | null; image: string | null; seller: string | null; installation?: "none" | "optional" | "required" };
   store: { name: string | null; slug: string | null };
   shipping_address: { name: string; phone: string; line1: string; line2?: string | null; city: string; region?: string | null; postal_code?: string | null; country: string } | null;

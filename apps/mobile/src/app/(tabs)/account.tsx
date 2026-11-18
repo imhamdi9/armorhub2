@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { api } from "@/api";
 import { Button, Card, Field, messageOf } from "@/components/ui";
 import { WEB_URL } from "@/config";
 import { t } from "@/i18n";
@@ -11,7 +12,10 @@ import { useSession } from "@/session";
 import { color } from "@/theme";
 
 export default function AccountScreen() {
-  const { user, signOut, deleteAccount } = useSession();
+  const { user, signOut, deleteAccount, refresh } = useSession();
+  const [name, setName] = useState(user?.name ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [saved, setSaved] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [proof, setProof] = useState("");
   const [busy, setBusy] = useState(false);
@@ -51,7 +55,19 @@ export default function AccountScreen() {
         <Text style={s.muted}>{user.email}</Text>
       </Card>
 
+      <Card style={{ gap: 10 }}>
+        <Field label={t("Full name")} value={name} onChangeText={setName} />
+        <Field label={t("Phone")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        {saved ? <Text style={s.muted}>{saved}</Text> : null}
+        <Button title={t("Save")} kind="outline" onPress={async () => {
+          setSaved(null);
+          try { await api("/me/profile", { method: "PUT", body: { name, phone: phone || null } }); await refresh(); setSaved(t("Saved")); } catch (e) { setSaved(messageOf(e)); }
+        }} />
+      </Card>
       <Button title={t("Favourites")} kind="outline" onPress={() => router.push("/favourites")} />
+      <Button title={t("Garage")} kind="outline" onPress={() => router.push("/garage")} />
+      <Button title={t("Price requests")} kind="outline" onPress={() => router.push("/quotes")} />
+      <Button title={t("Addresses")} kind="outline" onPress={() => router.push("/addresses")} />
       <Button title={t("Open the website")} kind="outline" onPress={() => Linking.openURL(WEB_URL)} />
       <Button title={t("Sign out")} kind="outline" onPress={() => void signOut()} />
 

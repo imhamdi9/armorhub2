@@ -59,6 +59,10 @@ class GuestOrderController extends Controller
             throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
         }
 
+        if ($product->fitment_required) {
+            throw ValidationException::withMessages(['product_id' => ['This part is only sold for the cars it fits: sign in, add your car and buy it from the cart.']]);
+        }
+
         if (($product->sale_mode ?? 'fixed') === 'quote') {
             throw ValidationException::withMessages(['product_id' => ['This product is sold on request: ask the seller for a quote.']]);
         }
@@ -92,11 +96,13 @@ class GuestOrderController extends Controller
         $address = ['name' => $data['name'], 'phone' => $phone, 'line1' => $data['address']['line1'], 'line2' => $data['address']['line2'] ?? null, 'city' => $data['address']['city'],
             'region' => $data['address']['region'] ?? null, 'postal_code' => $data['address']['postal_code'] ?? null, 'country' => $market?->code ?? 'EG'];
 
-        $order = DB::transaction(function () use ($company, $product, $price, $data, $address, $markets) {
+        $shipping = $product->requires_shipping ? app(\App\Services\ShippingFees::class)->forSeller($market?->code, (float) $price['total']) : 0.0;
+
+        $order = DB::transaction(function () use ($company, $product, $price, $data, $address, $markets, $shipping) {
             $order = Order::create([
                 'company_id' => $company->id, 'customer_id' => null, 'product_id' => $product->id, 'status' => OrderStatus::AwaitingPayment,
                 'product_amount' => $price['total'], 'service_amount' => 0, 'commission_amount' => 0, 'total_amount' => $price['total'], 'currency' => $price['currency'],
-                'shipping_address' => $address, 'guest_name' => $data['name'], 'guest_email' => strtolower($data['email']), 'guest_token' => Str::random(48),
+                'shipping_address' => $address, 'shipping_amount' => $shipping, 'guest_name' => $data['name'], 'guest_email' => strtolower($data['email']), 'guest_token' => Str::random(48),
             ] + $markets->taxFor($company, (float) $price['total']) + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $price['total']));
             OrderEvent::record($order, 'created', null, ['direct_sale' => true, 'guest' => true]);
 
@@ -168,7 +174,7 @@ class GuestOrderController extends Controller
         $status = $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status;
 
         return [
-            'id' => $order->id, 'status' => $status, 'currency' => $order->currency, 'total' => (float) $order->total_amount, 'service_fee' => (float) $order->service_fee_amount, 'service_fee_rate' => (float) $order->service_fee_rate, 'payable' => (float) $order->payable_amount, 'tax_amount' => $order->tax_amount !== null ? (float) $order->tax_amount : null,
+            'id' => $order->id, 'status' => $status, 'currency' => $order->currency, 'total' => (float) $order->total_amount, 'service_fee' => (float) $order->service_fee_amount, 'service_fee_rate' => (float) $order->service_fee_rate, 'shipping' => (float) $order->shipping_amount, 'payable' => (float) $order->payable_amount, 'tax_amount' => $order->tax_amount !== null ? (float) $order->tax_amount : null,
             'created_at' => $order->created_at?->toIso8601String(), 'email' => $order->guest_email, 'name' => $order->guest_name,
             'product' => ['installation' => $order->product?->installation ?? 'none', 'name' => $order->product?->name, 'image' => $order->product?->images[0] ?? null, 'seller' => $order->product?->seller_id ? \App\Models\Company::withoutGlobalScopes()->whereKey($order->product->seller_id)->value('name') : null],
             'store' => ['name' => $company?->name, 'slug' => $company?->slug],

@@ -60,7 +60,7 @@ export default function KpisPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Tile label={tr("Money handled (GMV)")} value={money(kpis.gmv.total)} testId="kpi-gmv" />
             <Tile label={tr("Platform revenue")} value={money(kpis.net_revenue.total)} />
-            <Tile label={tr("Share the platform keeps")} value={Object.values(kpis.take_rate).map((v) => pct(v)).join(" · ") || "—"} />
+            <Tile label={tr("Share the platform keeps")} value={Object.entries(kpis.take_rate).map(([cur, v]) => `${cur} ${pct(v)}`).join(" · ") || "—"} />
             <Tile label={tr("Average purchase")} value={money(kpis.average_order_value)} />
             <Tile label={tr("Sellers who sold")} value={String(kpis.active.sellers)} />
             <Tile label={tr("Centres who worked")} value={String(kpis.active.centres)} />

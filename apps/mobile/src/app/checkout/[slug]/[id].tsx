@@ -52,6 +52,8 @@ export default function CheckoutScreen() {
   const chosen = option !== undefined && option !== "" ? options[Number(option)] : options[0];
   const price = chosen?.price ?? p.from_price;
   const fee = Math.round(price * (data.customer_fee_percentage ?? 0)) / 100;
+  const rules = data.shipping;
+  const delivery = goods && rules && rules.flat > 0 && !(rules.free_over && price >= rules.free_over) ? rules.flat : 0;
 
   const set = (k: keyof typeof form) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setFieldErrors((e) => ({ ...e, [`shipping_address.${k}`]: "" })); };
   const err = (k: string) => fieldErrors[`shipping_address.${k}`] || undefined;
@@ -125,7 +127,8 @@ export default function CheckoutScreen() {
           <View style={s.row}><Text style={s.key}>{t("Items")}</Text><Text style={s.val}>{money(price, p.currency)}</Text></View>
           {goods && <View style={s.row}><Text style={s.key}>{t("Delivery")}</Text><Text style={[s.val, { color: color.green }]}>{t("Free")}</Text></View>}
           {fee > 0 && <View style={s.row}><Text style={s.key}>{t("Platform fee")} ({data.customer_fee_percentage}%)</Text><Text style={s.val}>{money(fee, p.currency)}</Text></View>}
-          {goods && <View style={[s.row, s.totalRow]}><Text style={s.total}>{t("Total")}</Text><Text style={s.total}>{money(price + fee, p.currency)}</Text></View>}
+          {delivery > 0 && <View style={s.row}><Text style={s.key}>{t("Delivery")}</Text><Text style={s.val}>{money(delivery, p.currency)}</Text></View>}
+          {goods && <View style={[s.row, s.totalRow]}><Text style={s.total}>{t("Total")}</Text><Text style={s.total}>{money(price + fee + delivery, p.currency)}</Text></View>}
         </Card>
         {message ? <Text style={s.message} accessibilityRole="alert">{message}</Text> : null}
       </ScrollView>

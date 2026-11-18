@@ -183,6 +183,8 @@ class PublicStorefrontController extends Controller
             'related' => $related,
             'reviews' => $this->reviews($product->id),
             'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),
+            // What delivery costs here: the flat fee, the amount above which it is free, and the usual days.
+            'shipping' => app(\App\Services\ShippingFees::class)->rules(app(\App\Support\Markets\Markets::class)->forCompany($company)?->code),
             'store' => ['name' => $company->name, 'slug' => $company->slug, 'contact_phone' => $this->stores->settingsOf($company)['contact_phone'] ?? null],
         ]);
     }

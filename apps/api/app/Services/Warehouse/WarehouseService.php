@@ -33,7 +33,9 @@ class WarehouseService
 
     public function move(int $warehouseId, int $productId, int $units, string $type, ?User $by = null, ?string $refType = null, ?int $refId = null, ?string $note = null): void
     {
-        DB::transaction(function () use ($warehouseId, $productId, $units, $type, $by, $refType, $refId, $note) {
+        $restocked = false;
+        DB::transaction(function () use ($warehouseId, $productId, $units, $type, $by, $refType, $refId, $note, &$restocked) {
+            $before = (int) DB::table('warehouse_stock')->where('product_id', $productId)->sum('units');
             DB::table('warehouse_stock')->insertOrIgnore(['warehouse_id' => $warehouseId, 'product_id' => $productId, 'units' => 0]);
             $row = DB::table('warehouse_stock')->where(['warehouse_id' => $warehouseId, 'product_id' => $productId])->lockForUpdate()->first();
 
@@ -49,7 +51,16 @@ class WarehouseService
             $total = (int) DB::table('warehouse_stock')->where('product_id', $productId)->sum('units');
             $upc = (int) (Product::withoutGlobalScopes()->whereKey($productId)->value('units_per_carton') ?: 1);
             Product::withoutGlobalScopes()->whereKey($productId)->update(['stock_cartons' => intdiv($total, $upc)]);
+            $restocked = $before <= 0 && $total > 0;
         });
+
+        // Customers who saved this product while it was out of stock are told it is back.
+        if ($restocked) {
+            $name = (string) Product::withoutGlobalScopes()->whereKey($productId)->value('name');
+            foreach (DB::table('favourites')->where('product_id', $productId)->pluck('user_id') as $userId) {
+                app(\App\Services\InstallationNotifier::class)->user((int) $userId, 'Back in stock', "{$name} is available again.", '/dashboard/favourites');
+            }
+        }
     }
 
     /** Take the order's unit out of the warehouse when it leaves. */

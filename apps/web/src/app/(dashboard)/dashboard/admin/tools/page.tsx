@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
-import { approveRefundRequest, getOrderProblems, getRefundQueue, markProblemHandled, type OrderProblem, importProducts, markRefundSent, refundOrder, rejectRefundRequest, type RefundQueueItem } from "@/services/ops.service";
+import { answerHelpRequest, approveRefundRequest, getHelpRequests, type HelpRequest, getOrderProblems, getRefundQueue, markProblemHandled, type OrderProblem, importProducts, markRefundSent, refundOrder, rejectRefundRequest, type RefundQueueItem } from "@/services/ops.service";
 import { formatMoney } from "@/lib/i18n";
 
 type Result = { tone: "ok" | "warn"; text: string; rows?: { row: number; messages: string[] }[] };
@@ -20,6 +20,9 @@ export default function AdminToolsPage() {
   const [queue, setQueue] = useState<RefundQueueItem[]>([]);
   const [queueErr, setQueueErr] = useState<string | null>(null);
   const [problems, setProblems] = useState<OrderProblem[]>([]);
+  const [help, setHelp] = useState<HelpRequest[]>([]);
+  const loadHelp = () => getHelpRequests().then(setHelp).catch(() => setHelp([]));
+  useEffect(() => { loadHelp(); }, []);
   const loadProblems = () => getOrderProblems().then(setProblems).catch(() => setProblems([]));
   useEffect(() => { loadProblems(); }, []);
   const loadQueue = () => getRefundQueue().then(setQueue).catch(() => setQueue([]));
@@ -43,6 +46,24 @@ export default function AdminToolsPage() {
   return (
     <div className="space-y-8">
       <PageHeader title={tr("Operations tools")} />
+
+      <section className="rounded-xl border p-4" data-testid="help-queue">
+        <h2 className="mb-1 text-lg font-semibold">{tr("Help requests")}</h2>
+        {help.length === 0 ? <p className="text-sm text-muted-foreground">{tr("No questions waiting.")}</p> : (
+          <ul className="space-y-3">
+            {help.map((h) => (
+              <li key={h.id} className="rounded-lg border p-3 text-sm">
+                <p><b>{h.subject}</b> · {h.customer}</p>
+                <p className="mb-2 whitespace-pre-wrap text-muted-foreground">{h.body}</p>
+                <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); answerHelpRequest(h.id, String(f.get("reply"))).then(loadHelp).catch((x) => setQueueErr(errorMessage(x))); }}>
+                  <input name="reply" className={field} placeholder={tr("Your answer")} required minLength={2} />
+                  <Button type="submit" size="sm">{tr("Answer")}</Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border p-4" data-testid="problem-queue">
         <h2 className="mb-1 text-lg font-semibold">{tr("Problems reported by customers")}</h2>

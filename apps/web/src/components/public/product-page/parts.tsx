@@ -231,6 +231,7 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
 
   return (
     <div className="grid gap-3" data-testid="buy-buttons">
+      {m.p.units_left ? <p className="text-center text-sm font-semibold text-amber-700" data-testid="units-left">{tr("Only {n} left", { n: m.p.units_left })}</p> : null}
       <FavouriteButton m={m} />
       {m.whatsapp && (
         <a href={m.whatsapp} target="_blank" rel="noopener noreferrer" className="order-last text-center text-sm font-semibold text-brand-ink underline underline-offset-4" data-testid="ask-whatsapp">{tr("Have a question? Ask the store on WhatsApp")}</a>
@@ -243,7 +244,11 @@ export function BuyButtons({ m, big = true }: { m: ProductModel; big?: boolean }
       )}
       {goods && mode === "none" && (
         <>
-          <Link ref={cta} href={links.buy} className={cls}>{tr("Buy now")}</Link>
+          {m.p.fitment_required ? (
+            // This part must be checked against a car, which only the cart does: no direct "Buy now".
+            m.links.signedIn ? <p className="text-center text-sm text-slate" data-testid="fit-required">{tr("Choose your car below. This part is only sold for cars it fits.")}</p>
+              : <Link ref={cta} href="/login" className={cls}>{tr("Sign in and add your car to buy")}</Link>
+          ) : <Link ref={cta} href={links.buy} className={cls}>{tr("Buy now")}</Link>}
           <AddToCart m={m} />
           <p className="text-center text-xs text-slate">{tr("You pay securely online and track your delivery.")}</p>
         </>
@@ -310,7 +315,7 @@ export function AddToCart({ m }: { m: ProductModel }) {
         const ok = f.status === "fits" || f.status === "universal";
         return <p role="status" data-testid="fit-badge" className={`mb-2 rounded-lg px-3 py-2 text-sm ${ok ? "bg-green-50 text-green-900" : "bg-amber-50 text-amber-900"}`}>{f.status === "universal" ? tr("Fits every car") : ok ? tr("Fits your {car}", { car: f.label }) : tr("Does not fit your {car}", { car: f.label })}</p>;
       })()}
-      <button type="button" onClick={add} disabled={busy} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
+      <button type="button" onClick={add} disabled={busy || (!!m.p.fitment_required && (!car || fits.find((x) => String(x.vehicle_id) === car)?.status === "does_not_fit"))} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
       {error && <p role="alert" className="mt-1 text-center text-sm text-red-600">{error}</p>}
     </div>
   );

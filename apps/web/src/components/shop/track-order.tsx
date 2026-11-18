@@ -83,6 +83,7 @@ export function TrackOrder({ token }: { token: string }) {
           </div>
           <div className="min-w-0 flex-1"><p className="truncate">{order.product.name}</p>{order.product.seller && <p className="text-sm text-[#5f5c5b]">{tr("Sold by")} {order.product.seller}</p>}<p className="text-xs text-[#5f5c5b]">{formatDateTime(order.created_at)}</p></div>
           <p className="text-xl tracking-[-0.04em]">{formatMoney(order.payable ?? order.total, order.currency, true)}</p>
+          {(order.shipping ?? 0) > 0 && <p className="text-xs text-[#5f5c5b]" data-testid="delivery">{tr("Includes delivery")}: {formatMoney(order.shipping ?? 0, order.currency, true)}</p>}
           {(order.service_fee ?? 0) > 0 && <p className="text-xs text-[#5f5c5b]" data-testid="platform-fee">{tr("Includes a platform fee ({rate}%) of {amount}", { rate: order.service_fee_rate ?? 0, amount: formatMoney(order.service_fee ?? 0, order.currency, true) })}</p>}
         </section>
 

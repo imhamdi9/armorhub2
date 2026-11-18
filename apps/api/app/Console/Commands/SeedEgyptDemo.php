@@ -169,7 +169,7 @@ class SeedEgyptDemo extends Command
         $sellers = $this->sellers($def, $tenant, $password);
         $featured = [];
 
-        foreach (array_merge($def['products'], $this->moreProducts()[$def['key']] ?? []) as $p) {
+        foreach (array_merge($def['products'], $this->moreProducts()[$def['key']] ?? [], $this->fitmentProducts()[$def['key']] ?? []) as $p) {
             $seller = isset($p['seller']) ? $sellers[$p['seller']] : null;
             $slug = 'eg-'.$p['key'];
             $product = Product::where('slug', $slug)->first();
@@ -195,6 +195,7 @@ class SeedEgyptDemo extends Command
                     ProductPriceRule::firstOrCreate(['product_id' => $product->id, 'target_type' => $def['target'], 'target_id' => $target->id], ['price' => $price, 'duration_minutes' => $p['minutes'] ?? 90, 'is_active' => true]);
                 }
             }
+            $this->fitments($product, $p['fits'] ?? []);
             $featured[] = $product->id;
         }
 
@@ -267,6 +268,32 @@ class SeedEgyptDemo extends Command
      *
      * @return array<string, list<array<string, mixed>>>
      */
+    /** Parts that fit only some cars, so the "fits your car" checks have real results in the demo. */
+    private function fitmentProducts(): array
+    {
+        return [
+            'auto' => [
+                ['key' => 'cabinfilter', 'seller' => 'autopro', 'name' => 'Cabin Air Filter (Corolla and Elantra)', 'brand' => 'AutoPro', 'category' => 'car-care', 'art' => 'p-wheelclean', 'price' => 210,
+                    'desc' => "Activated-carbon cabin filter that keeps dust and city smells out.\nفلتر مكيّف بالكربون المنشّط.", 'highlights' => ['Activated carbon', 'Easy fit, no tools'],
+                    'fits' => [['Toyota', 'Corolla', 2014, 2024], ['Hyundai', 'Elantra', 2016, 2024]]],
+            ],
+        ];
+    }
+
+    /** @param list<array{0: string, 1: string, 2: int, 3: int}> $fits make, model, first and last year */
+    private function fitments(Product $product, array $fits): void
+    {
+        if ($fits === [] || \App\Models\ProductFitment::where('product_id', $product->id)->exists()) {
+            return;
+        }
+        foreach ($fits as [$make, $model, $from, $to]) {
+            $m = \App\Modules\Automotive\Models\VehicleMake::firstOrCreate(['slug' => str($make)->slug()], ['name' => $make]);
+            $v = \App\Modules\Automotive\Models\VehicleModel::firstOrCreate(['vehicle_make_id' => $m->id, 'slug' => str($model)->slug()], ['name' => $model]);
+            \App\Models\ProductFitment::create(['product_id' => $product->id, 'vehicle_make_id' => $m->id, 'vehicle_model_id' => $v->id, 'year_from' => $from, 'year_to' => $to]);
+        }
+        $product->update(['fitment_required' => true]);
+    }
+
     private function moreProducts(): array
     {
         return [

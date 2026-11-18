@@ -3,7 +3,7 @@ export type StoreCard = { name: string; slug: string; headline: string | null; p
 export type Product = {
   id: number; name: string; brand: string | null; category: string | null; description: string | null; warranty_years: number | null;
   from_price: number; currency: string; images?: string[]; compare_at_price?: number | null; requires_shipping?: boolean;
-  installation?: "none" | "optional" | "required"; seller?: string | null; in_stock?: boolean;
+  installation?: "none" | "optional" | "required"; sale_mode?: "fixed" | "quote"; seller?: string | null; in_stock?: boolean; units_left?: number | null;
   rating?: { count: number; average: number | null };
 };
 
@@ -15,6 +15,7 @@ export type PageContent = {
 export type ProductPage = {
   product: Product & { prices: { target_type: string; target_id?: number; target: string; price: number }[]; highlights?: string[]; page?: PageContent };
   customer_fee_percentage?: number;
+  shipping?: { flat: number; free_over: number | null; eta_days: number | null };
   store: { name: string; slug: string };
 };
 
@@ -47,3 +48,9 @@ export type CartView = {
 export type Address = { id: number; label: string | null; name: string; phone: string; line1: string; line2: string | null; city: string; is_default: boolean };
 export type RefundState = { request: { kind: string; status: string; note: string | null } | null; refund_status: string | null; refund_amount: number | null; can_request: boolean; return_days: number };
 export type OrderMessage = { id: number; side: string; mine: boolean; kind: string; body: string; created_at: string };
+
+export type Vehicle = { id: number; label: string; nickname: string | null; is_default: boolean };
+export type QuoteRequest = {
+  id: number; number: string; title: string | null; category: string | null; quantity: number; status: string; currency: string;
+  quotes: { id: number; number: string; total: number; lead_days: number | null; warranty_days: number | null; expired: boolean; status: string }[];
+};

@@ -107,6 +107,38 @@ class AccountTest extends TestCase
         $this->assertSame(['database', 'mail'], (new \App\Notifications\InstallationUpdate('t', 'b', '/x'))->via($user->fresh()));
     }
 
+    public function test_a_help_request_is_answered_by_an_administrator_and_the_customer_is_told(): void
+    {
+        $admin = User::role('platform-admin')->firstOrFail();
+        $before = $admin->notifications()->count();
+        $id = $this->me()->postJson('/api/support', ['subject' => 'Where is my parcel?', 'body' => 'It was meant to arrive on Monday.'])->assertCreated()->assertJsonPath('status', 'open')->json('id');
+        $this->assertSame($before + 1, $admin->notifications()->count());                                  // ArmorHub is told
+        $this->postJson('/api/support', ['subject' => 'x', 'body' => 'too short'])->assertUnprocessable();
+        $this->getJson('/api/support')->assertOk()->assertJsonCount(1);
+
+        $this->actingAs(User::where('email', 'seller.khan@demo.eg')->firstOrFail(), 'sanctum')->getJson('/api/support')->assertOk()->assertJsonCount(0);   // private
+        $this->getJson('/api/admin/support')->assertForbidden();
+
+        $this->actingAs($admin, 'sanctum')->getJson('/api/admin/support')->assertOk()->assertJsonCount(1)->assertJsonPath('0.subject', 'Where is my parcel?');
+        $told = User::where('email', self::EMAIL)->firstOrFail()->notifications()->count();
+        $this->postJson("/api/admin/support/{$id}/reply", ['reply' => ''])->assertUnprocessable();
+        $this->postJson("/api/admin/support/{$id}/reply", ['reply' => 'It ships tomorrow.'])->assertOk()->assertJsonPath('status', 'answered');
+        $this->postJson("/api/admin/support/{$id}/reply", ['reply' => 'again'])->assertNotFound();           // answered once
+        $this->assertSame($told + 1, User::where('email', self::EMAIL)->firstOrFail()->notifications()->count());
+
+        $this->me()->getJson('/api/support')->assertOk()->assertJsonPath('0.reply', 'It ships tomorrow.')->assertJsonPath('0.status', 'answered');
+        $this->postJson("/api/support/{$id}/close")->assertOk()->assertJsonPath('status', 'closed');
+    }
+
+    public function test_only_a_few_help_requests_can_wait_at_once(): void
+    {
+        $user = User::where('email', self::EMAIL)->firstOrFail();
+        foreach (range(1, 5) as $i) {
+            \App\Models\SupportTicket::create(['user_id' => $user->id, 'subject' => "Question {$i}", 'body' => 'Waiting for an answer']);
+        }
+        $this->me()->postJson('/api/support', ['subject' => 'One more', 'body' => 'Please answer this too'])->assertUnprocessable();
+    }
+
     public function test_the_car_fit_of_a_product_is_told_per_car(): void
     {
         $product = \App\Models\Product::withoutGlobalScopes()->where('is_active', true)->firstOrFail();

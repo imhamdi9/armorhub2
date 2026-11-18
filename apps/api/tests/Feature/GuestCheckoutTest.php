@@ -39,6 +39,31 @@ class GuestCheckoutTest extends TestCase
         return $this->postJson('/api/guest-orders', $this->body($extra))->assertCreated()->json();
     }
 
+    public function test_a_part_that_must_fit_a_car_cannot_be_bought_without_checking_one(): void
+    {
+        Product::where('slug', 'eg-lantern')->update(['fitment_required' => true]);
+        $this->postJson('/api/guest-orders', $this->body())->assertUnprocessable()->assertJsonValidationErrors('product_id');
+    }
+
+    public function test_a_guest_pays_delivery_too_when_the_market_charges_it(): void
+    {
+        $settings = app(\App\Support\Settings\Settings::class);
+        $settings->set('shipping.flat_fee.EG', 40);
+        $settings->set('shipping.free_over.EG', 1000);
+
+        $o = $this->order();                                                                        // the lantern costs 650: under the free-delivery line
+        $this->assertEquals(40, $o['shipping']);
+        $this->assertEqualsWithDelta($o['total'] + $o['service_fee'] + 40, $o['payable'], 0.001);
+        $this->getJson('/api/public/storefronts/armorhub-eg/products/'.Product::where('slug', 'eg-lantern')->value('id'))->assertOk()
+            ->assertJsonPath('shipping.flat', 40)->assertJsonPath('shipping.free_over', 1000);
+
+        $this->postJson("/api/guest-orders/{$o['token']}/pay")->assertOk()->assertJsonPath('status', 'paid');
+        $this->assertEqualsWithDelta($o['payable'], app(\App\Services\Ledger\Ledger::class)->balance(\App\Services\Ledger\Accounts::GATEWAY, $o['currency']), 0.001);
+
+        $settings->set('shipping.free_over.EG', 600);                                               // now 650 qualifies
+        $this->assertEquals(0, $this->order()['shipping']);
+    }
+
     public function test_a_guest_orders_goods_pays_and_follows_the_order_with_a_secret_link(): void
     {
         Notification::fake();
