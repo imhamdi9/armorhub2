@@ -77,7 +77,7 @@ class StorefrontService
                 $industries = collect($this->industries($c))->pluck('name');
                 $market = $this->markets->forCompany($c);
 
-                return ['key' => $c->tenant->uuid, 'name' => $c->tenant->name, 'industry' => $industries->join(', ') ?: null, 'industries' => $industries->values()->all(),
+                return ['key' => $c->tenant->uuid, 'name' => $c->tenant->displayName(), 'industry' => $industries->join(', ') ?: null, 'industries' => $industries->values()->all(),
                     'market' => $market?->code, 'country' => $market?->name('en'), 'country_ar' => $market?->name('ar'), 'currency' => $market?->currency()];
             })
             ->sortBy('name')->values()->all();
@@ -106,7 +106,7 @@ class StorefrontService
         $s = $this->settingsOf($company);
 
         return [
-            'name' => $company->name,
+            'name' => $company->displayName(),
             'slug' => $company->slug,
             'headline' => $s['headline'],
             'subheadline' => $s['subheadline'],
@@ -254,7 +254,7 @@ class StorefrontService
             return [
                 'industry' => ['key' => $industry->key, 'name' => $industry->name, 'description' => $industry->description],
                 'stores' => $companies->map(fn (Company $c) => [
-                    'name' => $c->name,
+                    'name' => $c->displayName(),
                     'slug' => $c->slug,
                     'market' => $this->market($c)['code'] ?? null,
                     'primary_color' => $this->settingsOf($c)['primary_color'],

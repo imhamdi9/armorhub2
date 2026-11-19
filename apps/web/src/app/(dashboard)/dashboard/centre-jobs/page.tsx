@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -10,6 +11,7 @@ import { getCentreJobs, type CentreJob } from "@/services/installation.service";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CentreJobsPage() {
+  const mc = useMarketCurrency();
   const [rows, setRows] = useState<CentreJob[] | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => { getCentreJobs().then(setRows).catch(() => setFailed(true)); }, []);
@@ -24,7 +26,7 @@ export default function CentreJobsPage() {
             {rows.map((j) => (
               <Link key={j.id} href={`/dashboard/centre-jobs/${j.id}`} className="block rounded-lg border p-4 hover:bg-muted">
                 <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{j.subject}</p><StatusBadge status={j.status} side="centre" /></div>
-                <p className="mt-1 text-sm text-muted-foreground">{j.parts.join(" · ")} · {tr("you earn")} {formatMoney(j.you_earn, j.currency ?? "EGP")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{j.parts.join(" · ")} · {tr("you earn")} {formatMoney(j.you_earn, j.currency ?? mc)}</p>
               </Link>
             ))}
           </div>

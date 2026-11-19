@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\Markets\Markets;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -39,7 +40,7 @@ class MarketLauncher
         }
 
         return DB::transaction(function () use ($country, $name, $industries, $slug, $by, $switches) {
-            $tenant = Tenant::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'market' => $country, 'status' => 'active', 'industry_id' => null] + $switches);
+            $tenant = Tenant::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'market' => $country, 'status' => 'active', 'industry_id' => null] + Arr::only($switches, ['selling_enabled', 'installation_enabled']) + (isset($switches['name_ar']) && trim((string) $switches['name_ar']) !== '' ? ['settings' => ['name_ar' => trim((string) $switches['name_ar'])]] : []));
             $tenant->industries()->sync($industries);
 
             $company = Company::create([
@@ -64,7 +65,12 @@ class MarketLauncher
                 $tenant->update(['status' => $status]);
             }
             if ($switches !== []) {
-                $tenant->update($switches);
+                $tenant->update(Arr::only($switches, ['selling_enabled', 'installation_enabled']));
+                if (array_key_exists('name_ar', $switches)) {
+                    $settings = (array) $tenant->settings;
+                    trim((string) $switches['name_ar']) === '' ? Arr::forget($settings, 'name_ar') : $settings['name_ar'] = trim((string) $switches['name_ar']);
+                    $tenant->update(['settings' => $settings]);
+                }
             }
             if ($industryIds !== null) {
                 $keep = Industry::whereIn('id', $industryIds)->pluck('id')->all();

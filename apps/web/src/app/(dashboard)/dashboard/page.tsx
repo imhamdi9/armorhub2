@@ -58,7 +58,13 @@ function roleView(user: { roles?: string[]; store_slug?: string | null }): RoleV
 
   if (has("platform-admin")) return { chip: "Platform admin", actions: [["Review what needs attention", "/dashboard/admin"], ["Partner applications", "/dashboard/partner-applications"]] };
   if (has("seller")) return { chip: "Seller", actions: [["Add product", "/dashboard/products"], ["Orders", "/dashboard/seller-orders"]] };
-  if (has("partner-manager", "technician")) return { chip: "Partner", actions: [["Quote requests", "/dashboard/requests"], ["Jobs", "/dashboard/jobs"]] };
+  if (has("partner-manager")) return { chip: "Partner", actions: [["Quote requests", "/dashboard/requests"], ["Jobs", "/dashboard/jobs"]] };
+  if (has("technician")) return { chip: "Technician", actions: [["Jobs", "/dashboard/jobs"], ["Installation jobs", "/dashboard/centre-jobs"]] };
+  if (has("catalog-reviewer")) return { chip: "Catalogue team", actions: [["Product reviews", "/dashboard/admin/product-reviews"], ["Account", "/dashboard/account"]] };
+  if (has("marketing-manager")) return { chip: "Marketing", actions: [["Marketing", "/dashboard/admin/marketing"], ["Account", "/dashboard/account"]] };
+  if (has("support-agent")) return { chip: "Support", actions: [["Support", "/dashboard/admin/tools"], ["Orders", "/dashboard/orders"]] };
+  if (has("operations-agent")) return { chip: "Operations", actions: [["Business numbers", "/dashboard/admin/kpis"], ["Orders", "/dashboard/orders"]] };
+  if (has("warehouse-staff")) return { chip: "Warehouse", actions: [["Warehouse", "/dashboard/warehouse"], ["Orders", "/dashboard/orders"]] };
   if (has("company-owner")) return { chip: "Company owner", actions: [["Orders", "/dashboard/orders"], ["Storefront", "/dashboard/storefront"]] };
 
   return { chip: "Customer", actions: [["Shop", user.store_slug ? `/s/${user.store_slug}/products` : "/"], ["My orders", "/dashboard/orders"]] };

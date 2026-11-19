@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { BookingPanel } from "@/components/installations/booking-panel";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -21,6 +22,7 @@ import { LoadingBlock } from "@/components/ui/loading-block";
 const BADGE: Record<string, string> = { closest: "Closest", fastest: "Fastest", best_rated: "Best rated" };
 
 export default function InstallationDetailPage() {
+  const mc = useMarketCurrency();
   const id = Number(useParams<{ id: string }>().id);
   const [job, setJob] = useState<CustomerJob | null>(null);
   const [points, setPoints] = useState(0);
@@ -47,7 +49,7 @@ export default function InstallationDetailPage() {
 
   if (error && !job) return <p role="alert" className="text-red-600">{error}</p>;
   if (!job) return <LoadingBlock />;
-  const cur = job.currency ?? "EGP";
+  const cur = job.currency ?? mc;
   const picking = job.status === "open" || job.status === "offers_received";
 
   return (

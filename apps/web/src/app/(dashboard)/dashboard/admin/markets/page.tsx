@@ -81,12 +81,13 @@ function MarketAdmins({ m }: { m: MarketRow }) {
 function MarketCard({ m, all, onChange }: { m: MarketRow; all: Industry[]; onChange: (m: MarketRow) => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(m.name);
+  const [nameAr, setNameAr] = useState(m.name_ar ?? "");
   const [chosen, setChosen] = useState(m.industries.map((i) => i.id));
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
     setError(null);
-    try { onChange(await updateMarket(m.id, { name, industries: chosen })); setEditing(false); } catch (e) { setError(errorMessage(e)); }
+    try { onChange(await updateMarket(m.id, { name, name_ar: nameAr, industries: chosen })); setEditing(false); } catch (e) { setError(errorMessage(e)); }
   }
 
   return (
@@ -120,6 +121,7 @@ function MarketCard({ m, all, onChange }: { m: MarketRow; all: Industry[]; onCha
       {editing && (
         <div className="mt-4 space-y-3 rounded-lg border p-3">
           <div><Label htmlFor={`n-${m.id}`}>{tr("Market name")}</Label><Input id={`n-${m.id}`} value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div><Label htmlFor={`na-${m.id}`}>{tr("Market name in Arabic")}</Label><Input id={`na-${m.id}`} dir="rtl" value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="أرمور مصر" /></div>
           <IndustryChecks all={all} value={chosen} onChange={setChosen} />
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <Button size="sm" onClick={save} disabled={chosen.length === 0}>{tr("Save")}</Button>
@@ -138,6 +140,7 @@ export default function MarketsPage() {
   const [forbidden, setForbidden] = useState(false);
   const [country, setCountry] = useState("");
   const [name, setName] = useState("");
+  const [nameAr, setNameAr] = useState("");
   const [chosen, setChosen] = useState<number[]>([]);
   const [slug, setSlug] = useState("");
   const [selling, setSelling] = useState(true);
@@ -158,10 +161,10 @@ export default function MarketsPage() {
     e.preventDefault();
     setError(null); setBusy(true);
     try {
-      const created = await openMarket({ country, ...(name ? { name } : {}), industries: chosen, ...(slug ? { slug } : {}), selling_enabled: selling, installation_enabled: installation });
+      const created = await openMarket({ country, ...(name ? { name } : {}), ...(nameAr ? { name_ar: nameAr } : {}), industries: chosen, ...(slug ? { slug } : {}), selling_enabled: selling, installation_enabled: installation });
       setMarkets((m) => [...(m ?? []), created]);
       setCountries((cs) => cs.map((c) => (c.code === country ? { ...c, open: true } : c)));
-      setCountry(""); setName(""); setChosen([]); setSlug(""); setSelling(true); setInstallation(true);
+      setCountry(""); setName(""); setNameAr(""); setChosen([]); setSlug(""); setSelling(true); setInstallation(true);
     } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
   }
 
@@ -206,6 +209,7 @@ export default function MarketsPage() {
           {chosenCountry && <p className="mt-1 text-xs text-muted-foreground">{tr("Currency")}: {chosenCountry.currency}</p>}
         </div>
         <div><Label htmlFor="mname">{tr("Market name")}</Label><Input id="mname" value={name} onChange={(e) => setName(e.target.value)} placeholder="ArmorHub Egypt" /></div>
+        <div><Label htmlFor="mname-ar">{tr("Market name in Arabic")}</Label><Input id="mname-ar" dir="rtl" value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="أرمور مصر" /></div>
         <div><p className="mb-1 text-sm font-medium">{tr("Industries this market runs")}</p><IndustryChecks all={industries} value={chosen} onChange={setChosen} /></div>
         <div className="space-y-1">
           <p className="text-sm font-medium">{tr("What this market offers")}</p>

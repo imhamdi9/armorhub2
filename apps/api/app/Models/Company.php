@@ -60,6 +60,14 @@ class Company extends Model
 
 
     /** The public stores (companies that have a storefront), as opposed to the seller and service-centre companies that also have an address. */
+    /** The name to show: a market's own store takes the market's name in the reader's language, anything else its own name. */
+    public function displayName(): string
+    {
+        $tenant = $this->tenant;
+
+        return $tenant && $this->name === $tenant->name ? $tenant->displayName() : (string) $this->name;
+    }
+
     public function scopeStores($query)
     {
         // (Queries that lift every scope would otherwise show a market that was deleted.)

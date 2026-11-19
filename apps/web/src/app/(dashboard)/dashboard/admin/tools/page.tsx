@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { useEffect, useState } from "react";
 
 import { field, Note } from "@/components/installations/shared";
@@ -38,6 +39,7 @@ function GoodwillForm({ orderId }: { orderId: number }) {
 
 /** Two operations tools: giving a customer their money back, and adding many products from a spreadsheet. */
 export default function AdminToolsPage() {
+  const mc = useMarketCurrency();
   const [refund, setRefund] = useState<Result | null>(null);
   const [partial, setPartial] = useState<Result | null>(null);
   const [imp, setImp] = useState<Result | null>(null);
@@ -118,7 +120,7 @@ export default function AdminToolsPage() {
           <ul className="divide-y rounded-lg border">
             {queue.map((q) => (
               <li key={q.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
-                <span><b>#{q.order_id}</b> · {q.product} · {formatMoney(q.amount, q.currency ?? "EGP")} · {q.customer}</span>
+                <span><b>#{q.order_id}</b> · {q.product} · {formatMoney(q.amount, q.currency ?? mc)} · {q.customer}</span>
                 <span className="text-muted-foreground">{q.reason}</span>
                 {(q.photos ?? []).length > 0 && <span className="flex gap-1" data-testid="evidence">{q.photos!.map((p) => <a key={p} href={imageSrc(p) ?? "#"} target="_blank" rel="noreferrer">{/* eslint-disable-next-line @next/next/no-img-element -- evidence uploaded by the customer */}<img src={imageSrc(p) ?? ""} alt={tr("Evidence")} className="size-10 rounded border object-cover" /></a>)}</span>}
                 <span className="flex flex-wrap items-center gap-2">

@@ -64,7 +64,8 @@ class OrderController extends Controller
         if ($user->hasRole('customer')) {
             $query->where('customer_id', $user->id);
         } elseif (! $user->hasRole('platform-admin')) {
-            $query->where('company_id', $user->company_id);
+            // Market staff see the market's orders only in a role that deals with them; any other role sees none.
+            $query->where('company_id', app(\App\Policies\OrderPolicy::class)->staffWorksOrders($user) ? $user->company_id : 0);
         }
 
         return $query->paginate($request->integer('per_page', 15));

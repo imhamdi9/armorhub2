@@ -39,7 +39,7 @@ class SupportController extends Controller
         $body = trim(strip_tags($data['body']));
         $ticket = SupportTicket::create(['user_id' => $user->id, 'subject' => trim(strip_tags($data['subject'])), 'body' => $body, 'order_id' => $data['order_id'] ?? null]);
         SupportMessage::create(['ticket_id' => $ticket->id, 'user_id' => $user->id, 'side' => 'customer', 'body' => $body]);
-        $this->notify->admins('New help request', mb_substr($ticket->subject, 0, 100), '/dashboard/admin/support');
+        $this->notify->admins('New help request', mb_substr($ticket->subject, 0, 100), '/dashboard/admin/tools');
 
         return response()->json($this->present($ticket->fresh('messages')), 201);
     }
@@ -54,7 +54,7 @@ class SupportController extends Controller
         }
         SupportMessage::create(['ticket_id' => $ticket->id, 'user_id' => $request->user()->id, 'side' => 'customer', 'body' => $body]);
         $ticket->update(['status' => 'open']);
-        $this->notify->admins('New message in a help request', mb_substr($ticket->subject, 0, 100), '/dashboard/admin/support');
+        $this->notify->admins('New message in a help request', mb_substr($ticket->subject, 0, 100), '/dashboard/admin/tools');
 
         return $this->present($ticket->fresh('messages'));
     }

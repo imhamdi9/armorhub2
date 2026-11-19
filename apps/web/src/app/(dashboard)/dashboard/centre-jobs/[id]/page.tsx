@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ import { disputeCentreJob, getCentreJob, sendEvidence, sendProof, sayOnTheWay, s
 import { LoadingBlock } from "@/components/ui/loading-block";
 
 export default function CentreJobPage() {
+  const mc = useMarketCurrency();
   const id = Number(useParams<{ id: string }>().id);
   const [job, setJob] = useState<CentreJob | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function CentreJobPage() {
 
   if (error && !job) return <p role="alert" className="text-red-600">{error}</p>;
   if (!job) return <LoadingBlock />;
-  const cur = job.currency ?? "EGP";
+  const cur = job.currency ?? mc;
   const money = { held: "Held by the platform", available: "Available in your wallet", void: "Refunded to the customer" } as Record<string, string>;
 
   return (

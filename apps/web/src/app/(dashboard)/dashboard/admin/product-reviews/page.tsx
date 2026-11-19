@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { useEffect, useState } from "react";
 
 import { Note } from "@/components/installations/shared";
@@ -13,6 +14,7 @@ import { approveProduct, getProductReviews, rejectProduct, type ReviewRow } from
 
 /** The catalogue team: every product a seller submits is read here, in both languages, and approved or sent back with a reason. */
 export default function ProductReviewsPage() {
+  const mc = useMarketCurrency();
   const [rows, setRows] = useState<ReviewRow[] | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -36,7 +38,7 @@ export default function ProductReviewsPage() {
             <li key={p.id} className="rounded-xl border p-4" data-testid="review-row">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-lg font-semibold">{p.name} <span className="text-muted-foreground" dir="rtl">/ {p.name_ar}</span></h2>
-                <span className="text-sm text-muted-foreground">{p.seller} · {formatMoney(p.price, "EGP")}</span>
+                <span className="text-sm text-muted-foreground">{p.seller} · {formatMoney(p.price, mc)}</span>
               </div>
               {p.images.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">

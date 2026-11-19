@@ -78,4 +78,22 @@ class MarketSwitchesTest extends TestCase
         $this->tenant->update(['installation_enabled' => false]);
         $this->assertFalse($row()['installation_enabled']);
     }
+
+    public function test_a_market_has_a_name_in_each_language(): void
+    {
+        $this->admin();
+        $this->putJson("/api/admin/markets/{$this->tenant->id}", ['name' => 'Armor Egypt', 'name_ar' => 'أرمور مصر'])->assertOk()->assertJsonPath('name_ar', 'أرمور مصر');
+        $this->app['auth']->forgetGuards();
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $this->assertSame('Armor Egypt', $this->getJson('/api/public/storefronts/main-store')->json('store.name'));
+        $this->assertSame('أرمور مصر', $this->withHeader('Accept-Language', 'ar')->getJson('/api/public/storefronts/main-store')->json('store.name'));
+        $this->assertContains('أرمور مصر', collect($this->withHeader('Accept-Language', 'ar')->getJson('/api/public/storefronts')->json('stores'))->pluck('name')->all());
+
+        // an empty Arabic name falls back to the main one
+        $this->admin();
+        $this->putJson("/api/admin/markets/{$this->tenant->id}", ['name_ar' => ''])->assertOk()->assertJsonPath('name_ar', null);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->assertSame('Armor Egypt', $this->withHeader('Accept-Language', 'ar')->getJson('/api/public/storefronts/main-store')->json('store.name'));
+    }
 }

@@ -71,6 +71,11 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
 
+  // Notifications sent before the Support screen moved still point at the old address.
+  async redirects() {
+    return [{ source: "/dashboard/admin/support", destination: "/dashboard/admin/tools", permanent: false }];
+  },
+
   async headers() {
     const common = [
       { key: "X-Content-Type-Options", value: "nosniff" },

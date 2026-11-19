@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { useEffect, useState } from "react";
 
 import { Note } from "@/components/installations/shared";
@@ -17,6 +18,7 @@ interface Mine { id: number; name: string; base_price: number; fulfilment?: stri
 
 /** Several of the seller's own products sold together at one price. Bought, shipped and returned like any product. */
 export default function BundlesPage() {
+  const mc = useMarketCurrency();
   const [bundles, setBundles] = useState<SellerBundle[] | null>(null);
   const [mine, setMine] = useState<Mine[]>([]);
   const [qty, setQty] = useState<Record<number, number>>({});
@@ -55,14 +57,14 @@ export default function BundlesPage() {
           <legend className="text-sm font-medium">{tr("Products in the bundle")}</legend>
           {mine.length === 0 ? <p className="text-sm text-muted-foreground">{tr("You have no products to bundle yet.")}</p> : mine.map((p) => (
             <div key={p.id} className="flex items-center justify-between gap-2 text-sm">
-              <span>{p.name} · {formatMoney(Number(p.base_price), "EGP")}</span>
+              <span>{p.name} · {formatMoney(Number(p.base_price), mc)}</span>
               <Input aria-label={`${tr("How many")} ${p.name}`} className="w-20" type="number" min={0} max={50} value={qty[p.id] ?? 0} onChange={(e) => setQty({ ...qty, [p.id]: Number(e.target.value) })} />
             </div>
           ))}
         </fieldset>
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm">{tr("Bundle price")}<Input type="number" min={1} step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} /></label>
-          {worth > 0 && <p className="text-sm text-muted-foreground" data-testid="bundle-worth">{tr("Separately these cost")} {formatMoney(worth, "EGP")}{price && Number(price) < worth ? ` · ${tr("Customers save")} ${formatMoney(worth - Number(price), "EGP")}` : ""}</p>}
+          {worth > 0 && <p className="text-sm text-muted-foreground" data-testid="bundle-worth">{tr("Separately these cost")} {formatMoney(worth, mc)}{price && Number(price) < worth ? ` · ${tr("Customers save")} ${formatMoney(worth - Number(price), mc)}` : ""}</p>}
         </div>
         <Button type="submit" disabled={picked.length < 2}>{tr("Create bundle")}</Button>
       </form>
@@ -71,7 +73,7 @@ export default function BundlesPage() {
         <ul className="divide-y rounded-xl border text-sm" data-testid="bundle-list">
           {bundles.map((b) => (
             <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-              <span><b>{b.name}</b> · {formatMoney(b.base_price, "EGP")} <span className="text-muted-foreground">({tr("Separately these cost")} {formatMoney(b.worth, "EGP")})</span><span className="block text-xs text-muted-foreground">{b.items.map((i) => `${i.quantity} × ${i.name}`).join(" + ")}</span></span>
+              <span><b>{b.name}</b> · {formatMoney(b.base_price, mc)} <span className="text-muted-foreground">({tr("Separately these cost")} {formatMoney(b.worth, mc)})</span><span className="block text-xs text-muted-foreground">{b.items.map((i) => `${i.quantity} × ${i.name}`).join(" + ")}</span></span>
               <span className="flex items-center gap-2">
                 <Badge variant={b.is_active ? "default" : "secondary"}>{tr(b.is_active ? "On" : "Off")}</Badge>
                 <Button size="sm" variant="outline" onClick={async () => { try { await updateSellerBundle(b.id, { is_active: !b.is_active }); await load(); } catch (x) { setMsg({ ok: false, text: errorMessage(x) }); } }}>{tr(b.is_active ? "Switch off" : "Switch on")}</Button>

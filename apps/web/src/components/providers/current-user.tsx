@@ -16,6 +16,11 @@ export function useCurrentUser() {
   return useContext(CurrentUserContext);
 }
 
+/** The currency of the signed-in person's market (empty until it is known), so no screen has to assume one. */
+export function useMarketCurrency(): string {
+  return useContext(CurrentUserContext)?.market?.currency ?? "";
+}
+
 /**
  * Loads /me once. Only a 401 (the session is really gone) sends the person to /login: a dropped connection, a busy server (429) or a
  * hiccup (5xx) shows a "try again" message instead, so a flaky network never throws someone out of their work.

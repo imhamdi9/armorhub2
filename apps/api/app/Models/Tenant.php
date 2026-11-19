@@ -26,6 +26,14 @@ class Tenant extends Model
         'installation_enabled',
     ];
 
+/** The market's name in the language being read (Arabic readers get the Arabic name when one was set). */
+public function displayName(?string $locale = null): string
+{
+    $ar = trim((string) ($this->settings['name_ar'] ?? ''));
+
+    return ($locale ?? app()->getLocale()) === 'ar' && $ar !== '' ? $ar : (string) $this->name;
+}
+
 public function industry(): BelongsTo
 {
     return $this->belongsTo(Industry::class);

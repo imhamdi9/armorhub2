@@ -1,3 +1,5 @@
+"use client";
+
 import { tr } from "@/lib/i18n";
 import type { ReactNode } from "react";
 

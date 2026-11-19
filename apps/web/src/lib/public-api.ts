@@ -34,7 +34,8 @@ async function fetchPublic<T>(path: string): Promise<{ value: T | null; down: bo
 
   try {
     const res = await fetch(`${base}/api/public${path}`, { headers: { Accept: "application/json", "Accept-Language": await language() }, cache: "no-store", signal: AbortSignal.timeout(API_PATIENCE_MS) });
-    if (res.status >= 500) return { value: null, down: true };
+    // Only "not found" / "gone" mean the thing is missing; a busy API (429), a timeout or a hiccup must never look like a closed store or a deleted product.
+    if (!res.ok && res.status !== 404 && res.status !== 410) return { value: null, down: true };
 
     return { value: res.ok ? ((await res.json()) as T) : null, down: false };
   } catch {

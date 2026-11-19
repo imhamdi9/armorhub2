@@ -28,7 +28,7 @@ class MarketController extends Controller
 
         return [
             'id' => $t->id, 'name' => $t->name, 'country' => $t->market, 'country_name' => $market?->name('en'), 'country_name_ar' => $market?->name('ar'), 'currency' => $market?->currency(),
-            'status' => $t->status, 'store_slug' => $store?->slug,
+            'status' => $t->status, 'store_slug' => $store?->slug, 'name_ar' => $t->settings['name_ar'] ?? null,
             'selling_enabled' => (bool) $t->selling_enabled, 'installation_enabled' => (bool) $t->installation_enabled,
             'industries' => Industry::whereIn('id', $t->industryIds())->orderBy('name')->get(['id', 'key', 'name'])->all(),
             'stats' => [
@@ -121,9 +121,9 @@ class MarketController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['country' => 'required|string|size:2', 'name' => 'nullable|string|max:120', 'industries' => 'required|array|min:1', 'industries.*' => 'integer', 'slug' => 'nullable|string|max:80|regex:/^[a-z0-9-]+$/', 'selling_enabled' => 'sometimes|boolean', 'installation_enabled' => 'sometimes|boolean']);
+        $data = $request->validate(['country' => 'required|string|size:2', 'name' => 'nullable|string|max:120', 'name_ar' => 'nullable|string|max:120', 'industries' => 'required|array|min:1', 'industries.*' => 'integer', 'slug' => 'nullable|string|max:80|regex:/^[a-z0-9-]+$/', 'selling_enabled' => 'sometimes|boolean', 'installation_enabled' => 'sometimes|boolean']);
         $country = $this->markets->get($data['country']) ?? abort(422, 'Unknown country.');
-        $tenant = $this->launcher->open($data['country'], ($data['name'] ?? null) ?: \App\Support\PlatformBrand::name().' '.$country->name('en'), $data['industries'], $data['slug'] ?? null, $request->user(), Arr::only($data, ['selling_enabled', 'installation_enabled']));
+        $tenant = $this->launcher->open($data['country'], ($data['name'] ?? null) ?: \App\Support\PlatformBrand::name().' '.$country->name('en'), $data['industries'], $data['slug'] ?? null, $request->user(), Arr::only($data, ['selling_enabled', 'installation_enabled']) + (isset($data['name_ar']) ? ['name_ar' => $data['name_ar']] : []));
 
         return response()->json($this->row($tenant), 201);
     }
@@ -131,8 +131,8 @@ class MarketController extends Controller
     public function update(Request $request, Tenant $tenant)
     {
         abort_unless($tenant->market, 404);
-        $data = $request->validate(['name' => 'sometimes|required|string|max:120', 'industries' => 'sometimes|array|min:1', 'industries.*' => 'integer', 'status' => 'sometimes|in:active,paused', 'selling_enabled' => 'sometimes|boolean', 'installation_enabled' => 'sometimes|boolean']);
-        $tenant = $this->launcher->update($tenant, $data['name'] ?? null, $data['industries'] ?? null, $data['status'] ?? null, $request->user(), Arr::only($data, ['selling_enabled', 'installation_enabled']));
+        $data = $request->validate(['name' => 'sometimes|required|string|max:120', 'name_ar' => 'sometimes|nullable|string|max:120', 'industries' => 'sometimes|array|min:1', 'industries.*' => 'integer', 'status' => 'sometimes|in:active,paused', 'selling_enabled' => 'sometimes|boolean', 'installation_enabled' => 'sometimes|boolean']);
+        $tenant = $this->launcher->update($tenant, $data['name'] ?? null, $data['industries'] ?? null, $data['status'] ?? null, $request->user(), Arr::only($data, ['selling_enabled', 'installation_enabled', 'name_ar']));
 
         return $this->row($tenant);
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import { useEffect, useState } from "react";
 
 import { Note } from "@/components/installations/shared";
@@ -36,6 +37,7 @@ function OfferForm({ r, onDone }: { r: OpenRequest; onDone: () => void }) {
 
 /** Requests from customers near the centre. The customer's identity and exact place stay hidden until they accept an offer and pay. */
 export default function CentreRequestsPage() {
+  const mc = useMarketCurrency();
   const [rows, setRows] = useState<OpenRequest[] | null>(null);
   const [failed, setFailed] = useState(false);
   const load = () => getOpenRequests().then(setRows).catch(() => setFailed(true));
@@ -54,7 +56,7 @@ export default function CentreRequestsPage() {
                 <div className="flex flex-wrap justify-between gap-2"><p className="font-medium">{r.subject}</p><p className="text-sm text-muted-foreground">≈ {r.distance_km} km{r.area ? ` · ${r.area}` : ""}</p></div>
                 <p className="text-sm text-muted-foreground">{tr(({ install: "Installation", repair: "Repair", maintenance: "Maintenance" } as Record<string, string>)[r.work_type] ?? r.work_type)}: {r.parts.join(" · ")}</p>
                 {r.notes && <p className="mt-1 text-sm">{r.notes}</p>}
-                <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(r.created_at)}{r.my_offer ? ` · ${tr("your offer")}: ${formatMoney(r.my_offer.price, "EGP")}` : ""}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(r.created_at)}{r.my_offer ? ` · ${tr("your offer")}: ${formatMoney(r.my_offer.price, mc)}` : ""}</p>
                 <OfferForm r={r} onDone={load} />
               </li>
             ))}

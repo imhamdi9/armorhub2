@@ -127,6 +127,10 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Marketing", href: "/dashboard/admin/marketing", icon: "requests" });
   }
 
+  if (hasRole(user, "warehouse-staff") && !hasRole(user, "platform-admin", "company-owner")) {
+    items.push({ title: "Warehouse", href: "/dashboard/warehouse", icon: "catalog" });
+  }
+
   // Technicians only work assigned jobs; everyone else deals with orders.
   if (hasRole(user, "support-agent") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Support", href: "/dashboard/admin/tools", icon: "requests" });
@@ -138,7 +142,9 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Business numbers", href: "/dashboard/admin/kpis", icon: "admin" });
   }
 
-  if (!technicianOnly) {
+  // Catalogue and marketing staff never work orders (the API shows them none).
+  const worksOrders = !hasRole(user, "catalog-reviewer", "marketing-manager") || hasRole(user, "platform-admin", "company-owner", "partner-manager", "customer", "support-agent", "operations-agent", "warehouse-staff");
+  if (!technicianOnly && worksOrders) {
     items.push({ title: "Orders", href: "/dashboard/orders", icon: "orders" });
   }
 
@@ -176,6 +182,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
   // A customer shops in the store itself; the product list here is the catalogue screen for the people who manage it.
   const shopper = hasRole(user, "customer") && !hasRole(user, "platform-admin", "company-owner", "seller", "partner-manager", "technician");
   items.push(shopper ? { title: "Shop", href: user?.store_slug ? `/s/${user.store_slug}/products` : "/", icon: "products" } : { title: "Products", href: "/dashboard/products", icon: "products" });
+  if (!shopper && user?.permissions && !user.permissions.includes("products.view")) items.pop();
 
   // (A customer's cars live in the Garage; the old per-industry "My ..." lists no longer appear: a market sells several industries.)
 

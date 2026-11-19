@@ -25,7 +25,7 @@ class PublicStorefrontController extends Controller
             ->get()
             ->filter(fn (Company $c) => $this->stores->settingsOf($c)['enabled'])
             ->map(fn (Company $c) => [
-                'name' => $c->name,
+                'name' => $c->displayName(),
                 'slug' => $c->slug,
                 'headline' => $this->stores->settingsOf($c)['headline'],
                 'primary_color' => $this->stores->settingsOf($c)['primary_color'],
@@ -349,7 +349,7 @@ class PublicStorefrontController extends Controller
             'customer_fee_percentage' => (float) app(\App\Support\Settings\Settings::class)->get('platform.customer_fee_percentage'),
             // What delivery costs here: the flat fee, the amount above which it is free, and the usual days.
             'shipping' => app(\App\Services\ShippingFees::class)->rules(app(\App\Support\Markets\Markets::class)->forCompany($company)?->code),
-            'store' => ['name' => $company->name, 'slug' => $company->slug, 'contact_phone' => $this->stores->settingsOf($company)['contact_phone'] ?? null],
+            'store' => ['name' => $company->displayName(), 'slug' => $company->slug, 'contact_phone' => $this->stores->settingsOf($company)['contact_phone'] ?? null],
         ]);
     }
 

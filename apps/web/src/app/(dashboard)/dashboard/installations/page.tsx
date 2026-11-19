@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/components/providers/current-user";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -12,6 +13,7 @@ import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** The customer's installation requests, and their loyalty points. */
 export default function InstallationsPage() {
+  const mc = useMarketCurrency();
   const [jobs, setJobs] = useState<CustomerJob[] | null>(null);
   const [loyalty, setLoyalty] = useState<Awaited<ReturnType<typeof getLoyalty>> | null>(null);
   const [failed, setFailed] = useState(false);
@@ -47,7 +49,7 @@ export default function InstallationsPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formatDateTime(j.created_at)}
                   {j.status === "offers_received" || j.status === "open" ? ` · ${j.offer_count} ${tr("offers")}` : ""}
-                  {j.pay_amount ? ` · ${formatMoney(j.pay_amount, j.currency ?? "EGP")}` : ""}
+                  {j.pay_amount ? ` · ${formatMoney(j.pay_amount, j.currency ?? mc)}` : ""}
                 </p>
               </Link>
             ))}
