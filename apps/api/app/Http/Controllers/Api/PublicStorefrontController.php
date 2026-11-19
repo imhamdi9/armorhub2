@@ -96,16 +96,75 @@ class PublicStorefrontController extends Controller
             'industries' => $this->stores->industries($company),
             'market' => $this->stores->market($company),
             'featured' => $featured->map(fn ($p) => $this->stores->card($p, $company))->values(),
-            'categories' => $this->stores->products($company)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
+            // Once each (the product query carries extra columns, so a plain DISTINCT used to return one row per product).
+            'categories' => $all->pluck('category')->unique()->sort()->values(),
+            'category_tree' => $this->categoryTree($all->countBy('category')),
             // Each category's name in the language the shopper is browsing in.
             'category_labels' => $this->stores->categoryLabels(),
             'partners' => $this->stores->partnerSummary($company),
         ]);
     }
 
+    /**
+     * The departments of this market's catalogue, as a tree: each department (the platform's top-level category) with the categories that
+     * have products and how many, in the language being browsed. A category the taxonomy does not know yet appears as its own department.
+     *
+     * @param  \Illuminate\Support\Collection<string, int>  $counts  category key => products
+     * @return list<array{key: string, name: string, count: int, children: list<array{key: string, name: string, count: int}>}>
+     */
+    private function categoryTree($counts): array
+    {
+        $labels = $this->stores->categoryLabels();
+        $all = \App\Models\ProductCategory::where('is_active', true)->orderBy('position')->get();
+        $byParent = $all->groupBy('parent_id');
+        $tree = [];
+        $placed = [];
+
+        foreach ($all->whereNull('parent_id') as $group) {
+            $children = ($byParent[$group->id] ?? collect())->filter(fn ($c) => ($counts[$c->key] ?? 0) > 0)
+                ->map(function ($c) use ($counts, $labels, &$placed) {
+                    $placed[$c->key] = true;
+
+                    return ['key' => $c->key, 'name' => $labels[$c->key] ?? $c->key, 'count' => (int) $counts[$c->key]];
+                })->values()->all();
+            $own = (int) ($counts[$group->key] ?? 0);
+            if ($own > 0) {
+                $placed[$group->key] = true;
+            }
+            $total = $own + array_sum(array_column($children, 'count'));
+            if ($total > 0) {
+                $tree[] = ['key' => $group->key, 'name' => $labels[$group->key] ?? $group->key, 'count' => $total, 'children' => $children];
+            }
+        }
+        foreach ($counts as $key => $n) {
+            if (! isset($placed[$key])) {
+                $tree[] = ['key' => (string) $key, 'name' => $labels[$key] ?? ucfirst(str_replace('-', ' ', (string) $key)), 'count' => (int) $n, 'children' => []];
+            }
+        }
+
+        return $tree;
+    }
+
+    /** Just the departments and their categories (for the menu and the search box on every page), far lighter than the whole store. */
+    public function categories(string $slug)
+    {
+        $company = $this->stores->find($slug) ?? abort(404);
+        $counts = $this->stores->products($company)->whereNotNull('category')->get(['id', 'category'])->countBy('category');
+
+        return $this->cached(['tree' => $this->categoryTree($counts)]);
+    }
+
+    /** @return list<string> the category itself, plus its children when it is a department */
+    private function categoryKeys(string $key): array
+    {
+        $group = \App\Models\ProductCategory::where('key', $key)->first();
+
+        return $group ? array_values(array_unique([$key, ...\App\Models\ProductCategory::where('parent_id', $group->id)->pluck('key')->all()])) : [$key];
+    }
+
     public function products(Request $request, string $slug)
     {
-        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50',
+        $request->validate(['q' => 'nullable|string|max:80', 'category' => 'nullable|string|max:80', 'stored' => 'nullable|boolean', 'deals' => 'nullable|boolean', 'industry' => 'nullable|string|max:60', 'page' => 'nullable|integer|min:1|max:1000', 'per_page' => 'nullable|integer|min:1|max:50',
             'sort' => 'nullable|in:category,price_asc,price_desc,name,rating', 'min_price' => 'nullable|numeric|min:0', 'max_price' => 'nullable|numeric|min:0', 'brand' => 'nullable|string|max:200', 'min_rating' => 'nullable|integer|min:1|max:5']);
         $company = $this->stores->find($slug) ?? abort(404);
         $search = app(\App\Services\Storefront\ProductSearch::class);
@@ -120,12 +179,16 @@ class PublicStorefrontController extends Controller
             }
             foreach ($words as $word) {
                 $like = '%'.addcslashes($word, '%_\\').'%';
-                $q->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('brand', 'like', $like)->orWhere('category', 'like', $like));
+                $q->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('name_ar', 'like', $like)->orWhere('brand', 'like', $like)->orWhere('category', 'like', $like));
             }
         });
         $scoped = fn (?string $text) => $this->stores->products($company)
             ->tap(fn ($q) => $matching($q, $text))
-            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            // "Shipped by the platform" (kept in its warehouse) and "deals" (a was-price above the price).
+            ->when($request->boolean('stored'), fn ($q) => $q->where('fulfilment', 'armorhub'))
+            ->when($request->boolean('deals'), fn ($q) => $q->where('compare_at_price', '>', 0))
+            // A department (a top-level category) shows everything filed under it.
+            ->when($request->filled('category'), fn ($q) => $q->whereIn('category', $this->categoryKeys((string) $request->category)))
             ->when($request->filled('industry'), fn ($q) => $q->whereIn('industry_id', \App\Models\Industry::where('key', $request->industry)->select('id')));
         $page = function (?string $text) use ($request, $scoped, $lowest, $rating) {
             return $scoped($text)

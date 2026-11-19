@@ -98,6 +98,8 @@ export interface PublicStore {
   market: PublicMarket | null;
   featured: PublicProduct[];
   categories: string[];
+  /** The departments with the categories that have products (for the menu and the side list). */
+  category_tree?: { key: string; name: string; count: number; children: { key: string; name: string; count: number }[] }[];
   /** Each category's name in the language being browsed (slug -> name). */
   category_labels?: Record<string, string>;
   category_counts: Record<string, number>;
@@ -113,6 +115,7 @@ export interface PublicProducts {
   current_page: number;
   last_page: number;
   total?: number;
+  per_page?: number;
   /** What was searched, and the words it was read as when the typed ones matched nothing. */
   search?: { q: string; corrected: string | null };
   /** What the filters offer: brands with their product counts and the price range. */

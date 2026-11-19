@@ -73,10 +73,14 @@ export interface DeliveryAddress {
 }
 
 export const getCart = async () => (await api.get<CartView>("/cart")).data;
+/** The header's cart count and the "added to cart" panel listen for this. */
+export const CART_CHANGED = "cart-changed";
+const announceCart = <T,>(cart: T): T => { if (typeof window !== "undefined") window.dispatchEvent(new Event(CART_CHANGED)); return cart; };
+
 export const addToCart = async (productId: number, optionId?: number | null, quantity = 1, vehicleId?: number | null) =>
-  (await api.post<CartView>("/cart/items", { product_id: productId, ...(optionId ? { option_id: optionId } : {}), ...(vehicleId ? { vehicle_id: vehicleId } : {}), quantity })).data;
-export const setCartQuantity = async (itemId: number, quantity: number) => (await api.put<CartView>(`/cart/items/${itemId}`, { quantity })).data;
-export const removeCartItem = async (itemId: number) => (await api.delete<CartView>(`/cart/items/${itemId}`)).data;
+  announceCart((await api.post<CartView>("/cart/items", { product_id: productId, ...(optionId ? { option_id: optionId } : {}), ...(vehicleId ? { vehicle_id: vehicleId } : {}), quantity })).data);
+export const setCartQuantity = async (itemId: number, quantity: number) => announceCart((await api.put<CartView>(`/cart/items/${itemId}`, { quantity })).data);
+export const removeCartItem = async (itemId: number) => announceCart((await api.delete<CartView>(`/cart/items/${itemId}`)).data);
 
 export interface DeliveryChoices { delivery_speed?: "standard" | "express"; preferred_day?: string; gift_note?: string; use_points?: number }
 export const checkoutCart = async (address: DeliveryAddress, choices: DeliveryChoices = {}) => (await api.post<Purchase>("/checkout", { shipping_address: address, ...choices })).data;

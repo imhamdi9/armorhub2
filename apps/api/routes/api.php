@@ -54,6 +54,7 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
     Route::get('/storefronts/{slug}/suggest', [PublicStorefrontController::class, 'suggest']);
     Route::get('/storefronts/{slug}/products-by-ids', [PublicStorefrontController::class, 'byIds']);
+    Route::get('/storefronts/{slug}/categories', [PublicStorefrontController::class, 'categories']);
     Route::get('/storefronts/{slug}/recommendations', [PublicStorefrontController::class, 'recommendations']);
     Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
     Route::get('/storefronts/{slug}/sellers/{id}', [PublicStorefrontController::class, 'seller'])->whereNumber('id');

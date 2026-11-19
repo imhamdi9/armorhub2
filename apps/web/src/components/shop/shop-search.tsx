@@ -11,7 +11,8 @@ type Suggestion = { text: string; kind: "product" | "brand" };
  * A pill search. It works without JavaScript (a plain GET to the catalogue); with it, names and brands are suggested as you type,
  * and a misspelt word still finds the closest one. The store's accent colours the submit button.
  */
-export function ShopSearch({ action, q = "", category = "", slug }: { action: string; q?: string; category?: string; slug?: string }) {
+export function ShopSearch({ action, q = "", category = "", slug, compact = false, departments = [] }: { action: string; q?: string; category?: string; slug?: string; compact?: boolean; departments?: { key: string; name: string }[] }) {
+  const [dept, setDept] = useState(category);
   const [value, setValue] = useState(q);
   const [found, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -50,13 +51,20 @@ export function ShopSearch({ action, q = "", category = "", slug }: { action: st
   }
 
   return (
-    <form ref={form} role="search" action={action} method="get" className="relative mx-auto flex max-w-xl items-center rounded-full border border-black/10 bg-white py-1 ps-5 pe-1">
+    <form ref={form} role="search" action={action} method="get" className={compact ? "relative flex h-11 w-full items-stretch rounded-full border-2 border-obsidian bg-white" : "relative mx-auto flex max-w-xl items-center rounded-full border border-black/10 bg-white py-1 ps-5 pe-1"}>
+      {compact && (
+        <select name="category" value={dept} onChange={(e) => setDept(e.target.value)} aria-label={tr("Search in")} data-testid="search-department"
+          className="max-w-[9rem] shrink-0 cursor-pointer rounded-s-full border-0 border-e border-border bg-fog ps-4 pe-2 text-sm font-semibold text-obsidian outline-none">
+          <option value="">{tr("All")}</option>
+          {departments.map((d) => <option key={d.key} value={d.key}>{d.name}</option>)}
+        </select>
+      )}
       <input name="q" value={value} onChange={(e) => { setValue(e.target.value); setOpen(true); }} onKeyDown={onKey} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 120)}
         type="search" autoComplete="off" aria-label={tr("Search products")} placeholder={tr("What are you looking for today?")}
         role={slug ? "combobox" : undefined} aria-expanded={slug ? open && items.length > 0 : undefined} aria-controls={slug ? listId : undefined} aria-autocomplete={slug ? "list" : undefined}
-        className="h-11 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#5f5c5b]" />
-      {category && <input type="hidden" name="category" value={category} />}
-      <button type="submit" aria-label={tr("Search")} className="btn-brand grid size-12 shrink-0 place-items-center rounded-full" style={{ boxShadow: "0 4px 24px color-mix(in srgb, var(--brand) 34%, transparent)" }}>
+        className={compact ? "min-w-0 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-[#5f5c5b]" : "h-11 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#5f5c5b]"} />
+      {!compact && category && <input type="hidden" name="category" value={category} />}
+      <button type="submit" aria-label={tr("Search")} className={compact ? "btn-brand grid w-12 shrink-0 place-items-center rounded-e-full" : "btn-brand grid size-12 shrink-0 place-items-center rounded-full"} style={{ boxShadow: "0 4px 24px color-mix(in srgb, var(--brand) 34%, transparent)" }}>
         <svg viewBox="0 0 24 24" className="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
       </button>
 

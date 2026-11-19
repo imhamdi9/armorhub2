@@ -84,7 +84,7 @@ class ProductSearch
             return [];
         }
         $like = '%'.addcslashes($q, '%_\\').'%';
-        $rows = (clone $base)->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('brand', 'like', $like))->limit(60)->get(['name', 'brand', 'category']);
+        $rows = (clone $base)->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('name_ar', 'like', $like)->orWhere('brand', 'like', $like))->limit(60)->get(['name', 'name_ar', 'brand', 'category']);
         $starts = fn (string $s) => mb_stripos($s, $q) === 0 ? 0 : 1;
 
         $found = [];

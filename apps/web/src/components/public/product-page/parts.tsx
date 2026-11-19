@@ -15,7 +15,8 @@ import { categoryLabel } from "@/lib/category";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { ensureShopperSession } from "@/lib/guest";
-import { addToCart } from "@/services/cart.service";
+import { CartPanel } from "@/components/public/product-page/cart-panel";
+import { addToCart, type CartView } from "@/services/cart.service";
 import { track } from "@/lib/marketing";
 import { addFavourite, getFavouriteIds, getFit, getGarage, removeFavourite, type Vehicle, type VehicleFit } from "@/services/ops.service";
 import { getMyReview, saveReview, uploadReviewPhoto } from "@/services/platform.service";
@@ -326,6 +327,7 @@ export function AddToCart({ m }: { m: ProductModel }) {
   const [cars, setCars] = useState<Vehicle[]>([]);
   const [car, setCar] = useState("");
   const [fits, setFits] = useState<VehicleFit[]>([]);
+  const [panel, setPanel] = useState<CartView | null>(null);
   useEffect(() => {
     if (!m.links.signedIn) return;
     getGarage().then((v) => { setCars(v); setCar(String(v.find((c) => c.is_default)?.id ?? "")); }).catch(() => {});
@@ -338,11 +340,12 @@ export function AddToCart({ m }: { m: ProductModel }) {
     setError(null);
     try {
       await ensureShopperSession(m.store.slug);
-      await addToCart(m.p.id, m.chosen?.target_id, 1, car ? Number(car) : null);
+      const cart = await addToCart(m.p.id, m.chosen?.target_id, 1, car ? Number(car) : null);
       track("add_to_cart", { id: m.p.id, name: m.p.name, value: m.p.from_price, currency: m.p.currency, quantity: 1 });
-      router.push(`/s/${m.store.slug}/cart`);
+      setPanel(cart);                       // the shopper stays on the page; the panel offers checkout
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
       setBusy(false);
     }
   }
@@ -365,6 +368,8 @@ export function AddToCart({ m }: { m: ProductModel }) {
       })()}
       <button type="button" onClick={add} disabled={busy || (!!m.p.fitment_required && (!car || fits.find((x) => String(x.vehicle_id) === car)?.status === "does_not_fit"))} data-testid="add-to-cart" className="inline-flex w-full items-center justify-center rounded-full border-2 border-obsidian px-6 py-3 text-base font-semibold text-obsidian hover:bg-fog disabled:opacity-60">{tr("Add to cart")}</button>
       {error && <p role="alert" className="mt-1 text-center text-sm text-red-600">{error}</p>}
+      {panel && <CartPanel cart={panel} slug={m.store.slug} onClose={() => setPanel(null)} suggestions={[...m.pairs, ...m.others].filter((r, i, all) => all.findIndex((x) => x.id === r.id) === i)}
+        added={{ name: m.p.name, image: imageSrc(m.p.images?.[0] ?? null), price: m.shown, currency: m.p.currency }} />}
     </div>
   );
 }
@@ -575,11 +580,25 @@ export function ReviewsSection({ m }: { m: ProductModel }) {
         <p className="text-sm text-slate">{tr("No reviews yet. Customers who receive this product can rate it here.")}</p>
       ) : (
         <>
-          <div className="mb-4 flex items-center gap-3">
-            <span className="text-4xl font-extrabold tracking-tight">{formatNumber(reviews.average ?? 0, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
-            <div><Stars value={reviews.average ?? 0} /><p className="text-sm text-slate">{tr("{n} reviews", { n: formatNumber(reviews.count) })}</p></div>
+          <div className="grid gap-8 md:grid-cols-[260px_1fr]">
+          <div data-testid="rating-summary">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="text-4xl font-extrabold tracking-tight">{formatNumber(reviews.average ?? 0, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+              <div><Stars value={reviews.average ?? 0} /><p className="text-sm text-slate">{tr("{n} reviews", { n: formatNumber(reviews.count) })}</p></div>
+            </div>
+            {[5, 4, 3, 2, 1].map((star) => {
+              const n = reviews.items.filter((r) => Math.round(r.rating) === star).length;
+              const pct = reviews.items.length ? Math.round((n / reviews.items.length) * 100) : 0;
+              return (
+                <div key={star} className="mb-1.5 flex items-center gap-2 text-sm" data-testid={`rating-bar-${star}`}>
+                  <span className="w-12 shrink-0 text-[var(--brand-ink)]">{formatNumber(star)} {tr("stars")}</span>
+                  <span className="h-4 flex-1 overflow-hidden rounded bg-fog"><span className="block h-full bg-[#f5a000]" style={{ width: `${pct}%` }} /></span>
+                  <span className="w-10 shrink-0 text-end text-slate">{formatNumber(pct)}%</span>
+                </div>
+              );
+            })}
           </div>
-          <ul className="grid gap-3 md:grid-cols-2">
+          <ul className="grid gap-3 md:grid-cols-2 md:content-start">
             {reviews.items.map((r) => (
               <li key={r.id} className="rounded-2xl border border-fog p-4">
                 <div className="flex items-center justify-between"><Stars value={r.rating} /><span className="text-xs text-slate">{r.date ? formatDate(r.date) : ""}</span></div>
@@ -598,6 +617,7 @@ export function ReviewsSection({ m }: { m: ProductModel }) {
               </li>
             ))}
           </ul>
+          </div>
         </>
       )}
       <ReviewForm productId={p.id} />

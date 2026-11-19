@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { ShopStoreHome } from "@/components/shop/shop-store-home";
-import { getStore } from "@/lib/public-api";
+import { getStore, getStoreProducts } from "@/lib/public-api";
 import { absoluteImage, plain } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -34,5 +34,8 @@ export default async function StorePage({ params }: Props) {
   if (data?.merged_into) redirect(`/s/${data.merged_into}`);
   if (!data) notFound();
 
-  return <ShopStoreHome data={data} />;
+  // Today's deals: products with a was-price above their price.
+  const deals = (await getStoreProducts(slug, { deals: "1", per_page: "10" }))?.data ?? [];
+
+  return <ShopStoreHome data={data} deals={deals} />;
 }

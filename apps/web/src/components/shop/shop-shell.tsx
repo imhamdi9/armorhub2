@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { themeVars, type ShellStore } from "@/components/public/shell";
+import { ShopHeader } from "@/components/shop/shop-header";
 import { categoryNamesReady, loadCategoryNames } from "@/lib/category";
-import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { tr } from "@/lib/i18n";
 import { MarketingScripts } from "@/components/marketing/marketing-scripts";
 import { reopenConsent } from "@/components/layout/cookie-consent-banner";
 import { useMarketOffers } from "@/lib/market-offers";
@@ -66,36 +67,9 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
       </nav>
 
       <div>
-        <div className="border-b border-border">
-        <header className="mx-auto flex h-[76px] max-w-[1200px] items-center justify-end gap-2 px-4">
-          <Link href={home} className="font-display me-auto flex items-center gap-2.5 text-[21px] font-bold tracking-tight">
-            {store.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-              <img src={store.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
-            ) : (
-              <span className="btn-brand grid h-10 w-10 place-items-center rounded-xl"><svg viewBox="0 0 24 24" className="size-[22px]" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Z" /></svg></span>
-            )}
-            {store.name}
-          </Link>
-          <nav aria-label={tr("Store")} className="hidden items-center gap-1 text-sm font-semibold lg:flex">
-            <Link href={home} aria-current={active === "home" ? "page" : undefined} className={`rounded-full px-4 py-2 ${active === "home" ? "bg-fog" : "hover:bg-fog"}`}>{tr("Home")}</Link>
-            <Link href={`${home}/products`} aria-current={active === "products" ? "page" : undefined} className={`rounded-full px-4 py-2 ${active === "products" ? "bg-fog" : "hover:bg-fog"}`}>{tr("Products")}</Link>
-          </nav>
-          {store.market && <span dir="ltr" className="hidden rounded-full bg-fog px-3 py-1 text-xs text-[#5f5c5b] sm:inline">{store.market.code} · {store.market.currency}</span>}
-          <LanguageSwitcher />
-          <Link href={`${home}/cart`} className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold" data-testid="shop-cart">{tr("Cart")}</Link>
-          {user && !user.is_guest ? (
-            <Link href="/dashboard" className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Dashboard")}</Link>
-          ) : user === undefined ? null : (
-            <>
-              <Link href="/login" className="inline-flex h-10 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold">{tr("Sign in")}</Link>
-              <Link href={signup} className="btn-brand inline-flex h-10 items-center rounded-full px-5 text-sm">{tr("Sign up")}</Link>
-            </>
-          )}
-        </header>
-        </div>
+        <ShopHeader store={store} user={user} active={active} />
 
-        <main className="mx-auto max-w-[1200px] px-4 pb-28 md:pb-16"><div key={String(namesReady)} className="contents">{children}</div></main>
+        <main className="mx-auto max-w-[1280px] px-4 pb-28 md:pb-16"><div key={String(namesReady)} className="contents">{children}</div></main>
 
         <footer className="bg-dark bg-grid-dark text-white">
           <div className="mx-auto grid max-w-[1200px] gap-8 px-6 py-12 sm:grid-cols-3">

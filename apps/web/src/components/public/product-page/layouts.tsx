@@ -8,6 +8,7 @@ import type { ProductModel } from "@/components/public/product-page/model";
 import {
   Accordion, BuyButtons, Crumbs, DetailsAccordions, Fulfilled, Gallery, Heading, Highlights, MiniProduct, OptionPills, PriceLine, Section, StickyBar, Trust, ctaLabel,
 } from "@/components/public/product-page/parts";
+import { BoughtTogether, BuyBox } from "@/components/public/product-page/buybox";
 import { ShopProductCard } from "@/components/shop/shop-product-card";
 import { SHOP_SHADOW } from "@/components/shop/shop-shell";
 import { categoryLabel } from "@/lib/category";
@@ -48,30 +49,24 @@ function OtherTiers({ m }: { m: ProductModel }) {
 
 export function ClassicLayout({ m }: { m: ProductModel }) {
   const { p } = m;
-  const together = m.pairs.length > 0 ? m.pairs.slice(0, 3) : m.others.slice(0, 3);
 
   return (
     <>
-      <div className="grid gap-10 lg:grid-cols-2">
+      {/* Photos | the product | the buy box: everything needed to decide, in view at once. */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.1fr)_300px]">
         <Gallery images={p.images ?? []} name={p.name} />
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div><Heading m={m} /></div>
-          <div><PriceLine m={m} /></div>
+          <div className="border-t border-border pt-4"><PriceLine m={m} size="text-3xl" /></div>
           {m.lead && <p className="text-charcoal">{m.lead}</p>}
           <Highlights items={p.highlights} />
           <OptionPills m={m} />
           <Fulfilled m={m} />
-          <BuyButtons m={m} />
-          <Trust />
-          {together.length > 0 && (
-            <div className="rounded-2xl border border-fog bg-brand-wash p-4" data-testid="bought-together">
-              <div className="mb-3 flex items-center justify-between"><b className="text-obsidian">{tr("Pairs well with this")}</b><Tag>{tr("Upsell")}</Tag></div>
-              <div className="grid gap-2">{together.map((r) => <MiniProduct key={r.id} product={r} slug={m.store.slug} />)}</div>
-            </div>
-          )}
           <DetailsAccordions m={m} />
         </div>
+        <div className="md:col-span-2 lg:col-span-1"><BuyBox m={m} /></div>
       </div>
+      <BoughtTogether m={m} />
       <MoreProducts m={m} />
     </>
   );
