@@ -169,7 +169,7 @@ export default function ThemeEditorPage() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">{tr("The name and logo appear across the platform: sign-in pages, menus, emails and invoices. Leave empty to keep the built-in name.")}</p>
-              {([["brand_color", "Accent colour (buttons)", "#8db8ff"], ["dark_color", "Dark colour (panels, footer)", "#0b1b3a"]] as const).map(([k, l, d]) => (
+              {([["brand_color", "Accent colour (buttons)", "#FFD21F"], ["dark_color", "Dark colour (panels, footer)", "#1a1a1a"]] as const).map(([k, l, d]) => (
                 <div key={k}>
                   <label htmlFor={`c-${k}`} className="mb-1 block text-sm font-medium">{tr(l)}</label>
                   <div className="flex items-center gap-2">

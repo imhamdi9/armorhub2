@@ -21,17 +21,17 @@ export function PageTemplateField({ value, onChange }: { value: PageTemplate; on
           const on = value === key;
 
           return (
-            <label key={key} className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 bg-white transition ${on ? "border-[#2f6bff] shadow-card" : "border-transparent ring-1 ring-border hover:ring-[#2f6bff]/50"}`}>
+            <label key={key} className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 bg-white transition ${on ? "border-[#E0B400] shadow-card" : "border-transparent ring-1 ring-border hover:ring-[#E0B400]/50"}`}>
               <input type="radio" name="page_template" className="sr-only" value={key} checked={on} onChange={() => onChange(key)} />
               {/* eslint-disable-next-line @next/next/no-img-element -- a small static preview from /public */}
               <img src={`/templates/${key}.png`} alt="" loading="lazy" className="aspect-[1440/1000] w-full border-b object-cover object-top" />
               <span className="flex flex-1 flex-col gap-1 p-3 text-sm">
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-semibold">{tr(info.name)}</span>
-                  {on && <span className="rounded-full bg-[#2f6bff] px-2 py-0.5 text-xs font-semibold text-white">{tr("Selected")}</span>}
+                  {on && <span className="rounded-full bg-[#FFD21F] px-2 py-0.5 text-xs font-semibold text-[#1a1a1a]">{tr("Selected")}</span>}
                 </span>
                 <span className="text-muted-foreground">{tr(info.help)}</span>
-                <span className="mt-auto pt-1 text-xs font-medium text-[#2f6bff]">{tr(info.offers)}</span>
+                <span className="mt-auto pt-1 text-xs font-medium text-[#8a6a00]">{tr(info.offers)}</span>
               </span>
             </label>
           );

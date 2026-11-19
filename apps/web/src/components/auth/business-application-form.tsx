@@ -196,7 +196,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
             <div className="space-y-4 text-center" role="status">
               <p className="rounded-xl bg-accent p-4 font-semibold text-accent-foreground">{tr("Application received. You can sign in as soon as it is approved.")}</p>
               {payment && !paid && (
-                <div className="rounded-xl border border-[#2f6bff]/40 bg-white p-4 text-start" data-testid="plan-payment">
+                <div className="rounded-xl border border-[#E0B400]/40 bg-white p-4 text-start" data-testid="plan-payment">
                   <h2 className="font-display text-lg font-semibold">{tr("Pay for your plan")}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">{tr("{name}: first month", { name: tr(payment.name) })}</p>
                   <p className="mt-2 text-2xl font-black">{formatNumber(payment.amount)} {payment.currency}</p>
@@ -212,7 +212,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
           ) : (
             <>
             {planInfo && (
-              <p className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f6bff]/40 bg-accent p-3 text-sm font-semibold text-accent-foreground" data-testid="chosen-plan">
+              <p className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#E0B400]/40 bg-accent p-3 text-sm font-semibold text-accent-foreground" data-testid="chosen-plan">
                 <span>{tr("Your plan: {name}", { name: tr(planInfo.name) })} · {planInfo.price_monthly > 0 ? `${formatNumber(planInfo.price_monthly)} ${planInfo.currency} / ${tr("month")}` : tr("Free")}</span>
                 <Link href={isSeller ? "/pricing?for=seller" : "/pricing?for=partner"} className="underline">{tr("Change plan")}</Link>
               </p>

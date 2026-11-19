@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 
-import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, Hero, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit, COUNTRY_NAMES } from "@/components/public/landing";
+import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit } from "@/components/public/landing";
+import { MarketShelf, PlatformBanner } from "@/components/public/marketplace-entrance";
 import { Faq } from "@/components/public/faq";
 import { MarketRedirect } from "@/components/public/market-redirect";
 import { PartnersShowcase } from "@/components/public/showcase";
@@ -14,26 +13,8 @@ import { tr } from "@/lib/i18n";
 import { imageSrc, orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import type { PublicShowcase, PublicStoreCard } from "@/types/public";
 
-/** Shown when the server could not be reached (a sleeping free instance takes up to a minute), instead of claiming there are no markets. Tries again by itself. */
-function WakingUp() {
-  const router = useRouter();
-  useEffect(() => {
-    const id = setTimeout(() => router.refresh(), 6000);
-
-    return () => clearTimeout(id);
-  }, [router]);
-
-  return (
-    <div className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate" role="status">
-      <p className="font-semibold text-obsidian">{tr("The service is waking up.")}</p>
-      <p className="mt-1 text-sm">{tr("This can take up to a minute the first time. This page will refresh by itself.")}</p>
-      <button type="button" onClick={() => router.refresh()} className="btn-brand mt-4 px-5 py-2.5 text-sm">{tr("Try again")}</button>
-    </div>
-  );
-}
-
 const STEPS = [
-  ["1", "Choose what you need", "Pick a service and the options you want. You see a price straight away."],
+  ["1", "Choose what you need", "Search the departments of your market. You see a price straight away."],
   ["2", "Get quotes", "Nearby, vetted professionals send you their price for the job."],
   ["3", "Pick and pay securely", "Compare, accept the quote you like and pay online."],
   ["4", "Get it done", "Your professional schedules the work and you follow every step. Warranty included."],
@@ -72,33 +53,7 @@ function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicSto
   const blocks: Record<SectionKey, React.ReactNode> = {
     partner_strip: on.partnerStrip && <PartnerStrip showcase={showcase} facts={facts} />,
     industries: on.industries && <IndustryTabs showcase={showcase} />,
-    stores: (
-      <section id="stores" className="mx-auto max-w-[1200px] scroll-mt-20 px-4 py-14">
-        <h2 className="display display-md">{marketsTitle}</h2>
-        {stores.length === 0 && unavailable ? (
-          <WakingUp />
-        ) : stores.length === 0 ? (
-          <p className="mt-6 rounded-[20px] border border-dashed border-fog p-8 text-center text-slate">{tr("No markets are open yet. Please check back soon.")}</p>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {stores.map((s) => (
-              <Link key={s.slug} href={`/s/${s.slug}`} className="hover-lift rounded-[20px] border border-fog bg-white p-6">
-                <div className="mb-4 h-2 w-14 rounded-full" style={{ backgroundColor: s.primary_color }} />
-                <div className="flex items-center gap-2">
-                  {s.logo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element -- an arbitrary https logo chosen by the store owner
-                    <img src={imageSrc(s.logo_url) ?? ""} alt="" className="h-8 w-auto max-w-[6rem] object-contain" />
-                  )}
-                  <h3 className="text-xl font-bold text-obsidian">{s.name}</h3>
-                </div>
-                {s.industry && <p className="mt-1 text-xs font-bold uppercase tracking-wider text-spruce">{tr(s.industry.name)}{s.market ? ` · ${tr(COUNTRY_NAMES[s.market] ?? s.market)}` : ""}</p>}
-                {s.headline && <p className="mt-3 text-sm text-slate">{s.headline}</p>}
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-    ),
+    stores: <MarketShelf stores={stores} showcase={showcase} unavailable={unavailable} title={marketsTitle} />,
     quote_feature: on.quote && <QuoteFeature />,
     dashboard_feature: on.dashboard && <DashboardFeature />,
     value_props: on.values && <ValueProps />,
@@ -130,7 +85,7 @@ function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicSto
 
   return (
     <PublicShell>
-      <Hero facts={facts} firstStore={stores[0]} />
+      <PlatformBanner />
       {order.map((key) => (blocks[key] ? <div key={key} data-block={key} style={{ display: "contents" }}>{blocks[key]}</div> : null))}
       <div {...ed("banner_title")} style={{ display: "contents" }}><Banner title={bannerTitle} text={bannerText} href="/login" label={bannerCta} image={bannerImage} secondary={{ href: "/signup", label: "Create an account" }} /></div>
     </PublicShell>

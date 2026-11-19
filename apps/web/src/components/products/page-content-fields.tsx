@@ -65,7 +65,7 @@ export function PageContentFields({ template, value, onChange, selfId }: { templ
   const has = (f: ContentField) => fields.includes(f);
 
   return (
-    <fieldset className="space-y-4 rounded-lg border border-[#2f6bff]/40 bg-[#2f6bff]/[0.03] p-3" data-testid="page-content-fields">
+    <fieldset className="space-y-4 rounded-lg border border-[#E0B400]/40 bg-[#FFD21F]/[0.08] p-3" data-testid="page-content-fields">
       <legend className="px-1 text-sm font-medium">{tr("Content for the “{name}” layout", { name: tr(TEMPLATE_INFO[template].name) })}</legend>
       <p className="text-sm text-muted-foreground">{tr("These fields appear on the product page. Leave any of them empty and the page uses its defaults.")}</p>
 

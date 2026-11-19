@@ -40,7 +40,7 @@ export function Pricing({ initial, store }: { initial?: Audience; store?: string
           <div className="mx-auto mt-4 grid max-w-3xl gap-3 sm:grid-cols-2" role="radiogroup" aria-labelledby="who-h">
             {AUDIENCES.filter((a) => (a.key === "seller" ? offers.selling : offers.installation)).map((a) => (
               <button key={a.key} type="button" role="radio" aria-checked={audience === a.key} onClick={() => setAudience(a.key)}
-                className={`flex items-start gap-4 rounded-[24px] border p-5 text-start transition ${audience === a.key ? "border-[#2f6bff] bg-white ring-2 ring-[#2f6bff]/25" : "border-fog bg-white hover:border-[#2f6bff]/50"}`}>
+                className={`flex items-start gap-4 rounded-[24px] border p-5 text-start transition ${audience === a.key ? "border-[#E0B400] bg-white ring-2 ring-[#E0B400]/25" : "border-fog bg-white hover:border-[#E0B400]/50"}`}>
                 <span className="text-3xl" aria-hidden="true">{a.icon}</span>
                 <span>
                   <span className="block text-lg font-black tracking-tight text-obsidian">{tr(a.title)}</span>
@@ -56,8 +56,8 @@ export function Pricing({ initial, store }: { initial?: Audience; store?: string
             <h2 id="plans-h" className="text-center text-lg font-bold text-obsidian">{tr("Choose a plan")}</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               {plans.map((p) => (
-                <article key={p.key} className={`flex flex-col rounded-[28px] border bg-white p-7 ${popular === p.key ? "border-[#2f6bff] ring-2 ring-[#2f6bff]/25" : "border-fog"}`}>
-                  {popular === p.key && <p className="mb-2 text-xs font-bold text-[#2f6bff]">{tr("Most chosen")}</p>}
+                <article key={p.key} className={`flex flex-col rounded-[28px] border bg-white p-7 ${popular === p.key ? "border-[#E0B400] ring-2 ring-[#E0B400]/25" : "border-fog"}`}>
+                  {popular === p.key && <p className="mb-2 text-xs font-bold text-[#8a6a00]">{tr("Most chosen")}</p>}
                   <h3 className="text-xl font-black tracking-tight text-obsidian">{tr(p.name)}</h3>
                   <p className="mt-3 text-3xl font-black text-obsidian">
                     {p.price_monthly > 0 ? <>{formatNumber(p.price_monthly)} <span className="text-base font-semibold">{p.currency}</span><span className="text-sm font-medium text-slate"> / {tr("month")}</span></> : tr("Free")}

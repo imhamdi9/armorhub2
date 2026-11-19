@@ -57,7 +57,7 @@ export default function SubscriptionPage() {
           </div>
           {usage.limit !== null && (
             <div className="h-2.5 overflow-hidden rounded-full bg-fog" role="progressbar" aria-valuenow={usage.customers} aria-valuemin={0} aria-valuemax={usage.limit}>
-              <div className={`h-full rounded-full ${usage.reached ? "bg-red-500" : "bg-[#2f6bff]"}`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${usage.reached ? "bg-red-500" : "bg-[#FFD21F]"}`} style={{ width: `${pct}%` }} />
             </div>
           )}
           {usage.reached && <p role="status" className="mt-2 text-sm text-red-600">{tr("You have reached this month's customer limit. Upgrade to keep sending quotes.")}</p>}
@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
         {view.plans.map((p) => {
           const current = p.key === plan.key;
           return (
-            <section key={p.key} className={`flex flex-col rounded-2xl border bg-white p-5 shadow-card ${current ? "border-[#2f6bff] ring-2 ring-[#2f6bff]/20" : ""}`} aria-label={tr(p.name)}>
+            <section key={p.key} className={`flex flex-col rounded-2xl border bg-white p-5 shadow-card ${current ? "border-[#E0B400] ring-2 ring-[#E0B400]/20" : ""}`} aria-label={tr(p.name)}>
               <h3 className="font-display text-xl font-bold">{tr(p.name)}</h3>
               <p className="mt-1 text-3xl font-extrabold tracking-tight">{p.price_monthly > 0 ? formatMoney(p.price_monthly, p.currency) : tr("Free")}{p.price_monthly > 0 && <span className="text-sm font-medium text-muted-foreground"> / {tr("month")}</span>}</p>
               <ul className="my-4 space-y-1.5 text-sm">

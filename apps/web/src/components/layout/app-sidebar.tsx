@@ -108,12 +108,12 @@ export function AppSidebar() {
   return (
     <Sidebar variant="floating" side={locale === "ar" ? "right" : "left"} role="complementary" aria-label={tr("Sidebar")}>
       <SidebarHeader className="p-3 pb-1">
-        <Link href="/" className="block rounded-2xl px-3 py-4 transition-colors hover:bg-[#0b1b3a]/5" aria-label={tr("ArmorHub")}>
+        <Link href="/" className="block rounded-2xl px-3 py-4 transition-colors hover:bg-[#1a1a1a]/5" aria-label={tr("ArmorHub")}>
           <span className="flex items-center gap-2.5">
             {platformLogo() ? <img src={platformLogo() ?? ""} alt="" className="h-[34px] w-[34px] shrink-0 rounded-lg object-cover" /> : <LogoMark className="h-[34px] w-[34px] shrink-0" />}
-            <span className="font-display text-xl font-bold tracking-tight text-[#0b1b3a]">{tr("ArmorHub")}</span>
+            <span className="font-display text-xl font-bold tracking-tight text-[#1a1a1a]">{tr("ArmorHub")}</span>
           </span>
-          <span className="mt-1 block ps-[44px] text-[12.5px] text-[#5b6784]">
+          <span className="mt-1 block ps-[44px] text-[12.5px] text-[#5f5c52]">
             {user?.tenant && !user.roles?.includes("platform-admin") ? user.tenant.name : user?.industry ? tr(user.industry.name) : tr("Service Marketplace Platform")}
           </span>
         </Link>
@@ -129,7 +129,7 @@ export function AppSidebar() {
           .map((group) => (
             <div key={group.heading ?? "main"}>
               {group.heading && (
-                <p className="px-4 pb-1 pt-5 text-[11.5px] font-semibold tracking-wide text-[#5b6784]">
+                <p className="px-4 pb-1 pt-5 text-[11.5px] font-semibold tracking-wide text-[#5f5c52]">
                   {tr(group.heading)}
                 </p>
               )}
@@ -156,7 +156,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        <Link href="/dashboard/help" className="block rounded-2xl bg-[#0b1b3a] p-4 text-white transition hover:brightness-110">
+        <Link href="/dashboard/help" className="block rounded-2xl bg-[#1a1a1a] p-4 text-white transition hover:brightness-110">
           <span className="block text-sm font-semibold">{tr("Need a hand?")}</span>
           <span className="block text-xs text-white/70">{tr("Ask us or read the FAQ")}</span>
         </Link>

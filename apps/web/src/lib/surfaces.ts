@@ -41,7 +41,7 @@ export const FONT_STACKS: Record<string, string> = {
 };
 
 export const SECTION_KEYS = [
-  "partner_strip", "industries", "stores", "quote_feature", "dashboard_feature", "value_props", "partners", "use_cases", "why", "how", "bento",
+  "stores", "partner_strip", "industries", "quote_feature", "dashboard_feature", "value_props", "partners", "use_cases", "why", "how", "bento",
   "developers", "compat", "markets", "faq",
 ] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];

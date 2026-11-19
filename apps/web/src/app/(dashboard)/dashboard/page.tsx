@@ -64,7 +64,7 @@ function roleView(user: { roles?: string[]; store_slug?: string | null }): RoleV
   return { chip: "Customer", actions: [["Shop", user.store_slug ? `/s/${user.store_slug}/products` : "/"], ["My orders", "/dashboard/orders"]] };
 }
 
-const STAGE_COLORS = ["#0b1b3a", "#2f6bff", "#8db8ff", "#cfe0ff", "#e6ecf7", "#b4bfd6"];
+const STAGE_COLORS = ["#1a1a1a", "#FFD21F", "#E0B400", "#F3E39A", "#f3f0e4", "#cfc9ad"];
 
 /** Orders by stage as one stacked bar with a legend, from the live counts. */
 function StageBar({ counts }: { counts: Record<string, number> }) {
@@ -97,7 +97,7 @@ function ActivityRail({ items }: { items: AppNotification[] | null }) {
     <aside className="rounded-2xl border bg-white p-5 shadow-card lg:w-[290px] lg:shrink-0" aria-labelledby="activity-title">
       <div className="mb-1 flex items-center justify-between">
         <h3 id="activity-title" className="font-display text-xl font-semibold">{tr("Recent activity")}</h3>
-        <Link href="/dashboard/notifications" className="text-[13px] font-semibold text-[#2f6bff] hover:underline">{tr("See all")}</Link>
+        <Link href="/dashboard/notifications" className="text-[13px] font-semibold text-[#8a6a00] hover:underline">{tr("See all")}</Link>
       </div>
       {items === null ? (
         <p className="py-6 text-sm text-muted-foreground">{tr("Loading...")}</p>
@@ -108,7 +108,7 @@ function ActivityRail({ items }: { items: AppNotification[] | null }) {
           {items.slice(0, 6).map((n) => (
             <li key={n.id} className="border-t first:border-t-0">
               <Link href={n.path || "/dashboard/notifications"} className="flex items-start gap-3 py-3 text-sm hover:opacity-80">
-                <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read ? "bg-[#cfe0ff]" : "bg-[#2f6bff]"}`} aria-hidden="true" />
+                <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read ? "bg-[#F3E39A]" : "bg-[#FFD21F]"}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{tr(n.title)}</span>
                   <span className="block text-xs text-muted-foreground">{formatDateTime(n.created_at)}</span>
@@ -138,23 +138,23 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#0c1230] via-[#1b2e8f] to-[#2f5bff] px-6 pb-24 pt-7 text-white sm:px-8">
-        <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[.09]" aria-hidden="true">
-          <defs><pattern id="dash-pattern" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M30 0 60 30 30 60 0 30Z" fill="none" stroke="#fff" strokeWidth="1.5" /><circle cx="30" cy="30" r="8" fill="none" stroke="#fff" /></pattern></defs>
+      <section className="relative overflow-hidden rounded-[30px] bg-[#FFD21F] px-6 pb-24 pt-7 text-[#1a1a1a] sm:px-8">
+        <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[.12]" aria-hidden="true">
+          <defs><pattern id="dash-pattern" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M30 0 60 30 30 60 0 30Z" fill="none" stroke="#1a1a1a" strokeWidth="1.5" /><circle cx="30" cy="30" r="8" fill="none" stroke="#1a1a1a" /></pattern></defs>
           <rect width="100%" height="100%" fill="url(#dash-pattern)" />
         </svg>
         <div className="relative flex flex-wrap items-end justify-between gap-5">
           <div>
-            <span className="inline-flex rounded-full bg-white/15 px-3.5 py-1.5 text-sm font-semibold">{tr(view.chip)}</span>
-            <h2 className="display mt-4 text-[2.3rem] !text-white md:text-[2.6rem]">{greeting(user.name)}</h2>
-            <p className="mt-2 text-white/75">
+            <span className="inline-flex rounded-full bg-white/60 px-3.5 py-1.5 text-sm font-semibold">{tr(view.chip)}</span>
+            <h2 className="display mt-4 text-[2.3rem] !text-[#1a1a1a] md:text-[2.6rem]">{greeting(user.name)}</h2>
+            <p className="mt-2 text-[#1a1a1a]/75">
               {user.email}
               {user.industry ? ` · ${tr(user.industry.name)}` : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {view.actions.map(([label, href], i) => (
-              <Link key={href} href={href} className={`inline-flex h-10 items-center rounded-full px-5 text-sm font-semibold transition hover:-translate-y-px ${i === 0 ? "bg-white text-[#0c1230]" : "bg-white/15 text-white hover:bg-white/25"}`}>{tr(label)}</Link>
+              <Link key={href} href={href} className={`inline-flex h-10 items-center rounded-full px-5 text-sm font-semibold transition hover:-translate-y-px ${i === 0 ? "bg-[#1a1a1a] text-white" : "bg-white/60 text-[#1a1a1a] hover:bg-white/80"}`}>{tr(label)}</Link>
             ))}
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       {stats && (
         <div className="relative z-10 -mt-14 grid grid-cols-2 gap-4 px-3 sm:px-5 lg:grid-cols-4">
           {stats.cards.map((c, i) => (
-            <div key={c.key} className={`rounded-2xl border p-5 shadow-card ${i === 0 ? "border-[#0b1b3a] bg-[#0b1b3a] text-white" : "bg-white"}`}>
+            <div key={c.key} className={`rounded-2xl border p-5 shadow-card ${i === 0 ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "bg-white"}`}>
               <p className={`text-[13.5px] ${i === 0 ? "text-white/65" : "text-muted-foreground"}`}>{tr(c.label)}</p>
               <p className="font-display mt-1.5 text-[1.9rem] font-bold leading-tight tracking-tight">{c.format === "money" ? money(c.value) : formatNumber(c.value)}</p>
             </div>

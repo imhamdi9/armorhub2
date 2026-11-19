@@ -38,24 +38,24 @@ function useSession() {
 /** Colours for the page: the platform's forest and lime, or a store's own colour with matching dark and wash tones. */
 export function themeVars(store?: ShellStore, brand?: { color?: string | null; dark?: string | null }): CSSProperties {
   if (!store?.primary_color) {
-    const color = brand?.color ?? "#2f6bff";
-    const dark = brand?.dark ?? "#0b1b3a";
+    const color = brand?.color ?? "#FFD21F";
+    const dark = brand?.dark ?? "#1a1a1a";
 
     // The platform's own colours, optionally changed by an admin (colours are validated #rrggbb values).
     if (brand?.color || brand?.dark) {
-      return { "--brand": color, "--on-brand": color === "#2f6bff" ? "#ffffff" : textOn(color), "--dark": dark, "--on-dark-accent": `color-mix(in srgb, ${color} 55%, white)`, "--brand-wash": `color-mix(in srgb, ${color} 18%, white)`, "--brand-ink": dark } as CSSProperties;
+      return { "--brand": color, "--on-brand": textOn(color), "--dark": dark, "--on-dark-accent": `color-mix(in srgb, ${color} 55%, white)`, "--brand-wash": `color-mix(in srgb, ${color} 18%, white)`, "--brand-ink": dark } as CSSProperties;
     }
 
-    return { "--brand": "#2f6bff", "--on-brand": "#ffffff", "--dark": "#0b1b3a", "--on-dark-accent": "#8db8ff", "--brand-wash": "#e3edff", "--brand-ink": "#0b1b3a" } as CSSProperties;
+    return { "--brand": "#FFD21F", "--on-brand": "#1a1a1a", "--dark": "#1a1a1a", "--on-dark-accent": "#FFD21F", "--brand-wash": "#fff7cf", "--brand-ink": "#6b5200" } as CSSProperties;
   }
   const c = store.primary_color; // a validated #rrggbb (see the editor API), never free text
   return {
     "--brand": c,
     "--on-brand": textOn(c),
-    "--dark": `color-mix(in srgb, ${c} 30%, #0a1630)`,
+    "--dark": `color-mix(in srgb, ${c} 30%, #141414)`,
     "--on-dark-accent": `color-mix(in srgb, ${c} 55%, white)`,
     "--brand-wash": `color-mix(in srgb, ${c} 14%, white)`,
-    "--brand-ink": `color-mix(in srgb, ${c} 60%, #0a1630)`,
+    "--brand-ink": `color-mix(in srgb, ${c} 60%, #141414)`,
   } as CSSProperties;
 }
 
@@ -70,7 +70,7 @@ export function AuthLinks({ store }: { store?: ShellStore }) {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href="/login" className="rounded-full border border-[#dce3f1] bg-white/60 px-5 py-2.5 text-sm font-semibold text-obsidian transition hover:bg-white">{tr("Sign in")}</Link>
+      <Link href="/login" className="rounded-full border border-[#e6e1cc] bg-white/60 px-5 py-2.5 text-sm font-semibold text-obsidian transition hover:bg-white">{tr("Sign in")}</Link>
       <Link href={signup} className="btn-brand px-5 py-2.5 text-sm">{tr("Sign up")}</Link>
     </div>
   );
@@ -101,16 +101,16 @@ function Header({ store }: { store?: ShellStore }) {
   const shownStore = store ?? (siteLogo ? { name: siteName, slug: "", logo_url: siteLogo } : undefined);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-transparent bg-bone/85 backdrop-blur supports-[backdrop-filter]:bg-bone/70">
+    <header className="sticky top-0 z-40 border-b border-border bg-white">
       <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between gap-3 px-4 md:px-10">
         <Link href={home} className="flex items-center gap-2.5 font-[family-name:var(--font-display)] text-[21px] font-bold tracking-tight text-obsidian">
           <Logo store={shownStore} />
           <span>{store?.name ?? tr(siteName)}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-full border border-[#dce3f1] bg-white/70 p-1 text-[14.5px] md:flex" aria-label={tr("Main")}>
+        <nav className="hidden items-center gap-1 text-[14.5px] md:flex" aria-label={tr("Main")}>
           {links.map(([href, label]) => (
-            <Link key={label} href={href} className="rounded-full px-4 py-2 font-medium text-forest transition hover:bg-forest hover:text-white">{label}</Link>
+            <Link key={label} href={href} className="rounded-full px-4 py-2 font-medium text-forest transition hover:bg-[var(--brand)] hover:text-[var(--on-brand)]">{label}</Link>
           ))}
         </nav>
 

@@ -8,17 +8,17 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
-  --color-forest: #0b1b3a;
-  --color-moss: #2f6bff;
+  --color-forest: #1a1a1a;
+  --color-moss: #FFD21F;
   --color-bone: #ffffff;
-  --color-lime: #8db8ff;
-  --color-spruce: #2f6bff;
-  --color-linen: #e3edff;
-  --color-fog: #e6ecf7;
-  --color-charcoal: #3a4560;
-  --color-obsidian: #0a1630;
-  --color-pebble: #8a94ad;
-  --color-slate: #5b6784;
+  --color-lime: #FFD21F;
+  --color-spruce: #8a6a00;
+  --color-linen: #fff7cf;
+  --color-fog: #f3f0e4;
+  --color-charcoal: #3a3a36;
+  --color-obsidian: #141414;
+  --color-pebble: #8a8776;
+  --color-slate: #5f5c52;
   --color-signal: #0b4c72;
   --color-alarm: #cb272f;
   --font-mono: var(--font-geist-mono);
@@ -67,37 +67,37 @@
   --font-arabic: "Noto Sans Arabic Variable";
   --font-geist-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --background: #ffffff;
-  --foreground: #0b1b3a;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #0a1630;
+  --card-foreground: #141414;
   --popover: #ffffff;
-  --popover-foreground: #0a1630;
-  --primary: #0b1b3a;
-  --primary-foreground: #ffffff;
-  --secondary: #e6ecf7;
-  --secondary-foreground: #0b1b3a;
-  --muted: #edf1f9;
-  --muted-foreground: #5b6784;
-  --accent: #e3edff;
-  --accent-foreground: #0b1b3a;
+  --popover-foreground: #141414;
+  --primary: #FFD21F;
+  --primary-foreground: #1a1a1a;
+  --secondary: #f3f0e4;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f6f3e6;
+  --muted-foreground: #5f5c52;
+  --accent: #fff7cf;
+  --accent-foreground: #1a1a1a;
   --destructive: #cb272f;
-  --border: #dce3f1;
-  --input: #b4bfd6;
-  --ring: #0b1b3a;
-  --chart-1: #8db8ff;
-  --chart-2: #1f4fc4;
-  --chart-3: #0b1b3a;
+  --border: #e6e1cc;
+  --input: #cfc9ad;
+  --ring: #1a1a1a;
+  --chart-1: #FFD21F;
+  --chart-2: #c9a300;
+  --chart-3: #1a1a1a;
   --chart-4: #0b4c72;
-  --chart-5: #8a94ad;
+  --chart-5: #8a8776;
   --radius: 0.875rem;
   --sidebar: rgba(255, 255, 255, 0.96);
-  --sidebar-foreground: #0b1b3a;
-  --sidebar-primary: #2f6bff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2f6bff;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(11, 27, 58, 0.08);
-  --sidebar-ring: #2f6bff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #FFD21F;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #FFD21F;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: rgba(26, 26, 26, 0.08);
+  --sidebar-ring: #c9a300;
 }
 
 .dark {
@@ -149,8 +149,8 @@
 /* Store branding: the colours come from validated hex values set by the store owner. */
 .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
 .btn-brand {
-  background-color: var(--brand, #2f6bff);
-  color: var(--on-brand, #ffffff);
+  background-color: var(--brand, #FFD21F);
+  color: var(--on-brand, #1a1a1a);
   border-radius: 9999px;
   font-weight: 600;
   transition: filter 0.15s, transform 0.15s;
@@ -164,17 +164,17 @@
 
 /* Wise-style surfaces: forest-green panels with a lime accent; stores swap in their own colour. */
 .bg-dark {
-  background-color: var(--dark, #0b1b3a);
+  background-color: var(--dark, #1a1a1a);
   color: #fff;
 }
 .text-on-dark-accent {
-  color: var(--on-dark-accent, #8db8ff);
+  color: var(--on-dark-accent, #FFD21F);
 }
 .bg-brand-wash {
-  background-color: var(--brand-wash, #e3edff);
+  background-color: var(--brand-wash, #fff7cf);
 }
 .text-brand-ink {
-  color: var(--brand-ink, #0b1b3a);
+  color: var(--brand-ink, #6b5200);
 }
 
 /* The brand's voice: Inter, tight, in sentence case. Arabic falls back to its own face. */
@@ -183,7 +183,7 @@
   font-weight: 700;
   line-height: 1.04;
   letter-spacing: -0.04em;
-  color: #0b1b3a;
+  color: #1a1a1a;
 }
 .display-xl {
   font-size: clamp(2.5rem, 6.2vw, 4.5rem);
@@ -204,14 +204,14 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-arabic), sans-serif; }
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3 { font-family: var(--font-arabic), sans-serif; }
 
 /* Soft, layered depth instead of one heavy shadow. */
-.shadow-card { box-shadow: 0 1px 2px rgba(11,27,58,.06), 0 8px 24px -10px rgba(11,27,58,.16); }
-.shadow-lift { box-shadow: 0 2px 4px rgba(11,27,58,.06), 0 18px 40px -14px rgba(11,27,58,.28); }
-.hover-lift:hover { box-shadow: 0 2px 4px rgba(11,27,58,.06), 0 18px 40px -14px rgba(11,27,58,.28); transform: translateY(-2px); }
+.shadow-card { box-shadow: 0 1px 2px rgba(26,26,26,.06), 0 8px 24px -10px rgba(26,26,26,.16); }
+.shadow-lift { box-shadow: 0 2px 4px rgba(26,26,26,.06), 0 18px 40px -14px rgba(26,26,26,.28); }
+.hover-lift:hover { box-shadow: 0 2px 4px rgba(26,26,26,.06), 0 18px 40px -14px rgba(26,26,26,.28); transform: translateY(-2px); }
 
 /* Faint column grid that gives dark panels some texture. */
 .bg-grid-dark {
   background-image:
-    radial-gradient(520px 320px at 88% 0%, color-mix(in srgb, var(--on-dark-accent, #8db8ff) 22%, transparent), transparent 70%),
+    radial-gradient(520px 320px at 88% 0%, color-mix(in srgb, var(--on-dark-accent, #FFD21F) 22%, transparent), transparent 70%),
     repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 44px);
 }
 

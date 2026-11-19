@@ -101,11 +101,11 @@ export default function DashboardLayout({
     <I18nProvider>
     <CurrentUserProvider>
       <TooltipProvider>
-        <SidebarProvider className="bg-[radial-gradient(700px_500px_at_5%_0%,#bcd6ff,transparent_60%),radial-gradient(600px_500px_at_98%_12%,#d4f1ff,transparent_60%),#eef3ff]">
+        <SidebarProvider className="bg-[radial-gradient(700px_500px_at_5%_0%,#ffeaa0,transparent_60%),radial-gradient(600px_500px_at_98%_12%,#fff3c4,transparent_60%),#faf8ef]">
           <AppSidebar />
 
           <SidebarInset className="min-w-0 overflow-x-clip !bg-transparent">
-            <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between px-3 sm:px-8">
+            <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-border bg-white/95 px-3 backdrop-blur sm:px-8">
               <div className="flex items-center">
                 <SidebarTrigger />
                 <PageTitle />

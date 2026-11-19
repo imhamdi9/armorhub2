@@ -22,8 +22,8 @@ final class Surfaces
             'name' => ['type' => 'text', 'label' => 'Platform name', 'default' => 'ArmorHub', 'max' => 40, 'required' => false],
             'tagline' => ['type' => 'text', 'label' => 'Tagline', 'max' => 120],
             'logo_url' => ['type' => 'image', 'label' => 'Logo address (https)'],
-            'brand_color' => ['type' => 'color', 'label' => 'Accent colour (buttons)', 'default' => '#2f6bff'],
-            'dark_color' => ['type' => 'color', 'label' => 'Dark colour (panels, footer)', 'default' => '#0b1b3a'],
+            'brand_color' => ['type' => 'color', 'label' => 'Accent colour (buttons)', 'default' => '#FFD21F'],
+            'dark_color' => ['type' => 'color', 'label' => 'Dark colour (panels, footer)', 'default' => '#1a1a1a'],
             'font_heading' => ['type' => 'select', 'label' => 'Headline font', 'options' => self::FONTS],
             'font_body' => ['type' => 'select', 'label' => 'Text font', 'options' => self::FONTS],
         ], 'The name, logo and colours of the public site.', public: true);
