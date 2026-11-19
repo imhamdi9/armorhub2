@@ -171,8 +171,20 @@ export const createCompany = async (data: {
   type?: string;
 }) => (await api.post<Company>("/companies", data)).data;
 
-export const getUsers = async (search?: string, scope?: "platform" | "users") =>
-  (await api.get<Paginated<StaffUser>>("/users", { params: { ...(search ? { search } : {}), ...(scope ? { scope } : {}) } })).data;
+export interface UserFilters { search?: string; scope?: "platform" | "users"; role?: string; status?: "active" | "inactive"; company_id?: number; guests?: boolean; page?: number }
+
+export const getUsers = async (search?: string, scope?: "platform" | "users", filters: Omit<UserFilters, "search" | "scope"> = {}) =>
+  (await api.get<Paginated<StaffUser>>("/users", {
+    params: {
+      ...(search ? { search } : {}), ...(scope ? { scope } : {}),
+      ...(filters.role ? { role: filters.role } : {}), ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.company_id ? { company_id: filters.company_id } : {}), ...(filters.guests ? { guests: 1 } : {}), ...(filters.page ? { page: filters.page } : {}),
+    },
+  })).data;
+
+/** An administrator looks at the platform as another person sees it (read-only, 30 minutes, audited). The browser's session is swapped by the server. */
+export const viewAsUser = async (id: number) => (await api.post(`/admin/impersonate/${id}`)).data;
+export const leaveViewAs = async () => (await api.post("/impersonation/exit")).data;
 
 export const createUser = async (data: {
   name: string;
@@ -235,7 +247,7 @@ export const getCatalogSchema = async (alias: string) =>
 
 export interface DashboardStats {
   role: string;
-  cards: { key: string; label: string; value: number; format: "number" | "money" }[];
+  cards: { key: string; label: string; value: number; format: "number" | "money"; currency?: string | null }[];
   orders_by_status: Record<string, number>;
 }
 

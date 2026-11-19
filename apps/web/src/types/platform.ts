@@ -230,6 +230,7 @@ export interface Paginated<T> {
   data: T[];
   current_page: number;
   last_page: number;
+  total?: number;
 }
 
 export interface PriceQuote {
@@ -246,6 +247,8 @@ export interface StaffUser {
   name: string;
   email: string;
   is_active: boolean;
+  is_guest?: boolean;
+  last_login_at?: string | null;
   role: string | null;
   company: { id: number; name: string } | null;
   partner: { id: number; name: string } | null;

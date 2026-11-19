@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { formatDateTime, formatNumber, tr } from "@/lib/i18n";
+import { errorMessage } from "@/lib/errors";
+import { formatDateTime, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { statusLabel } from "@/lib/orders";
-import { getOverview } from "@/services/admin.service";
+import { Button } from "@/components/ui/button";
+import { downloadExport, getOverview, type ExportKind } from "@/services/admin.service";
 import type { Overview } from "@/types/admin";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
@@ -17,12 +19,30 @@ const SEVERITY: Record<string, string> = {
   info: "border-blue-200 bg-blue-50",
 };
 
-const money = (n: number) => formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** Money is shown per currency and never added across them: one line for each currency that has any. */
+function Money({ card }: { card: { value: number; by_currency?: Record<string, number> } }) {
+  const lines = Object.entries(card.by_currency ?? {});
+  if (lines.length === 0) return <p className="text-2xl font-bold">—</p>;
+
+  return (
+    <div className="space-y-0.5">
+      {lines.map(([cur, amount]) => <p key={cur} className="text-2xl font-bold tabular-nums" dir="ltr">{formatMoney(amount, cur)}</p>)}
+    </div>
+  );
+}
+
+const EXPORTS: { kind: ExportKind; label: string }[] = [
+  { kind: "orders", label: "Orders" },
+  { kind: "payments", label: "Payments" },
+  { kind: "payouts", label: "Payouts" },
+  { kind: "users", label: "Users" },
+];
 
 /** Everything an administrator should know at a glance. */
 export default function AdminOverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     getOverview().then(setData).catch(() => setForbidden(true));
@@ -55,7 +75,7 @@ export default function AdminOverviewPage() {
         {data.numbers.map((c) => (
           <div key={c.key} className="rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">{tr(c.label)}</p>
-            <p className="text-2xl font-bold">{c.format === "money" ? money(c.value) : formatNumber(c.value)}</p>
+            {c.format === "money" ? <Money card={c} /> : <p className="text-2xl font-bold">{formatNumber(c.value)}</p>}
           </div>
         ))}
       </section>
@@ -81,6 +101,17 @@ export default function AdminOverviewPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-xl font-semibold">{tr("Export records")}</h2>
+        <p className="mb-3 text-sm text-muted-foreground">{tr("A spreadsheet (CSV) of everything on the platform, for your accountant or your own reports. Each export is written to the audit log.")}</p>
+        <div className="flex flex-wrap gap-2">
+          {EXPORTS.map((x) => (
+            <Button key={x.kind} variant="outline" onClick={() => { setExportError(null); downloadExport(x.kind).catch((err) => setExportError(errorMessage(err))); }}>{tr(x.label)} (CSV)</Button>
+          ))}
+        </div>
+        {exportError && <p className="mt-2 text-sm text-red-500" role="alert">{exportError}</p>}
       </section>
 
       <section>

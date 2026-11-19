@@ -254,3 +254,32 @@ export const decidePublication = async (id: number, action: "approve" | "reject"
 export interface PayoutAccountRow { id: number; company: string | null; method: "bank" | "wallet"; holder: string; bank_name: string | null; number: string | null; status: "pending" | "verified" | "rejected"; note: string | null }
 export const getPayoutAccounts = async () => (await api.get<PayoutAccountRow[]>("/admin/payout-accounts")).data;
 export const decidePayoutAccount = async (id: number, decision: "verified" | "rejected", note?: string) => (await api.post(`/admin/payout-accounts/${id}/decide`, { decision, note })).data;
+
+// ---- exports, search, system health ---------------------------------------------------------------------------------------
+
+export type ExportKind = "orders" | "payments" | "payouts" | "users";
+
+/** Downloads a CSV of records. The browser's own session authorises it; the file is built by the server and each download is audited. */
+export async function downloadExport(kind: ExportKind, range: { from?: string; to?: string } = {}) {
+  const res = await api.get<Blob>(`/admin/export/${kind}`, { params: { ...(range.from ? { from: range.from } : {}), ...(range.to ? { to: range.to } : {}) }, responseType: "blob" });
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export interface SearchGroup { key: string; label: string; items: { id: number; title: string; detail: string; path: string }[] }
+export const searchAdmin = async (q: string) => (await api.get<{ query: string; groups: SearchGroup[] }>("/admin/search", { params: { q } })).data;
+
+export interface SystemReport {
+  checks: { key: string; label: string; status: "ok" | "warn" | "fail"; detail: string; params?: Record<string, string | number | null> }[];
+  failed_jobs: { uuid: string; queue: string; job: string; error: string; failed_at: string }[];
+  runtime: { php: string; environment: string; queue: string; mail: string };
+}
+export const getSystem = async () => (await api.get<SystemReport>("/admin/system")).data;
+export const retryFailedJob = async (uuid: string) => (await api.post(`/admin/system/failed-jobs/${uuid}/retry`)).data;
+export const removeFailedJob = async (uuid: string) => api.delete(`/admin/system/failed-jobs/${uuid}`);

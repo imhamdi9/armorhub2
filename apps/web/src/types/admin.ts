@@ -36,6 +36,8 @@ export interface Card {
   label: string;
   value: number;
   format: "number" | "money";
+  /** Money is never added across currencies: one amount per currency. */
+  by_currency?: Record<string, number>;
 }
 
 export interface Overview {

@@ -29,7 +29,7 @@ for (const role of ["support-agent", "operations-agent", "warehouse-staff", "cat
 
 // what each role's menu must contain / must not contain
 const ROLES = [
-  { role: "platform-admin", email: "admin@demo.eg", password: demoPassword, has: ["Products", "Markets", "Users"], lacks: [] },
+  { role: "platform-admin", email: "admin@demo.eg", password: demoPassword, has: ["Products", "Markets", "Users", "System"], lacks: [] },
   { role: "company-owner", email: "owner.auto@demo.eg", password: demoPassword, has: ["Orders", "Products", "Team"], lacks: ["Markets"] },
   { role: "partner-manager", email: "manager.auto1@demo.eg", password: demoPassword, has: ["Requests", "Jobs", "Wallet"], lacks: ["Markets", "Users"] },
   { role: "technician", email: "tech.auto1@demo.eg", password: demoPassword, has: ["Jobs"], lacks: ["Requests", "Products", "Orders"] },
@@ -77,5 +77,11 @@ for (const r of ROLES) {
 }
 
 await browser.close();
+
+// the throwaway staff accounts made for this run go away again (only the ones this run created, matched by its own stamp)
+const listed = await (await fetch(`${api}/users?search=${encodeURIComponent(`e2e.`)}`, { headers: { ...json, Authorization: `Bearer ${admin.token}` } })).json();
+for (const u of listed.data ?? []) {
+  if (u.email.endsWith(`.${stamp}@demo.eg`)) await fetch(`${api}/users/${u.id}`, { method: "DELETE", headers: { ...json, Authorization: `Bearer ${admin.token}` } });
+}
 if (problems.length) { console.log(`\n${problems.length} problem(s)`); process.exit(1); }
 console.log("\nAll roles passed.");

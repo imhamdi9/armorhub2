@@ -100,7 +100,8 @@ Route::post('/webhooks/{provider}', [PaymentWebhookController::class, 'handle'])
 Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot');
 
-Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonation.readonly'])->group(function () {
+    Route::post('/impersonation/exit', [\App\Http\Controllers\Api\ImpersonationController::class, 'exit']);
 
     // Session
     Route::get('/me', [AuthController::class, 'me']);
@@ -235,6 +236,12 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
         Route::post('/markets/consolidate', [\App\Http\Controllers\Api\Admin\MarketController::class, 'consolidate']);
         Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
         Route::get('/overview', OverviewController::class);
+        Route::post('/impersonate/{id}', [\App\Http\Controllers\Api\ImpersonationController::class, 'start'])->whereNumber('id')->middleware('throttle:20,1');
+        Route::get('/search', \App\Http\Controllers\Api\Admin\SearchController::class)->middleware('throttle:60,1');
+        Route::get('/export/{kind}', \App\Http\Controllers\Api\Admin\ExportController::class)->middleware('throttle:10,1');
+        Route::get('/system', [\App\Http\Controllers\Api\Admin\SystemController::class, 'show']);
+        Route::post('/system/failed-jobs/{uuid}/retry', [\App\Http\Controllers\Api\Admin\SystemController::class, 'retry']);
+        Route::delete('/system/failed-jobs/{uuid}', [\App\Http\Controllers\Api\Admin\SystemController::class, 'forget']);
         Route::get('/settings', [SettingsController::class, 'index']);
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');

@@ -102,7 +102,7 @@ describe("buildNavigation", () => {
   it("puts the control panel in its own Administration section, for platform admins only", () => {
     const admin = buildNavigation(user(["platform-admin"]));
     expect(admin.filter((i) => i.section === "admin").map((i) => i.title)).toEqual([
-      "Overview", "Subscription plans", "Markets", "Categories", "Catalog requests", "Product reviews", "Settings", "Payments", "Marketing", "Payouts", "Disputes", "Withdrawals", "Business numbers", "Sent e-mails", "Promo codes", "Service zones", "Operations tools", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "Audit log",
+      "Overview", "Subscription plans", "Markets", "Categories", "Catalog requests", "Product reviews", "Settings", "Payments", "Marketing", "Payouts", "Disputes", "Withdrawals", "Business numbers", "Sent e-mails", "Promo codes", "Service zones", "Operations tools", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "System", "Audit log",
     ]);
     expect(admin.filter((i) => i.section === "admin").every((i) => i.href.startsWith("/dashboard/admin"))).toBe(true);
 

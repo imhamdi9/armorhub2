@@ -119,7 +119,18 @@ class DashboardController extends Controller
 
     private function card(string $key, string $label, $value, string $format = 'number'): array
     {
-        return ['key' => $key, 'label' => $label, 'value' => round((float) $value, 2), 'format' => $format];
+        return ['key' => $key, 'label' => $label, 'value' => round((float) $value, 2), 'format' => $format] + ($format === 'money' ? ['currency' => $this->currency()] : []);
+    }
+
+    /** The currency of the money on this screen: the person's own market, or (for the platform's staff) the one most orders are in. */
+    private function currency(): ?string
+    {
+        static $cache = [];
+        $user = request()->user();
+        $key = $user?->id ?? 0;
+
+        return $cache[$key] ??= ($user?->company ? app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->currency() : null)
+            ?? Order::withoutGlobalScopes()->selectRaw('currency, count(*) as n')->groupBy('currency')->orderByDesc('n')->value('currency');
     }
 
     private function response(string $role, array $cards, $orders): array

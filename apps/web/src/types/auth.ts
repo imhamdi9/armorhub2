@@ -30,6 +30,8 @@ export interface User {
   is_department_head?: boolean;
   industry?: Industry | null;
   phone?: string | null;
+  /** Set while a platform administrator is viewing as this person (read-only): the name of that administrator. */
+  impersonated_by?: string | null;
   /** Shopping without an account: a quiet session that can become a full account. */
   is_guest?: boolean;
   market?: { code: string; currency: string } | null;

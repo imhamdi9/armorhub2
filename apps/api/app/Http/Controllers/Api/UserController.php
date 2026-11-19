@@ -43,6 +43,13 @@ class UserController extends Controller
             ->when($request->filled('search'), fn ($q) => $q->where(
                 fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%")
             ))
+            // Guest shoppers (a placeholder login made at checkout) are not people to manage: hidden unless asked for.
+            ->when($request->query('guests') !== '1', fn ($q) => $q->where(fn ($w) => $w->where('is_guest', false)->orWhereNull('is_guest')))
+            ->when($request->filled('role'), fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $request->query('role'))))
+            ->when($request->query('status') === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($request->query('status') === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($request->filled('company_id'), fn ($q) => $q->where('company_id', (int) $request->query('company_id')))
+            ->addSelect(['last_login_at' => \App\Models\AuditLog::query()->selectRaw('max(created_at)')->whereColumn('audit_logs.user_id', 'users.id')->where('audit_logs.action', 'auth.login')])
             ->orderBy('name')
             ->paginate(25)
             ->through(fn (User $u) => $this->present($u, $request->user()));
@@ -132,11 +139,20 @@ class UserController extends Controller
 
         abort_if($user->is($actor), 422, 'You cannot delete yourself.');
         $this->assertManageable($actor, $user);
+        abort_if($this->hasHistory($user), 422, 'This account has orders or requests behind it, so it cannot be deleted. Deactivate it instead: it can no longer sign in and its history stays intact.');
 
         $user->tokens()->delete();
         $user->delete();
 
         return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Whether records (orders, installation requests, quote requests) hang on this account: those must keep their people. */
+    private function hasHistory(User $user): bool
+    {
+        return \App\Models\Order::withoutGlobalScopes()->where('customer_id', $user->id)->exists()
+            || \App\Models\InstallationRequest::withoutGlobalScopes()->where('customer_id', $user->id)->exists()
+            || \App\Models\ProductQuoteRequest::query()->where('customer_id', $user->id)->exists();
     }
 
     /** Users the actor is allowed to see/manage. */
@@ -234,6 +250,8 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'is_active' => $user->is_active,
+            'is_guest' => (bool) $user->is_guest,
+            'last_login_at' => $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->toIso8601String() : null,
             'role' => $user->roles->first()?->name,
             'company' => $user->company?->only(['id', 'name']),
             'partner' => $user->partner?->only(['id', 'name']),

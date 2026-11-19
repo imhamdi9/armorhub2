@@ -34,3 +34,6 @@ Artisan::command('inspire', function () {
 
 // A sale or lead an ad platform did not accept is sent again (up to 4 tries a day), then the admins are told.
 \Illuminate\Support\Facades\Schedule::command('marketing:retry-conversions')->everyFifteenMinutes();
+
+// A pulse for the admin "System" page: if this stops, the scheduler is not running and nothing above is happening.
+\Illuminate\Support\Facades\Schedule::call(fn () => \Illuminate\Support\Facades\Cache::put('scheduler:last_run', now()->toIso8601String(), 7200))->everyMinute()->name('scheduler:heartbeat');

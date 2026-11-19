@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AdminAttention } from "@/components/dashboard/admin-attention";
 import { useCurrentUser } from "@/components/providers/current-user";
 import Link from "next/link";
 
@@ -9,7 +10,7 @@ import { nextSteps } from "@/lib/next-steps";
 import { statusLabel } from "@/lib/orders";
 import { type DashboardStats, getDashboardStats, getNotifications } from "@/services/platform.service";
 import type { AppNotification } from "@/types/platform";
-import { formatDateTime, formatNumber, tr } from "@/lib/i18n";
+import { formatDateTime, formatMoney, formatNumber, tr } from "@/lib/i18n";
 
 const money = (n: number) => formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -177,7 +178,7 @@ export default function DashboardPage() {
           {stats.cards.map((c, i) => (
             <div key={c.key} className={`rounded-2xl border p-5 shadow-card ${i === 0 ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "bg-white"}`}>
               <p className={`text-[13.5px] ${i === 0 ? "text-white/65" : "text-muted-foreground"}`}>{tr(c.label)}</p>
-              <p className="font-display mt-1.5 text-[1.9rem] font-bold leading-tight tracking-tight">{c.format === "money" ? money(c.value) : formatNumber(c.value)}</p>
+              <p className="font-display mt-1.5 text-[1.9rem] font-bold leading-tight tracking-tight">{c.format === "money" ? (c.currency ? formatMoney(c.value, c.currency) : money(c.value)) : formatNumber(c.value)}</p>
             </div>
           ))}
         </div>
@@ -185,6 +186,7 @@ export default function DashboardPage() {
 
       <div className={`flex flex-col gap-5 lg:flex-row lg:items-start ${stats ? "mt-5" : "mt-6"}`}>
         <div className="min-w-0 flex-1 space-y-5">
+          {user.roles?.includes("platform-admin") && <AdminAttention />}
           {stats && <NextSteps steps={nextSteps(user, stats)} />}
           {stats && <StageBar counts={stats.orders_by_status} />}
         </div>

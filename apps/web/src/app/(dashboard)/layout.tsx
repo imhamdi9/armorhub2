@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AdminSearch } from "@/components/layout/admin-search";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { ViewAsBanner } from "@/components/layout/view-as-banner";
 import { CurrentUserProvider, useCurrentUser } from "@/components/providers/current-user";
 import {
   SidebarInset,
@@ -77,7 +79,10 @@ function PageTitle() {
 
 function LogoutButton() {
   const router = useRouter();
+  const user = useCurrentUser();
   useLocale();
+  // While viewing as someone the way out is the red banner (signing out would end the administrator's real session).
+  if (user?.impersonated_by) return null;
 
   return (
     <button
@@ -112,12 +117,14 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex items-center gap-2">
+                <AdminSearch />
                 <LanguageSwitcher />
                 <NotificationBell />
                 <LogoutButton />
               </div>
             </header>
 
+            <ViewAsBanner />
             <GuestBanner />
             <VerifyEmailBanner />
 

@@ -222,6 +222,8 @@ class AuthController extends Controller
             'tenant' => $user->company?->tenant ? ['id' => $user->company->tenant->id, 'name' => $user->company->tenant->name] : null,
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+            // Set while a platform administrator is viewing as this person (read-only): the screen shows a banner with a way out.
+            'impersonated_by' => ($by = \App\Http\Middleware\ImpersonationReadOnly::viewedBy($user)) ? User::whereKey($by)->value('name') : null,
         ]));
     }
 

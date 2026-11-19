@@ -54,6 +54,32 @@ class Kpis
         return $out;
     }
 
+    /** What customers paid each day of the period, by currency: the line behind the headline figure. @return array{days: list<string>, by_currency: array<string, list<float>>} */
+    public function dailyGmv(CarbonImmutable $from, CarbonImmutable $to, ?string $market = null): array
+    {
+        $rows = Payment::withoutGlobalScopes()->where('status', 'completed')->whereBetween('payments.created_at', [$from->startOfDay(), $to->endOfDay()])
+            ->when($market, fn ($q) => $q->whereIn('order_id', Order::withoutGlobalScopes()->where('market', $market)->select('id')))
+            ->selectRaw('date(payments.created_at) as day, currency, sum(amount) as total')->groupBy('day', 'currency')->get()
+            ->concat(InstallationPayment::where('status', 'completed')->whereBetween('installation_payments.created_at', [$from->startOfDay(), $to->endOfDay()])
+                ->when($market, fn ($q) => $q->whereIn('request_id', InstallationRequest::where('market', $market)->select('id')))
+                ->selectRaw('date(installation_payments.created_at) as day, currency, sum(amount) as total')->groupBy('day', 'currency')->get());
+
+        $days = [];
+        for ($d = $from->startOfDay(); $d <= $to->startOfDay(); $d = $d->addDay()) {
+            $days[] = $d->toDateString();
+        }
+        $by = [];
+        foreach ($rows as $r) {
+            $by[$r->currency] ??= array_fill(0, count($days), 0.0);
+            $i = array_search($r->day, $days, true);
+            if ($i !== false) {
+                $by[$r->currency][$i] = round($by[$r->currency][$i] + (float) $r->total, 2);
+            }
+        }
+
+        return ['days' => $days, 'by_currency' => $by];
+    }
+
     private function currencyOf(string $market): ?string
     {
         return $this->markets->get($market)?->currency();

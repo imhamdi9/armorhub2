@@ -71,6 +71,11 @@ export default function PayoutsPage() {
                 <div key={currency} className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm">
                   <span>{tr("Held")}: {formatMoney(b.held, currency)} · {tr("Available")}: <strong>{formatMoney(b.available, currency)}</strong> · {tr("In a payout")}: {formatMoney(b.in_payout, currency)} · {tr("Paid")}: {formatMoney(b.paid, currency)}</span>
                   <Button size="sm" disabled={b.available <= 0} onClick={() => run(() => createPayout(s.id, currency))} aria-label={`${tr("Prepare payout")} ${s.name} ${currency}`}>{tr("Prepare payout")}</Button>
+                  {b.available < 0 && (
+                    <p className="basis-full rounded-lg border border-red-300 bg-red-50 p-3 text-red-900" role="alert" data-testid="negative-balance">
+                      {tr("This seller owes {amount}: money was refunded to customers after it had been paid out. Nothing can be paid out until the balance is settled; it is taken from the seller's next sales automatically.", { amount: formatMoney(Math.abs(b.available), currency) })}
+                    </p>
+                  )}
                 </div>
               ))}
             </article>

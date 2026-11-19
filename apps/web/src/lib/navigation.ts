@@ -278,6 +278,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Content", href: "/dashboard/admin/content", section: "admin", icon: "settings" });
     items.push({ title: "Platform", href: "/dashboard/admin/platform", section: "admin", icon: "platform" });
     items.push({ title: "Security", href: "/dashboard/admin/security", section: "admin", icon: "security" });
+    items.push({ title: "System", href: "/dashboard/admin/system", section: "admin", icon: "platform" });
     items.push({ title: "Audit log", href: "/dashboard/admin/audit", section: "admin", icon: "audit" });
   }
 

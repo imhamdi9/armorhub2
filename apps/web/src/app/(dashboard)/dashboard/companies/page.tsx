@@ -22,6 +22,9 @@ import { tr } from "@/lib/i18n";
 import { LoadingBlock } from "@/components/ui/loading-block";
 
 /** Companies are the businesses on the platform. Customers sign up under a company's ID. */
+/** The same names the "Company type" picker uses, so a list never shows the raw word "partner" for a market's own store. */
+const TYPE_LABEL: Record<string, string> = { partner: "Partner / service provider", supplier: "Supplier", platform: "Storefront / platform" };
+
 export default function CompaniesPage() {
   const user = useCurrentUser();
   const isAdmin = hasRole(user, "platform-admin");
@@ -119,7 +122,7 @@ export default function CompaniesPage() {
               ) : (
                 <div>
                   <h2 className="font-semibold">{c.name}</h2>
-                  <p className="text-sm text-muted-foreground">{tr(c.type)} · {tr(c.status)}{c.slug ? ` · /s/${c.slug}` : ""}</p>
+                  <p className="text-sm text-muted-foreground">{tr(TYPE_LABEL[c.type] ?? c.type)} · {tr(c.status)}{c.slug ? ` · /s/${c.slug}` : ""}</p>
                 </div>
               )}
               <div className="flex items-center gap-2">

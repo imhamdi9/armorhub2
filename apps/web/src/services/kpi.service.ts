@@ -14,6 +14,17 @@ export interface Kpis {
   orders: { paid: number; completed: number; completion_rate: number | null };
   repeat_purchase_rate: number | null;
   pilot: Record<"centres" | "sellers" | "requests_per_month" | "answered_share" | "executed_share", Target>;
+  /** The same number of days just before this period, to read each figure as up or down. */
+  previous?: {
+    period: { from: string; to: string };
+    gmv: Kpis["gmv"];
+    net_revenue: Kpis["net_revenue"];
+    average_order_value: Record<string, number | null>;
+    orders: Kpis["orders"];
+    rfq: Kpis["rfq"];
+  };
+  /** What customers paid each day of the period, per currency. */
+  series?: { days: string[]; by_currency: Record<string, number[]> };
 }
 
 export const getKpis = async (params: { from?: string; to?: string; market?: string }) =>
