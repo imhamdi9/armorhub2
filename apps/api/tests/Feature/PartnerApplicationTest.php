@@ -249,7 +249,7 @@ class PartnerApplicationTest extends TestCase
         $this->apply([], documents: [])->assertUnprocessable();
 
         // A script renamed to .pdf is refused: the file is judged by what it is.
-        $fake = $this->realFile('<?php system($_GET["c"]); ?>', 'id.pdf');
+        $fake = $this->realFile('<?php echo "not a pdf"; ?>', 'id.pdf'); // (a harmless script: antivirus on some machines blocks reading a real web-shell snippet)
         $this->apply([], documents: ['id' => $fake, 'commercial_registration' => $this->pdf()])->assertUnprocessable();
         $exe = $this->realFile("MZ\x90\x00\x03\x00", 'id.exe');
         $this->apply([], documents: ['id' => $exe, 'commercial_registration' => $this->pdf()])->assertUnprocessable();
