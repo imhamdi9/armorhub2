@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/marketing";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -146,6 +147,7 @@ export function BusinessApplicationForm({ type }: { type: BusinessType }) {
     try {
       const res = await applyAsBusiness(data);
       setPayment(res.plan_payment ?? null);
+      track("lead", { name: type });
       setDone(true);
     } catch (err) {
       const fields = fieldErrors(err);

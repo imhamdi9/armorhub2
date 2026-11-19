@@ -1,5 +1,7 @@
 "use client";
 
+import { takePromo } from "@/lib/marketing";
+import { TrackEvent } from "@/components/marketing/marketing-scripts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -58,7 +60,12 @@ export function CartScreen({ slug }: { slug?: string }) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => getCart().then(setCart).catch(() => setCart({ items: [], currency: null, items_amount: 0, service_fee_amount: 0, shipping_amount: 0, discount_amount: 0, promo_code: null, promo_problem: null, eta_days: null, free_shipping_over: null, payable_amount: 0, can_checkout: false })), []);
+  const load = useCallback(() => getCart().then(async (c) => {
+    // A link with ?promo=CODE puts the code on the cart for the shopper (once).
+    const code = c.items.length > 0 && !c.promo_code ? takePromo() : null;
+    if (code) { try { c = await applyPromo(code); } catch { /* the code does not apply: the shopper can still type another */ } }
+    setCart(c);
+  }).catch(() => setCart({ items: [], currency: null, items_amount: 0, service_fee_amount: 0, shipping_amount: 0, discount_amount: 0, promo_code: null, promo_problem: null, eta_days: null, free_shipping_over: null, payable_amount: 0, can_checkout: false })), []);
   useEffect(() => { void load(); }, [load]);
 
   async function change(id: number, quantity: number) {
@@ -103,6 +110,7 @@ export function CartScreen({ slug }: { slug?: string }) {
   return (
     <div>
       <PageHeader title={tr("Your cart")} />
+      {cart.items.length > 0 && <TrackEvent name="begin_checkout" data={{ value: cart.items_amount, currency: cart.currency ?? undefined, ids: cart.items.map((l) => l.product_id) }} />}
       {cart.items.length === 0 ? (
         <EmptyState>{tr("Your cart is empty.")} <Link href={slug ? `/s/${slug}` : "/"} className="font-medium underline underline-offset-2">{tr("Keep shopping")}</Link></EmptyState>
       ) : (

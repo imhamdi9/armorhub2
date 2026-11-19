@@ -25,7 +25,7 @@ class Settings
     private ?int $market = null;
 
     /** Settings a market may set for itself. Everything else stays platform-wide. */
-    public const MARKET_PREFIXES = ['payments.', 'shipping.', 'installation.', 'platform.commission', 'payouts.'];
+    public const MARKET_PREFIXES = ['payments.', 'shipping.', 'installation.', 'platform.commission', 'payouts.', 'marketing.'];
 
     public static function overridable(string $key): bool
     {

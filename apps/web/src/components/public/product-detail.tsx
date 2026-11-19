@@ -1,5 +1,6 @@
 "use client";
 
+import { TrackEvent } from "@/components/marketing/marketing-scripts";
 import {
   BuilderLayout, BundleLayout, ClassicLayout, CompareLayout, ImmersiveLayout, MarketplaceLayout, QuoteLayout, StoryLayout, TiersLayout, WarrantyLayout,
 } from "@/components/public/product-page/layouts";
@@ -39,6 +40,7 @@ export function ProductDetail({ store, data }: { store: ShellStore; data: Public
 
   return (
     <ShopShell store={store} active="products">
+      <TrackEvent name="view_item" data={{ id: data.product.id, name: data.product.name, value: data.product.from_price, currency: data.product.currency }} />
       <div className="my-6 rounded-[28px] bg-white p-4 md:p-8" style={{ boxShadow: SHOP_SHADOW }} data-page-template={key}>
         {!OWN_CRUMBS.includes(key) && key !== "story" && <Crumbs m={m} />}
         <Layout m={m} />

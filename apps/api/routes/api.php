@@ -40,6 +40,8 @@ use Illuminate\Support\Facades\Route;
 // Public storefront: browse a store and its catalog without an account (read-only, cacheable)
 Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
+    Route::get('/marketing-config', [\App\Http\Controllers\Api\PublicMarketingController::class, 'show']);
+    Route::get('/feeds/{slug}/{file}', [\App\Http\Controllers\Api\ProductFeedController::class, 'show'])->where('file', '(google|meta|tiktok)(-ar)?\.(xml|csv)');
     Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
     Route::get('/markets', [PublicStorefrontController::class, 'markets']);
     Route::get('/terms', [PublicStorefrontController::class, 'terms']);
@@ -187,6 +189,19 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope'])->group(funct
     Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
         Route::post('/catalog-changes/{id}/approve', [\App\Http\Controllers\Api\CatalogChangeController::class, 'approve'])->whereNumber('id');
         Route::post('/catalog-changes/{id}/reject', [\App\Http\Controllers\Api\CatalogChangeController::class, 'reject'])->whereNumber('id');
+    });
+
+    // The marketing team (and admins, and a market's own admin for their market): ad connections, results, feeds.
+    Route::middleware('permission:marketing.manage|market.settings')->prefix('admin/marketing')->group(function () {
+        $mk = \App\Http\Controllers\Api\Admin\MarketingController::class;
+        Route::get('/attribution', [$mk, 'attribution']);
+        Route::get('/logs', [$mk, 'logs']);
+        Route::post('/test', [$mk, 'test']);
+        Route::post('/spend/sync', [$mk, 'syncSpend']);
+        Route::get('/markets', [$mk, 'markets']);
+        Route::get('/settings', [$mk, 'settings']);
+        Route::put('/settings', [$mk, 'saveSettings']);
+        Route::delete('/settings/{key}', [$mk, 'resetSetting'])->where('key', '[A-Za-z0-9_.]+');
     });
 
     // Disputes, withdrawals, payouts and the audit log: the platform admin for everything, a market admin for their own market only.

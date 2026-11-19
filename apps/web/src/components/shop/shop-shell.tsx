@@ -7,6 +7,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { themeVars, type ShellStore } from "@/components/public/shell";
 import { categoryNamesReady, loadCategoryNames } from "@/lib/category";
 import { LanguageSwitcher, tr } from "@/lib/i18n";
+import { MarketingScripts } from "@/components/marketing/marketing-scripts";
+import { reopenConsent } from "@/components/layout/cookie-consent-banner";
 import { useMarketOffers } from "@/lib/market-offers";
 import { me } from "@/services/auth.service";
 import type { User } from "@/types/auth";
@@ -52,6 +54,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
 
   return (
     <div style={themeVars(store) as CSSProperties} className="min-h-screen bg-bone text-black">
+      <MarketingScripts market={store.market?.code} />
       <CompareBar slug={store.slug} />
       <nav aria-label={tr("Main")} className="fixed inset-x-0 bottom-0 z-30 flex justify-around bg-white py-1 shadow-[0_-2px_8px_rgba(0,0,0,.06)] md:hidden">
         {nav.map((n) => (
@@ -118,6 +121,7 @@ export function ShopShell({ store, active, children }: { store: ShellStore; acti
           <p className="px-6 pb-2 text-center text-xs text-white/70">🔒 {tr("Secure payments")} · 🛡 {tr("Warranty on every job")}</p>
           <nav aria-label={tr("Policies")} className="flex flex-wrap justify-center gap-x-4 gap-y-1 px-6 pb-3 text-xs text-white/70">
             {([["privacy", "Privacy"], ["terms", "Terms"], ["returns", "Returns"], ["shipping", "Delivery"], ["cookies", "Cookies"]] as const).map(([k, l]) => <Link key={k} href={`/policies/${k}`} className="hover:text-white hover:underline">{tr(l)}</Link>)}
+            <button type="button" onClick={reopenConsent} className="hover:underline">{tr("Cookie settings")}</button>
           </nav>
           <p className="border-t border-white/15 px-6 py-4 text-center text-xs text-white/60">© {new Date().getFullYear()} {store.name} · {tr("Powered by")} <Link href="/" className="underline">{tr("ArmorHub")}</Link></p>
         </footer>

@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { campaignHeader } from "@/lib/marketing";
+
 /**
  * Browser sessions use an HttpOnly cookie set by the API: the token is never stored where
  * JavaScript (or an injected script) can read it. `X-Client: web` asks the API for that mode.
@@ -16,7 +18,12 @@ export const api = axios.create({
 
 // The API answers in the language the person reads the site in.
 api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") config.headers["Accept-Language"] = window.localStorage.getItem("locale") === "ar" ? "ar" : "en";
+  if (typeof window !== "undefined") {
+    config.headers["Accept-Language"] = window.localStorage.getItem("locale") === "ar" ? "ar" : "en";
+    // Only after the visitor allowed marketing cookies: which campaign they came from, so the server can credit it (and report the purchase).
+    const campaign = campaignHeader();
+    if (campaign) config.headers["X-Campaign"] = campaign;
+  }
 
   return config;
 });
@@ -29,7 +36,7 @@ api.interceptors.request.use((config) => {
     config.url = config.url.replace(/^\/admin\//, "/market/");
   } else {
     const market = new URLSearchParams(window.location.search).get("market");
-    if (market && /^\d+$/.test(market) && /^\/admin\/(settings|payments|shipping)/.test(config.url)) config.params = { ...(config.params ?? {}), market };
+    if (market && /^\d+$/.test(market) && /^\/admin\/(settings|payments|shipping|marketing)/.test(config.url)) config.params = { ...(config.params ?? {}), market };
   }
 
   return config;

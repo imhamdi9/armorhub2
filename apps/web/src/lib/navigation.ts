@@ -53,7 +53,7 @@ export function aliasSingular(alias: string): string {
     .join(" ");
 }
 
-const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent", "support-agent", "catalog-reviewer"];
+const BUILT_IN_ROLES = ["platform-admin", "company-owner", "partner-manager", "technician", "customer", "seller", "operations-agent", "support-agent", "catalog-reviewer", "marketing-manager"];
 
 /** Someone whose only roles are ones an admin created. */
 export function isCustomRole(user: User | null): boolean {
@@ -120,6 +120,11 @@ function buildNavigationFor(user: User | null): NavItem[] {
   // ArmorHub's catalogue team looks at the products sellers submit.
   if (hasRole(user, "catalog-reviewer") && !hasRole(user, "platform-admin")) {
     items.push({ title: "Product reviews", href: "/dashboard/admin/product-reviews", icon: "products" });
+  }
+
+  // ArmorHub's marketing team: the ad connections, campaign results and product feeds.
+  if (hasRole(user, "marketing-manager") && !hasRole(user, "platform-admin")) {
+    items.push({ title: "Marketing", href: "/dashboard/admin/marketing", icon: "requests" });
   }
 
   // Technicians only work assigned jobs; everyone else deals with orders.
@@ -251,6 +256,7 @@ function buildNavigationFor(user: User | null): NavItem[] {
     items.push({ title: "Product reviews", href: "/dashboard/admin/product-reviews", section: "admin", icon: "products" });
     items.push({ title: "Settings", href: "/dashboard/admin/settings", section: "admin", icon: "settings" });
     items.push({ title: "Payments", href: "/dashboard/admin/payments", section: "admin", icon: "payments" });
+    items.push({ title: "Marketing", href: "/dashboard/admin/marketing", section: "admin", icon: "requests" });
     items.push({ title: "Payouts", href: "/dashboard/admin/payouts", section: "admin", icon: "commissions" });
     items.push({ title: "Disputes", href: "/dashboard/admin/disputes", section: "admin", icon: "security" });
     items.push({ title: "Withdrawals", href: "/dashboard/admin/withdrawals", section: "admin", icon: "commissions" });

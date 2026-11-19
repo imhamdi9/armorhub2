@@ -31,6 +31,14 @@ const SOCIAL = [
   "https://appleid.apple.com",
 ];
 
+// Advertising pixels (Meta, TikTok, Google). They are allowed here but only ever loaded by the site after a visitor accepts marketing cookies.
+const ADS_SCRIPT = ["https://connect.facebook.net", "https://analytics.tiktok.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"];
+const ADS_CONNECT = [
+  "https://www.facebook.com", "https://connect.facebook.net", "https://analytics.tiktok.com", "https://analytics-ipv6.tiktokw.com", "https://www.googletagmanager.com",
+  "https://www.google-analytics.com", "https://*.google-analytics.com", "https://*.analytics.google.com", "https://stats.g.doubleclick.net", "https://*.doubleclick.net", "https://www.google.com",
+];
+const ADS_FRAME = ["https://www.googletagmanager.com", "https://td.doubleclick.net", "https://www.facebook.com"];
+
 /**
  * Content-Security-Policy: even if an attacker managed to inject markup, the browser refuses to
  * load scripts, frames, forms or connections from anywhere we did not list.
@@ -38,13 +46,13 @@ const SOCIAL = [
  */
 const cspFor = (frameAncestors: string) => [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,
+  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_SCRIPT.join(" ")}`,
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   // Stores may show a logo hosted elsewhere (https only; the editor refuses anything else).
   `img-src 'self' data: blob: https: ${apiOrigin()}`,   // the API's own origin too: product photos are served from it (plain http in development)
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}${isProd ? "" : " ws: wss:"}`,
-  `frame-src 'self' ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")}`,
+  `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_CONNECT.join(" ")}${isProd ? "" : " ws: wss:"}`,
+  `frame-src 'self' ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_FRAME.join(" ")}`,
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",

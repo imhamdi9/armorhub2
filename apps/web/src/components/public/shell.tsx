@@ -7,6 +7,8 @@ import { Icon, LogoMark } from "@/components/public/art";
 import { useSite, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { LanguageSwitcher, tr, useLocale } from "@/lib/i18n";
 import { FONT_STACKS, imageSrc, pickText } from "@/lib/surfaces";
+import { MarketingScripts } from "@/components/marketing/marketing-scripts";
+import { reopenConsent } from "@/components/layout/cookie-consent-banner";
 import { useMarketOffers } from "@/lib/market-offers";
 import { textOn } from "@/lib/public-api";
 import { me } from "@/services/auth.service";
@@ -208,6 +210,7 @@ function Footer({ store }: { store?: ShellStore }) {
           <span>© {new Date().getFullYear()} {name}</span>
           <nav aria-label={tr("Policies")} className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {([["privacy", "Privacy"], ["terms", "Terms"], ["returns", "Returns"], ["shipping", "Delivery"], ["cookies", "Cookies"]] as const).map(([k, l]) => <Link key={k} href={`/policies/${k}`} className="hover:text-white hover:underline">{tr(l)}</Link>)}
+            <button type="button" onClick={reopenConsent} className="hover:text-white hover:underline">{tr("Cookie settings")}</button>
           </nav>
           <span className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1"><Icon name="lock" className="h-4 w-4" /> {tr("Secure payments")}</span>
@@ -233,6 +236,7 @@ export function PublicShell({ store, children }: { store?: ShellStore; children:
 
   return (
     <div style={style} className="flex min-h-screen flex-col bg-bone text-charcoal">
+      <MarketingScripts market={store?.market?.code} />
       <Header store={store} />
       <main className="flex-1">{children}</main>
       <Footer store={store} />

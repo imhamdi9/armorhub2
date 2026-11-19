@@ -16,6 +16,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatDate, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { ensureShopperSession } from "@/lib/guest";
 import { addToCart } from "@/services/cart.service";
+import { track } from "@/lib/marketing";
 import { addFavourite, getFavouriteIds, getFit, getGarage, removeFavourite, type Vehicle, type VehicleFit } from "@/services/ops.service";
 import { getMyReview, saveReview, uploadReviewPhoto } from "@/services/platform.service";
 import { imageSrc } from "@/lib/surfaces";
@@ -338,6 +339,7 @@ export function AddToCart({ m }: { m: ProductModel }) {
     try {
       await ensureShopperSession(m.store.slug);
       await addToCart(m.p.id, m.chosen?.target_id, 1, car ? Number(car) : null);
+      track("add_to_cart", { id: m.p.id, name: m.p.name, value: m.p.from_price, currency: m.p.currency, quantity: 1 });
       router.push(`/s/${m.store.slug}/cart`);
     } catch (e) {
       setError(errorMessage(e));

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AuthAside } from "@/components/auth/auth-aside";
 import { AuthBrand } from "@/components/auth/auth-brand";
+import { MarketingScripts } from "@/components/marketing/marketing-scripts";
 import { CookieConsentBanner } from "@/components/layout/cookie-consent-banner";
 import { I18nProvider } from "@/lib/i18n";
 
@@ -20,6 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
       <CookieConsentBanner />
+      <MarketingScripts />
     </I18nProvider>
   );
 }

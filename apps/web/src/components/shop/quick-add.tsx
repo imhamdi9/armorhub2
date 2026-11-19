@@ -6,6 +6,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { ensureShopperSession } from "@/lib/guest";
+import { track } from "@/lib/marketing";
 import { addToCart } from "@/services/cart.service";
 import type { PublicProduct } from "@/types/public";
 
@@ -25,7 +26,7 @@ export function QuickAdd({ product, slug, wide = false }: { product: PublicProdu
     <span className={`flex shrink-0 flex-col gap-1 ${wide ? "items-stretch" : "items-end"}`}>
       <button type="button" className={cls} disabled={state !== "idle"} data-testid="quick-add" aria-label={`${tr("Add to cart")}: ${product.name}`} onClick={async () => {
         setState("busy"); setError(null);
-        try { await ensureShopperSession(slug); await addToCart(product.id); setState("added"); } catch (e) { setError(errorMessage(e)); setState("idle"); }
+        try { await ensureShopperSession(slug); await addToCart(product.id); track("add_to_cart", { id: product.id, name: product.name, value: product.from_price, currency: product.currency, quantity: 1 }); setState("added"); } catch (e) { setError(errorMessage(e)); setState("idle"); }
       }}>{state === "added" ? `✓ ${tr("Added")}` : tr("Add to cart")}</button>
       {state === "added" && <Link href={`/s/${encodeURIComponent(slug)}/cart`} className="text-center text-[11px] font-semibold text-brand-ink underline">{tr("Open the cart")}</Link>}
       {error && <span role="alert" className="text-center text-[11px] text-red-600">{error}</span>}

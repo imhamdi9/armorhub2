@@ -24,6 +24,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: url },
     openGraph: { title, description, type: "website", url, ...(image ? { images: [image] } : {}) },
     twitter: { card: image ? "summary_large_image" : "summary", title, description, ...(image ? { images: [image] } : {}) },
+    // Read by Meta and TikTok when a product link is shared or used in an ad.
+    other: { "product:price:amount": String(data.product.from_price), "product:price:currency": data.product.currency, "product:availability": "in stock", ...(data.product.brand ? { "product:brand": data.product.brand } : {}) },
   };
 }
 

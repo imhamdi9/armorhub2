@@ -85,10 +85,10 @@ class CheckoutController extends Controller
 
         return [
             'id' => $g->id, 'status' => $g->status, 'currency' => $g->currency, 'items_amount' => (float) $g->items_amount, 'service_fee_amount' => (float) $g->service_fee_amount,
-            'shipping_amount' => (float) $g->shipping_amount, 'discount_amount' => (float) $g->discount_amount, 'payable_amount' => (float) $g->payable_amount, 'delivery_speed' => $g->delivery_speed, 'preferred_day' => $g->preferred_day?->toDateString(), 'gift_note' => $g->gift_note, 'paid_at' => $g->paid_at?->toIso8601String(), 'created_at' => $g->created_at?->toIso8601String(),
+            'shipping_amount' => (float) $g->shipping_amount, 'discount_amount' => (float) $g->discount_amount, 'payable_amount' => (float) $g->payable_amount, 'delivery_speed' => $g->delivery_speed, 'preferred_day' => $g->preferred_day?->toDateString(), 'gift_note' => $g->gift_note, 'market' => app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($g->company_id))?->code, 'paid_at' => $g->paid_at?->toIso8601String(), 'created_at' => $g->created_at?->toIso8601String(),
             'orders' => $orders->map(fn ($o) => [
                 'id' => $o->id, 'product' => $o->product?->name, 'image' => ($o->product?->images ?? [])[0] ?? null, 'quantity' => $o->quantity, 'total_amount' => (float) $o->total_amount,
-                'service_fee_amount' => (float) $o->service_fee_amount, 'status' => $o->status instanceof OrderStatus ? $o->status->value : $o->status,
+                'service_fee_amount' => (float) $o->service_fee_amount, 'payable_amount' => (float) $o->payable_amount, 'status' => $o->status instanceof OrderStatus ? $o->status->value : $o->status,
                 'statuses' => app(\App\Services\OrderStatuses::class)->forCustomer($o),
             ])->values(),
         ];

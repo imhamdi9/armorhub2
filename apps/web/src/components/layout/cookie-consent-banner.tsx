@@ -30,6 +30,15 @@ function writeConsent(value: { decision: ConsentDecision; timestamp: string }) {
   try { window.localStorage.setItem(CONSENT_KEY, JSON.stringify(value)); } catch { /* the choice still holds for this page view */ }
 }
 
+const REOPEN_EVENT = "cookie-consent-reopen";
+
+/** Lets the visitor change their mind: forgets the choice and shows the bar again. */
+export function reopenConsent() {
+  memory = null;
+  try { window.localStorage.removeItem(CONSENT_KEY); } catch { /* unavailable */ }
+  window.dispatchEvent(new Event(REOPEN_EVENT));
+}
+
 const listeners = new Set<() => void>();
 const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
 const snapshot = () => (readConsent() ? "decided" : "undecided");
@@ -49,6 +58,12 @@ export function CookieConsentBanner({ policyHref = "/policies/cookies" }: { poli
   const [leaving, setLeaving] = useState(false);
   const [entered, setEntered] = useState(false);
   const [gone, setGone] = useState(false);
+  // "Cookie settings" in the footer asks the bar to come back.
+  useEffect(() => {
+    const again = () => { setGone(false); setLeaving(false); setEntered(false); listeners.forEach((l) => l()); requestAnimationFrame(() => setEntered(true)); };
+    window.addEventListener(REOPEN_EVENT, again);
+    return () => window.removeEventListener(REOPEN_EVENT, again);
+  }, []);
 
   // A returning visitor's choice is replayed once, so scripts that load later still hear about it.
   // (Deferred a tick: a child's effect runs before its parent's, so a page that subscribes in its own effect would otherwise miss it.)
@@ -77,7 +92,7 @@ export function CookieConsentBanner({ policyHref = "/policies/cookies" }: { poli
     <div role="region" aria-label={tr("Cookie consent")} data-cookie-banner className={`fixed inset-x-0 bottom-0 z-50 p-3 transition duration-300 ease-out motion-reduce:transition-none sm:p-4 ${entered && !leaving ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}>
       <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-900/10 sm:flex-row sm:items-center sm:gap-5">
         <p className="text-sm leading-relaxed text-neutral-600">
-          {tr("We use cookies to keep the site working and to understand how it is used. You can choose to accept them all or reject the optional ones.")}{" "}
+          {tr("We use cookies to keep the site working, to understand how it is used and to measure our advertising. You can accept them all or reject the optional ones; the site works the same either way.")}{" "}
           <a href={policyHref} className={`inline-flex min-h-11 items-center rounded font-medium text-neutral-900 underline underline-offset-2 sm:min-h-0 ${focus}`}>{tr("Read our cookie policy")}</a>
         </p>
         <div className="flex shrink-0 items-center gap-2">

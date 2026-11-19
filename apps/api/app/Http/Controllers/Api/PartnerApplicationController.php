@@ -155,6 +155,13 @@ class PartnerApplicationController extends Controller
             }
         }
 
+        // Told to the market's ad platforms only when the applicant allowed marketing (see AdConversions).
+        try {
+            app(\App\Services\Marketing\AdConversions::class)->lead($application);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         $body = ['message' => 'Application received. You can sign in as soon as it is approved.'];
         if ($application->plan_pay_token) {
             $plan = \App\Models\SubscriptionPlan::where('key', $application->plan_key)->first();

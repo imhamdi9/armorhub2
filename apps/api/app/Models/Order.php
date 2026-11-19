@@ -26,6 +26,7 @@ class Order extends Model
     protected static function booted(): void
     {
         static::creating(function (Order $order) {
+            \App\Services\Marketing\CampaignCapture::stamp($order);
             $product = Product::withoutGlobalScopes()->find($order->product_id);
             if ($product?->fulfilment === 'armorhub' && $product->requires_shipping) {
                 $tenantId = (int) Company::withoutGlobalScopes()->whereKey($order->company_id)->value('tenant_id');
@@ -76,7 +77,7 @@ class Order extends Model
     ];
 
     /** The delivery address is only sent to the customer and the staff handling the parcel. */
-    protected $hidden = ['shipping_address', 'guest_token'];
+    protected $hidden = ['shipping_address', 'guest_token', 'attribution', 'ad_context'];
 
     /** What the customer actually pays: the invoice plus the platform fee. */
     protected $appends = ['payable_amount'];
@@ -90,6 +91,8 @@ class Order extends Model
     {
         return [
             'shipping_address' => 'array',
+            'attribution' => 'array',
+            'ad_context' => 'array',
             'preferred_day' => 'date',
             'status' => OrderStatus::class,
             'scheduled_at' => 'datetime',

@@ -212,6 +212,7 @@ export default function MarketsPage() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selling} onChange={(e) => setSelling(e.target.checked)} /> {tr("Selling on the marketplace (sellers and products)")}</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={installation} onChange={(e) => setInstallation(e.target.checked)} /> {tr("Installation centres")}</label>
           <p className="text-xs text-muted-foreground">{tr("You can change these any time. A switched-off feature disappears from this market's signup pages.")}</p>
+          <p className="text-xs text-muted-foreground" data-testid="ads-inherit-note">{tr("Until you set this market's own pixels and ad accounts in Marketing, it uses the platform's.")}</p>
         </div>
         <div><Label htmlFor="mslug">{tr("Store address (optional)")}</Label><Input id="mslug" dir="ltr" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder={country ? `armorhub-${country.toLowerCase()}` : "armorhub-eg"} /></div>
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

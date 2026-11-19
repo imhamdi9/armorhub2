@@ -10,6 +10,7 @@ use App\Products\Armorhub\Blueprints\CatalogStep;
 use App\Products\Armorhub\Blueprints\MarketStep;
 use App\Products\Armorhub\Blueprints\ProductsStep;
 use App\Products\Armorhub\Blueprints\StoreStep;
+use App\Products\Armorhub\Subscribers\AdConversionSubscriber;
 use App\Products\Armorhub\Subscribers\OrderNotificationSubscriber;
 use App\Products\Armorhub\Subscribers\PayoutNotificationSubscriber;
 use App\Products\Armorhub\Subscribers\SellerLedgerSubscriber;
@@ -46,6 +47,7 @@ class ArmorhubModule implements Module
         'refund_requested' => 'The customer asked for a refund',
         'refund_rejected' => 'A refund request was declined',
         'refunded' => 'The order was refunded',
+        'partially_refunded' => 'Part of the order was refunded',
         'refund_sent' => 'The refund was sent to the customer',
     ];
 
@@ -75,6 +77,7 @@ class ArmorhubModule implements Module
 
         $context->subscribe(OrderNotificationSubscriber::class);
         $context->subscribe(SellerLedgerSubscriber::class);
+        $context->subscribe(AdConversionSubscriber::class);
         $context->subscribe(PayoutNotificationSubscriber::class);
 
         $context->action(GrantWarranty::class);

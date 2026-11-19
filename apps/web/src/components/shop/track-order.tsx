@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ShopShell, SHOP_SHADOW } from "@/components/shop/shop-shell";
+import { TrackEvent } from "@/components/marketing/marketing-scripts";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, tr } from "@/lib/i18n";
@@ -87,6 +88,7 @@ export function TrackOrder({ token }: { token: string }) {
   return (
     <ShopShell store={{ name: order.store.name ?? "ArmorHub", slug }} active="products">
       <div className="mx-auto mt-8 max-w-3xl space-y-4">
+        {returned && order.status !== "awaiting_payment" && !cancelled && <TrackEvent name="purchase" eventId={`order-${order.id}`} data={{ value: order.payable ?? order.total, currency: order.currency, id: order.id }} />}
         <h1 className="text-center text-4xl tracking-[-0.05em]">{tr("Your order")} #{order.id}</h1>
 
         {waiting && <p role="status" className="rounded-[20px] bg-white p-4 text-center text-sm" style={{ boxShadow: SHOP_SHADOW }}>{tr("We are waiting for the payment to be confirmed. This page updates by itself.")}</p>}

@@ -19,7 +19,7 @@ class PartnerApplicationService
 
     public function approve(PartnerApplication $application, User $by): PartnerApplication
     {
-        return DB::transaction(function () use ($application, $by) {
+        $approved = DB::transaction(function () use ($application, $by) {
             $app = PartnerApplication::lockForUpdate()->findOrFail($application->id);
 
             if ($app->status !== PartnerApplication::PENDING) {
@@ -57,6 +57,15 @@ class PartnerApplicationService
 
             return $app;
         });
+
+        // The ad platforms are told the applicant became a real seller or centre (only if the applicant allowed marketing), so ads can aim at quality, not just sign-ups.
+        try {
+            app(\App\Services\Marketing\AdConversions::class)->approved($approved);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return $approved;
     }
 
     /** A seller gets its own company (a "supplier") and an owner account with the seller role. */

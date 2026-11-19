@@ -14,6 +14,22 @@ export const getOverview = async () => (await api.get<Overview>("/admin/overview
 export const getSettings = async () =>
   (await api.get<{ settings: SettingRow[] }>("/admin/settings")).data.settings;
 
+// ---- Marketing: ad platform connections, what campaigns brought, and what was reported to the platforms ----
+export const getMarketingSettings = async () => (await api.get<{ settings: SettingRow[] }>("/admin/marketing/settings")).data.settings;
+export const saveMarketingSettings = async (values: Record<string, unknown>) => (await api.put<{ settings: SettingRow[] }>("/admin/marketing/settings", { values })).data.settings;
+export const resetMarketingSetting = async (key: string) => (await api.delete<{ settings: SettingRow[] }>(`/admin/marketing/settings/${key}`)).data.settings;
+export const getMarketingMarkets = async () => (await api.get<{ id: number; name: string; market: string }[]>("/admin/marketing/markets")).data;
+export interface AttributionRow {
+  source: string; campaign: string; orders: number; revenue: number; sellers: number; centres: number; currency: string | null;
+  spend: number; spend_currency: string | null; impressions: number; clicks: number; cost_per_order: number | null; cost_per_application: number | null; roas: number | null; shared_account: boolean;
+}
+export interface Attribution { days: number; rows: AttributionRow[]; totals: { orders: number; tracked_orders: number; applications: number; tracked_applications: number; spend: number }; spend_synced_at: string | null }
+export const getAttribution = async (days: number) => (await api.get<Attribution>("/admin/marketing/attribution", { params: { days } })).data;
+export interface AdLog { id: number; platform: string; event_name: string; event_id: string; status: "sent" | "failed" | "skipped"; http_status: number | null; note: string | null; created_at: string }
+export const getAdLogs = async (platform?: string) => (await api.get<{ data: AdLog[] }>("/admin/marketing/logs", { params: platform ? { platform } : {} })).data.data;
+export const syncAdSpend = async () => (await api.post<{ results: { platform: string; account: string; status: string; rows: number; note: string | null }[] }>("/admin/marketing/spend/sync")).data.results;
+export const testAdConnections = async () => (await api.post<{ results: { platform: string; status: string; http_status: number | null; note: string | null }[] }>("/admin/marketing/test")).data.results;
+
 export const saveSettings = async (values: Record<string, unknown>) =>
   (await api.put<{ settings: SettingRow[] }>("/admin/settings", { values })).data.settings;
 

@@ -31,7 +31,7 @@ class ScopeMarketSettings
         } elseif ($mode === 'own') {
             abort_unless($own && $user->can('market.settings'), 403, 'You do not manage a market.');
             $settings->enterMarket((int) $own);
-        } elseif ($user?->hasRole('platform-admin')) {
+        } elseif ($user?->hasRole('platform-admin') || $user?->hasRole('marketing-manager')) {
             $asked = $request->integer('market') ?: null;
             $settings->enterMarket($asked && Tenant::whereKey($asked)->exists() ? $asked : null);
         } else {

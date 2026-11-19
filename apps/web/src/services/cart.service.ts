@@ -44,6 +44,7 @@ export interface PurchaseOrder {
   quantity: number;
   total_amount: number;
   service_fee_amount: number;
+  payable_amount?: number;
   status: string;
   statuses?: import("@/components/orders/status-strip").OrderStatuses;
 }
@@ -57,6 +58,7 @@ export interface Purchase {
   shipping_amount?: number;
   discount_amount?: number;
   payable_amount: number;
+  market?: string | null;
   paid_at: string | null;
   created_at: string | null;
   orders: PurchaseOrder[];

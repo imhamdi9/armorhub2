@@ -28,3 +28,9 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\SellerEarningsRelease::class)->run())->hourly()->name('earnings:release')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\ShippingDeadlines::class)->run())->hourly()->name('orders:ship-deadlines')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::command('guests:prune')->daily();
+
+// What the ad accounts spent (read only), so the marketing page can show the cost and return of each campaign.
+\Illuminate\Support\Facades\Schedule::command('marketing:sync-spend --days=7')->dailyAt('04:00');
+
+// A sale or lead an ad platform did not accept is sent again (up to 4 tries a day), then the admins are told.
+\Illuminate\Support\Facades\Schedule::command('marketing:retry-conversions')->everyFifteenMinutes();

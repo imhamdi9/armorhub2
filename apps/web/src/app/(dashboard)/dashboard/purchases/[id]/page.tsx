@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { PurchasePixel } from "@/components/marketing/purchase-pixel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export default function PurchasePage() {
 
   return (
     <div>
+      {purchase.status === "paid" && <PurchasePixel orders={purchase.orders.map((o) => ({ id: o.id, value: o.payable_amount ?? o.total_amount + o.service_fee_amount }))} currency={purchase.currency} market={purchase.market} />}
       <PageHeader title={`${tr("Purchase")} #${purchase.id}`} />
       <p className="mb-4"><Badge variant={purchase.status === "paid" ? "default" : "secondary"} data-testid="purchase-status">{purchase.status === "paid" ? tr(cod ? "Pay on delivery" : "Paid") : purchase.status === "cancelled" ? tr("Cancelled") : tr("Waiting for payment")}</Badge></p>
 

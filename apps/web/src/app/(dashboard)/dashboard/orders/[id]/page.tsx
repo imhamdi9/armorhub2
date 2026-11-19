@@ -1,5 +1,6 @@
 "use client";
 
+import { PurchasePixel } from "@/components/marketing/purchase-pixel";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -100,6 +101,7 @@ function OrderDetail() {
 
   return (
     <div className="max-w-2xl">
+      {order.status === "paid" && user?.roles?.includes("customer") && <PurchasePixel orders={[{ id: order.id, value: order.payable_amount ?? Number(order.total_amount) }]} currency={order.currency} market={order.market} />}
       <PageHeader
         title={tr("Order #{id}", { id: order.id })}
         action={<Badge variant="secondary">{refunded ? tr("Refunded") : statusLabel(order.status)}</Badge>}

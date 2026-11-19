@@ -25,7 +25,7 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         // `statuses` answers five questions separately: the order, the payment, the goods, the service and the settlement.
-        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
+        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['market' => app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($order->company_id))?->code, 'statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
     }
 
     /** The invoice as a PDF, for the customer who paid (and the people who may see the order). Only paid orders have one. */

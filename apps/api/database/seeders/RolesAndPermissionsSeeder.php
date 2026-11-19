@@ -51,6 +51,8 @@ class RolesAndPermissionsSeeder extends Seeder
     'support.manage',
     // Looking at the products sellers submit and approving them (the catalogue team)
     'catalog.review',
+    // The ad connections, campaign results and product feeds (the marketing team)
+    'marketing.manage',
     // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
     'warehouse.manage',
     // Platform administration (admins only: they get every permission)
@@ -162,6 +164,12 @@ class RolesAndPermissionsSeeder extends Seeder
 // ArmorHub's catalogue reviewer: approves or sends back the products sellers submit, in their own market; sees nothing else.
 'catalog-reviewer' => [
     'catalog.review',
+    'dashboard.view',
+],
+
+// ArmorHub's marketing manager: connects the ad accounts, reads the campaign results and the product feeds; sees nothing else.
+'marketing-manager' => [
+    'marketing.manage',
     'dashboard.view',
 ],
 

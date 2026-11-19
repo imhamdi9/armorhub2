@@ -8,7 +8,7 @@ export interface Policy {
 }
 
 export const POLICY_KINDS: PolicyKind[] = ["privacy", "terms", "returns", "shipping", "cookies"];
-export const POLICIES_UPDATED = "2026-11-18";
+export const POLICIES_UPDATED = "2026-11-19";
 
 /**
  * What each policy says is what the platform does today (return window, delivery codes, three delivery attempts, points, and so on), written in both
@@ -29,6 +29,11 @@ export const POLICIES: Record<PolicyKind, Policy> = {
       { heading: { en: "Who sees it", ar: "من يراها" }, body: [
         { en: "The seller or service centre sees what they need to fulfil your order: your name, delivery address and phone number. Couriers get your address and ask for the delivery code you give them at the door.", ar: "يرى البائع أو المركز ما يحتاجه لتنفيذ طلبك: اسمك وعنوان التسليم ورقم هاتفك. ويحصل المندوب على عنوانك ويطلب منك رمز التسليم عند الباب." },
         { en: "Payments are handled by our payment provider; we never store full card numbers. We do not sell your personal data.", ar: "تتولى معالجة المدفوعات جهة الدفع لدينا، ولا نخزن أرقام البطاقات كاملة. ولا نبيع بياناتك الشخصية." },
+      ] },
+      { heading: { en: "Advertising and measurement", ar: "الإعلانات والقياس" }, body: [
+        { en: "Only if you accept marketing cookies, we use pixels from Meta (Facebook and Instagram), TikTok and Google to measure our advertising and to show it to people who may be interested. We also remember, for 30 days, which advertisement or link brought you here.", ar: "فقط إذا وافقت على كوكيز التسويق، نستخدم بكسلات من Meta (فيسبوك وإنستغرام) وTikTok وGoogle لقياس إعلاناتنا وعرضها على من قد يهتمون بها. ونتذكر أيضاً لمدة 30 يوماً أي إعلان أو رابط أوصلك إلينا." },
+        { en: "After a purchase or a seller or centre application, our server tells these platforms that it happened, with the amount, and your e-mail and phone number turned into a one-way code (hashed) that cannot be read back. We never send them in readable form. If you reject marketing cookies, none of this happens.", ar: "بعد الشراء أو تقديم طلب بائع أو مركز، يُبلغ خادمنا هذه المنصات بحدوث ذلك مع المبلغ، وبريدك ورقم هاتفك محوَّلان إلى رمز أحادي الاتجاه (مُشفَّر) لا يمكن قراءته. ولا نرسلها أبداً بشكل مقروء. وإن رفضت كوكيز التسويق فلا يحدث شيء من ذلك." },
+        { en: "These platforms handle the data under their own privacy policies. You can change your choice at any time from Cookie settings at the bottom of any page.", ar: "تتعامل هذه المنصات مع البيانات وفق سياسات الخصوصية الخاصة بها. ويمكنك تغيير اختيارك في أي وقت من «إعدادات الكوكيز» أسفل أي صفحة." },
       ] },
       { heading: { en: "Your rights", ar: "حقوقك" }, body: [
         { en: "You can download everything we hold about you from Account, correct it there, change your notification choices, or delete your account.", ar: "يمكنك تنزيل كل ما نحتفظ به عنك من صفحة «الحساب»، وتصحيحه، وتغيير اختيارات الإشعارات، أو حذف حسابك." },
@@ -109,7 +114,12 @@ export const POLICIES: Record<PolicyKind, Policy> = {
         { en: "These keep you signed in and remember your cart and language. The site cannot work without them, so they are always on.", ar: "تُبقيك مسجلاً للدخول وتتذكر سلتك ولغتك. لا يعمل الموقع بدونها، لذلك تكون دائماً مفعّلة." },
       ] },
       { heading: { en: "Optional", ar: "الاختيارية" }, body: [
-        { en: "Measuring how the site is used starts only if you accept. If you reject, nothing optional runs.", ar: "لا يبدأ قياس طريقة استخدام الموقع إلا إذا وافقت. وإن رفضت فلا يعمل شيء اختياري." },
+        { en: "Measuring how the site is used and measuring our advertising start only if you accept. If you reject, nothing optional runs.", ar: "لا يبدأ قياس طريقة استخدام الموقع وقياس إعلاناتنا إلا إذا وافقت. وإن رفضت فلا يعمل شيء اختياري." },
+      ] },
+      { heading: { en: "Marketing", ar: "التسويق" }, body: [
+        { en: "If you accept, pixels from Meta, TikTok and Google load, and we keep in your browser the advertisement or link that brought you here (30 days). Both are used only to measure and improve our ads.", ar: "إذا وافقت، تُحمَّل بكسلات من Meta وTikTok وGoogle، ونحتفظ في متصفحك بالإعلان أو الرابط الذي أوصلك إلينا (30 يوماً). وكلاهما يُستخدم فقط لقياس إعلاناتنا وتحسينها." },
+        { en: "A discount code in a link you opened is kept for your cart even if you reject, because it only helps you pay less.", ar: "يُحفظ كود الخصم الموجود في رابط فتحته لسلتك حتى لو رفضت، لأنه يفيدك فقط في دفع أقل." },
+        { en: "You can change your choice at any time with Cookie settings at the bottom of any page.", ar: "يمكنك تغيير اختيارك في أي وقت من «إعدادات الكوكيز» أسفل أي صفحة." },
       ] },
       { heading: { en: "What stays in your browser", ar: "ما يبقى في متصفحك" }, body: [
         { en: "Your language, your recently viewed products, your comparison list and your cookie choice are kept only in your own browser. They are not sent to us.", ar: "تُحفظ لغتك والمنتجات التي شاهدتها مؤخراً وقائمة المقارنة واختيارك للملفات في متصفحك أنت فقط، ولا تُرسل إلينا." },

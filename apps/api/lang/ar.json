@@ -2753,5 +2753,9 @@
   "Subscription revenue (this month)": "إيرادات الاشتراكات (هذا الشهر)",
   "Sandbox checkout (test cards, no real money)": "دفع تجريبي (بطاقات اختبار بلا مال حقيقي)",
   "Buying from the marketplace is not open in this market.": "الشراء من السوق غير متاح في هذه السوق حاليًا.",
-  "Installation centres are not open in this market.": "مراكز التركيب غير متاحة في هذه السوق حاليًا."
+  "Installation centres are not open in this market.": "مراكز التركيب غير متاحة في هذه السوق حاليًا.",
+  "An ad platform is not receiving your sales": "إحدى منصات الإعلانات لا تستلم مبيعاتك",
+  ":platform: :note": ":platform: :note",
+  "Reading the ad spend failed": "فشلت قراءة الإنفاق الإعلاني",
+  "Ad spend passed the daily limit": "الإنفاق الإعلاني تجاوز الحد اليومي"
 }
