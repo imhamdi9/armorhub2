@@ -1559,6 +1559,7 @@ export const AR: Record<string, string> = {
   "Welcome": "أهلاً بك",
   "Popular in {name}": "الأكثر رواجاً في {name}",
   "Search the departments of your market. You see a price straight away.": "ابحث في أقسام سوقك. ترى السعر فوراً.",
+  "shop from trusted sellers in your market": "تسوّق من بائعين موثوقين في سوقك",
   "Open again": "إعادة الفتح",
   "Service centres": "مراكز الخدمة",
   "What kind of job is it?": "ما نوع العمل؟",

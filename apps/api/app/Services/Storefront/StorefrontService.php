@@ -43,7 +43,7 @@ class StorefrontService
     /** The company behind a public address, or null when it has no public storefront. */
     public function find(string $slug): ?Company
     {
-        $company = Company::withoutGlobalScopes()->with('tenant.industry')->where('slug', $slug)->first();
+        $company = Company::withoutGlobalScopes()->with('tenant.industry')->whereNull('deleted_at')->where('slug', $slug)->first();
 
         if (! $company || ! $this->settingsOf($company)['enabled'] || in_array($company->status, self::HIDDEN_STATUSES, true)) {
             return null;

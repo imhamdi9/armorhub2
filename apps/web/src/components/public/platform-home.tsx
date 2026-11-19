@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 
-import { Banner, Bento, Compatibility, DashboardFeature, DevRow, factsOf, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit } from "@/components/public/landing";
+import { Banner, Bento, DashboardFeature, factsOf, IndustryTabs, Markets, PartnerStrip, QuoteFeature, UseCases, ValueProps, WhySplit } from "@/components/public/landing";
 import { MarketShelf, PlatformBanner } from "@/components/public/marketplace-entrance";
 import { Faq } from "@/components/public/faq";
 import { MarketRedirect } from "@/components/public/market-redirect";
@@ -36,7 +36,7 @@ function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicSto
     partnerStrip: useSiteFlag("show_partner_strip"), industries: useSiteFlag("show_industries"), quote: useSiteFlag("show_quote_feature"),
     dashboard: useSiteFlag("show_dashboard_feature"), values: useSiteFlag("show_value_props"), partners: useSiteFlag("show_partners"),
     useCases: useSiteFlag("show_use_cases"), why: useSiteFlag("show_why"), how: useSiteFlag("show_how"), bento: useSiteFlag("show_bento"),
-    dev: useSiteFlag("show_developers"), compat: useSiteFlag("show_compat"), markets: useSiteFlag("show_markets"), faq: useSiteFlag("show_faq"),
+    markets: useSiteFlag("show_markets"), faq: useSiteFlag("show_faq"),
   };
   const faqItems = useSiteList<{ question: string; answer: string }>("home", "faq");
   const ed = useEditable();
@@ -77,8 +77,6 @@ function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicSto
       </section>
     ),
     bento: on.bento && <Bento facts={facts} />,
-    developers: on.dev && <DevRow />,
-    compat: on.compat && <Compatibility />,
     markets: on.markets && <Markets />,
     faq: on.faq && (faqItems.length > 0 ? <Faq items={faqItems.map((i) => ({ q: i.question, a: i.answer }))} /> : <Faq />),
   };

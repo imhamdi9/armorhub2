@@ -30,8 +30,6 @@ const SECTIONS: Record<SectionKey, { label: string; flag?: string }> = {
   why: { label: "Why choose us", flag: "show_why" },
   how: { label: "How it works", flag: "show_how" },
   bento: { label: "Numbers band", flag: "show_bento" },
-  developers: { label: "For developers", flag: "show_developers" },
-  compat: { label: "Works with your tools", flag: "show_compat" },
   markets: { label: "Local from day one", flag: "show_markets" },
   faq: { label: "FAQ", flag: "show_faq" },
 };
