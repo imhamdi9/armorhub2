@@ -155,8 +155,9 @@ class MarketingController extends Controller
 
     public function saveSettings(Request $request, Settings $settings)
     {
-        $values = (array) $request->input('values', []);
-        abort_unless($values !== [] && collect($values)->keys()->every(fn ($k) => str_starts_with((string) $k, 'marketing.')), 403, 'Only marketing settings can be changed here.');
+        $values = (array) $request->validate(['values' => 'required|array|min:1'])['values'];
+        // Only marketing settings are accepted here (the marketing team has no other way to change a setting).
+        abort_unless(collect($values)->keys()->every(fn ($k) => str_starts_with((string) $k, 'marketing.')), 422, 'Only marketing settings can be changed here.');
         app(SettingsController::class)->update($request, $settings);
 
         return ['settings' => $settings->describe('marketing')];
@@ -164,7 +165,7 @@ class MarketingController extends Controller
 
     public function resetSetting(string $key, Settings $settings)
     {
-        abort_unless(str_starts_with($key, 'marketing.'), 403, 'Only marketing settings can be changed here.');
+        abort_unless(str_starts_with($key, 'marketing.'), 404);
         $settings->forget($key);
 
         return ['settings' => $settings->describe('marketing')];

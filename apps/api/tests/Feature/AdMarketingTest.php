@@ -267,8 +267,8 @@ class AdMarketingTest extends TestCase
         $this->assertSame('987654321', app(Settings::class)->inMarket($this->tenant->id, fn () => app(Settings::class)->get('marketing.meta_pixel_id')));
 
         // the marketing settings only: no other setting, no other admin screen
-        $this->putJson('/api/admin/marketing/settings', ['values' => ['platform.currency' => 'USD']])->assertForbidden();
-        $this->deleteJson('/api/admin/marketing/settings/platform.currency')->assertForbidden();
+        $this->putJson('/api/admin/marketing/settings', ['values' => ['platform.currency' => 'USD']])->assertUnprocessable();
+        $this->deleteJson('/api/admin/marketing/settings/platform.currency')->assertNotFound();
         $this->getJson('/api/admin/settings')->assertForbidden();
         $this->getJson('/api/admin/markets')->assertForbidden();
         $this->getJson('/api/admin/payments/providers')->assertForbidden();
