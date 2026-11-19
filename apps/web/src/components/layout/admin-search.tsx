@@ -14,7 +14,10 @@ export function AdminSearch() {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
-  const [groups, setGroups] = useState<SearchGroup[] | null>(null);
+  const [result, setResult] = useState<{ q: string; groups: SearchGroup[] } | null>(null);
+  const text = q.trim();
+  // Results only count while they answer what is typed now: shorter or newer text shows "Searching…" until its own answer arrives.
+  const groups = result && result.q === text ? result.groups : null;
   const [open, setOpen] = useState(false);
   const isAdmin = hasRole(user, "platform-admin") && !user?.impersonated_by;
 
@@ -30,16 +33,16 @@ export function AdminSearch() {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin || q.trim().length < 2) { setGroups(null); return; }
+    if (!isAdmin || text.length < 2) return;
     let live = true;
-    const id = setTimeout(() => { searchAdmin(q.trim()).then((r) => { if (live) setGroups(r.groups); }).catch(() => { if (live) setGroups([]); }); }, 250);
+    const id = setTimeout(() => { searchAdmin(text).then((r) => { if (live) setResult({ q: text, groups: r.groups }); }).catch(() => { if (live) setResult({ q: text, groups: [] }); }); }, 250);
 
     return () => { live = false; clearTimeout(id); };
-  }, [q, isAdmin]);
+  }, [text, isAdmin]);
 
   if (!isAdmin) return null;
 
-  const go = (path: string) => { setOpen(false); setQ(""); setGroups(null); router.push(path); };
+  const go = (path: string) => { setOpen(false); setQ(""); setResult(null); router.push(path); };
 
   return (
     <div className="relative hidden w-64 md:block lg:w-80" role="search">

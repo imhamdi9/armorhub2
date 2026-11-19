@@ -71,10 +71,26 @@ class MiniPdf
     public static function ascii(string $text): string
     {
         $text = strtr($text, ['–' => '-', '—' => '-', '’' => "'", '“' => '"', '”' => '"']);
-        $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
-        $converted = $converted === false ? preg_replace('/[^\x20-\x7E]/', '', $text) : preg_replace('/[^\x20-\x7E]/', '', $converted);
+        // One character at a time: on some systems (glibc, i.e. Linux) a letter with no Latin form comes back as "?" instead of nothing,
+        // so a name in Arabic would print as "????". A character that cannot be written in Latin letters is left out, whatever the system does.
+        // Accents first (é becomes e + a mark, the mark is dropped), so every system gives the same plain letter.
+        if (class_exists(\Normalizer::class)) {
+            $text = preg_replace('/\p{Mn}+/u', '', \Normalizer::normalize($text, \Normalizer::FORM_D) ?: $text) ?? $text;
+        }
+        $out = '';
+        foreach (preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            if (strlen($char) === 1) {
+                $out .= $char;
 
-        return trim(preg_replace('/\s+/', ' ', (string) $converted));
+                continue;
+            }
+            $latin = @iconv('UTF-8', 'ASCII//TRANSLIT', $char);
+            if (is_string($latin) && $latin !== '' && ! str_contains($latin, '?')) {
+                $out .= $latin;
+            }
+        }
+
+        return trim(preg_replace('/\s+/', ' ', preg_replace('/[^\x20-\x7E]/', '', $out)));
     }
 
     /** Roughly how wide the text is, so it can be right-aligned (Helvetica averages about half the type size per letter). */

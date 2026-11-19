@@ -86,7 +86,6 @@ export default function KpisPage() {
     const to = new Date();
     const from = new Date(to.getTime() - (days - 1) * 86400000);
     const iso = (d: Date) => d.toISOString().slice(0, 10);
-    setKpis(null);
     getKpis({ from: iso(from), to: iso(to) }).then(setKpis).catch(() => setKpis(null));
   }, [days]);
 
@@ -111,7 +110,7 @@ export default function KpisPage() {
       {exportError && <p className="mb-3 text-sm text-red-500" role="alert">{exportError}</p>}
       <div className="mb-4 flex gap-2">
         {[7, 30, 90].map((d) => (
-          <button key={d} onClick={() => setDays(d)} className={`rounded-full border px-4 py-1.5 text-sm ${days === d ? "bg-primary text-primary-foreground" : ""}`}>
+          <button key={d} onClick={() => { if (d !== days) { setKpis(null); setDays(d); } }} className={`rounded-full border px-4 py-1.5 text-sm ${days === d ? "bg-primary text-primary-foreground" : ""}`}>
             {d} {tr("days")}
           </button>
         ))}

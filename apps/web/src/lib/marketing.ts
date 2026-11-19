@@ -101,6 +101,8 @@ function loadPixels(cfg: MarketingConfig) {
   }
   if (cfg.ga4_id || cfg.google_ads_id) {
     win.dataLayer = win.dataLayer ?? [];
+    // gtag.js only understands the Arguments object in the data layer, not an array: `arguments` is needed on purpose.
+    // eslint-disable-next-line prefer-rest-params
     win.gtag = function () { (win.dataLayer as unknown[]).push(arguments); } as Fn;
     win.gtag("js", new Date());
     if (cfg.ga4_id) win.gtag("config", cfg.ga4_id);
