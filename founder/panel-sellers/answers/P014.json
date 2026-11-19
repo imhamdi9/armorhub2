@@ -1,0 +1,13 @@
+{
+  "id": "P014",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "convenience",
+  "reason": "Joining is free, but I would have to dig out my ID and commercial registration, upload them and wait for someone to approve me before I could even send a quote. I am busy with real jobs, so I would not start that process in a normal week.",
+  "objection": "Uploading documents and waiting for approval is a hassle, and I do not know yet if the requests here are real and nearby enough to be worth the trouble.",
+  "would_change_my_mind": "If approval were quick and I could see a few real nearby requests with the money held safely before I had to upload anything.",
+  "price_too_cheap": 15,
+  "price_cheap": 30,
+  "price_expensive": 120,
+  "price_too_expensive": 200
+}

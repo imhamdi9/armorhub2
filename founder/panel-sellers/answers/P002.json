@@ -1,0 +1,13 @@
+{
+  "id": "P002",
+  "buys": true,
+  "purchases_first_month": 2,
+  "reason_code": "trust",
+  "reason": "Customers paying into escrow and getting a written warranty automatically is the part that makes me willing to try it, since I already get most of my bookings from WhatsApp and Instagram and do not want to chase payments. I would test it on one or two jobs before committing more.",
+  "objection": "When and how exactly do I get paid, and what happens if a customer disputes the job after the money is held?",
+  "would_change_my_mind": "A clear written answer on payout timing and a dispute process that protects me as the installer, shown before I upload my ID and commercial registration.",
+  "price_too_cheap": 150,
+  "price_cheap": 400,
+  "price_expensive": 1500,
+  "price_too_expensive": 2500
+}

@@ -1,7 +1,116 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+
+/** Origin of the API when it is not same-origin (NEXT_PUBLIC_API_URL=https://api.example.com/api). */
+function apiOrigin(): string {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_API_URL ?? "").origin;
+  } catch {
+    return "";
+  }
+}
+
+// Bot-challenge providers an admin may enable (Settings > Security). Allowed so the widget can load.
+const CAPTCHA = [
+  "https://challenges.cloudflare.com",
+  "https://js.hcaptcha.com",
+  "https://hcaptcha.com",
+  "https://*.hcaptcha.com",
+  "https://www.google.com/recaptcha/",
+  "https://www.gstatic.com/recaptcha/",
+];
+
+// "Continue with Google / Facebook / Apple": each provider's sign-in script, popup and token calls.
+const SOCIAL = [
+  "https://accounts.google.com",
+  "https://connect.facebook.net",
+  "https://www.facebook.com",
+  "https://graph.facebook.com",
+  "https://appleid.cdn-apple.com",
+  "https://appleid.apple.com",
+];
+
+// Advertising pixels (Meta, TikTok, Google). They are allowed here but only ever loaded by the site after a visitor accepts marketing cookies.
+const ADS_SCRIPT = ["https://connect.facebook.net", "https://analytics.tiktok.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"];
+const ADS_CONNECT = [
+  "https://www.facebook.com", "https://connect.facebook.net", "https://analytics.tiktok.com", "https://analytics-ipv6.tiktokw.com", "https://www.googletagmanager.com",
+  "https://www.google-analytics.com", "https://*.google-analytics.com", "https://*.analytics.google.com", "https://stats.g.doubleclick.net", "https://*.doubleclick.net", "https://www.google.com",
+];
+const ADS_FRAME = ["https://www.googletagmanager.com", "https://td.doubleclick.net", "https://www.facebook.com"];
+
+/**
+ * Content-Security-Policy: even if an attacker managed to inject markup, the browser refuses to
+ * load scripts, frames, forms or connections from anywhere we did not list.
+ * (Next.js needs 'unsafe-inline' for its bootstrap scripts, and 'unsafe-eval' only in development.)
+ */
+const cspFor = (frameAncestors: string) => [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_SCRIPT.join(" ")}`,
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
+  // Stores may show a logo hosted elsewhere (https only; the editor refuses anything else).
+  `img-src 'self' data: blob: https: ${apiOrigin()}`,   // the API's own origin too: product photos are served from it (plain http in development)
+  "font-src 'self' data:",
+  `connect-src 'self' ${apiOrigin()} ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_CONNECT.join(" ")}${isProd ? "" : " ws: wss:"}`,
+  `frame-src 'self' ${CAPTCHA.join(" ")} ${SOCIAL.join(" ")} ${ADS_FRAME.join(" ")}`,
+  "form-action 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  `frame-ancestors ${frameAncestors}`,
+  isProd ? "upgrade-insecure-requests" : "",
+]
+  .filter(Boolean)
+  .join("; ");
+
+const csp = cspFor("'none'");
+// Only the theme editor's own preview may be framed, and only by this same site.
+const previewCsp = cspFor("'self'");
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Self-contained server output, used by the production Docker image.
+  output: "standalone",
+  poweredByHeader: false,
+
+  // Notifications sent before the Support screen moved still point at the old address.
+  async redirects() {
+    return [{ source: "/dashboard/admin/support", destination: "/dashboard/admin/tools", permanent: false }];
+  },
+
+  async headers() {
+    const common = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), payment=(), geolocation=(self)" },
+      { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+    ];
+
+    return [
+      {
+        source: "/theme-preview",
+        headers: [{ key: "Content-Security-Policy", value: previewCsp }, { key: "X-Frame-Options", value: "SAMEORIGIN" }, ...common],
+      },
+      {
+        source: "/((?!theme-preview$).*)",
+        headers: [
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), payment=(), geolocation=(self)" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+    ];
+  },
+
+  // Optional: serve the API from the same origin as the web app (no CORS, one
+  // public port). Set API_PROXY_TARGET=http://host:8000 and
+  // NEXT_PUBLIC_API_URL=/api at build time. Unset in normal deployments.
+  async rewrites() {
+    const target = process.env.API_PROXY_TARGET;
+
+    return target ? [{ source: "/api/:path*", destination: `${target}/api/:path*` }] : [];
+  },
 };
 
 export default nextConfig;

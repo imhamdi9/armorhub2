@@ -24,12 +24,18 @@ class OrderPolicy
             return $order->customer_id === $user->id;
         }
 
-        // المستخدم داخل شركة يرى طلبات شركته
+        // Staff of a market see its orders only when their role deals with orders (not, say, a catalogue reviewer or a technician).
         if ($user->company_id) {
-            return $order->company_id === $user->company_id;
+            return $this->staffWorksOrders($user) && $order->company_id === $user->company_id;
         }
 
         return false;
+    }
+
+    /** Whether this person's role is one that handles orders: managers, operations, support, warehouse. */
+    public function staffWorksOrders(User $user): bool
+    {
+        return $user->can('orders.view') || $user->can('operations.manage') || $user->can('support.manage') || $user->can('warehouse.manage');
     }
 
     public function create(User $user): bool

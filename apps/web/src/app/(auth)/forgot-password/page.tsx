@@ -1,0 +1,67 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errors";
+import { forgotPassword } from "@/services/auth.service";
+import { CaptchaBox, Honeypot, useHumanCheck } from "@/components/security/human-check";
+import { LanguageSwitcher, tr } from "@/lib/i18n";
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [website, setWebsite] = useState(""); // honeypot
+  const human = useHumanCheck();
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      setMessage(
+        (await forgotPassword({ email, signup_token: human.token, website, captcha_token: human.captchaToken })).message,
+      );
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      human.refresh();
+    }
+  }
+
+  return (
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-16">
+        <div className="absolute end-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
+      <Card className="w-full max-w-md border-0 bg-transparent shadow-none ring-0">
+        <CardHeader>
+          <CardTitle aria-level={1} className="display text-start text-[2.4rem] leading-none">{tr("Reset your password")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="email">{tr("Email")}</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <Honeypot value={website} onChange={setWebsite} />
+            <CaptchaBox challenge={human.challenge} onToken={human.setCaptchaToken} />
+            {message && <p className="text-sm text-green-600">{tr(message)}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <Button type="submit" className="w-full" disabled={!human.ready}>
+              {human.waiting ? tr("Please wait a moment…") : tr("Send reset link")}
+            </Button>
+            <p className="text-center text-sm">
+              <Link href="/login" className="underline">{tr("Back to sign in")}</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

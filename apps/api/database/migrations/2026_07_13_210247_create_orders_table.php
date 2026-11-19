@@ -18,23 +18,23 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->foreignId('film_id')
+            // Financial records must outlive catalog changes: a product with orders cannot be deleted.
+            $table->foreignId('product_id')
                 ->constrained()
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
 
-            $table->foreignId('vehicle_model_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            // The thing being serviced (vehicle, property, device...), if any
+            $table->nullableMorphs('subject');
 
 
             $table->string('status')
-                ->default('pending');
+                ->default('pending_quotes');
 
 
-            $table->decimal('film_amount',10,2)
+            $table->decimal('product_amount',10,2)
                 ->default(0);
 
-            $table->decimal('installation_amount',10,2)
+            $table->decimal('service_amount',10,2)
                 ->default(0);
 
             $table->decimal('commission_amount',10,2)
@@ -47,6 +47,11 @@ return new class extends Migration
             $table->string('currency')
                 ->default('USD');
 
+
+            $table->timestamp('scheduled_at')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
 
             $table->timestamps();
 

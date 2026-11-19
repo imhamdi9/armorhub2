@@ -1,0 +1,13 @@
+{
+  "id": "P019",
+  "buys": true,
+  "purchases_first_month": 2,
+  "reason_code": "trust",
+  "reason": "Joining is free and I am short of jobs in slow months, so I would sign up and try a couple of quotes. But I still have to see whether the customers are real and whether the money gets paid out to me, because I do not hand my bookings to anyone without proof.",
+  "objection": "Customers will take my number and bypass the platform next time, so I pay 10% once and then do the repeat work on WhatsApp for free.",
+  "would_change_my_mind": "A clear guarantee that the platform takes its cut only on the first booking from each customer, or proof from other shops in Riyadh or Cairo that repeat customers stay on the app.",
+  "price_too_cheap": 5,
+  "price_cheap": 25,
+  "price_expensive": 60,
+  "price_too_expensive": 100
+}

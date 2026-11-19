@@ -1,0 +1,13 @@
+{
+  "id": "P006",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "need",
+  "reason": "I am always hungry for new customers and slow months hurt. Joining costs nothing, so I would test it on a few jobs before deciding anything bigger.",
+  "objection": "I do not know if real customers will actually come or how many jobs per month I will get. A free sign-up means nothing if the requests dry up.",
+  "would_change_my_mind": "Seeing real, verified requests for my kind of job in Riyadh or Cairo within the first couple of weeks, with a clear monthly number.",
+  "price_too_cheap": 2,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 25
+}

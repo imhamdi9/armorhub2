@@ -3,66 +3,73 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Company;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
     use AuthorizesRequests;
-    
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-    $this->authorize('viewAny', Company::class);
+        $this->authorize('viewAny', Company::class);
 
-    return Company::all();
+        return Company::orderBy('name')->get();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-    $this->authorize('create', Company::class);
+        $this->authorize('create', Company::class);
 
-    return response()->json([
-        'message' => 'Not implemented yet'
-    ]);
+        $company = Company::create($this->validated($request, true));
+
+        return response()->json($company, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Company $company)
-   {
-    $this->authorize('view', $company);
+    {
+        $this->authorize('view', $company);
 
-    return response()->json($company);
-   }
+        return response()->json($company);
+    }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Company $company)
     {
-    $this->authorize('update', $company);
+        $this->authorize('update', $company);
 
-    return response()->json([
-        'message' => 'Not implemented yet'
-    ]);
+        $company->update($this->validated($request));
+
+        return response()->json($company->fresh());
     }
-    /**
-     * Remove the specified resource from storage.
-     */
+
     public function destroy(Company $company)
     {
-    $this->authorize('delete', $company);
+        $this->authorize('delete', $company);
 
-    return response()->json([
-        'message' => 'Not implemented yet'
-    ]);
+        $company->delete();
+
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    private function validated(Request $request, bool $creating = false): array
+    {
+        $required = $creating ? 'required' : 'sometimes|required';
+
+        // Only platform admins may change what kind of company this is, or its standing.
+        $adminOnly = $request->user()->hasRole('platform-admin')
+            ? [
+                'type' => 'sometimes|in:platform,partner,supplier',
+                'status' => 'sometimes|in:pending,active,inactive,suspended',
+            ]
+            : [];
+
+        return $request->validate($adminOnly + [
+            'tenant_id' => [$creating ? 'required' : 'prohibited', 'integer', 'exists:tenants,id'],
+            'name' => "$required|string|max:255",
+            'legal_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+        ]);
     }
 }

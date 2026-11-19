@@ -1,0 +1,13 @@
+{
+  "id": "P013",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already get phone and WhatsApp quotes from installers I know, and I can have a price today. A site where I wait for partners to send quotes and I've never heard of them doesn't beat that, even if the money is held.",
+  "objection": "I don't know these partners yet and the first ones are only in Riyadh and Cairo. Quotes that take hours or days don't help me when I need the car done this week.",
+  "would_change_my_mind": "A price for my exact car within minutes, from named installers with reviews I can check, plus a warranty I can actually claim on.",
+  "price_too_cheap": 700,
+  "price_cheap": 1200,
+  "price_expensive": 1900,
+  "price_too_expensive": 2300
+}

@@ -1,0 +1,26 @@
+{
+  "business": "ArmorHub marketplace (platform's own take per paid order, SAR)",
+  "unit": "paid order",
+  "price": 31.50,
+  "variable": [
+    {"label": "Payment gateway fee (2.75% of 900 + 1.00, estimate)", "cost": 25.75},
+    {"label": "Notifications, email and SMS (estimate)", "cost": 0.10},
+    {"label": "Support and disputes (estimate)", "cost": 1.00}
+  ],
+  "fixed_monthly": [
+    {"label": "Hosting and database (estimate)", "cost": 1500},
+    {"label": "Part-time support and operations (estimate)", "cost": 3500},
+    {"label": "Marketing (estimate)", "cost": 2500},
+    {"label": "Software, email and SMS plans (estimate)", "cost": 1000}
+  ],
+  "startup": [
+    {"label": "Licences and registration (estimate)", "cost": 8000},
+    {"label": "Launch campaign (estimate)", "cost": 12000},
+    {"label": "Legal terms and privacy (estimate)", "cost": 5000},
+    {"label": "Testing and contingency (estimate)", "cost": 10000}
+  ],
+  "days_per_month": 30,
+  "capacity_per_day": 100,
+  "plan_per_day": 60,
+  "ramp_per_day": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+}

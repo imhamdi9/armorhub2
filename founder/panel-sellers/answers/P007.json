@@ -1,0 +1,13 @@
+{
+  "id": "P007",
+  "buys": true,
+  "purchases_first_month": 2,
+  "reason_code": "convenience",
+  "reason": "Joining is free and the money stays held until the job is done, which covers the unpaid-jobs problem that keeps me up at night. I would try it on a couple of jobs to see whether the requests are real, but I would not move my Instagram and WhatsApp work onto it.",
+  "objection": "Another channel means another inbox to watch and another place where customers can change their mind, and I don't know yet whether the requests that come through are worth the time it takes to quote on them.",
+  "would_change_my_mind": "Seeing real paid requests from customers in my own area, in my service category, arriving at a rate that beats the time I spend on quotes.",
+  "price_too_cheap": 3,
+  "price_cheap": 10,
+  "price_expensive": 40,
+  "price_too_expensive": 90
+}

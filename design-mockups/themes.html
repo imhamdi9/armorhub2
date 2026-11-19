@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Outfit:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#F6F8FC;--ink:#0B1B3A;--mute:#5B6784;--acc:#2F6BFF;--acc-ink:#fff;--line:#DCE3F1;--soft:#E6ECF7;--hl:#CFE0FF;--panel:#0B1B3A;--panel-glow:rgba(47,107,255,.45);--font:'Manrope';--r:18px;--btn:#2F6BFF;--btn-ink:#fff;--best:#2F6BFF;--bestbg:#2F6BFF;--bestink:#fff}
+body.b{--bg:#EAF3FF;--ink:#12203A;--mute:#4F6082;--acc:#FF7A1A;--line:#CFE0F7;--soft:#fff;--hl:#FFD3AE;--panel:linear-gradient(155deg,#FF7A1A,#FFAE4D);--panel-glow:rgba(255,255,255,.35);--font:'Outfit';--r:26px;--btn:#12203A;--btn-ink:#fff;--best:#12203A;--bestbg:#12203A;--bestink:#fff}
+body.c{--bg:#FFFFFF;--ink:#111111;--mute:#6B6B66;--acc:#FF4B1F;--line:#E4E4DF;--soft:#F1F1EC;--hl:#FFD2C6;--panel:#FF4B1F;--panel-glow:rgba(255,255,255,.18);--font:'Sora';--r:6px;--btn:#111;--btn-ink:#fff;--best:#111;--bestbg:#111;--bestink:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font),system-ui,sans-serif;overflow:hidden;width:1440px;height:900px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+.nav{height:76px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.02em}
+.mk{width:34px;height:34px;background:var(--ink);border-radius:calc(var(--r)*.55);display:grid;place-items:center}
+.links{display:flex;gap:30px;font-size:15px;font-weight:600}
+.r{display:flex;gap:10px;align-items:center;font-size:14.5px;font-weight:600}
+.pill{height:42px;padding:0 20px;border-radius:calc(var(--r)*2);display:inline-flex;align-items:center;border:1.5px solid var(--line);background:transparent}
+.pill.d{background:var(--btn);color:var(--btn-ink);border-color:transparent}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;height:640px;padding-top:10px}
+.tag{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:99px;background:var(--soft);font-size:13.5px;font-weight:600}
+.tag i{width:8px;height:8px;border-radius:50%;background:var(--acc)}
+h1{font-size:64px;line-height:1.02;letter-spacing:-.035em;margin:20px 0 18px;font-weight:700}
+h1 em{font-style:normal;color:var(--acc)}
+body.c h1 em{background:none;color:var(--acc)}
+.lead{font-size:18.5px;color:var(--mute);max-width:490px;line-height:1.55}
+.cta{display:flex;gap:12px;margin-top:32px}
+.btn{height:52px;padding:0 26px;border-radius:calc(var(--r)*2);display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;background:var(--btn);color:var(--btn-ink)}
+.btn.g{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.facts{display:flex;gap:30px;margin-top:38px;padding-top:24px;border-top:1.5px solid var(--line);font-size:13.5px;color:var(--mute);max-width:560px}
+.facts b{display:block;color:var(--ink);font-size:15px;margin-bottom:3px}
+.stage{position:relative;height:580px}
+.panel{position:absolute;inset:18px 0 0 30px;border-radius:calc(var(--r)*1.6);background:var(--panel);overflow:hidden}
+.panel:before{content:"";position:absolute;inset:0;background:radial-gradient(520px 340px at 85% 0%,var(--panel-glow),transparent 70%)}
+.c{background:#fff}
+.card{position:absolute;background:#fff;color:#111;border-radius:var(--r);box-shadow:0 2px 4px rgba(0,0,0,.06),0 16px 34px -14px rgba(0,0,0,.3)}
+.req{left:0;top:0;width:340px;padding:16px 18px}
+.req small{color:#6b7488;font-size:12.5px}.req b{display:block;font-size:18px;margin:3px 0 9px;font-weight:700}
+.ch{display:inline-block;background:#eef1f6;border-radius:99px;padding:4px 11px;font-size:12.5px;margin-right:6px;font-weight:600}
+.q{width:450px;padding:14px 18px;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
+.av{width:44px;height:44px;border-radius:calc(var(--r)*.7);background:#eef1f6;display:grid;place-items:center;font-weight:800;font-size:18px}
+.q b{font-size:15.5px;display:block;font-weight:700}.q small{color:#6b7488;font-size:12.5px}
+.p{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.q1{top:150px;right:-4px}.q2{top:272px;right:26px;outline:2.5px solid var(--best)}.q3{top:394px;right:4px}
+.q2 .av{background:var(--bestbg);color:var(--bestink)}
+.bm{position:absolute;top:-12px;left:16px;background:var(--bestbg);color:var(--bestink);font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px}
+.ok{left:0;bottom:14px;width:290px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+.ok i{width:38px;height:38px;border-radius:calc(var(--r)*.6);background:var(--acc);display:grid;place-items:center;color:#fff;font-style:normal;font-weight:800}
+.ok b{font-size:14.5px;display:block}.ok small{font-size:12px;color:#6b7488}
+.label{position:fixed;left:16px;bottom:12px;font:600 13px system-ui;color:var(--mute)}
+</style></head><body>
+<div class="wrap">
+ <div class="nav"><div class="brand"><div class="mk"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Z"/></svg></div>ArmorHub</div>
+  <div class="links"><span>Markets</span><span>Partners</span><span>How it works</span><span>FAQ</span></div>
+  <div class="r"><span>العربية</span><span class="pill">Sign in</span><span class="pill d">Sign up</span></div></div>
+ <div class="hero">
+  <div><span class="tag"><i></i>Live in Saudi Arabia and Egypt</span>
+   <h1>Describe the job. Compare <em>real quotes</em>. Book who you trust.</h1>
+   <p class="lead">Verified providers quote, you choose, and your payment is held until the work is done.</p>
+   <div class="cta"><span class="btn">Browse markets →</span><span class="btn g">Become a partner</span></div>
+   <div class="facts"><div><b>Verified partners</b>ID and registration checked</div><div><b>Protected payment</b>Held until completion</div><div><b>Warranty included</b>Issued for each job</div></div></div>
+  <div class="stage"><div class="panel"></div>
+   <div class="card req"><small>Example request</small><b>Paint protection film, BMW M4</b><span class="ch">Front bumper</span><span class="ch">Hood</span></div>
+   <div class="card q q1"><div class="av">C</div><div><b>Cairo Garage</b><small>Verified · 2 km</small></div><div class="p">SAR 2,100</div></div>
+   <div class="card q q2"><span class="bm">Best match</span><div class="av">S</div><div><b>Shop One</b><small>Verified · 4 km</small></div><div class="p">SAR 1,980</div></div>
+   <div class="card q q3"><div class="av">N</div><div><b>Nile Shield</b><small>Verified · 7 km</small></div><div class="p">SAR 1,750</div></div>
+   <div class="card ok"><i>✓</i><div><b>Quote accepted</b><small>Pay now, book your slot</small></div></div></div>
+ </div></div>
+<script>const t=new URLSearchParams(location.search).get('t');if(t)document.body.className=t;</script>
+</body></html>

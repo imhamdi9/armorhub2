@@ -2,96 +2,88 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Commission;
-use App\Models\CommissionDistribution;
-use App\Models\InstallationQuote;
+use App\Services\Payment\PaymentFinalizer;
+use App\Services\Payment\PaymentGateway;
+use App\Services\Payment\PaymentUnavailable;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
-    public function store(Request $request, Order $order)
+    use AuthorizesRequests;
+
+    public function store(
+        Request $request,
+        Order $order,
+        PaymentFinalizer $finalizer,
+        PaymentGateway $gateway
+    )
     {
+        $this->authorize('view', $order);
+
         $data = $request->validate([
             'amount' => 'required|numeric',
-            'currency' => 'nullable|string',
             'payment_method' => 'nullable|string',
         ]);
 
-        // منع تكرار الدفع
-        if ($order->status === 'paid') {
-            return response()->json([
-                'message' => 'Order already paid'
-            ], 400);
+        if ($order->status === OrderStatus::Paid) {
+            return response()->json(['message' => 'Order already paid'], 422);
         }
 
-        $payment = Payment::create([
-            'order_id' => $order->id,
-            'amount' => $data['amount'],
-            'currency' => $data['currency'] ?? 'USD',
-            'payment_method' => $data['payment_method'] ?? null,
-            'status' => 'completed',
-        ]);
-
-        $commissionPercentage = 10;
-
-        $commissionAmount = $order->total_amount * ($commissionPercentage / 100);
-
-        $commission = Commission::create([
-            'order_id' => $order->id,
-            'amount' => $commissionAmount,
-            'percentage' => $commissionPercentage,
-            'status' => 'pending',
-        ]);
-
-        $quote = InstallationQuote::where('order_id', $order->id)
-            ->where('status', 'accepted')
-            ->first();
-
-        if ($quote && $quote->installationCenter) {
-
-            $center = $quote->installationCenter;
-
-            // Platform 35%
-            CommissionDistribution::create([
-                'commission_id' => $commission->id,
-                'type' => 'platform',
-                'amount' => $commission->amount * 0.35,
-                'status' => 'pending',
-            ]);
-
-            // Company 25%
-            if ($center->company_id) {
-                CommissionDistribution::create([
-                    'commission_id' => $commission->id,
-                    'type' => 'company',
-                    'company_id' => $center->company_id,
-                    'amount' => $commission->amount * 0.25,
-                    'status' => 'pending',
-                ]);
-            }
-
-            // Installation Center 40%
-            CommissionDistribution::create([
-                'commission_id' => $commission->id,
-                'type' => 'installation_center',
-                'installation_center_id' => $center->id,
-                'amount' => $commission->amount * 0.40,
-                'status' => 'pending',
+        if (! in_array($order->status, [OrderStatus::PartnerSelected, OrderStatus::AwaitingPayment], true)) {
+            throw ValidationException::withMessages([
+                'order' => ['Select a partner quote before paying.'],
             ]);
         }
 
-        $order->update([
-            'status' => 'paid',
-        ]);
+        if (round((float) $data['amount'], 2) !== round((float) $order->payable_amount, 2)) {
+            throw ValidationException::withMessages([
+                'amount' => ['The amount must match what you owe: the order total plus the platform fee.'],
+            ]);
+        }
+
+        try {
+            $charge = $gateway->charge($order, (float) $order->payable_amount, $data['payment_method'] ?? null);
+        } catch (PaymentUnavailable $e) {
+            return response()->json(['message' => $e->getMessage()], 503);
+        }
+
+        if ($charge['status'] === 'failed') {
+            return response()->json(['message' => $charge['message'] ?? 'The payment was declined.'], 402);
+        }
+
+        // Hosted checkout: remember the attempt; the webhook completes it.
+        if ($charge['status'] === 'redirect') {
+            Payment::create([
+                'company_id' => $order->company_id,
+                'order_id' => $order->id,
+                'amount' => $order->payable_amount,
+                'currency' => $order->currency,
+                'payment_method' => $data['payment_method'] ?? null,
+                'status' => 'pending',
+                'provider' => $charge['provider'] ?? null,
+                'transaction_id' => $charge['transaction_id'],
+            ]);
+
+            return response()->json(['message' => 'Continue to the payment page.', 'checkout_url' => $charge['url']], 202);
+        }
+
+        $result = $finalizer->complete($order, $charge, $data['payment_method'] ?? null, $request->user());
+
+        if ($result === null) {
+            return response()->json(['message' => 'Order already paid'], 422);
+        }
 
         return response()->json([
             'message' => 'Payment completed',
-            'payment' => $payment,
-            'commission' => $commission->load('distributions'),
-            'order' => $order,
+            'payment' => $result[0],
+            'commission' => $result[1]->load('distributions'),
+            'order' => $order->fresh(),
         ], 201);
     }
 }

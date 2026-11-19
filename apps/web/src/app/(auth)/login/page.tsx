@@ -6,16 +6,32 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/services/auth.service";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { errorMessage } from "@/lib/errors";
+import Link from "next/link";
+import { SocialButtons } from "@/components/auth/social-buttons";
 
 import {
   loginSchema,
   type LoginFormData,
 } from "@/lib/validators/login";
+import { LanguageSwitcher, tr } from "@/lib/i18n";
+
+/** Message shown after the visitor followed the link in their verification email. */
+function VerifiedNotice() {
+  const verified = useSearchParams().get("verified");
+
+  if (verified === "1") return <p className="text-center text-sm text-green-600">{tr("Email verified. You can sign in now.")}</p>;
+  if (verified === "0") return <p className="text-center text-sm text-red-500">{tr("We could not verify that link. Sign in and request a new one.")}</p>;
+
+  return null;
+}
 
 export default function LoginPage() {
 
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
 
   const {
@@ -27,33 +43,44 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: LoginFormData) {
-    const response = await login(data);
+    setError(null);
 
-    localStorage.setItem("token", response.token);
+    try {
+      await login(data);
 
-    router.push("/dashboard");
+      router.push("/dashboard");
+    } catch (err) {
+      setError(errorMessage(err, "Could not sign in. Please try again."));
+    }
 
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <Card className="w-full max-w-md">
+    <div className="relative flex w-full flex-1 items-center justify-center px-4 py-16">
+        <div className="absolute end-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
+      <Card className="w-full max-w-md border-0 bg-transparent shadow-none ring-0">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">
-            ArmorHub Login
+          <CardTitle aria-level={1} className="display text-start text-[2.4rem] leading-none">
+            {tr("Sign in to ArmorHub")}
           </CardTitle>
         </CardHeader>
 
         <CardContent>
+          <Suspense>
+            <VerifiedNotice />
+          </Suspense>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
           >
           <div>
-            <Label>Email</Label>
+            <Label>{tr("Email")}</Label>
             <Input
              type="email"
-             placeholder="admin@armorhub.com"
+             placeholder={tr("admin@armorhub.com")}
              {...register("email")}
             />
             {errors.email && (
@@ -64,7 +91,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <Label>Password</Label>
+            <Label>{tr("Password")}</Label>
             <Input
               type="password"
               placeholder="••••••••"
@@ -78,13 +105,22 @@ export default function LoginPage() {
             )}
           </div>
 
+          {error && <p className="text-sm text-red-500">{error}</p>}
+
           <Button
             type="submit"
             className="w-full"
           >
-            Login
+            {tr("Login")}
           </Button>
+          <p className="text-center text-sm">
+            <Link href="/forgot-password" className="underline">{tr("Forgot your password?")}</Link>
+          </p>
+          <p className="text-center text-sm">
+            {tr("New here?")}<Link href="/signup" className="underline">{tr("Create an account")}</Link>
+          </p>
             </form>
+          <div className="mt-6"><SocialButtons onDone={() => router.push("/dashboard")} /></div>
         </CardContent>
       </Card>
     </div>

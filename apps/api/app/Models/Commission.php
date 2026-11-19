@@ -12,6 +12,7 @@ class Commission extends Model
         'amount',
         'percentage',
         'status',
+        'refunded_amount',
     ];
 
     public function distributions()

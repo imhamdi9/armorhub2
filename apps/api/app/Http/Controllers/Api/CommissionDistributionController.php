@@ -10,10 +10,10 @@ class CommissionDistributionController extends Controller
 {
     public function index(Request $request)
 {
-    $query = CommissionDistribution::with([
+    $query = CommissionDistribution::visibleTo($request->user())->with([
         'commission',
         'company',
-        'installationCenter'
+        'partner'
     ]);
 
     if ($request->filled('status')) {
@@ -24,10 +24,10 @@ class CommissionDistributionController extends Controller
         $query->where('company_id', $request->company_id);
     }
 
-    if ($request->filled('installation_center_id')) {
+    if ($request->filled('partner_id')) {
         $query->where(
-            'installation_center_id',
-            $request->installation_center_id
+            'partner_id',
+            $request->partner_id
         );
     }
 
@@ -61,13 +61,17 @@ class CommissionDistributionController extends Controller
         if ($commissionDistribution->status === 'paid') {
             return response()->json([
                 'message' => 'Already paid'
-            ], 400);
+            ], 422);
         }
 
         $commissionDistribution->update([
             'status' => 'paid',
             'paid_at' => now(),
         ]);
+        $currency = \App\Models\Order::withoutGlobalScopes()->whereKey(\App\Models\Commission::whereKey($commissionDistribution->commission_id)->value('order_id'))->value('currency');
+        if ($currency) {
+            app(\App\Services\Ledger\LedgerPostings::class)->commissionSharePaid($commissionDistribution, $currency);
+        }
 
         return response()->json([
             'message' => 'Commission paid successfully',

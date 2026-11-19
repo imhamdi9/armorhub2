@@ -1,0 +1,13 @@
+{
+  "id": "P001",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "price",
+  "reason": "Joining costs nothing and slow months hurt, so I would sign up and try one job to see if the customers are real. But 10% off every order is a big bite out of a tint or film job that already has thin margins.",
+  "objection": "The 10% commission on top of my own costs. I have to know whether the job still pays me properly after it is taken.",
+  "would_change_my_mind": "A lower commission, or proof from other shops that the requests actually turn into paid jobs in Riyadh.",
+  "price_too_cheap": 250,
+  "price_cheap": 600,
+  "price_expensive": 1000,
+  "price_too_expensive": 1400
+}

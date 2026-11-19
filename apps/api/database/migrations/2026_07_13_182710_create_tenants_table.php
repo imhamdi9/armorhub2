@@ -17,6 +17,11 @@ return new class extends Migration
 
             $table->string('name');
 
+            $table->foreignId('industry_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+
             $table->string('domain')
                 ->nullable()
                 ->unique();

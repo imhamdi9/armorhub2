@@ -23,7 +23,7 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('installation_center_id')
+            $table->foreignId('partner_id')
                 ->nullable()
                 ->constrained()
                 ->cascadeOnDelete();
