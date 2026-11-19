@@ -87,7 +87,7 @@ class DepartmentController extends Controller
                 $head = User::findOrFail($data['head_user_id']);
                 if ($head->hasAnyRole(['customer', 'seller']) || ! $head->company_id
                     || ($d->tenant_id && \App\Support\MarketScope::tenantId($head) !== $d->tenant_id)) {
-                    throw ValidationException::withMessages(['head_user_id' => ['A department head must be a member of ArmorHub staff.']]);
+                    throw ValidationException::withMessages(['head_user_id' => [\App\Support\PlatformBrand::in('A department head must be a member of ArmorHub staff.')]]);
                 }
                 $head->update(['department_id' => $d->id, 'is_department_head' => true]);
             }

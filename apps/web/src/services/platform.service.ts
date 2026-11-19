@@ -248,6 +248,8 @@ export interface StorefrontSettings {
   enabled: boolean;
   headline: string | null;
   subheadline: string | null;
+  headline_ar?: string | null;
+  subheadline_ar?: string | null;
   about: string | null;
   primary_color: string;
   logo_url: string | null;

@@ -26,7 +26,8 @@
     "e2e:installations": "node e2e/installations.mjs",
     "e2e:guest": "node e2e/guest.mjs",
     "e2e:markets": "node e2e/markets.mjs",
-    "e2e:fulfilment": "node e2e/fulfilment.mjs"
+    "e2e:fulfilment": "node e2e/fulfilment.mjs",
+    "e2e:roles": "node e2e/roles.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

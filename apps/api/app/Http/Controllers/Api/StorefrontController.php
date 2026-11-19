@@ -32,6 +32,8 @@ class StorefrontController extends Controller
             'enabled' => 'sometimes|boolean',
             'headline' => 'nullable|string|max:120',
             'subheadline' => 'nullable|string|max:240',
+            'headline_ar' => 'nullable|string|max:120',
+            'subheadline_ar' => 'nullable|string|max:240',
             'about' => 'nullable|string|max:2000',
             // A strict colour: it is placed in a style attribute, so nothing else may get through.
             'primary_color' => ['sometimes', 'regex:/^#[0-9a-fA-F]{6}$/'],

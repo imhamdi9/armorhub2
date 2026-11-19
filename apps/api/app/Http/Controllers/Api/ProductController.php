@@ -157,7 +157,7 @@ class ProductController extends Controller
         }
         // Nothing a seller makes goes live until the catalogue team approves it: only an approved product can be switched on or off.
         if ($this->isSeller($request->user()) && ($data['is_active'] ?? false) && ! $product->is_active && $product->review_status !== 'approved' && app(\App\Services\ProductApproval::class)->required()) {
-            throw ValidationException::withMessages(['is_active' => ['A product goes live only after ArmorHub approves it. Submit it for review first.']]);
+            throw ValidationException::withMessages(['is_active' => [\App\Support\PlatformBrand::in('A product goes live only after ArmorHub approves it. Submit it for review first.')]]);
         }
         // A seller publishes a draft only when shoppers have something to look at: at least one photo and a short description.
         if ($this->isSeller($request->user()) && ($data['is_active'] ?? false) && ! $product->is_active) {
@@ -530,7 +530,7 @@ class ProductController extends Controller
 
         $get = fn ($k) => array_key_exists($k, $data) ? $data[$k] : $product?->{$k};
         if (! ($get('requires_shipping') ?? $request->boolean('requires_shipping', true))) {
-            throw ValidationException::withMessages(['fulfilment' => ['Only physical products can be stored by ArmorHub.']]);
+            throw ValidationException::withMessages(['fulfilment' => [\App\Support\PlatformBrand::in('Only physical products can be stored by ArmorHub.')]]);
         }
         foreach (['units_per_carton', 'carton_length_cm', 'carton_width_cm', 'carton_height_cm', 'carton_weight_kg'] as $k) {
             if (! $get($k)) {

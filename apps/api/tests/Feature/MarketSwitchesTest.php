@@ -96,4 +96,17 @@ class MarketSwitchesTest extends TestCase
         \Illuminate\Support\Facades\Cache::flush();
         $this->assertSame('Armor Egypt', $this->withHeader('Accept-Language', 'ar')->getJson('/api/public/storefronts/main-store')->json('store.name'));
     }
+
+    public function test_a_storefront_headline_is_read_in_the_visitors_language(): void
+    {
+        $store = \App\Models\Company::withoutGlobalScopes()->where('slug', 'main-store')->firstOrFail();
+        $store->update(['settings' => ['storefront' => ['enabled' => true, 'headline' => 'Protect your car', 'headline_ar' => 'احمِ سيارتك', 'subheadline' => 'Experts near you']]]);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $en = $this->getJson('/api/public/storefronts/main-store')->json('store');
+        $this->assertSame('Protect your car', $en['headline']);
+        $ar = $this->withHeader('Accept-Language', 'ar')->getJson('/api/public/storefronts/main-store')->json('store');
+        $this->assertSame('احمِ سيارتك', $ar['headline']);
+        $this->assertSame('Experts near you', $ar['subheadline'], 'no Arabic subheadline: the main text is shown');
+    }
 }

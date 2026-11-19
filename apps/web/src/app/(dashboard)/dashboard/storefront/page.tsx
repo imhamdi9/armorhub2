@@ -97,6 +97,15 @@ function StorefrontEditor() {
           <Input id="sf-subheadline" maxLength={240} value={form.subheadline ?? ""} onChange={(e) => set("subheadline", e.target.value)} />
         </div>
         <div>
+          <label htmlFor="sf-headline-ar" className="font-medium">{tr("Headline in Arabic")}</label>
+          <Input id="sf-headline-ar" dir="rtl" maxLength={120} value={form.headline_ar ?? ""} onChange={(e) => set("headline_ar", e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="sf-subheadline-ar" className="font-medium">{tr("Subheadline in Arabic")}</label>
+          <Input id="sf-subheadline-ar" dir="rtl" maxLength={240} value={form.subheadline_ar ?? ""} onChange={(e) => set("subheadline_ar", e.target.value)} />
+          <p className="text-xs text-muted-foreground">{tr("Shown to visitors who read Arabic. Leave empty to show the main text.")}</p>
+        </div>
+        <div>
           <label htmlFor="sf-about" className="font-medium">{tr("About us")}</label>
           <textarea id="sf-about" rows={4} maxLength={2000} className="w-full rounded-lg border px-3 py-2" value={form.about ?? ""} onChange={(e) => set("about", e.target.value)} />
         </div>

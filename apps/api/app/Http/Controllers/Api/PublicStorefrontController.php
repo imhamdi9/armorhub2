@@ -27,7 +27,7 @@ class PublicStorefrontController extends Controller
             ->map(fn (Company $c) => [
                 'name' => $c->displayName(),
                 'slug' => $c->slug,
-                'headline' => $this->stores->settingsOf($c)['headline'],
+                'headline' => $this->stores->text($this->stores->settingsOf($c), 'headline'),
                 'primary_color' => $this->stores->settingsOf($c)['primary_color'],
                 'logo_url' => $this->stores->settingsOf($c)['logo_url'],
                 'industry' => $this->stores->industry($c),

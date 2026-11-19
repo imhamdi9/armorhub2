@@ -31,9 +31,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug, id } = await params;
-  const store = await getStore(slug);
+  const store = await getStore(slug, true);
   if (store?.merged_into) redirect(`/s/${store.merged_into}/products/${id}`);
-  const data = await getStoreProduct(slug, id);
+  const data = await getStoreProduct(slug, id, true);
 
   if (!store || !data) notFound();
 

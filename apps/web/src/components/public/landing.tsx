@@ -6,10 +6,17 @@ import { useState } from "react";
 import { HeroArt, Icon } from "@/components/public/art";
 import { price } from "@/components/public/product-card";
 import { useEditable, useSiteList, useSiteText, useSiteValue } from "@/components/public/site-content";
-import { formatNumber, tr } from "@/lib/i18n";
+import { LOCALE_TAGS, currentLocale, formatNumber, tr } from "@/lib/i18n";
 import type { PublicShowcase } from "@/types/public";
 
-export const COUNTRY_NAMES: Record<string, string> = { SA: "Saudi Arabia", EG: "Egypt" };
+/** A country's name in the reader's language, from its code (any country, no list to keep up to date). */
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames([LOCALE_TAGS[currentLocale()]], { type: "region" }).of(code.toUpperCase()) ?? code;
+  } catch {
+    return code;
+  }
+}
 export const INDUSTRY_ICONS: Record<string, string> = { automotive: "🚗", "home-services": "🏠", beauty: "💆", devices: "📱" };
 
 export function Eyebrow({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
@@ -429,11 +436,11 @@ export function Bento({ facts }: { facts: Facts }) {
 
 // ------------------------------------------------------------------ markets
 
-export function Markets() {
-  const markets = [
-    { code: "SA", name: "Saudi Arabia", cur: "SAR", vat: 15, lang: "العربية · English" },
-    { code: "EG", name: "Egypt", cur: "EGP", vat: 14, lang: "العربية · English" },
-  ];
+export function Markets({ stores }: { stores: { name: string; market?: string | null }[] }) {
+  // The markets that are really open, not a fixed list: a closed or removed market disappears from here by itself.
+  const markets = stores.filter((s) => s.market).map((s) => ({ code: s.market as string, name: s.name }));
+  if (markets.length === 0) return null;
+
   return (
     <section className="bg-white py-14">
       <div className="mx-auto max-w-[1200px] px-4">
@@ -441,12 +448,8 @@ export function Markets() {
         <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
           {markets.map((m) => (
             <div key={m.code} className="rounded-[28px] bg-linen p-7">
-              <p className="text-2xl font-black text-forest">{tr(m.name)}</p>
-              <dl className="mt-3 space-y-1 text-sm text-forest/80" dir="ltr">
-                <div className="flex justify-between"><dt>Currency</dt><dd className="font-semibold">{m.cur}</dd></div>
-                <div className="flex justify-between"><dt>VAT</dt><dd className="font-semibold">{m.vat}%</dd></div>
-                <div className="flex justify-between"><dt>Languages</dt><dd className="font-semibold">{m.lang}</dd></div>
-              </dl>
+              <p className="text-2xl font-black text-forest">{m.name}</p>
+              <p className="mt-3 text-sm text-forest/80">{countryName(m.code)}</p>
             </div>
           ))}
         </div>

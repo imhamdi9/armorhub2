@@ -58,7 +58,7 @@ class SellerFulfilmentController extends Controller
                 + collect($data)->only(['carrier', 'tracking_number', 'note'])->all());
             foreach ($data['items'] as $row) {
                 $product = Product::where('seller_id', $c->id)->where('fulfilment', 'armorhub')->find($row['product_id'])
-                    ?? throw ValidationException::withMessages(['items' => ['Only products you chose to have ArmorHub store can be sent in.']]);
+                    ?? throw ValidationException::withMessages(['items' => [\App\Support\PlatformBrand::in('Only products you chose to have ArmorHub store can be sent in.')]]);
                 $inbound->items()->create(['product_id' => $product->id, 'cartons_expected' => $row['cartons']]);
             }
 

@@ -53,14 +53,19 @@ async function language(): Promise<"ar" | "en"> {
   }
 }
 
-async function get<T>(path: string): Promise<T | null> {
+async function get<T>(path: string, strict = false): Promise<T | null> {
   const key = `${await language()}|${path}`;
   const hit = cache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value as T | null;
 
   const { value, down } = await fetchPublic<T>(path);
   // An unreachable API is retried next time rather than remembered, so a store never looks closed just because the server was asleep.
-  if (down) return null;
+  // A page that must say "missing" only when it really is missing (a store, a product) asks for strict: an unreachable API then raises the retry screen instead of a 404.
+  if (down) {
+    if (strict) throw new Error("The store service could not be reached.");
+
+    return null;
+  }
 
   if (cache.size >= MAX_ENTRIES) cache.clear();
   cache.set(key, { expires: Date.now() + TTL_MS, value });
@@ -78,14 +83,14 @@ export async function getStoresChecked() {
 export const getStores = () => get<PublicStoreList>("/storefronts");
 export const getSurface = async (key: string) => (await get<{ values: Record<string, Record<string, unknown>> }>(`/surfaces/${key}`))?.values ?? {};
 export const getShowcase = () => get<PublicShowcase>("/showcase");
-export const getStore = (slug: string) => get<PublicStore>(`/storefronts/${encodeURIComponent(slug)}`);
+export const getStore = (slug: string, strict = false) => get<PublicStore>(`/storefronts/${encodeURIComponent(slug)}`, strict);
 export const getSeller = (slug: string, id: string, page?: string) => get<PublicSellerPage>(`/storefronts/${encodeURIComponent(slug)}/sellers/${encodeURIComponent(id)}${page ? `?page=${encodeURIComponent(page)}` : ""}`);
 export const getStoreProducts = (slug: string, params: { q?: string; category?: string; page?: string; industry?: string; sort?: string; vehicle_model_id?: string; year?: string; compatible?: string; min_price?: string; max_price?: string; brand?: string; min_rating?: string; stored?: string; deals?: string; per_page?: string }) => {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
   return get<PublicProducts>(`/storefronts/${encodeURIComponent(slug)}/products${query ? `?${query}` : ""}`);
 };
-export const getStoreProduct = (slug: string, id: string) =>
-  get<PublicProductPage>(`/storefronts/${encodeURIComponent(slug)}/products/${encodeURIComponent(id)}`);
+export const getStoreProduct = (slug: string, id: string, strict = false) =>
+  get<PublicProductPage>(`/storefronts/${encodeURIComponent(slug)}/products/${encodeURIComponent(id)}`, strict);
 
 /** Black or white, whichever reads better on this background colour. */
 export function textOn(hex: string): "#ffffff" | "#111827" {

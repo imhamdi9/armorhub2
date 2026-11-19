@@ -80,7 +80,7 @@ class SellerBundleController extends Controller
                 $fill['compare_at_price'] = $this->worth($parts);
             }
             if (($fill['is_active'] ?? false) && $bundle->review_status !== 'approved' && app(\App\Services\ProductApproval::class)->required()) {
-                throw ValidationException::withMessages(['is_active' => ['A bundle goes live only after ArmorHub approves it.']]);
+                throw ValidationException::withMessages(['is_active' => [\App\Support\PlatformBrand::in('A bundle goes live only after ArmorHub approves it.')]]);
             }
             $bundle->update($fill);
             app(DefaultPrice::class)->follow($bundle, $old);
@@ -126,7 +126,7 @@ class SellerBundleController extends Controller
                 throw ValidationException::withMessages(["items.$i.product_id" => ['You can only bundle your own products.']]);
             }
             if ($p->fulfilment === 'armorhub') {
-                throw ValidationException::withMessages(["items.$i.product_id" => ['This product is stored in ArmorHub\'s warehouse, so it cannot be part of a bundle. Bundle products you ship yourself.']]);
+                throw ValidationException::withMessages(["items.$i.product_id" => [\App\Support\PlatformBrand::in('This product is stored in ArmorHub\'s warehouse, so it cannot be part of a bundle. Bundle products you ship yourself.')]]);
             }
             if ($p->bundleItems()->exists()) {
                 throw ValidationException::withMessages(["items.$i.product_id" => ['A bundle cannot contain another bundle.']]);

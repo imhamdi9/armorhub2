@@ -77,7 +77,7 @@ function PlatformHomeBody({ stores, showcase, unavailable }: { stores: PublicSto
       </section>
     ),
     bento: on.bento && <Bento facts={facts} />,
-    markets: on.markets && <Markets />,
+    markets: on.markets && <Markets stores={stores} />,
     faq: on.faq && (faqItems.length > 0 ? <Faq items={faqItems.map((i) => ({ q: i.question, a: i.answer }))} /> : <Faq />),
   };
 

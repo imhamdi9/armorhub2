@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { COUNTRY_NAMES } from "@/components/public/landing";
+import { countryName } from "@/components/public/landing";
 import { useEditable, useSiteText, useSiteValue } from "@/components/public/site-content";
 import { Rail } from "@/components/shop/rail";
 import { tr } from "@/lib/i18n";
@@ -82,7 +82,7 @@ export function MarketShelf({ stores, showcase, unavailable, title }: { stores: 
                     : <span className="grid size-11 place-items-center rounded-xl text-lg font-bold" style={{ backgroundColor: s.primary_color, color: "#1a1a1a" }} aria-hidden="true">{s.name.slice(0, 1)}</span>}
                   <div className="min-w-0">
                     <h3 className="truncate text-lg font-bold text-obsidian">{s.name}</h3>
-                    {s.market && <p className="text-xs text-slate">{tr(COUNTRY_NAMES[s.market] ?? s.market)}</p>}
+                    {s.market && <p className="text-xs text-slate">{countryName(s.market)}</p>}
                   </div>
                 </div>
                 {s.headline && <p className="mt-3 line-clamp-2 text-sm text-slate">{s.headline}</p>}

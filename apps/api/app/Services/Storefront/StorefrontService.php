@@ -30,6 +30,8 @@ class StorefrontService
             'enabled' => false,
             'headline' => null,
             'subheadline' => null,
+            'headline_ar' => null,
+            'subheadline_ar' => null,
             'about' => null,
             'primary_color' => '#111827',
             'logo_url' => null,
@@ -100,6 +102,14 @@ class StorefrontService
             ->where(fn ($q) => $q->whereNull('industry_id')->when($industries, fn ($w) => $w->orWhereIn('industry_id', $industries)));
     }
 
+    /** One storefront text in the reader's language: the Arabic version when an Arabic reader has one, else the main text. */
+    public function text(array $settings, string $key): ?string
+    {
+        $ar = trim((string) ($settings[$key.'_ar'] ?? ''));
+
+        return app()->getLocale() === 'ar' && $ar !== '' ? $ar : ($settings[$key] ?? null);
+    }
+
     /** @return array<string, mixed> */
     public function branding(Company $company): array
     {
@@ -108,8 +118,8 @@ class StorefrontService
         return [
             'name' => $company->displayName(),
             'slug' => $company->slug,
-            'headline' => $s['headline'],
-            'subheadline' => $s['subheadline'],
+            'headline' => $this->text($s, 'headline'),
+            'subheadline' => $this->text($s, 'subheadline'),
             'about' => $s['about'],
             'primary_color' => $s['primary_color'],
             'logo_url' => $s['logo_url'],

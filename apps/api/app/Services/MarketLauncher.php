@@ -32,7 +32,7 @@ class MarketLauncher
             throw ValidationException::withMessages(['country' => ['Unknown country.']]);
         }
         if (Tenant::where('market', $country)->exists()) {
-            throw ValidationException::withMessages(['country' => ['ArmorHub already has a market in this country. Add industries to it instead.']]);
+            throw ValidationException::withMessages(['country' => [\App\Support\PlatformBrand::in('ArmorHub already has a market in this country. Add industries to it instead.')]]);
         }
         $industries = Industry::whereIn('id', $industryIds)->pluck('id')->all();
         if (count($industries) === 0) {
