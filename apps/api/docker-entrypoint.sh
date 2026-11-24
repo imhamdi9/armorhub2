@@ -47,7 +47,12 @@ fi
 
 # Setup above runs as root and creates cache files; the web server runs as www-data and must be able to write
 # to them. Without this, the first request that touches the cache fails with a 500.
-chown -R www-data:www-data storage bootstrap/cache
+#
+# Only root can hand files to another user. Run as a normal user (a CI runner, a developer's machine), the files are already
+# theirs and `chown` would fail with "Operation not permitted" and stop the script, so it is skipped there.
+if [ "$(id -u)" = "0" ]; then
+    chown -R www-data:www-data storage bootstrap/cache
+fi
 chmod -R ug+rwX storage bootstrap/cache
 
 exec "$@"
