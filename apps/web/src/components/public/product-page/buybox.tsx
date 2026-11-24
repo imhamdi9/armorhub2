@@ -74,11 +74,11 @@ export function BoughtTogether({ m }: { m: ProductModel }) {
     <section className="mt-10 border-t border-border pt-6" aria-label={tr("Frequently bought together")} data-testid="bought-together">
       <h2 className="mb-4 text-xl font-bold">{tr("Frequently bought together")}</h2>
       <div className="flex flex-wrap items-center gap-6">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {items.map((i, n) => (
             <div key={i.id} className="flex items-center gap-3">
               {n > 0 && <span aria-hidden="true" className="text-2xl text-slate">+</span>}
-              <Link href={`/s/${store.slug}/products/${i.id}`} className={`block size-24 sm:size-28 ${off.includes(i.id) ? "opacity-40" : ""}`} aria-label={i.name}><ProductTile product={i} /></Link>
+              <Link href={`/s/${store.slug}/products/${i.id}`} className={`block size-20 sm:size-28 ${off.includes(i.id) ? "opacity-40" : ""}`} aria-label={i.name}><ProductTile product={i} /></Link>
             </div>
           ))}
         </div>

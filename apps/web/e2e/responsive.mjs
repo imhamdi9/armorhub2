@@ -2,6 +2,7 @@
 //  - no horizontal overflow, no page errors
 //  - Arabic really switches to right-to-left with Arabic text
 // Needs demo data (php artisan platform:demo). Screenshots go to $SHOTS (default /tmp).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -34,7 +35,7 @@ async function login(context, who) {
     await page.click("button[type=submit]");
   }
   await page.waitForURL("**/dashboard");
-  await page.waitForSelector("text=/Welcome|مرحبًا/");
+  await page.waitForSelector("text=/Good (morning|afternoon|evening)|صباح|مساء/");
   return page;
 }
 
@@ -105,7 +106,7 @@ try {
 
   // The switcher works both ways without a reload.
   await d.click('button[aria-label="Switch to English"]');
-  await d.waitForSelector("text=Welcome");
+  await d.waitForSelector("text=/Good (morning|afternoon|evening)/");
   if ((await d.evaluate(() => document.documentElement.dir)) !== "ltr") problems.push("switching back to English did not restore LTR");
 
   console.log(`checked ${checked} page views`);

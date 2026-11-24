@@ -1,6 +1,7 @@
 // A brand sells its own products in a marketplace, end to end in a real browser: it applies with documents, a platform
 // admin verifies and approves, the seller lists a product, a customer buys it (straight to payment, no partner quotes)
 // and the seller ships it. Needs demo data; run after the partners check (same database).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -31,7 +32,10 @@ try {
   await s.waitForSelector("text=I want to buy");
   await s.waitForSelector("text=I provide services");
   await s.click("text=Sell on ArmorHub");
-  await s.waitForURL("**/seller-signup");
+  // a business picks its plan first (the free one here); the application form follows
+  await s.waitForURL("**/pricing**");
+  await s.click("[data-testid=choose-free]");
+  await s.waitForURL("**/seller-signup**");
   await s.waitForSelector("#target option", { state: "attached" });
   await s.fill("#business_name", "Gulf Parts Brand");
   await s.fill("#registration_number", "1010999888");
@@ -89,91 +93,33 @@ try {
   await p.waitForSelector('a:has-text("Sales")');
   await p.waitForSelector('a:has-text("Products")');
   for (const hidden of ["Requests", "Jobs", "Partners", "Team", "Commissions", "Markets"]) {
-    if (await p.locator(`a:has-text("${hidden}")`).count()) fail(`a seller can see "${hidden}"`);
+    // whole menu names, not pieces of words: a seller's own "Price requests" is not the partners' "Requests"
+    if (await p.locator("[data-sidebar=menu-button]").filter({ hasText: new RegExp(`^\\s*${hidden}\\s*$`, "i") }).count()) fail(`a seller can see "${hidden}"`);
   }
   await p.click('a:has-text("Products")');
   await p.click('button:has-text("Add product")');
   await p.fill("#name", "Ceramic brake pads");
+  // a product is written in both languages (the reviewers read both) and says what kind it is
+  await p.fill("#name_ar", "تيل فرامل سيراميك");
+  await p.fill("#desc_en", "Ceramic brake pads that stop quietly and leave very little dust on the wheels.");
+  await p.fill("#desc_ar", "تيل فرامل سيراميك يتوقف بهدوء ويترك غبارًا قليلًا جدًا على العجلات.");
+  if (await p.locator("select#industry").count()) await p.selectOption("select#industry", { index: 1 });
   // Category is picked from the list in use (or added as new); it is never left empty.
   await p.waitForSelector("select#category");
   await p.selectOption("select#category", "spare-parts");
   await p.fill("#price", "90");
   await p.click('button:has-text("Save")');
-  await p.click("text=Ceramic brake pads");
-  await p.waitForSelector("text=Price rules");
-  await p.locator("div:has(> span:text-is('Hood')) >> input[placeholder=Price]").fill("90");
-  await p.click('button:has-text("Save price rules")');
-  await p.waitForSelector("text=Saved");
+  // saving opens the new product's own page
+  await p.waitForURL(/dashboard\/products\/\d+/);
+  // the product's own page shows what was saved
+  await p.waitForSelector("text=/Base price: 90\\.00/");
   ok("the approved seller signs in with seller-only screens and lists a product with a price");
 
-  // ---- 5. A customer buys it: straight to payment, no partner quotes, no location needed
-  const cctx = await browser.newContext();
-  const c = await cctx.newPage();
-  await c.goto(`${base}/register?store=armor-store`);
-  await c.fill("#name", "Rania");
-  await c.fill("#email", `rania${stamp}@test.com`);
-  await c.fill("#password", "password123");
-  await c.fill("#password_confirmation", "password123");
-  await sleep(4000);
-  await c.click("button[type=submit]");
-  await c.waitForURL("**/dashboard**");
-  await c.goto(`${base}/dashboard/orders/new`);
-  await c.click("text=Ceramic brake pads");
-  await c.selectOption("select", { label: "M4" });
-  await c.click('label:has-text("Hood") input');
-  await c.waitForSelector("text=Delivery address");
-  await c.fill('[aria-label="Full name"]', "Rania Said");
-  await c.fill('[aria-label="Mobile number"]', "0501234567");
-  await c.fill('[aria-label="Street address"]', "5 Olaya Street");
-  await c.fill('[aria-label="City"]', "Riyadh");
-  await c.click('button:has-text("Place order")');
-  await c.waitForURL(/orders\/\d+$/);
-  await c.waitForSelector("text=Awaiting payment");
-  if (await c.locator("text=Waiting for partners").count()) fail("a seller's product asked partners for quotes");
-  await c.click('button:has-text("Pay")');
-  await c.waitForSelector("text=paid");
-  ok("the customer buys the seller's product: straight to payment (no partner quotes), then paid");
-
-  // ---- 6. The seller sees the paid order with the address and ships it
-  await p.click('a:has-text("Sales")');
-  await p.click("text=Ceramic brake pads");
-  await p.waitForSelector("text=5 Olaya Street");
-  await p.fill('[aria-label="Carrier name"]', "Aramex");
-  await p.fill('[aria-label="Tracking number"]', "AX778899");
-  await p.click('button:has-text("Save shipment")');
-  await p.waitForSelector("text=AX778899");
-  await p.selectOption('[aria-label="Set status"]', "delivered");
-  await p.waitForSelector("text=Delivered");
-  await c.reload();
-  await c.waitForSelector("text=Completed");
-  await c.waitForSelector("text=AX778899");
-  ok("the seller ships it with any carrier; delivery completes the sale for the customer");
-
-  // ---- 7. Money: held until delivery, then available; the admin pays it out and records the reference
-  await p.click('a:has-text("Earnings")');
-  await p.waitForSelector('[data-testid="balance-available"]');
-  const available = await p.innerText('[data-testid="balance-available"]');
-  if (!/81\.00/.test(available)) fail(`the seller should have 81.00 available (90 sold, 9 commission), saw: ${available}`);
-  if (!/0\.00/.test(await p.innerText('[data-testid="balance-held"]'))) fail("delivered money is still held");
-  ok("the seller's earnings show the sale minus the platform commission, released by delivery");
-
-  const adm = await login("admin@test.com");
-  await adm.p.waitForURL("**/dashboard");
-  await adm.p.click('a:has-text("Payouts")');
-  await adm.p.waitForSelector("text=Gulf Parts Brand");
-  await adm.p.click('button[aria-label^="Prepare payout Gulf Parts Brand"]');
-  await adm.p.waitForSelector('[aria-label="Bank reference"]');
-  await adm.p.fill('[aria-label="Bank reference"]', "BANK-2026-0001");
-  await adm.p.click('button:has-text("Mark paid")');
-  await adm.p.waitForSelector("text=BANK-2026-0001");
-  await p.reload();
-  await p.waitForSelector('[data-testid="balance-paid"]');
-  if (!/81\.00/.test(await p.innerText('[data-testid="balance-paid"]'))) fail("the paid payout is not shown to the seller");
-  await p.waitForSelector("text=BANK-2026-0001");
-  await p.click('a[href="/dashboard/notifications"]');
-  await p.waitForSelector("text=Payout sent");
-  ok("the admin prepared and paid the payout with a bank reference; the seller sees it and was notified");
-
+  // NOTE: this script used to go on to a customer ordering the product by car part, the seller shipping it, the earnings and the payout.
+  // Those screens have since been replaced (a new product is a draft until ArmorHub approves it; customers buy through the cart and a
+  // checkout), so that part no longer matched the product. The same chain is checked by the API tests (SellerTest: a sale goes straight to
+  // payment and the seller ships it; SellerPayoutTest: earnings are held then released, the admin pays out and the seller is told) and by the
+  // guest-checkout phase in the browser. Writing it again for the cart and approval flow is still to do.
   console.log("\nSellers passed.");
 } catch (e) {
   console.error("\nSellers FAILED:", e.message.split("\n")[0]);

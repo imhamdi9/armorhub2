@@ -1,5 +1,6 @@
 // Staff management: admin adds a partner manager, who adds a technician; deactivation blocks login;
 // forgot-password responds. Needs demo data (php artisan platform:demo).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -20,7 +21,7 @@ async function login(email, password = "password123") {
 
 try {
   const a = await login("admin@test.com");
-  await a.waitForSelector("text=Welcome");
+  await a.waitForSelector("text=/Good (morning|afternoon|evening)/");
   await a.click('a[href="/dashboard/users"]');
   await a.click('button:has-text("Add member")');
   await a.fill('input[placeholder="Full name"]', "Mona Manager");
@@ -34,7 +35,7 @@ try {
   ok("admin created a partner manager");
 
   const m = await login(manager, "temporary123");
-  await m.waitForSelector("text=Welcome, Mona Manager");
+  await m.waitForSelector("text=/Good (morning|afternoon|evening), Mona Manager/");
   const nav = (await m.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
   if (!nav.includes("Requests") || !nav.includes("Team")) throw new Error("manager nav wrong: " + nav);
   ok("new manager signed in and sees Requests + Team");

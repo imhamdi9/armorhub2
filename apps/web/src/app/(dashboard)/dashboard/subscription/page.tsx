@@ -56,7 +56,7 @@ export default function SubscriptionPage() {
             <strong>{formatNumber(usage.customers)}{usage.limit !== null ? ` / ${formatNumber(usage.limit)}` : ` (${tr("no limit")})`}</strong>
           </div>
           {usage.limit !== null && (
-            <div className="h-2.5 overflow-hidden rounded-full bg-fog" role="progressbar" aria-valuenow={usage.customers} aria-valuemin={0} aria-valuemax={usage.limit}>
+            <div className="h-2.5 overflow-hidden rounded-full bg-fog" role="progressbar" aria-label={tr("Customers this month")} aria-valuenow={usage.customers} aria-valuemin={0} aria-valuemax={usage.limit}>
               <div className={`h-full rounded-full ${usage.reached ? "bg-red-500" : "bg-[#FFD21F]"}`} style={{ width: `${pct}%` }} />
             </div>
           )}

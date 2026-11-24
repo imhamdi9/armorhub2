@@ -1,5 +1,6 @@
 // The platform owner runs ArmorHub by country: one market per country with several industries, opened in any country from the screen.
 import AxeBuilder from "@axe-core/playwright";
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -62,11 +63,11 @@ try {
 
   // ---- 5. The store of the Egyptian market lists its industries; a visitor can filter by one
   await pub.goto(`${base}/s/armorhub-eg`);
-  await pub.waitForSelector("[data-testid=market-industries]");
-  await pub.getByRole("link", { name: "Beauty" }).first().click();
-  await pub.waitForURL(/industry=beauty/);
-  await pub.waitForSelector("[data-testid=industry-pills]");
-  const names = await pub.locator("h3").allInnerTexts();
+  await pub.waitForSelector("[data-testid=department-cards]");
+  await pub.getByRole("link", { name: /^Shop Beauty/ }).first().click();
+  await pub.waitForURL(/category=beauty/);
+  await pub.waitForSelector("[data-testid=result-row]");
+  const names = await pub.locator("[data-testid=result-row] :is(h2, h3)").allInnerTexts();
   if (names.length === 0 || names.some((n) => /Lantern|Charger|Film|Cleaning/.test(n))) fail(`filtering by industry shows other industries' products: ${names.join(", ")}`);
   await pub.screenshot({ path: `${SHOTS}/markets-3-store-industry.png`, fullPage: true });
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
@@ -76,9 +77,11 @@ try {
 
   // ---- 6. The platform owner edits ONE market's settings from its card
   await page.goto(`${base}/dashboard/admin/markets`);
-  await page.locator("[data-testid=market-card]", { hasText: "ArmorHub Egypt" }).getByRole("link", { name: "Fees and settings" }).click();
+  await page.locator("[data-testid=market-card]", { hasText: "ArmorHub Egypt" }).locator("a", { hasText: "Fees and settings" }).click();
   await page.waitForSelector("[data-testid=market-scope]");
-  if (!/ArmorHub Egypt/.test(await page.locator("[data-testid=market-scope]").innerText())) fail("the page does not say whose settings are being changed");
+  // the notice shows "…" until the market's name has been fetched: wait for the name, and fail if it never comes
+  await page.waitForFunction(() => /ArmorHub Egypt/.test(document.querySelector("[data-testid=market-scope]")?.innerText ?? ""), null, { timeout: 15000 })
+    .catch(() => fail("the page does not say whose settings are being changed"));
   const sections = await page.locator("h2").allInnerTexts();
   if (sections.some((h) => /Security|Content/.test(h))) fail(`platform-wide settings are shown inside a market: ${sections.join(", ")}`);
   await page.fill("#installation\\.fee_percent", "7");

@@ -1,6 +1,7 @@
 // The platform administrator's tools, in a real browser: needs-attention on the home page, per-currency numbers, user filters and paging,
 // delete confirmation, "view as" (read-only, with the way out), the search box, business-number trends, the System page and CSV export.
 // Needs the Egypt demo data. It only ever creates, changes and removes ONE throwaway customer of its own: it never touches the demo accounts.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";

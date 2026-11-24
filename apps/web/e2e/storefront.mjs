@@ -1,6 +1,7 @@
 // The public storefront: server-rendered (checked with JavaScript OFF, as a search engine sees it),
 // branded, searchable, bilingual, mobile-friendly, and the path from a product page to a signed-up customer
 // with that product already chosen. Also the owner/admin editor. Needs demo data (php artisan platform:demo).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -37,7 +38,7 @@ async function eventually(path, test, what, seconds = 40) {
 try {
   // ---- 1. Search engines can read everything (no JavaScript)
   let r = await asCrawler("/");
-  if (r.status !== 200 || !/Trusted services, quoted by experts/.test(r.text) || !/Armor Store/.test(r.text)) fail("platform home page is not server-rendered with the store directory");
+  if (r.status !== 200 || !/Find what you need. Compare prices/.test(r.text) || !/Armor Store/.test(r.text)) fail("platform home page is not server-rendered with the store directory");
   if (!r.html.includes('href="/s/armor-store"')) fail("home page does not link to the store");
   ok("platform home page: real content and the store directory, with JavaScript off");
 
@@ -110,7 +111,7 @@ try {
   ok("product page -> signup (no Company ID) -> ordering with that product already selected");
 
   await page.goto(`${base}/s/armor-store`);
-  await page.waitForSelector("text=Dashboard"); // signed-in visitors get a Dashboard link
+  await page.waitForSelector("[data-testid=shop-account][href='/dashboard']"); // signed-in visitors get a link to their dashboard (the account button in the header)
   if (violations.length) fail(`CSP violations: ${violations.join("; ")}`);
   ok("signed-in visitors see a Dashboard link; no CSP violations on the public pages");
 
@@ -120,7 +121,7 @@ try {
   await admin.fill("input[type=email]", "admin@test.com");
   await admin.fill("input[type=password]", "password123");
   await admin.click("button[type=submit]");
-  await admin.waitForSelector("text=Welcome");
+  await admin.waitForSelector("text=/Good (morning|afternoon|evening)/");
   await admin.click('a:has-text("Companies")');
   await admin.locator("div.rounded-lg:has-text('Armor Store') a:has-text('Storefront')").click();
   await admin.waitForSelector("#sf-headline");
@@ -174,6 +175,7 @@ try {
   const arCtx = await browser.newContext();
   const ar = await arCtx.newPage();
   await ar.goto(`${base}/s/nile-shield`);
+  await ar.click("[data-testid=settings-flyout]");
   await ar.click("text=العربية");
   await ar.waitForSelector("text=ج.م");
   ok("Arabic shows the Egyptian pound symbol");

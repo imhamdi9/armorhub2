@@ -31,7 +31,7 @@ export function Pricing({ initial, store }: { initial?: Audience; store?: string
 
   return (
     <PublicShell>
-      <main className="mx-auto max-w-[1100px] px-4 py-14 md:px-10">
+      <div className="mx-auto max-w-[1100px] px-4 py-14 md:px-10">
         <h1 className="display display-md text-center">{tr("Plans for businesses")}</h1>
         <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">{tr("Start free. Move to a monthly plan when you need more customers: the higher the plan, the lower the commission.")}</p>
 
@@ -79,7 +79,7 @@ export function Pricing({ initial, store }: { initial?: Audience; store?: string
             </p>
           </section>
         )}
-      </main>
+      </div>
     </PublicShell>
   );
 }

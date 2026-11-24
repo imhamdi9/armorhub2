@@ -1,6 +1,7 @@
 // Buying goods without an account, through the real screens: product -> "Buy now" -> checkout with no sign-in -> pay -> private order page ->
 // the seller sees what to ship -> the buyer's later account picks the order up. Plus the privacy of the order link, mobile, Arabic and accessibility.
 import AxeBuilder from "@axe-core/playwright";
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -120,7 +121,9 @@ try {
   const lock = (await find("Smart Door Lock", /Smart Door Lock/)) ?? fail("door lock missing");
   const glass = (await find("Tempered Glass", /Tempered Glass/)) ?? fail("glass missing");
   const view = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
-  const buttons = async (url) => { await view.goto(base + url); await view.waitForSelector("[data-testid=buy-buttons] a"); return view.locator("[data-testid=buy-buttons] a").allInnerTexts(); };
+  // (the "ask the store on WhatsApp" link sits in the same box but is not a way to buy)
+  const buyLinks = "[data-testid=buy-buttons] a:not([data-testid=ask-whatsapp])";
+  const buttons = async (url) => { await view.goto(base + url); await view.waitForSelector(buyLinks); return view.locator(buyLinks).allInnerTexts(); };
 
   let b = await buttons(`/s/armorhub-eg/products/${lantern.id}`);
   if (b.length !== 1 || !/^Buy now$/.test(b[0].trim())) fail(`a product sold on its own should show one "Buy now" button, got ${JSON.stringify(b)}`);

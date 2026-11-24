@@ -5,6 +5,7 @@
 //   API running on :8000 with demo data   (php artisan platform:demo)
 //   Web running on :3000                  (NEXT_PUBLIC_API_URL=http://localhost:8000/api)
 // Then:  npm run e2e   (BASE_URL, STORE_COMPANY_ID, CHROMIUM_PATH can be overridden)
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -18,7 +19,7 @@ async function login(ctx, who) {
   await p.fill("input[type=password]", "password123");
   await p.click("button[type=submit]");
   await p.waitForURL("**/dashboard");
-  await p.waitForSelector("text=Welcome");
+  await p.waitForSelector("text=/Good (morning|afternoon|evening)/");
   return p;
 }
 
@@ -51,7 +52,7 @@ try {
   await c.selectOption("#store", "armor-store");
   await c.click("button[type=submit]");
   await c.waitForURL("**/dashboard");
-  await c.waitForSelector("text=Welcome, Cathy");
+  await c.waitForSelector("text=/Good (morning|afternoon|evening), Cathy/");
   ok("customer signed up");
 
   await c.goto(`${base}/dashboard/orders/new`);
@@ -88,7 +89,7 @@ try {
   await c.waitForURL(/orders\/\d+$/);
   ok("customer was notified of the quote and the link opens the order");
   await c.click('button:has-text("Accept")');
-  await c.waitForSelector("text=Total: SAR 1,500.00");
+  await c.waitForSelector("text=Invoice: SAR 1,500.00");
   ok("quote accepted");
 
   await c.click('button:has-text("Pay")');

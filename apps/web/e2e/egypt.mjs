@@ -1,5 +1,6 @@
 // The Egyptian demo marketplace (php artisan platform:demo-egypt): illustrated hero and product images, EGP prices, and the
 // Shopify-style product page: gallery, was-price and saving, highlights, accordions, related products, sticky buy bar, mobile and Arabic.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -76,6 +77,7 @@ try {
   const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) fail(`the product page scrolls sideways on a phone (${overflow}px)`);
   await phone.screenshot({ path: `${SHOTS}/egypt-product-mobile.png` });
+  await phone.click("[data-testid=settings-flyout]");
   await phone.click("text=العربية");
   await phone.waitForFunction(() => document.documentElement.dir === "rtl");
   await phone.waitForSelector("text=اشتري الآن");

@@ -1637,6 +1637,8 @@ export const AR: Record<string, string> = {
   "Unknown.": "غير معروف.",
   "Deactivate": "تعطيل",
   "Activate": "تفعيل",
+  "Active only": "النشطون فقط",
+  "Inactive only": "غير النشطين فقط",
   "Open again": "إعادة الفتح",
   "Service centres": "مراكز الخدمة",
   "What kind of job is it?": "ما نوع العمل؟",

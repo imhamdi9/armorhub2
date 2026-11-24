@@ -1,6 +1,7 @@
 // First-run check: a fresh deployment (only the admin from ADMIN_EMAIL/ADMIN_PASSWORD)
 // can be set up entirely through the UI: tenant -> company -> partner with location.
 //   php artisan migrate:fresh --force && php artisan platform:create-admin admin@test.com --password=password123
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -13,7 +14,7 @@ try {
   await p.fill("input[type=password]", "password123");
   await p.click("button[type=submit]");
   await p.waitForURL("**/dashboard");
-  await p.waitForSelector("text=Welcome");
+  await p.waitForSelector("text=/Good (morning|afternoon|evening)/");
   ok("admin signed in");
 
   await p.click('a:has-text("Markets")');

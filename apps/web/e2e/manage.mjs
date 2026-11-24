@@ -1,5 +1,6 @@
 // Admin management screens: dashboard numbers, catalog with a parent list, product edit,
 // partner edit/deactivate, company edit. Needs demo data (php artisan platform:demo).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -11,7 +12,7 @@ try {
   await p.fill("input[type=email]", "admin@test.com");
   await p.fill("input[type=password]", "password123");
   await p.click("button[type=submit]");
-  await p.waitForSelector("text=Welcome");
+  await p.waitForSelector("text=/Good (morning|afternoon|evening)/");
   await p.waitForSelector("text=Revenue");
   await p.waitForSelector("text=Payouts pending");
   ok("admin dashboard shows platform numbers");

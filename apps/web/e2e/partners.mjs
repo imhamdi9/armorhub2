@@ -1,5 +1,6 @@
 // Partner signup with approval, in a real browser: a business applies, cannot sign in until a reviewer
 // approves, and gets the partner role the moment they do. A second application is rejected.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -14,7 +15,7 @@ const pdf = (name) => ({ name, mimeType: "application/pdf", buffer: Buffer.from(
 async function apply(name, email) {
   const ctx = await browser.newContext({ geolocation: { latitude: 24.71, longitude: 46.68 }, permissions: ["geolocation"] });
   const p = await ctx.newPage();
-  await p.goto(`${base}/partner-signup?store=armor-store`);
+  await p.goto(`${base}/partner-signup?plan=free&store=armor-store`);
   await p.waitForSelector("#business_name");
   await p.waitForSelector("#target option", { state: "attached" });
   await p.fill("#business_name", name);

@@ -156,7 +156,7 @@ export function ShopHeader({ store, user, active }: { store: ShellStore; user: U
           )}
           <span className="max-w-[9rem] truncate">{store.name}</span>
         </Link>
-        <Link href={`${home}`} className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-2 text-start text-xs leading-tight hover:bg-fog xl:flex" aria-label={tr("You are shopping in")}>
+        <Link href={`${home}`} className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-2 text-start text-xs leading-tight hover:bg-fog xl:flex">
           <Icon d={I.pin} className="size-5 text-slate" />
           <span><span className="block text-slate">{tr("Deliver to")}</span><span className="block text-sm font-bold">{store.market?.code ? store.market.code : store.name}</span></span>
         </Link>

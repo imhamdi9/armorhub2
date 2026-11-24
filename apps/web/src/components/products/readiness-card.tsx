@@ -20,7 +20,7 @@ export function ReadinessCard({ product }: { product: Product }) {
         <h2 className="text-lg font-semibold">{tr("Listing quality")}</h2>
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${r.ready ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-900"}`}>{r.score}%</span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={r.score} aria-valuemin={0} aria-valuemax={100}>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={tr("Listing quality")} aria-valuenow={r.score} aria-valuemin={0} aria-valuemax={100}>
         <div className={`h-full ${r.ready ? "bg-green-600" : "bg-primary"}`} style={{ width: `${r.score}%` }} />
       </div>
       <p className="mt-2 text-sm text-muted-foreground">

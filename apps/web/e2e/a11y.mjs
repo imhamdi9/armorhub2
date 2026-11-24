@@ -1,6 +1,7 @@
 // Runs axe-core (the standard accessibility checker) over the main public and signed-in screens, in English and Arabic,
 // and fails on serious or critical violations. Needs the demo data (platform:demo and platform:demo-egypt).
 import AxeBuilder from "@axe-core/playwright";
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
 

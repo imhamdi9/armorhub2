@@ -1,6 +1,7 @@
 // One journey per role: sign in, check the menu shows what the role needs (and nothing the API refuses), then open every
 // menu page and fail on any API error (401/403/5xx) or script error. Needs the Egypt demo data (php artisan platform:demo-egypt).
 // Staff accounts (support, operations, warehouse, catalogue, marketing) are created for the run through the admin API.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";

@@ -1,5 +1,6 @@
 // Attacks the running app the way an attacker would, and checks it holds.
 // Needs a fresh database with demo data (php artisan platform:demo): it exhausts rate limits on purpose.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -28,7 +29,7 @@ try {
   await page.fill("input[type=password]", "password123");
   await page.click("button[type=submit]");
   await page.waitForURL("**/dashboard");
-  await page.waitForSelector("text=Welcome");
+  await page.waitForSelector("text=/Good (morning|afternoon|evening)/");
 
   const visible = await page.evaluate(() => ({ cookie: document.cookie, local: JSON.stringify({ ...localStorage }), session: JSON.stringify({ ...sessionStorage }) }));
   if (/armorhub_token/.test(visible.cookie)) fail("the session cookie is readable by JavaScript");

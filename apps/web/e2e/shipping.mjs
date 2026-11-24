@@ -1,6 +1,7 @@
 // Shipping, end to end in a real browser: an admin sets up the manual provider, a customer orders a
 // physical product (address required), the partner quotes, the customer pays, the partner books a
 // parcel with any carrier and moves it along, and the customer follows it. Needs demo data.
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -15,7 +16,7 @@ async function login(ctx, who) {
   await p.fill("input[type=password]", "password123");
   await p.click("button[type=submit]");
   await p.waitForURL("**/dashboard");
-  await p.waitForSelector("text=Welcome");
+  await p.waitForSelector("text=/Good (morning|afternoon|evening)/");
   return p;
 }
 
@@ -73,7 +74,7 @@ try {
   await p.waitForSelector("text=Quoted 20");
   await c.reload();
   await c.click('button:has-text("Accept")');
-  await c.waitForSelector("text=Total: SAR 100.00");
+  await c.waitForSelector("text=Invoice: SAR 100.00");
   await c.click('button:has-text("Pay")');
   await c.waitForSelector("text=paid");
   ok("quote accepted and paid");

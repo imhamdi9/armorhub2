@@ -1,5 +1,6 @@
 // Restructure end to end: category taxonomy, SKU and cartons, warehouse (seller -> warehouse team -> shop), seller page, invitations.
 import AxeBuilder from "@axe-core/playwright";
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -88,6 +89,8 @@ try {
   await admin.goto(`${base}/dashboard/warehouse`);
   await admin.waitForSelector("[data-testid=inbound-list]");
   await admin.locator("[data-testid=inbound-list] input[type=number]").first().fill("2");
+  // a count that differs from the announced one must say why (the warehouse keeps the reason with the delivery)
+  await admin.getByLabel("Why the count differs").first().fill("one carton arrived damaged");
   await admin.getByRole("button", { name: "Confirm count and receive" }).first().click();
   await admin.waitForSelector("[data-testid=stock-table]");
   const stock = await admin.locator("[data-testid=stock-table]").innerText();

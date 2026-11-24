@@ -1,6 +1,7 @@
 // A full click-through of the running app: every role signs in, every reachable page is opened, and every button and link on it is pressed.
 // It records script errors, console errors, failed requests, dead links, stuck "Loading…" screens and sideways scrolling, then prints a report
 // and writes /tmp/audit-report.json. Needs the demo data (platform:demo and platform:demo-egypt).
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
 

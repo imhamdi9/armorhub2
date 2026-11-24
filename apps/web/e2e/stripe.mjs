@@ -3,6 +3,7 @@
 //
 // API must run with:  PLATFORM_PAYMENT_GATEWAY=stripe STRIPE_SECRET=sk_test_fake
 //   STRIPE_WEBHOOK_SECRET=whsec_e2e STRIPE_API_BASE=http://127.0.0.1:12111 WEB_URL=http://localhost:3000
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 import { startFakeStripe } from "./fake-stripe.mjs";
@@ -52,8 +53,8 @@ try {
   await page.click('button:has-text("Pay")');
   await page.waitForURL(/localhost:12111\/pay\//);
   await page.waitForSelector("text=Fake Stripe Checkout");
-  await page.waitForSelector("text=150000 sar");
-  ok("redirected to the payment page with the right amount (150000 minor units)");
+  await page.waitForSelector("text=157500 sar"); // the 1500.00 invoice plus the 5% platform fee the customer pays on top (75.00)
+  ok("redirected to the payment page with the right amount (157500 minor units: invoice plus the customer fee)");
 
   // Cancelling returns to the order, unpaid, with a message.
   await page.click('button:has-text("Back")');

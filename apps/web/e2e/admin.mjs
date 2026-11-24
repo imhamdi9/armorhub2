@@ -1,6 +1,7 @@
 // The admin control panel: configure and switch payment providers live (against a fake gateway),
 // change settings, and see it all in the audit log. Needs demo data and the API started with
 //   PLATFORM_ALLOW_INSECURE_PROVIDER_URLS=true   (so the local fake gateway may be called)
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 import { startFakeGateway } from "./fake-gateway.mjs";
@@ -60,14 +61,17 @@ async function signIn(context, email) {
   await page.fill("input[type=password]", "password123");
   await page.click("button[type=submit]");
   await page.waitForURL("**/dashboard");
-  await page.waitForSelector("text=/Welcome|مرحبًا/");
+  await page.waitForSelector("text=/Good (morning|afternoon|evening)|صباح|مساء/");
   return page;
 }
 
 try {
   const admin = await signIn(await browser.newContext(), "admin@test.com");
   const nav = (await admin.locator("[data-sidebar=menu-button]").allInnerTexts()).join("|");
-  if (!/Overview\|Markets\|Categories\|Catalog requests\|Settings\|Payments\|Payouts\|Disputes\|Withdrawals\|Shipping\|Roles\|Theme editor\|Content\|Platform\|Security\|Audit log/.test(nav)) fail(`Administration section missing: ${nav}`);
+  // every control-panel screen is in the menu (in any order: the menu grows as the panel does)
+  const have = nav.split("|");
+  const missing = ["Overview", "Markets", "Categories", "Catalog requests", "Settings", "Payments", "Payouts", "Disputes", "Withdrawals", "Shipping", "Roles", "Theme editor", "Content", "Platform", "Security", "System", "Audit log"].filter((n) => !have.includes(n));
+  if (missing.length) fail(`Administration section is missing: ${missing.join(", ")} (menu: ${nav})`);
   ok("admin sees the Administration section");
 
   // ---- Overview
@@ -140,7 +144,7 @@ try {
   await customer.click('button:has-text("Pay")');
   await customer.waitForURL(/127\.0\.0\.1:12112\/pay\//);
   await customer.waitForSelector("text=Fake Gateway");
-  await customer.waitForSelector("text=150000 SAR");
+  await customer.waitForSelector("text=157500 SAR"); // the 1500.00 invoice plus the 5% customer platform fee
   await customer.click('button:has-text("Confirm payment")');
   await customer.waitForURL(/checkout=success/);
   await customer.waitForSelector("text=Confirming your payment");
@@ -288,7 +292,12 @@ try {
   const width = await admin.locator("iframe[title='Live preview']").evaluate((el) => el.getBoundingClientRect().width);
   if (width > 400) throw new Error(`mobile preview is ${width}px wide`);
   await admin.click("[role=tab]:has-text('Sections')");
-  for (let i = 0; i < 14; i++) await admin.click("[aria-label='Move up FAQ']");
+  // move the FAQ to the top: up until the button switches itself off (it is the first section)
+  for (let i = 0; i < 20; i++) {
+    const up = admin.locator("[aria-label='Move up FAQ']");
+    if (await up.isDisabled()) break;
+    await up.click();
+  }
   await admin.click("[aria-label='Hide Numbers band']");
   await admin.click("[role=tab]:has-text('Colors and fonts')");
   await admin.fill("#c-brand_color", "#ff6600");

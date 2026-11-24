@@ -108,7 +108,7 @@ export function AppSidebar() {
   return (
     <Sidebar variant="floating" side={locale === "ar" ? "right" : "left"} role="complementary" aria-label={tr("Sidebar")}>
       <SidebarHeader className="p-3 pb-1">
-        <Link href="/" className="block rounded-2xl px-3 py-4 transition-colors hover:bg-[#1a1a1a]/5" aria-label={tr("ArmorHub")}>
+        <Link href="/" className="block rounded-2xl px-3 py-4 transition-colors hover:bg-[#1a1a1a]/5">
           <span className="flex items-center gap-2.5">
             {platformLogo() ? <img src={platformLogo() ?? ""} alt="" className="h-[34px] w-[34px] shrink-0 rounded-lg object-cover" /> : <LogoMark className="h-[34px] w-[34px] shrink-0" />}
             <span className="font-display text-xl font-bold tracking-tight text-[#1a1a1a]">{tr("ArmorHub")}</span>

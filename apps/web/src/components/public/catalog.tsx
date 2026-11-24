@@ -151,6 +151,7 @@ export function Catalog({
           {category && group && category !== group.key && <> › <span className="text-obsidian">{name(category)}</span></>}
         </nav>
 
+        <h1 className="sr-only">{q || category ? heading : tr("Products")}</h1>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-white px-4 py-2.5">
           <p className="text-sm" data-testid="result-count">
             {result && total > 0 ? <>{tr("{from}–{to} of {total} results", { from: formatNumber(from), to: formatNumber(to), total: formatNumber(total) })}</> : tr("{n} products", { n: formatNumber(0) })}

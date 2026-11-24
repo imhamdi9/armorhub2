@@ -4,6 +4,7 @@
 // then a dispute with evidence from both sides decided by an admin (partial refund), a violation report with a strike,
 // and mobile / Arabic / accessibility checks of the main screens.
 import AxeBuilder from "@axe-core/playwright";
+import "./_test-setup.mjs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -54,6 +55,11 @@ try {
   if (radios !== 3) fail(`expected three installation choices, got ${radios}`);
   if (!(await owner.locator("input[name=installation][value=none]").isChecked())) fail("a new product should default to 'sold on its own'");
   await owner.fill("#name", "Roof rack kit");
+  // a product is written in both languages and says what kind it is (the reviewers read both; the category list depends on the industry)
+  await owner.fill("#name_ar", "طقم حامل سقف");
+  await owner.fill("#desc_en", "A strong roof rack kit that fits most cars and carries bikes and boxes.");
+  await owner.fill("#desc_ar", "طقم حامل سقف قوي يناسب معظم السيارات ويحمل الدراجات والصناديق.");
+  if (await owner.locator("select#industry").count()) await owner.selectOption("select#industry", { label: "Automotive" });
   await owner.waitForSelector("select#category");   // the platform's category list (nobody types a category)
   await owner.selectOption("select#category", "accessories");
   await owner.check("input[name=installation][value=required]");
@@ -64,8 +70,11 @@ try {
   await owner.waitForSelector("input[name=installation]");
   if (!(await owner.locator("input[name=installation][value=required]").isChecked())) fail("the installation choice was not saved");
   await owner.check("input[name=installation][value=optional]");
-  await owner.getByRole("button", { name: "Save details" }).click();
-  await owner.waitForSelector("text=Saved");
+  // wait for the save itself (the word "saved" is already in the page's intro sentence, so waiting for that text proves nothing)
+  await Promise.all([
+    owner.waitForResponse((r) => /\/api\/products\/\d+$/.test(r.url()) && ["PUT", "PATCH"].includes(r.request().method()) && r.ok()),
+    owner.getByRole("button", { name: "Save details" }).click(),
+  ]);
   await owner.reload();
   await owner.waitForSelector("input[name=installation]");
   if (!(await owner.locator("input[name=installation][value=optional]").isChecked())) fail("changing the installation choice did not stick");
@@ -80,12 +89,12 @@ try {
   const glass = (await find("Tempered Glass", /Tempered Glass/)) ?? fail("glass product missing");
   const charger = (await find("Fast Charger", /Fast Charger/)) ?? fail("charger missing");
   await customer.goto(`${base}/s/armorhub-eg/products/${glass.id}`);
-  await customer.waitForSelector("[data-testid=buy-buttons] a");
-  if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 2) fail("a product with optional installation should offer two buy choices");
+  await customer.waitForSelector("[data-testid=buy-buttons] a:not([data-testid=ask-whatsapp])");
+  if ((await customer.locator("[data-testid=buy-buttons] a:not([data-testid=ask-whatsapp])").count()) !== 2) fail("a product with optional installation should offer two buy choices");
   await customer.goto(`${base}/s/armorhub-eg/products/${charger.id}`);
   await customer.waitForSelector("h1");
-  await customer.waitForSelector("[data-testid=buy-buttons] a");
-  if ((await customer.locator("[data-testid=buy-buttons] a").count()) !== 1) fail("a product that needs no fitting offers more than one buy choice");
+  await customer.waitForSelector("[data-testid=buy-buttons] a:not([data-testid=ask-whatsapp])");
+  if ((await customer.locator("[data-testid=buy-buttons] a:not([data-testid=ask-whatsapp])").count()) !== 1) fail("a product that needs no fitting offers more than one buy choice");
   ok("only products that can be fitted offer installation");
   await customer.goto(`${base}/s/armorhub-eg/products/${glass.id}`);
   await customer.waitForSelector("[data-testid=buy-buttons] a[href^='/dashboard/']");   // the page knows the visitor is signed in
@@ -187,6 +196,8 @@ try {
   await customer.waitForSelector("text=Is the work done?");
   const imgs = customer.locator("img[alt='Before'], img[alt='After']");
   await imgs.first().waitFor();
+  // the photos are private files fetched with the customer's sign-in: give the browser time to finish before judging them
+  await customer.waitForFunction(() => [...document.querySelectorAll("img[alt='Before'], img[alt='After']")].every((i) => i.complete), null, { timeout: 20000 }).catch(() => undefined);
   const broken = await imgs.evaluateAll((els) => els.filter((i) => !(i.complete && i.naturalWidth > 0)).length);
   if (broken) fail("a proof photo did not load for the customer");
   await customer.screenshot({ path: `${SHOTS}/inst-7-confirm.png`, fullPage: true });
@@ -290,7 +301,7 @@ try {
   await admin.goto(`${base}/dashboard/products`);
   await admin.waitForSelector("[data-testid=bulk-bar]");
   await admin.getByLabel("Select all products").check();
-  await admin.locator("[data-testid=bulk-bar] select").selectOption("none");
+  await admin.locator("[data-testid=bulk-bar]").getByLabel("Installation").selectOption("none");
   await admin.getByRole("button", { name: /^Apply to \d+ products$/ }).click();
   await admin.waitForSelector("[data-testid=bulk-bar] [role=status]");
   const badges = await admin.locator("[data-testid=installation-badge]").allInnerTexts();

@@ -205,8 +205,8 @@ export function TeamView({ scope }: { scope?: "platform" | "users" }) {
             </select>
             <select aria-label={tr("Filter by status")} className="rounded-lg border px-3 py-2 text-sm" value={filters.status ?? ""} onChange={(e) => setFilter("status", e.target.value as "active" | "inactive")}>
               <option value="">{tr("Any status")}</option>
-              <option value="active">{tr("Active")}</option>
-              <option value="inactive">{tr("Deactivated")}</option>
+              <option value="active">{tr("Active only")}</option>
+              <option value="inactive">{tr("Inactive only")}</option>
             </select>
             <select aria-label={tr("Filter by company")} className="rounded-lg border px-3 py-2 text-sm" value={filters.company_id ?? ""} onChange={(e) => setFilter("company_id", e.target.value ? Number(e.target.value) : undefined)}>
               <option value="">{tr("Any company")}</option>
