@@ -91,6 +91,7 @@ async function auditSite(page, startPaths, role, ctxBase) {
   const queue = [...startPaths];
   const found = new Set();
   let current = "";
+  let lastStore = null;
   const ctx = () => ({ role, page: current, ...ctxBase });
   watch(page, ctx);
   while (queue.length && seen.size < MAX_PAGES_PER_ROLE) {
@@ -98,6 +99,10 @@ async function auditSite(page, startPaths, role, ctxBase) {
     if (seen.has(path) || /logout|^\/api\//.test(path)) continue;
     seen.add(path);
     current = path;
+    // A visitor's guest session belongs to the first store they shop in; moving to another store starts a fresh visit (as a new browser would).
+    const store = path.match(/^\/s\/([^/]+)/)?.[1] ?? null;
+    if (role === "visitor" && store && lastStore && store !== lastStore) await page.context().clearCookies();
+    if (store) lastStore = store;
     try {
       const res = await page.goto(base + path, { waitUntil: "domcontentloaded" });
       if (res && res.status() >= 400) { issues.push({ ...ctx(), kind: `page ${res.status()}`, detail: path }); continue; }
