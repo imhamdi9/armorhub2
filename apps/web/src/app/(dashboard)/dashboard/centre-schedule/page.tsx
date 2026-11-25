@@ -58,7 +58,7 @@ export default function CentreSchedulePage() {
                 <span className="font-medium">{formatDateTime(b.starts_at)}</span>
                 <span>{b.subject} · {(b.parts ?? []).join(", ")}</span>
                 <span className="text-muted-foreground">{b.customer}</span>
-                {b.job_id && <a className="text-primary underline" href={`/dashboard/work-orders/${b.job_id}`}>{tr("Work order")}</a>}
+                {b.job_id && <a className="text-brand-ink underline" href={`/dashboard/work-orders/${b.job_id}`}>{tr("Work order")}</a>}
               </li>
             ))}
           </ul>

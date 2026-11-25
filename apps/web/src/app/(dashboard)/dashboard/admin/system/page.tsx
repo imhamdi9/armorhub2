@@ -6,7 +6,7 @@ import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingBlock } from "@/components/ui/loading-block";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, loadFailure } from "@/lib/errors";
 import { formatDateTime, tr } from "@/lib/i18n";
 import { getSystem, removeFailedJob, retryFailedJob, type SystemReport } from "@/services/admin.service";
 
@@ -21,9 +21,10 @@ const WORD: Record<string, string> = { ok: "Working", warn: "Needs a look", fail
 export default function SystemPage() {
   const [data, setData] = useState<SystemReport | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => { getSystem().then(setData).catch(() => setForbidden(true)); }, []);
+  const load = useCallback(() => { getSystem().then(setData).catch((e) => { const f = loadFailure(e); if (f.forbidden) setForbidden(true); else setFailure(f.message); }); }, []);
   useEffect(load, [load]);
 
   async function act(action: () => Promise<unknown>) {
@@ -32,6 +33,7 @@ export default function SystemPage() {
   }
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
+  if (failure) return <EmptyState>{failure}</EmptyState>;
   if (!data) return <LoadingBlock />;
 
   return (

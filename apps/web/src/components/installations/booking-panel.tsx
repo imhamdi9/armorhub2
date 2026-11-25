@@ -49,7 +49,7 @@ export function BookingPanel({ jobId }: { jobId: number }) {
           {!slots || slots.days.length === 0 ? <p className="text-sm text-muted-foreground">{tr("No free times in the next days. Check again soon.")}</p> : (
             <>
               <div className="mb-3 flex flex-wrap gap-2">{slots.days.map((d) => <button key={d.date} type="button" onClick={() => setDay(d.date)} className={`rounded-full border px-3 py-1.5 text-sm ${day === d.date ? "bg-primary text-primary-foreground" : ""}`}>{dayLabel(d.date)}</button>)}</div>
-              <div className="flex flex-wrap gap-2">{times.map((t) => <button key={t} type="button" onClick={() => pick(t)} className="rounded-full border border-primary px-3 py-1.5 text-sm text-primary hover:bg-primary/10" data-testid="slot">{clock(t, slots.timezone)}</button>)}</div>
+              <div className="flex flex-wrap gap-2">{times.map((t) => <button key={t} type="button" onClick={() => pick(t)} className="rounded-full border border-primary px-3 py-1.5 text-sm text-brand-ink hover:bg-primary/10" data-testid="slot">{clock(t, slots.timezone)}</button>)}</div>
             </>
           )}
           {changing && <Button variant="outline" size="sm" className="mt-3" onClick={() => setChanging(false)}>{tr("Cancel")}</Button>}

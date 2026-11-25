@@ -124,8 +124,8 @@ function OrderDetail() {
         {Number(order.service_fee_amount) > 0 && (
           <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>
         )}
-        <p className="mt-2"><Link href={`/dashboard/help?order=${order.id}`} className="text-primary underline" data-testid="order-help">{tr("Need help with this order?")}</Link></p>
-        {["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) && <p className="mt-2"><Link href={`/dashboard/orders/${order.id}/receipt`} className="text-primary underline" data-testid="receipt-link">{tr("Receipt")}</Link></p>}
+        <p className="mt-2"><Link href={`/dashboard/help?order=${order.id}`} className="text-brand-ink underline" data-testid="order-help">{tr("Need help with this order?")}</Link></p>
+        {["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) && <p className="mt-2"><Link href={`/dashboard/orders/${order.id}/receipt`} className="text-brand-ink underline" data-testid="receipt-link">{tr("Receipt")}</Link></p>}
         <p className="mt-1 text-base font-bold">{tr(["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) ? "Total paid" : "Total to pay")}: {formatMoney(order.payable_amount ?? order.total_amount, order.currency)}</p>
         {Number(order.tax_rate) > 0 && (
           <p className="text-muted-foreground">

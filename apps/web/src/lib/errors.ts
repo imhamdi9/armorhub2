@@ -19,6 +19,16 @@ export function errorMessage(error: unknown, fallback = "Something went wrong.")
   return tr(fallback);
 }
 
+/**
+ * Why a screen could not load. Only a refusal (401/403) means "you are not allowed here": a busy server (429), a timeout or an error (5xx)
+ * must say so, not tell a platform administrator that only platform administrators may open their own page.
+ */
+export function loadFailure(error: unknown): { forbidden: boolean; message: string } {
+  const status = isAxiosError(error) ? error.response?.status : undefined;
+
+  return { forbidden: status === 401 || status === 403, message: errorMessage(error, "This page could not be loaded. Try again in a moment.") };
+}
+
 /** Per-field validation messages from an API error (first message per field). */
 export function fieldErrors(error: unknown): Record<string, string> {
   if (!isAxiosError(error)) return {};

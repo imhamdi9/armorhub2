@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, loadFailure } from "@/lib/errors";
 import { formatDateTime, formatMoney, formatNumber, tr } from "@/lib/i18n";
 import { statusLabel } from "@/lib/orders";
 import { Button } from "@/components/ui/button";
@@ -42,13 +42,15 @@ const EXPORTS: { kind: ExportKind; label: string }[] = [
 export default function AdminOverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
-    getOverview().then(setData).catch(() => setForbidden(true));
+    getOverview().then(setData).catch((e) => { const f = loadFailure(e); if (f.forbidden) setForbidden(true); else setFailure(f.message); });
   }, []);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
+  if (failure) return <EmptyState>{failure}</EmptyState>;
   if (!data) return <LoadingBlock />;
 
   return (

@@ -1639,6 +1639,7 @@ export const AR: Record<string, string> = {
   "Activate": "تفعيل",
   "Active only": "النشطون فقط",
   "Inactive only": "غير النشطين فقط",
+  "This page could not be loaded. Try again in a moment.": "تعذّر تحميل هذه الصفحة. حاول مجددًا بعد قليل.",
   "Open again": "إعادة الفتح",
   "Service centres": "مراكز الخدمة",
   "What kind of job is it?": "ما نوع العمل؟",

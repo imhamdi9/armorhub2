@@ -6,7 +6,7 @@ import { PublicationQueue } from "@/components/admin/publication-queue";
 import { EmptyState, PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, loadFailure } from "@/lib/errors";
 import { tr } from "@/lib/i18n";
 import { orderSections, type SectionKey, type SiteContent } from "@/lib/surfaces";
 import { imageSrc } from "@/lib/surfaces";
@@ -54,6 +54,7 @@ export default function ThemeEditorPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const [library, setLibrary] = useState<MediaImage[]>([]);
   const loadLibrary = useCallback(async () => { setLibrary(await getMedia().catch(() => [])); }, []);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -69,7 +70,7 @@ export default function ThemeEditorPage() {
   useEffect(() => {
     Promise.all([getSurfaceDetail("site.home", "en"), getSurfaceDetail("site.brand", "en"), getSurfaceDetail("site.home", "ar")])
       .then(([h, b, a]) => { setHome((h.draft ?? h.published) as Values); setBrand((b.draft ?? b.published) as Values); setHomeAr((a.draft ?? a.published) as Values); })
-      .catch(() => setForbidden(true));
+      .catch((e) => { const f = loadFailure(e); if (f.forbidden) setForbidden(true); else setFailure(f.message); });
   }, []);
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -104,6 +105,7 @@ export default function ThemeEditorPage() {
   useEffect(() => { push(); }, [push]);
 
   if (forbidden) return <EmptyState>Only platform admins can open this page.</EmptyState>;
+  if (failure) return <EmptyState>{failure}</EmptyState>;
   if (!home) return <LoadingBlock />;
 
   const order = orderSections(((home.section_order as { section: string }[] | undefined) ?? []).map((r) => r.section));

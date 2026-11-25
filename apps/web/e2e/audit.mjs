@@ -25,9 +25,15 @@ const ignorable = (text) => /Failed to load resource.*(401|403)|favicon|Download
 function watch(page, ctx) {
   page.on("pageerror", (e) => issues.push({ ...ctx(), kind: "script error", detail: e.message.split("\n")[0] }));
   page.on("console", (m) => { if (m.type() === "error" && !ignorable(m.text())) issues.push({ ...ctx(), kind: "console error", detail: m.text().slice(0, 200) }); });
-  page.on("response", (r) => {
+  page.on("response", async (r) => {
     const s = r.status();
-    if (s >= 400 && r.url().includes("/api/") && !(s === 401 && r.url().endsWith("/api/me")) && !r.url().includes("/api/login")) issues.push({ ...ctx(), kind: `API ${s}`, detail: `${r.request().method()} ${r.url().replace(/^https?:\/\/[^/]+/, "")}` });
+    // A visitor who is not signed in is told so by the lookups every page makes (who am I, what is in my cart, my review of this product):
+    // that is the right answer, not a problem. Anything else that fails is reported with what the server said.
+    const notSignedInLookup = s === 401 && r.request().method() === "GET" && /\/api\/(me|cart|favourites\/ids|products\/\d+\/review)(\?|$)/.test(r.url());
+    if (s >= 400 && r.url().includes("/api/") && !notSignedInLookup && !r.url().includes("/api/login")) {
+      const said = (await r.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 140);
+      issues.push({ ...ctx(), kind: `API ${s}`, detail: `${r.request().method()} ${r.url().replace(/^https?:\/\/[^/]+/, "")}${said ? ` -> ${said}` : ""}` });
+    }
   });
 }
 
