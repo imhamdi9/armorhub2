@@ -15,8 +15,8 @@ import { imageSrc } from "@/lib/surfaces";
 import { addToCart, type CartView } from "@/services/cart.service";
 import type { PublicProduct } from "@/types/public";
 
-/** Goods that can sit in a cart as they are: not services, not quote-only, not sold with an installer, not needing a car check. */
-const cartable = (p: PublicProduct) => !!p.requires_shipping && p.sale_mode !== "quote" && p.installation !== "required" && !p.fitment_required && p.in_stock !== false;
+/** Goods that can sit in a cart as they are: a seller's, not services, not quote-only, not sold with an installer, not needing a car check. */
+const cartable = (p: PublicProduct) => !!p.seller_id && !!p.requires_shipping && p.sale_mode !== "quote" && p.installation !== "required" && !p.fitment_required && p.in_stock !== false;
 
 /** The box on the right of a product page: price, stock, delivery, the buying buttons and who ships and sells it. Stays in view while the shopper reads. */
 export function BuyBox({ m }: { m: ProductModel }) {

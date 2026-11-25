@@ -333,7 +333,8 @@ export function AddToCart({ m }: { m: ProductModel }) {
     getGarage().then((v) => { setCars(v); setCar(String(v.find((c) => c.is_default)?.id ?? "")); }).catch(() => {});
     getFit(m.p.id).then(setFits).catch(() => {});
   }, [m.links.signedIn]);
-  if (!m.goods || m.mode === "required") return null;
+  // The cart takes sellers' goods only: the platform's own are bought one at a time with "Buy now".
+  if (!m.goods || m.mode === "required" || !m.p.seller_id) return null;
 
   async function add() {
     setBusy(true);

@@ -35,7 +35,8 @@ export function useProductModel(store: ShellStore, data: PublicProductPage) {
   const p = data.product;
   const goods = !!p.requires_shipping;
   const [parts, setParts] = useState<number[]>([]);
-  const links = useOrderLinks(store.slug, p.id, goods, parts);
+  // Guest checkout takes sellers' goods only; for anything else a guest signs up first.
+  const links = useOrderLinks(store.slug, p.id, goods && !!p.seller_id, parts);
   // How the product is sold: on its own, on its own with optional installation offers, or only together with an installation offer.
   const mode = goods ? (p.installation ?? "none") : "none";
   const href = p.sale_mode === "quote" ? links.quote : mode === "required" ? links.find : links.buy;

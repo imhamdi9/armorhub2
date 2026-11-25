@@ -17,8 +17,8 @@ import type { PublicProduct } from "@/types/public";
 export function QuickAdd({ product, slug, wide = false }: { product: PublicProduct; slug: string; wide?: boolean }) {
   const [state, setState] = useState<"idle" | "busy" | "added">("idle");
   const [error, setError] = useState<string | null>(null);
-  // Only goods that can sit in a cart: not services, not quote-only products, not ones sold with an installer.
-  if (!product.requires_shipping || product.sale_mode === "quote" || product.installation === "required") return null;
+  // Only goods that can sit in a cart: a seller's goods, not services, not quote-only products, not ones sold with an installer.
+  if (!product.seller_id || !product.requires_shipping || product.sale_mode === "quote" || product.installation === "required") return null;
 
   const cls = `inline-flex h-9 ${wide ? "w-full" : ""} shrink-0 items-center justify-center rounded-full border-2 border-obsidian px-3 text-xs font-bold text-obsidian transition hover:bg-obsidian hover:text-white disabled:opacity-60`;
 

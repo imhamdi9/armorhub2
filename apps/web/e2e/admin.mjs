@@ -274,6 +274,16 @@ try {
   await admin.waitForSelector("h2:has-text('sales-viewer')", { state: "detached" });
   ok("an admin created and deleted a custom role; administrator powers are not offered");
 
+  const adminToken = (await call("/login", { method: "POST", body: { email: "admin@test.com", password: "password123" } })).json.token;
+  // This script clicks far faster than a person; let the per-minute request allowance recover so the page is not throttled.
+  async function letAllowanceRecover() {
+    for (let i = 0; i < 30; i++) {
+      const r = await fetch(`${base}/api/me`, { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken}` } });
+      if (Number(r.headers.get("x-ratelimit-remaining") ?? 0) > 60) break;
+      await new Promise((res) => setTimeout(res, 4000));
+    }
+  }
+
   // Theme editor: live preview of unsaved changes, section order, colours; publishing changes the public page.
   await admin.click('a:has-text("Theme editor")');
   await admin.waitForSelector("[data-section=faq]");
@@ -322,6 +332,7 @@ try {
   const ids = await visitor2.locator("main section[id]").evaluateAll((els) => els.map((e) => e.id));
   if (ids.indexOf("faq") > ids.indexOf("stores")) throw new Error(`FAQ was not moved above the markets: ${ids}`);
   // Put the built-in look back.
+  await letAllowanceRecover(); // the editor and its preview ask the server a lot: reloading at once can be refused (429)
   await admin.reload();
   await admin.waitForSelector("[data-section=faq]", { timeout: 60000 });
   await admin.click("[role=tab]:has-text('Colors and fonts')");
@@ -339,13 +350,7 @@ try {
   ok("the theme editor previews unsaved changes live (desktop and mobile), reorders and hides sections, recolours, and publishes");
 
   // Governed publishing: a scheduled change waits in the queue; with approval on, it needs someone else.
-  const adminToken = (await call("/login", { method: "POST", body: { email: "admin@test.com", password: "password123" } })).json.token;
-  // This script clicks far faster than a person; let the per-minute request allowance recover so the page is not throttled.
-  for (let i = 0; i < 30; i++) {
-    const r = await fetch(`${base}/api/me`, { headers: { Accept: "application/json", Authorization: `Bearer ${adminToken}` } });
-    if (Number(r.headers.get("x-ratelimit-remaining") ?? 0) > 60) break;
-    await new Promise((res) => setTimeout(res, 4000));
-  }
+  await letAllowanceRecover();
   await admin.click('a:has-text("Content")');
   await admin.click("[role=tab]:has-text('Header menu')");
   await admin.waitForSelector("#f-nav_faq");
