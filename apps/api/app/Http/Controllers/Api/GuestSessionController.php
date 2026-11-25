@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\CartItem;
+use App\Models\Company;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\Storefront\StorefrontService;
 use App\Support\Audit;
@@ -36,6 +40,34 @@ class GuestSessionController extends Controller
         $user->assignRole('customer');
 
         return $auth->signedIn($request, $user, 201);
+    }
+
+    /**
+     * A guest is a shopper of the market of the store they started in. When they move on to a store of another market they are moved with it,
+     * as long as nothing would be left behind or mixed: goods in the cart (another currency) or earlier orders keep them where they are, with the reason.
+     */
+    public function store(Request $request, StorefrontService $stores)
+    {
+        $user = $this->guest($request);
+        $data = $request->validate(['store' => 'required|string|max:80']);
+        $company = $stores->find($data['store']) ?? throw ValidationException::withMessages(['store' => ['This store was not found.']]);
+        $current = $user->company_id ? Company::withoutGlobalScopes()->find($user->company_id) : null;
+
+        if ($current && $current->tenant_id === $company->tenant_id) {
+            return ['user' => $user];               // the same market: its products are all open to them already
+        }
+        $name = ['store' => $current?->name ?? ''];
+        if (CartItem::whereIn('cart_id', Cart::where('customer_id', $user->id)->select('id'))->exists()) {
+            throw ValidationException::withMessages(['store' => [__('Your cart has items from :store. Buy or remove them before shopping in another market.', $name)]]);
+        }
+        if (Order::withoutGlobalScopes()->where('customer_id', $user->id)->exists()) {
+            throw ValidationException::withMessages(['store' => [__('You have already ordered from :store. Create your account to keep your orders, then shop in another market with another account.', $name)]]);
+        }
+        Cart::where('customer_id', $user->id)->update(['promo_code' => null]);
+        $user->forceFill(['company_id' => $company->id])->save();
+        $user->unsetRelation('company');
+
+        return ['user' => $user->fresh()];
     }
 
     /** Where we write to them about this purchase (only for a guest). */

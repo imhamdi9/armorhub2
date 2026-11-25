@@ -105,6 +105,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonatio
 
     // Session
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/guest-session/store', [\App\Http\Controllers\Api\GuestSessionController::class, 'store'])->middleware('throttle:60,1');
     Route::put('/guest-session/contact', [\App\Http\Controllers\Api\GuestSessionController::class, 'contact'])->middleware('throttle:20,1');
     Route::post('/guest-session/claim', [\App\Http\Controllers\Api\GuestSessionController::class, 'claim'])->middleware('throttle:5,1');
     Route::put('/me/location', [AuthController::class, 'updateLocation']);

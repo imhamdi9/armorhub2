@@ -240,9 +240,11 @@ export function FavouriteButton({ m }: { m: ProductModel }) {
   useEffect(() => {
     if (m.links.signedIn) getFavouriteIds().then((ids) => setSaved(ids.includes(m.p.id))).catch(() => {});
   }, [m.links.signedIn, m.p.id]);
+  const [error, setError] = useState<string | null>(null);
   if (!m.links.signedIn) return null;
 
   return (
+    <>
     <button
       type="button"
       aria-pressed={saved}
@@ -250,12 +252,18 @@ export function FavouriteButton({ m }: { m: ProductModel }) {
       onClick={async () => {
         const next = !saved;
         setSaved(next);
-        try { await (next ? addFavourite(m.p.id) : removeFavourite(m.p.id)); } catch { setSaved(!next); }
+        setError(null);
+        try {
+          if (next) await ensureShopperSession(m.store.slug);   // a guest from another market's store moves here first
+          await (next ? addFavourite(m.p.id) : removeFavourite(m.p.id));
+        } catch (e) { setSaved(!next); setError(errorMessage(e)); }
       }}
       className="inline-flex items-center justify-center gap-2 rounded-full border border-fog px-6 py-2.5 text-sm font-semibold text-obsidian hover:bg-fog"
     >
       <span aria-hidden="true">{saved ? "♥" : "♡"}</span>{saved ? tr("Saved to favourites") : tr("Save to favourites")}
     </button>
+    {error && <p role="alert" className="text-center text-xs text-red-600">{error}</p>}
+    </>
   );
 }
 

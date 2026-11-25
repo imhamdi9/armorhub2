@@ -5,12 +5,14 @@ let session: Promise<void> | null = null;
 
 /**
  * Makes sure this browser has a shopper session for the store: someone already signed in keeps theirs; anyone else gets a quiet guest session, so a
- * cart works without signing up. (One request at a time, even if several buttons are pressed together.)
+ * cart works without signing up. A guest who started in another market's store is moved to this one (the server says why when it cannot).
+ * (One request at a time, even if several buttons are pressed together.)
  */
 export function ensureShopperSession(store: string): Promise<void> {
-  session ??= me().then(() => undefined).catch(async () => {
-    await api.post("/guest-session", { store });
-  }).finally(() => { session = null; });
+  session ??= me().then(
+    async (user) => { if (user?.is_guest) await api.put("/guest-session/store", { store }); },
+    async () => { await api.post("/guest-session", { store }); },
+  ).finally(() => { session = null; });
   return session;
 }
 
