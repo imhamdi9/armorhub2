@@ -40,6 +40,6 @@ class OrderUpdate extends Notification
             ->subject($this->title)
             ->greeting(__('Hello :name,', ['name' => $notifiable->name]))
             ->line($this->body)
-            ->action(\App\Support\PlatformBrand::in(__('Open in ArmorHub')), rtrim(config('platform.web_url'), '/').$this->path);
+            ->action(\App\Support\PlatformBrand::in(__('Open in ArmorHub')), \App\Support\Security\GuestAccessLink::to($notifiable, $this->path));
     }
 }

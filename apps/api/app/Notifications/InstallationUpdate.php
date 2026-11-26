@@ -32,6 +32,6 @@ class InstallationUpdate extends Notification
         $locale = method_exists($notifiable, 'preferredLocale') ? ($notifiable->preferredLocale() ?? 'en') : 'en';
 
         return (new MailMessage)->subject(\Illuminate\Support\Facades\Lang::get($this->title, $this->replace, $locale))->greeting("Hello {$notifiable->name},")->line(\Illuminate\Support\Facades\Lang::get($this->body, $this->replace, $locale))
-            ->action('Open', rtrim(config('platform.web_url'), '/').$this->path);
+            ->action('Open', \App\Support\Security\GuestAccessLink::to($notifiable, $this->path));
     }
 }

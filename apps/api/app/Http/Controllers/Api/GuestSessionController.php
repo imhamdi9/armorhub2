@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Storefront\StorefrontService;
 use App\Support\Audit;
 use App\Support\Security\EmailPolicy;
+use App\Support\Security\GuestAccessLink;
 use App\Rules\StrongPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -68,6 +69,22 @@ class GuestSessionController extends Controller
         $user->unsetRelation('company');
 
         return ['user' => $user->fresh()];
+    }
+
+    /** Signs a guest back in from the link in one of our e-mails (another device, or a session that has ended). */
+    public function open(Request $request, AuthController $auth)
+    {
+        $data = $request->validate(['token' => 'required|string|max:120']);
+        $guest = GuestAccessLink::guest($data['token'])
+            ?? throw ValidationException::withMessages(['token' => [__('This link no longer works. Use the one in our latest e-mail.')]]);
+        $current = $request->user('sanctum');
+
+        if ($current && $current->id !== $guest->id && ! $current->is_guest) {
+            throw ValidationException::withMessages(['token' => [__('You are signed in with another account. Sign out, then open the link again.')]]);
+        }
+        Audit::record('auth.guest_link_opened', $guest, [], $guest);
+
+        return $auth->signedIn($request, $guest);
     }
 
     /** Where we write to them about this purchase (only for a guest). */

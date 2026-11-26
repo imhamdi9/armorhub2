@@ -519,7 +519,8 @@ class SecurityTest extends TestCase
             'api/public/media/{name}', 'api/partner-applications', 'api/webhooks/shipping/{provider}', 'api/public/showcase', 'api/public/marketplaces', 'api/public/storefronts', 'api/public/storefronts/{slug}', 'api/public/storefronts/{slug}/products', 'api/public/storefronts/{slug}/suggest', 'api/public/storefronts/{slug}/products-by-ids', 'api/public/storefronts/{slug}/recommendations',
             'api/public/storefronts/{slug}/products/{id}', 'api/public/storefronts/{slug}/categories', 'api/public/storefronts/{slug}/sellers/{id}', 'api/public/invitations/{token}', 'api/public/invitations/{token}/accept',
             // Buying goods without an account: one order, reached by its secret link (see GuestCheckoutTest).
-            'api/guest-session', 'api/guest-orders', 'api/guest-orders/{token}', 'api/guest-orders/{token}/pay', 'api/guest-orders/{token}/cancel', 'api/guest-orders/{token}/messages',
+            // 'guest-session/open' takes the signed pass from a guest's e-mail instead (see GuestAccessLinkTest).
+            'api/guest-session', 'api/guest-session/open', 'api/guest-orders', 'api/guest-orders/{token}', 'api/guest-orders/{token}/pay', 'api/guest-orders/{token}/cancel', 'api/guest-orders/{token}/messages',
         ];
 
         $checked = 0;

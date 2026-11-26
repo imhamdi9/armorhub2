@@ -77,6 +77,7 @@ Route::post('/public/invitations/{token}/accept', [\App\Http\Controllers\Api\Inv
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 // Shopping without an account: a quiet shopper session (cart, checkout, tracking) that can become a full account later.
 Route::post('/guest-session', [\App\Http\Controllers\Api\GuestSessionController::class, 'start'])->middleware('throttle:guest-orders');
+Route::post('/guest-session/open', [\App\Http\Controllers\Api\GuestSessionController::class, 'open'])->middleware('throttle:10,1');
 Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
 Route::post('/partner-applications/{id}/pay-plan', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'payPlan'])->whereNumber('id')->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');

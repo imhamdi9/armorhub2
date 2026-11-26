@@ -18,3 +18,4 @@ export function ensureShopperSession(store: string): Promise<void> {
 
 export const setGuestContact = async (email: string, name?: string) => (await api.put("/guest-session/contact", { email, name })).data;
 export const claimGuestAccount = async (email: string, password: string, password_confirmation: string) => (await api.post("/guest-session/claim", { email, password, password_confirmation })).data;
+export const openGuestSession = async (token: string) => (await api.post("/guest-session/open", { token })).data;

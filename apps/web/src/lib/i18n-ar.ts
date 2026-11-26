@@ -3010,5 +3010,8 @@ export const AR: Record<string, string> = {
   "Setting": "إعداد",
   "Subscription revenue (this month)": "إيرادات الاشتراكات (هذا الشهر)",
   "Sandbox checkout (test cards, no real money)": "دفع تجريبي (بطاقات اختبار بلا مال حقيقي)",
+  "Continue": "متابعة",
+  "Continue to see your order on this device.": "تابع لعرض طلبك على هذا الجهاز.",
+  "This link no longer works. Use the one in our latest e-mail.": "هذا الرابط لم يعد يعمل. استخدم الرابط في أحدث رسالة منا.",
 };
 
