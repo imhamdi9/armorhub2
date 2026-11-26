@@ -1,0 +1,13 @@
+{
+  "id": "P012",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I would want to hear about the installer from someone I know before paying anyone, and a brand-new app with partners only just being added has no track record. Even with the money held, I would not hand over my M4 to a stranger I cannot complain to face to face.",
+  "objection": "What happens if the work is bad? Who do I complain to?",
+  "would_change_my_mind": "A friend or family member who has already used a specific ArmorHub partner in Riyadh or Cairo and tells me the work was good and the complaint process actually worked.",
+  "price_too_cheap": 800,
+  "price_cheap": 1300,
+  "price_expensive": 2100,
+  "price_too_expensive": 2600
+}

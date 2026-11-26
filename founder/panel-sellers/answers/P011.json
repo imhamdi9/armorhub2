@@ -1,0 +1,13 @@
+{
+  "id": "P011",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "convenience",
+  "reason": "Customers sending jobs is useful on paper, but the upfront ID, commercial registration and approval wait is exactly the paperwork I avoid. I get paid on the day, and a 10% cut on every job plus waiting for a reviewer is a cost I have to see before I'd even try it.",
+  "objection": "Uploading my ID and commercial registration and waiting for approval before I can send a single quote.",
+  "would_change_my_mind": "Starting to quote and get paid right away, with the approval and document upload handled after my first job, or a clear per-job fee with no document step.",
+  "price_too_cheap": 0,
+  "price_cheap": 0,
+  "price_expensive": 0,
+  "price_too_expensive": 0
+}

@@ -1,0 +1,13 @@
+{
+  "id": "P005",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "timing",
+  "reason": "The app idea makes sense and holding the money until the work is done is good, but right now you are only adding partners in Riyadh and Cairo, and I have no idea if anyone would come to my area. I also don't need paint protection film this month, so I would wait until I can see a real partner near me with times I can pick.",
+  "objection": "Will a verified partner actually come to my area, and will I get to pick the time, or will I be stuck waiting on them?",
+  "would_change_my_mind": "A verified partner near me with open time slots I can pick in the app, and a warranty I can actually claim on if something goes wrong.",
+  "price_too_cheap": 900,
+  "price_cheap": 1300,
+  "price_expensive": 1900,
+  "price_too_expensive": 2300
+}

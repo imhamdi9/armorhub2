@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\CartItem;
+use App\Models\Company;
+use App\Models\Order;
+use App\Models\User;
+use App\Services\Storefront\StorefrontService;
+use App\Support\Audit;
+use App\Support\Security\EmailPolicy;
+use App\Support\Security\GuestAccessLink;
+use App\Rules\StrongPassword;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Shopping without signing up. The first time someone adds something to a cart, a quiet shopper record is made for them and their browser is
+ * signed in as it: the cart, checkout, payment, tracking, returns and messages are then the very same ones every customer uses. They give a real
+ * e-mail at checkout (to write to), and can claim a full account whenever they like.
+ */
+class GuestSessionController extends Controller
+{
+    /** Starts a session for this store, or tells who is already signed in. */
+    public function start(Request $request, StorefrontService $stores, AuthController $auth)
+    {
+        $data = $request->validate(['store' => 'required|string|max:80']);
+        $company = $stores->find($data['store']) ?? throw ValidationException::withMessages(['store' => ['This store was not found.']]);
+
+        if ($request->user('sanctum')) {
+            return response()->json(['user' => $request->user('sanctum')]);
+        }
+
+        $user = User::create([
+            'name' => 'Guest', 'email' => 'guest-'.Str::uuid().'@guest.invalid', 'password' => Str::random(40), 'company_id' => $company->id, 'email_verified_at' => now(),
+        ]);
+        $user->forceFill(['is_guest' => true])->save();
+        $user->assignRole('customer');
+
+        return $auth->signedIn($request, $user, 201);
+    }
+
+    /**
+     * A guest is a shopper of the market of the store they started in. When they move on to a store of another market they are moved with it,
+     * as long as nothing would be left behind or mixed: goods in the cart (another currency) or earlier orders keep them where they are, with the reason.
+     */
+    public function store(Request $request, StorefrontService $stores)
+    {
+        $user = $this->guest($request);
+        $data = $request->validate(['store' => 'required|string|max:80']);
+        $company = $stores->find($data['store']) ?? throw ValidationException::withMessages(['store' => ['This store was not found.']]);
+        $current = $user->company_id ? Company::withoutGlobalScopes()->find($user->company_id) : null;
+
+        if ($current && $current->tenant_id === $company->tenant_id) {
+            return ['user' => $user];               // the same market: its products are all open to them already
+        }
+        $name = ['store' => $current?->name ?? ''];
+        if (CartItem::whereIn('cart_id', Cart::where('customer_id', $user->id)->select('id'))->exists()) {
+            throw ValidationException::withMessages(['store' => [__('Your cart has items from :store. Buy or remove them before shopping in another market.', $name)]]);
+        }
+        if (Order::withoutGlobalScopes()->where('customer_id', $user->id)->exists()) {
+            throw ValidationException::withMessages(['store' => [__('You have already ordered from :store. Create your account to keep your orders, then shop in another market with another account.', $name)]]);
+        }
+        Cart::where('customer_id', $user->id)->update(['promo_code' => null]);
+        $user->forceFill(['company_id' => $company->id])->save();
+        $user->unsetRelation('company');
+
+        return ['user' => $user->fresh()];
+    }
+
+    /** Signs a guest back in from the link in one of our e-mails (another device, or a session that has ended). */
+    public function open(Request $request, AuthController $auth)
+    {
+        $data = $request->validate(['token' => 'required|string|max:120']);
+        $guest = GuestAccessLink::guest($data['token'])
+            ?? throw ValidationException::withMessages(['token' => [__('This link no longer works. Use the one in our latest e-mail.')]]);
+        $current = $request->user('sanctum');
+
+        if ($current && $current->id !== $guest->id && ! $current->is_guest) {
+            throw ValidationException::withMessages(['token' => [__('You are signed in with another account. Sign out, then open the link again.')]]);
+        }
+        Audit::record('auth.guest_link_opened', $guest, [], $guest);
+
+        return $auth->signedIn($request, $guest);
+    }
+
+    /** Where we write to them about this purchase (only for a guest). */
+    public function contact(Request $request)
+    {
+        $user = $this->guest($request);
+        $data = $request->validate(['email' => ['required', 'email:rfc', 'max:255'], 'name' => 'nullable|string|max:120']);
+        if (app(EmailPolicy::class)->isBlocked($data['email'])) {
+            throw ValidationException::withMessages(['email' => ['Please use a permanent email address.']]);
+        }
+        $user->forceFill(['contact_email' => mb_strtolower(trim($data['email'])), 'name' => trim((string) ($data['name'] ?? '')) ?: $user->name])->save();
+
+        return ['contact_email' => $user->contact_email];
+    }
+
+    /** Turns the guest into a full account with the e-mail and password they choose; everything they bought stays theirs. */
+    public function claim(Request $request)
+    {
+        $user = $this->guest($request);
+        $data = $request->validate(['email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'], 'password' => StrongPassword::rules(confirmed: true)]);
+        if (User::where('email_canonical', EmailPolicy::canonical($data['email']))->exists()) {
+            throw ValidationException::withMessages(['email' => ['The email has already been taken.']]);
+        }
+        $user->forceFill(['email' => mb_strtolower(trim($data['email'])), 'password' => $data['password'], 'is_guest' => false, 'contact_email' => null, 'email_verified_at' => null])->save();
+        Audit::record('auth.guest_claimed', $user, [], $user);
+        if (app(EmailPolicy::class)->verificationRequired()) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return ['user' => $user->fresh()];
+    }
+
+    private function guest(Request $request): User
+    {
+        $user = $request->user();
+        abort_unless($user && $user->is_guest, 403);
+
+        return $user;
+    }
+}

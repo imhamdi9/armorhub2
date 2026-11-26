@@ -1,0 +1,13 @@
+{
+  "id": "P009",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "The price is fine and the escrow and written warranty sound sensible, but the platform has just started with a few partners in Riyadh and Cairo. I would not hand my car to a shop I have never heard of until I see other owners say the work held up.",
+  "objection": "If the film peels or the installer disappears after I have paid, who do I complain to, and does the held money or the warranty actually help me then? Nothing I have read tells me there is a real person or company behind the warranty.",
+  "would_change_my_mind": "Reviews from several owners of cars like mine, and a named company that stands behind the warranty and the money held in escrow.",
+  "price_too_cheap": 700,
+  "price_cheap": 1000,
+  "price_expensive": 1900,
+  "price_too_expensive": 2600
+}

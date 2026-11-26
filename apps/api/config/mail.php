@@ -37,6 +37,9 @@ return [
 
     'mailers' => [
 
+        // Keeps every e-mail in the database (mail_outbox) instead of sending it: for development and demos.
+        'outbox' => ['transport' => 'outbox'],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),

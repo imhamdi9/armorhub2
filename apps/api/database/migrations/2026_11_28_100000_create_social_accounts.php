@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // One row per "Continue with Google / Facebook / Apple" identity, tied to the account it signs in to.
+        Schema::create('social_accounts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('provider', 20);
+            $table->string('provider_user_id', 190);
+            $table->timestamps();
+            $table->unique(['provider', 'provider_user_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('social_accounts');
+    }
+};

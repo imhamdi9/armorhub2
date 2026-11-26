@@ -1,0 +1,438 @@
+{
+ "business": "ArmorHub, a marketplace of verified service partners (buyer side)",
+ "seed": 504112,
+ "dealt": 100,
+ "answered": 30,
+ "skipped": [
+  [
+   "P031",
+   "missing"
+  ],
+  [
+   "P032",
+   "missing"
+  ],
+  [
+   "P033",
+   "missing"
+  ],
+  [
+   "P034",
+   "missing"
+  ],
+  [
+   "P035",
+   "missing"
+  ],
+  [
+   "P036",
+   "missing"
+  ],
+  [
+   "P037",
+   "missing"
+  ],
+  [
+   "P038",
+   "missing"
+  ],
+  [
+   "P039",
+   "missing"
+  ],
+  [
+   "P040",
+   "missing"
+  ],
+  [
+   "P041",
+   "missing"
+  ],
+  [
+   "P042",
+   "missing"
+  ],
+  [
+   "P043",
+   "missing"
+  ],
+  [
+   "P044",
+   "missing"
+  ],
+  [
+   "P045",
+   "missing"
+  ],
+  [
+   "P046",
+   "missing"
+  ],
+  [
+   "P047",
+   "missing"
+  ],
+  [
+   "P048",
+   "missing"
+  ],
+  [
+   "P049",
+   "missing"
+  ],
+  [
+   "P050",
+   "missing"
+  ],
+  [
+   "P051",
+   "missing"
+  ],
+  [
+   "P052",
+   "missing"
+  ],
+  [
+   "P053",
+   "missing"
+  ],
+  [
+   "P054",
+   "missing"
+  ],
+  [
+   "P055",
+   "missing"
+  ],
+  [
+   "P056",
+   "missing"
+  ],
+  [
+   "P057",
+   "missing"
+  ],
+  [
+   "P058",
+   "missing"
+  ],
+  [
+   "P059",
+   "missing"
+  ],
+  [
+   "P060",
+   "missing"
+  ],
+  [
+   "P061",
+   "missing"
+  ],
+  [
+   "P062",
+   "missing"
+  ],
+  [
+   "P063",
+   "missing"
+  ],
+  [
+   "P064",
+   "missing"
+  ],
+  [
+   "P065",
+   "missing"
+  ],
+  [
+   "P066",
+   "missing"
+  ],
+  [
+   "P067",
+   "missing"
+  ],
+  [
+   "P068",
+   "missing"
+  ],
+  [
+   "P069",
+   "missing"
+  ],
+  [
+   "P070",
+   "missing"
+  ],
+  [
+   "P071",
+   "missing"
+  ],
+  [
+   "P072",
+   "missing"
+  ],
+  [
+   "P073",
+   "missing"
+  ],
+  [
+   "P074",
+   "missing"
+  ],
+  [
+   "P075",
+   "missing"
+  ],
+  [
+   "P076",
+   "missing"
+  ],
+  [
+   "P077",
+   "missing"
+  ],
+  [
+   "P078",
+   "missing"
+  ],
+  [
+   "P079",
+   "missing"
+  ],
+  [
+   "P080",
+   "missing"
+  ],
+  [
+   "P081",
+   "missing"
+  ],
+  [
+   "P082",
+   "missing"
+  ],
+  [
+   "P083",
+   "missing"
+  ],
+  [
+   "P084",
+   "missing"
+  ],
+  [
+   "P085",
+   "missing"
+  ],
+  [
+   "P086",
+   "missing"
+  ],
+  [
+   "P087",
+   "missing"
+  ],
+  [
+   "P088",
+   "missing"
+  ],
+  [
+   "P089",
+   "missing"
+  ],
+  [
+   "P090",
+   "missing"
+  ],
+  [
+   "P091",
+   "missing"
+  ],
+  [
+   "P092",
+   "missing"
+  ],
+  [
+   "P093",
+   "missing"
+  ],
+  [
+   "P094",
+   "missing"
+  ],
+  [
+   "P095",
+   "missing"
+  ],
+  [
+   "P096",
+   "missing"
+  ],
+  [
+   "P097",
+   "missing"
+  ],
+  [
+   "P098",
+   "missing"
+  ],
+  [
+   "P099",
+   "missing"
+  ],
+  [
+   "P100",
+   "missing"
+  ]
+ ],
+ "buys": 0,
+ "passes": 30,
+ "buy_rate": 0.0,
+ "by_segment": [
+  [
+   "Budget-conscious buyer",
+   4,
+   0.0
+  ],
+  [
+   "Family household owner",
+   12,
+   0.0
+  ],
+  [
+   "Business owner or executive with a premium car",
+   6,
+   0.0
+  ],
+  [
+   "Young car owner, first good car",
+   8,
+   0.0
+  ]
+ ],
+ "by_behaviour": [
+  [
+   "Asks friends and family first",
+   9,
+   0.0
+  ],
+  [
+   "Loyal to one workshop",
+   5,
+   0.0
+  ],
+  [
+   "Wants convenience and speed",
+   3,
+   0.0
+  ],
+  [
+   "Prefers cash and WhatsApp",
+   2,
+   0.0
+  ],
+  [
+   "Reads every review",
+   5,
+   0.0
+  ],
+  [
+   "Afraid of being cheated",
+   3,
+   0.0
+  ],
+  [
+   "Compares prices on three or more places",
+   3,
+   0.0
+  ]
+ ],
+ "by_income": [
+  [
+   "under $104,000",
+   10,
+   0.0
+  ],
+  [
+   "$104,000 to $173,000",
+   10,
+   0.0
+  ],
+  [
+   "$173,000 and up",
+   10,
+   0.0
+  ]
+ ],
+ "why_not": [
+  [
+   "trust",
+   27,
+   [
+    "My workshop gives me a price on WhatsApp in a minute and my cousin had his bumper done there, so I already know who to trust. A new app with partners only just being added in Riyadh and Cairo is a stranger I would have to pay money into.",
+    "The price range is fine, but I would be paying an installer I have never met for work I cannot see until it is done. I already have a workshop I trust and I negotiate with them face to face, so I would have to be convinced the partners are better than the people I know."
+   ],
+   [
+    "P001",
+    "P003"
+   ]
+  ],
+  [
+   "habit",
+   2,
+   [
+    "I already have one workshop I have trusted for years, and I like negotiating the price with them face to face. An app that is only just adding its first partners in Riyadh and Cairo does not give me a reason to switch for a paint film job on the M4.",
+    "My workshop already gives me a price on WhatsApp in a minute, and they have done my cars for years. I would have to learn a new app and wait for strangers to quote me when I already know who I trust."
+   ],
+   [
+    "P002",
+    "P010"
+   ]
+  ],
+  [
+   "timing",
+   1,
+   [
+    "The app idea makes sense and holding the money until the work is done is good, but right now you are only adding partners in Riyadh and Cairo, and I have no idea if anyone would come to my area. I also don't need paint protection film this month, so I would wait until I can see a real partner near me with times I can pick."
+   ],
+   [
+    "P005"
+   ]
+  ]
+ ],
+ "why_yes": [],
+ "flip": [
+  "A friend or family member who I trust has used ArmorHub for the same job and their car came out well.",
+  "If my own workshop charged clearly more than the app quotes for the same film, and I could see a named partner in my city with a track record of work I could check myself.",
+  "A partner I can visit in Riyadh before paying, or a recommendation from a workshop I already trust, plus a quick same-day price.",
+  "A friend or family member I trust tells me they used ArmorHub and the installer did good work and honoured the warranty.",
+  "A verified partner near me with open time slots I can pick in the app, and a warranty I can actually claim on if something goes wrong.",
+  "Seeing verified partners with real reviews from people in my own city, and a named warranty provider I can call directly if the film fails.",
+  "Seeing the named installer's own Google rating, reviews and photos of finished BMWs in Riyadh or Cairo, plus the written warranty terms before I pay.",
+  "Seeing real reviews from owners of cars like mine, or my own workshop joining the platform so I can see the same people and work I already trust.",
+  "Reviews from several owners of cars like mine, and a named company that stands behind the warranty and the money held in escrow.",
+  "A named film brand with its own warranty in writing, and photos of finished work on M4s or similar cars from the specific partner who would do my car.",
+  "A real review from a car owner I know, or my own workshop listed on the app.",
+  "A friend or family member who has already used a specific ArmorHub partner in Riyadh or Cairo and tells me the work was good and the complaint process actually worked.",
+  "A price for my exact car within minutes, from named installers with reviews I can check, plus a warranty I can actually claim on.",
+  "A relative or friend in my WhatsApp group who has used one of these partners and tells me the work was good.",
+  "A friend or family member who has used ArmorHub and had good work done, so I hear it from someone I know rather than from an app.",
+  "A partner I already know or trust from my area listed on it, with a clear way to reach a real person and a refund if the work is bad.",
+  "Seeing a partner near me with real Google ratings and photos of finished BMW jobs, plus a few reviews from people who have already used ArmorHub.",
+  "A friend or someone I trust has used a partner through ArmorHub and shows me the finished work on their car.",
+  "Google ratings and photos of finished PPF jobs on BMWs from partners in my city, which I can check myself before I pay.",
+  "A friend or family member who has used a partner through ArmorHub, got genuine film, and had the warranty honoured when they needed it.",
+  "A verified partner near me with a track record, a visit at a time I pick, and a written warranty I can check in the app before I pay.",
+  "Several verified reviews from BMW owners in Riyadh or Cairo, plus proof that the held money and the written warranty are backed by a named insurer or escrow provider.",
+  "Real reviews from owners of BMW M-series cars who used the same partner, and a partner shop I can visit before paying.",
+  "Verified reviews and Google ratings for the partner shops in my city, plus a named complaint channel with a clear refund process.",
+  "Verified Google reviews and photos of finished BMW M4 jobs from partners in my own city, which I can check myself before I quote or pay.",
+  "A friend or family member who has used a partner through it and recommends them, or partners confirmed in my own city with a time I can pick.",
+  "A recommendation from a friend or family member who has already used a partner through ArmorHub and was happy with the result.",
+  "A few verified reviews from car owners in Riyadh or Cairo who had the same job done, or a recommendation from someone in my family group.",
+  "A few verified reviews with photos of finished work on M-series or similar cars from people in Riyadh, plus a partner I can call or visit before I pay.",
+  "A verified partner with a known physical shop I can visit, who shows the film brand and a warranty I can claim directly at that shop."
+ ],
+ "purchases_first_month_per_buyer": null,
+ "price_answers": 30
+}

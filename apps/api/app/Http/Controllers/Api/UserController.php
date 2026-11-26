@@ -1,0 +1,260 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Partner;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Staff management. Who may create whom:
+ *  - platform-admin: anyone, anywhere
+ *  - company-owner:  staff inside their own company
+ *  - partner-manager: technicians of their own partner
+ */
+class UserController extends Controller
+{
+    private const ROLES_BY_MANAGER = [
+        'platform-admin' => ['platform-admin', 'company-owner', 'partner-manager', 'technician', 'customer', 'seller', 'warehouse-staff', 'operations-agent', 'support-agent', 'catalog-reviewer', 'marketing-manager'],
+        // A market admin brings in the people of their market. Only the platform owner makes other market admins.
+        'company-owner' => ['partner-manager', 'technician', 'warehouse-staff', 'operations-agent', 'support-agent', 'catalog-reviewer'],
+        'partner-manager' => ['technician'],
+    ];
+
+    /** ArmorHub's own people: admins, market managers, warehouse staff, department members, and anyone in the platform company. */
+    private function platformTeam($q): void
+    {
+        $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['platform-admin', 'company-owner', 'warehouse-staff', 'operations-agent', 'support-agent', 'catalog-reviewer', 'marketing-manager']))
+            ->orWhere(fn ($d) => $d->whereNotNull('department_id')->whereIn('department_id', \App\Models\Department::whereNull('tenant_id')->select('id')))
+            ->orWhereHas('company', fn ($c) => $c->withoutGlobalScopes()->where('type', 'platform'));
+    }
+
+    public function index(Request $request)
+    {
+        $scope = $request->user()->hasRole('platform-admin') ? $request->query('scope') : null;
+
+        return $this->visible($request->user())
+            ->when($scope === 'platform', fn ($q) => $q->where(fn ($w) => $this->platformTeam($w)))
+            ->when($scope === 'users', fn ($q) => $q->whereNot(fn ($w) => $this->platformTeam($w)))
+            ->with(['roles:id,name', 'company:id,name', 'partner:id,name'])
+            ->when($request->filled('search'), fn ($q) => $q->where(
+                fn ($w) => $w->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%")
+            ))
+            // Guest shoppers (a placeholder login made at checkout) are not people to manage: hidden unless asked for.
+            ->when($request->query('guests') !== '1', fn ($q) => $q->where(fn ($w) => $w->where('is_guest', false)->orWhereNull('is_guest')))
+            ->when($request->filled('role'), fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $request->query('role'))))
+            ->when($request->query('status') === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($request->query('status') === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($request->filled('company_id'), fn ($q) => $q->where('company_id', (int) $request->query('company_id')))
+            ->addSelect(['last_login_at' => \App\Models\AuditLog::query()->selectRaw('max(created_at)')->whereColumn('audit_logs.user_id', 'users.id')->where('audit_logs.action', 'auth.login')])
+            ->orderBy('name')
+            ->paginate(25)
+            ->through(fn (User $u) => $this->present($u, $request->user()));
+    }
+
+    public function store(Request $request)
+    {
+        $actor = $request->user();
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => \App\Rules\StrongPassword::rules(),
+            'role' => ['required', Rule::in($this->allowedRoles($actor))],
+            'company_id' => 'nullable|integer|exists:companies,id',
+            'partner_id' => 'nullable|integer|exists:partners,id',
+        ]);
+
+        [$companyId, $partnerId] = $this->placement($actor, $data['company_id'] ?? null, $data['partner_id'] ?? null);
+        $this->requireCompanyForCustomRole($data['role'], $companyId);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            // An administrator vouches for the people they add, so no verification email is needed.
+            'email_verified_at' => now(),
+            'company_id' => $companyId,
+            'partner_id' => $partnerId,
+        ]);
+        $user->assignRole($data['role']);
+
+        return response()->json($this->present($user->load(['roles:id,name', 'company:id,name', 'partner:id,name']), $actor), 201);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $actor = $request->user();
+        $user = $this->visible($actor)->findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'password' => ['sometimes', ...\App\Rules\StrongPassword::rules()],
+            'role' => ['sometimes', Rule::in($this->allowedRoles($actor))],
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        // Nobody may change their own role or lock themselves out.
+        if ($user->is($actor) && (isset($data['role']) || (isset($data['is_active']) && ! $data['is_active']))) {
+            throw ValidationException::withMessages(['user' => ['You cannot change your own role or deactivate yourself.']]);
+        }
+
+        // Managers may not edit people more powerful than what they can create.
+        $this->assertManageable($actor, $user);
+
+        if (isset($data['role'])) {
+            $this->requireCompanyForCustomRole($data['role'], $user->company_id);
+            $user->syncRoles([$data['role']]);
+        }
+
+        $user->update(collect($data)->only(['name', 'password', 'is_active'])->all());
+
+        if (isset($data['is_active']) && ! $data['is_active']) {
+            $user->tokens()->delete(); // sign them out everywhere
+        }
+
+        return $this->present($user->fresh(['roles:id,name', 'company:id,name', 'partner:id,name']), $actor);
+    }
+
+    /** Sign a person out everywhere, e.g. after a lost phone or a suspected account takeover. */
+    public function revokeSessions(Request $request, int $id)
+    {
+        $user = $this->visible($request->user())->findOrFail($id);
+        $this->assertManageable($request->user(), $user);
+
+        $count = $user->tokens()->count();
+        $user->tokens()->delete();
+
+        \App\Support\Audit::record('auth.sessions_revoked', $user, ['sessions' => $count]);
+
+        return response()->json(['message' => "Signed out of {$count} session(s)."]);
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $actor = $request->user();
+        $user = $this->visible($actor)->findOrFail($id);
+
+        abort_if($user->is($actor), 422, 'You cannot delete yourself.');
+        $this->assertManageable($actor, $user);
+        abort_if($this->hasHistory($user), 422, 'This account has orders or requests behind it, so it cannot be deleted. Deactivate it instead: it can no longer sign in and its history stays intact.');
+
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Whether records (orders, installation requests, quote requests) hang on this account: those must keep their people. */
+    private function hasHistory(User $user): bool
+    {
+        return \App\Models\Order::withoutGlobalScopes()->where('customer_id', $user->id)->exists()
+            || \App\Models\InstallationRequest::withoutGlobalScopes()->where('customer_id', $user->id)->exists()
+            || \App\Models\ProductQuoteRequest::query()->where('customer_id', $user->id)->exists();
+    }
+
+    /** Users the actor is allowed to see/manage. */
+    private function visible(User $actor)
+    {
+        $query = User::query();
+
+        if ($actor->hasRole('platform-admin')) {
+            return $query;
+        }
+
+        // A market admin sees everyone in their market (its companies, sellers, centres and customers), and nothing of other markets.
+        if ($actor->hasRole('company-owner') && $actor->company_id) {
+            $tenantId = $actor->company?->tenant_id;
+
+            return $tenantId
+                ? $query->whereIn('company_id', \App\Models\Company::withoutGlobalScopes()->where('tenant_id', $tenantId)->select('id'))
+                : $query->where('company_id', $actor->company_id);
+        }
+
+        if ($actor->hasRole('partner-manager') && $actor->partner_id) {
+            return $query->where('partner_id', $actor->partner_id);
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    /** @return list<string> */
+    private function allowedRoles(User $actor): array
+    {
+        foreach (self::ROLES_BY_MANAGER as $role => $allowed) {
+            if ($actor->hasRole($role)) {
+                // Only platform admins hand out custom roles.
+                return $role === 'platform-admin' ? [...$allowed, ...\App\Http\Controllers\Api\Admin\RoleController::customNames()] : $allowed;
+            }
+        }
+
+        return [];
+    }
+
+    /** Force company/partner to the actor's own, unless they are a platform admin. */
+    private function placement(User $actor, ?int $companyId, ?int $partnerId): array
+    {
+        if ($actor->hasRole('platform-admin')) {
+            return [$companyId, $partnerId];
+        }
+
+        if ($actor->hasRole('partner-manager')) {
+            return [$actor->company_id, $actor->partner_id];
+        }
+
+        // market admin: a company of their own market (their own by default); a partner must belong to it (Partner is company-scoped).
+        if ($companyId !== null && $companyId !== $actor->company_id) {
+            $sameMarket = \App\Models\Company::withoutGlobalScopes()->whereKey($companyId)->where('tenant_id', $actor->company?->tenant_id)->exists();
+            if (! $sameMarket) {
+                throw ValidationException::withMessages(['company_id' => ['That company is not in your market.']]);
+            }
+
+            return [$companyId, $partnerId];
+        }
+        if ($partnerId !== null && ! Partner::whereKey($partnerId)->exists()) {
+            throw ValidationException::withMessages(['partner_id' => ['That partner is not in your company.']]);
+        }
+
+        return [$actor->company_id, $partnerId];
+    }
+
+    /** Custom roles are company staff: without a company they would have no data to work with, and nothing to be scoped by. */
+    private function requireCompanyForCustomRole(string $role, ?int $companyId): void
+    {
+        if (! in_array($role, \App\Http\Controllers\Api\Admin\RoleController::BUILT_IN, true) && ! $companyId) {
+            throw ValidationException::withMessages(['company_id' => ['Choose a company for this role.']]);
+        }
+    }
+
+    private function assertManageable(User $actor, User $target): void
+    {
+        $allowed = $this->allowedRoles($actor);
+
+        abort_unless(
+            $target->roles->isEmpty() || $target->roles->pluck('name')->every(fn ($r) => in_array($r, $allowed, true)),
+            403,
+            'You cannot manage this user.'
+        );
+    }
+
+    /** `manageable` tells the screen whether to offer deactivate and delete for this person at all. */
+    private function present(User $user, ?User $actor = null): array
+    {
+        $allowed = $actor ? $this->allowedRoles($actor) : [];
+
+        return [
+            'manageable' => $actor !== null && ! $user->is($actor) && ($user->roles->isEmpty() || $user->roles->pluck('name')->every(fn ($r) => in_array($r, $allowed, true))),
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_active' => $user->is_active,
+            'is_guest' => (bool) $user->is_guest,
+            'last_login_at' => $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->toIso8601String() : null,
+            'role' => $user->roles->first()?->name,
+            'company' => $user->company?->only(['id', 'name']),
+            'partner' => $user->partner?->only(['id', 'name']),
+        ];
+    }
+}

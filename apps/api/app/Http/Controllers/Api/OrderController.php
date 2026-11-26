@@ -2,116 +2,273 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OrderStatus;
+use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Order;
-use App\Models\InstallationQuote;
-use App\Models\InstallationCenter;
-use App\Services\Pricing\CalculateFilmPriceService;
+use App\Models\OrderEvent;
+use App\Models\PartnerQuote;
+use App\Modules\IndustryRegistry;
+use App\Services\Location\FindNearbyPartnersService;
+use App\Services\Pricing\CalculateProductPriceService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use App\Services\Location\FindNearbyInstallationCentersService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
     use AuthorizesRequests;
+
     public function show(Order $order)
     {
-     $this->authorize('view', $order);
+        $this->authorize('view', $order);
 
-     return response()->json($order);
+        // `statuses` answers five questions separately: the order, the payment, the goods, the service and the settlement.
+        return response()->json($order->makeVisible('shipping_address')->load(['product', 'subject', 'events.user:id,name', 'warranty'])->toArray() + ['market' => app(\App\Support\Markets\Markets::class)->forCompany(\App\Models\Company::withoutGlobalScopes()->find($order->company_id))?->code, 'statuses' => auth()->id() === $order->customer_id ? app(\App\Services\OrderStatuses::class)->forCustomer($order) : app(\App\Services\OrderStatuses::class)->of($order)]);
     }
-    
-    public function index()
+
+    /** The invoice as a PDF, for the customer who paid (and the people who may see the order). Only paid orders have one. */
+    public function invoice(Order $order)
     {
-      $this->authorize('viewAny', Order::class);
+        $this->authorize('view', $order);
+        abort_unless(\App\Models\Payment::withoutGlobalScopes()->where('order_id', $order->id)->whereIn('status', ['completed', 'cod_due'])->exists(), 404, 'This order has no invoice yet.');
 
-       $user = auth()->user();
-       
-       
-      if ($user->hasRole('platform-admin')) {
-        return Order::all();
-     }
+        $file = \App\Services\Pdf\InvoicePdf::number($order).'.pdf';
 
-     if ($user->hasRole('customer')) {
-        return Order::where(
-            'customer_id',
-            $user->id
-        )->get();
-     }
+        return response((new \App\Services\Pdf\InvoicePdf())->render($order), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => "attachment; filename=\"{$file}\"", 'X-Content-Type-Options' => 'nosniff']);
+    }
 
-     return Order::where(
-        'company_id',
-        $user->company_id
-     )->get();
+    /** Purchases made without an account with this e-mail: they join the account once the e-mail is verified, so say so instead of hiding them. */
+    public function waitingForVerification(Request $request)
+    {
+        $user = $request->user();
+        $count = $user->hasVerifiedEmail() || ! $user->company_id ? 0 : Order::withoutGlobalScopes()->where('company_id', $user->company_id)->whereNull('customer_id')->whereNotNull('guest_token')->where('guest_email', strtolower((string) $user->email))->count();
+
+        return ['count' => $count];
+    }
+
+    public function index(Request $request)
+    {
+        $this->authorize('viewAny', Order::class);
+
+        $request->validate(['status' => 'nullable|string', 'per_page' => 'nullable|integer|min:1|max:100']);
+
+        $user = $request->user();
+        Order::claimGuestOrders($user); // earlier purchases made without an account (same verified e-mail) join this account
+
+        $query = Order::with('product')
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->latest('id');
+
+        if ($user->hasRole('customer')) {
+            $query->where('customer_id', $user->id);
+        } elseif (! $user->hasRole('platform-admin')) {
+            // Market staff see the market's orders only in a role that deals with them; any other role sees none.
+            $query->where('company_id', app(\App\Policies\OrderPolicy::class)->staffWorksOrders($user) ? $user->company_id : 0);
+        }
+
+        return $query->paginate($request->integer('per_page', 15));
     }
 
     public function store(
         Request $request,
-        CalculateFilmPriceService $pricing,
-        FindNearbyInstallationCentersService $location
+        CalculateProductPriceService $pricing,
+        FindNearbyPartnersService $location,
+        IndustryRegistry $registry
     ) {
         $this->authorize('create', Order::class);
 
-        $data = $request->validate([
-            'film_id' => 'required|integer',
-            'vehicle_model_id' => 'required|integer',
-            'parts' => 'required|array',
-            'customer_id' => 'nullable|integer',
-        ]);
-
-        $price = $pricing->calculate(
-            $data['film_id'],
-            $data['parts']
-        );
-
-        $order = Order::create([
-            'company_id' => auth()->user()->company_id,
-            'customer_id' => auth()->id(),
-            'film_id' => $data['film_id'],
-            'vehicle_model_id' => $data['vehicle_model_id'],
-            'status' => 'pending',
-            'film_amount' => $price['total'],
-            'installation_amount' => 0,
-            'commission_amount' => 0,
-            'total_amount' => $price['total'],
-            'currency' => $price['currency'],
-        ]);
-
         $user = auth()->user();
+        $settings = app(\App\Support\Settings\Settings::class);
 
-        if (!$user->location_enabled || !$user->latitude || !$user->longitude) {
+        if (! $settings->bool('platform.orders_enabled')) {
+            return response()->json(['message' => 'New orders are paused for now. Please try again later.'], 503);
+        }
+
+        if ($user->hasRole('customer') && ! $user->hasVerifiedEmail() && app(\App\Support\Security\EmailPolicy::class)->verificationRequired()) {
             return response()->json([
-             'message' => 'Please enable location to find nearby installation centers'
+                'message' => 'Please verify your email address before ordering. Check your inbox for the link.',
+                'code' => 'email_unverified',
+            ], 403);
+        }
+
+        $open = Order::withoutGlobalScopes()->where('customer_id', $user->id)
+            ->whereIn('status', ['pending_quotes', 'quotes_received', 'partner_selected', 'awaiting_payment'])->count();
+
+        if ($open >= (int) $settings->get('security.max_open_orders')) {
+            return response()->json([
+                'message' => 'You have too many unpaid orders. Pay for or cancel one before placing another.',
             ], 422);
         }
 
-        $centers = $location->executeWithFallback(
-          $user->latitude,
-          $user->longitude,
-          $user->city,
-          $user->country
-        );
+        $data = $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'subject_type' => ['nullable', 'string', 'in:'.implode(',', array_keys($registry->subjectModels()))],
+            'subject_id' => ['nullable', 'integer', 'required_with:subject_type'],
+            'target_type' => 'nullable|string',
+            'targets' => 'required|array|min:1',
+            'targets.*' => 'integer',
+        ]);
 
-        if ($centers->isEmpty()) {
-          return response()->json([
-          'message' => 'No installation centers available'
-          ], 422);
-        }
-
-        foreach ($centers as $center) {
-            InstallationQuote::create([
-                'company_id' => auth()->user()->company_id,
-                'order_id' => $order->id,
-                'installation_center_id' => $center->id,
-                'price' => 0,
-                'status' => 'pending',
+        if (! $user->company_id) {
+            throw ValidationException::withMessages([
+                'company' => ['Your account is not linked to a company.'],
             ]);
         }
+
+        // A product sold by a seller goes straight to payment: there is no service for a partner to quote.
+        $directSale = \App\Models\Product::whereKey($data['product_id'])->whereNotNull('seller_id')->exists();
+
+        if (! $directSale && (! $user->location_enabled || ! $user->latitude || ! $user->longitude)) {
+            return response()->json([
+                'message' => 'Please enable location to find nearby partners',
+            ], 422);
+        }
+
+        // Customers can only order what their own industry offers, and only what is on sale.
+        $product = \App\Models\Product::visibleInTenant($user->company?->tenant_id)->find($data['product_id'])
+            ?? throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company)?->code;
+        if ($product->fitment_required) {
+            throw ValidationException::withMessages(['product_id' => ['This part is only sold for the cars it fits: sign in, add your car and buy it from the cart.']]);
+        }
+        if (($product->sale_mode ?? 'fixed') === 'quote') {
+            throw ValidationException::withMessages(['product_id' => ['This product is sold on request: ask the seller for a quote.']]);
+        }
+        app(\App\Services\Warehouse\WarehouseService::class)->assertInStock($product);
+
+        // A seller's plan serves a number of customers a month.
+        if ($product->seller_id) {
+            app(\App\Services\SubscriptionService::class)->assertCanTakeCustomers('seller', (int) $product->seller_id);
+        }
+        if (! $product->is_active || ($product->industry_id !== null && ! in_array($product->industry_id, $user->industryIds(), true))
+            || ($product->market !== null && $product->market !== $market)) {
+            throw ValidationException::withMessages(['product_id' => ['This product is not available.']]);
+        }
+
+        // A product that is "sold only with an installation offer" needs a request of this customer, for this product, whose offer is accepted.
+        $installation = \App\Models\InstallationRequest::where('customer_id', $user->id)->where('product_id', $product->id)->whereNull('order_id')
+            ->whereIn('status', ['awaiting_payment', 'paid', 'in_progress', 'proof_submitted', 'released'])
+            ->when($request->filled('installation_request_id'), fn ($q) => $q->whereKey($request->integer('installation_request_id')))->first();
+        if ($product->installation === 'required' && ! $installation) {
+            throw ValidationException::withMessages(['installation' => ['This product is sold together with an installation offer. Get offers from nearby centres and choose one first.']]);
+        }
+
+        $address = $this->shippingAddress($request, $product, $user);
+
+        $this->assertSubject($data, $registry, $user->id);
+
+        $price = $pricing->calculate(
+            $data['product_id'],
+            $data['targets'],
+            $data['target_type'] ?? null,
+            $user->company
+        );
+
+        if ($price['parts_count'] === 0) {
+            throw ValidationException::withMessages([
+                'targets' => ['No price is defined for the selected options.'],
+            ]);
+        }
+
+        $partners = $directSale ? collect() : $location->executeWithFallback(
+            $user->latitude,
+            $user->longitude,
+            $user->city,
+            $user->country
+        );
+
+        if (! $directSale && $partners->isEmpty()) {
+            return response()->json(['message' => 'No partners available'], 422);
+        }
+
+        $order = DB::transaction(function () use ($user, $data, $price, $partners, $address, $directSale, $installation, $product) {
+
+            $order = Order::create([
+                'company_id' => $user->company_id,
+                'customer_id' => $user->id,
+                'product_id' => $data['product_id'],
+                'subject_type' => $data['subject_type'] ?? null,
+                'subject_id' => $data['subject_id'] ?? null,
+                'status' => $directSale ? OrderStatus::AwaitingPayment : OrderStatus::PendingQuotes,
+                'product_amount' => $price['total'],
+                'service_amount' => 0,
+                'commission_amount' => 0,
+                'total_amount' => $price['total'],
+                'currency' => $price['currency'],
+                'shipping_address' => $address,
+            ] + app(\App\Support\Markets\Markets::class)->taxFor($user->company, (float) $price['total']) + app(\App\Services\Commission\CustomerFee::class)->forInvoice((float) $price['total']));
+
+            foreach ($partners as $partner) {
+                PartnerQuote::create([
+                    'company_id' => $user->company_id,
+                    'order_id' => $order->id,
+                    'partner_id' => $partner->id,
+                    'price' => 0,
+                    'status' => QuoteStatus::Pending,
+                ]);
+            }
+
+            OrderEvent::record($order, 'created', $user, $directSale ? ['direct_sale' => true] : ['partners_asked' => $partners->count()]);
+
+            // The goods order and the installation job belong together; one installation job is used by one order.
+            if ($installation && $product->installation !== 'none') {
+                $installation->update(['order_id' => $order->id]);
+            }
+
+            return $order;
+        });
 
         return response()->json([
             'message' => 'Order created successfully',
             'order' => $order,
-            'installation_quotes' => $centers->count(),
+            'partner_quotes' => $partners->count(),
         ], 201);
+    }
+
+    /** Physical products need a delivery address (checked against the store's country); services do not. @return array<string, string>|null */
+    private function shippingAddress(Request $request, \App\Models\Product $product, $user): ?array
+    {
+        if (! $product->requires_shipping) {
+            return null;
+        }
+
+        $a = $request->validate([
+            'shipping_address' => 'required|array',
+            'shipping_address.name' => 'required|string|max:120',
+            'shipping_address.phone' => 'required|string|max:30',
+            'shipping_address.line1' => 'required|string|max:200',
+            'shipping_address.line2' => 'nullable|string|max:200',
+            'shipping_address.city' => 'required|string|max:100',
+            'shipping_address.region' => 'nullable|string|max:100',
+            'shipping_address.postal_code' => 'nullable|string|max:20',
+            'shipping_address.country' => 'required|string|size:2|alpha',
+        ])['shipping_address'];
+
+        $phone = app(\App\Support\Markets\Markets::class)->phoneFor($user->company, $a['phone']);
+
+        if (! $phone) {
+            throw ValidationException::withMessages(['shipping_address.phone' => ['Please enter a valid mobile number for delivery.']]);
+        }
+
+        return array_merge($a, ['phone' => $phone, 'country' => strtoupper($a['country'])]);
+    }
+
+    /** The subject must exist, and customer-owned subjects must be the user's own. */
+    private function assertSubject(array $data, IndustryRegistry $registry, int $userId): void
+    {
+        if (empty($data['subject_type'])) {
+            return;
+        }
+
+        $class = $registry->subjectModels()[$data['subject_type']];
+        $subject = $class::find($data['subject_id']);
+
+        if (! $subject || (isset($subject->customer_id) && $subject->customer_id !== $userId)) {
+            throw ValidationException::withMessages([
+                'subject_id' => ['The selected item was not found.'],
+            ]);
+        }
     }
 }

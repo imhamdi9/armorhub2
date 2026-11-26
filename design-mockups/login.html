@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+body{overflow:hidden}
+.split{display:grid;grid-template-columns:1fr 1fr;height:900px}
+.left{background:var(--forest);color:#fff;padding:44px 64px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.left:before{content:"";position:absolute;inset:0;background:radial-gradient(480px 380px at 90% 100%,rgba(181,243,107,.2),transparent 70%),repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 48px)}
+.left>*{position:relative}
+.market{display:inline-flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);width:max-content}
+.market .lg{width:40px;height:40px;border-radius:12px;background:var(--lime);display:grid;place-items:center}
+.market b{font-family:'Bricolage Grotesque';font-size:19px;letter-spacing:-.01em}
+.market small{display:block;font-size:12px;opacity:.7;margin-top:-2px}
+.left h2{font-size:50px;max-width:470px}
+.left h2 span{color:var(--lime)}
+.steps{display:grid;gap:14px;max-width:420px}
+.steps div{display:flex;gap:14px;align-items:center;font-size:15px;color:rgba(255,255,255,.82)}
+.steps i{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.1);display:grid;place-items:center;color:var(--lime);flex:none}
+.right{display:flex;align-items:center;justify-content:center;position:relative}
+.top{position:absolute;top:36px;right:48px;left:48px;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.form{width:420px}
+.form h1{font-size:40px;margin-bottom:8px}
+.form p.s{color:var(--mute);margin-bottom:30px}
+label{display:block;font-size:13.5px;font-weight:600;margin-bottom:7px}
+.in{height:52px;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:0 16px;display:flex;align-items:center;color:var(--mute);margin-bottom:18px;font-size:15px}
+.in.f{border-color:var(--forest);box-shadow:0 0 0 4px rgba(142,219,63,.28);color:var(--ink)}
+.row{display:flex;justify-content:space-between;font-size:14px;margin:-4px 0 24px}
+.row a{font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.go{width:100%;justify-content:center;height:54px;font-size:16px;padding:0 22px}
+.alt{text-align:center;margin-top:24px;font-size:14.5px;color:var(--mute)}
+.alt a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.sep{display:flex;align-items:center;gap:14px;color:var(--mute);font-size:13px;margin:22px 0}
+.sep:before,.sep:after{content:"";height:1px;background:var(--line);flex:1}
+.pk{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border:1.5px solid var(--line);border-radius:999px;background:#fff;font-weight:600;font-size:14.5px}
+</style></head><body><div class="split">
+ <div class="left">
+  <div class="market"><div class="lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="#0E2B1F"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke="#B5F36B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Armor Store</b><small>Back to the store</small></div></div>
+  <h2>Quotes from verified installers, <span>one sign-in away.</span></h2>
+  <div class="steps">
+   <div><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/></svg></i>Describe what you need once</div>
+   <div><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/></svg></i>Compare quotes from checked partners</div>
+   <div><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></i>Pay in the app, get your warranty</div>
+  </div>
+ </div>
+ <div class="right">
+  <div class="top"><span class="lang">العربية</span><span>New here? <a style="font-weight:600;text-decoration:underline">Create an account</a></span></div>
+  <div class="form">
+   <h1>Welcome back</h1><p class="s">Sign in to follow your orders and quotes.</p>
+   <label>Email</label><div class="in f">admin@test.com</div>
+   <label>Password</label><div class="in">••••••••••</div>
+   <div class="row"><span></span><a>Forgot your password?</a></div>
+   <a class="btn btn-primary go">Sign in <span class="dot"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span></a>
+   <div class="sep">or</div>
+   <div class="pk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="4"/><path d="M13 13l8 8M17 17l2-2M15 19l2-2"/></svg>Sign in with a passkey</div>
+  </div>
+ </div></div></body></html>

@@ -7,9 +7,22 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --color-forest: #1a1a1a;
+  --color-moss: #FFD21F;
+  --color-bone: #ffffff;
+  --color-lime: #FFD21F;
+  --color-spruce: #735500;
+  --color-linen: #fff7cf;
+  --color-fog: #f3f0e4;
+  --color-charcoal: #3a3a36;
+  --color-obsidian: #141414;
+  --color-pebble: #8a8776;
+  --color-slate: #5f5c52;
+  --color-signal: #0b4c72;
+  --color-alarm: #cb272f;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display), var(--font-arabic), var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,38 +62,42 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --font-inter: "Inter Variable";
+  --font-display: "Inter Variable";
+  --font-arabic: "Noto Sans Arabic Variable";
+  --font-geist-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #141414;
+  --popover: #ffffff;
+  --popover-foreground: #141414;
+  --primary: #FFD21F;
+  --primary-foreground: #1a1a1a;
+  --secondary: #f3f0e4;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f6f3e6;
+  --muted-foreground: #5f5c52;
+  --accent: #fff7cf;
+  --accent-foreground: #1a1a1a;
+  --destructive: #cb272f;
+  --border: #e6e1cc;
+  --input: #cfc9ad;
+  --ring: #1a1a1a;
+  --chart-1: #FFD21F;
+  --chart-2: #c9a300;
+  --chart-3: #1a1a1a;
+  --chart-4: #0b4c72;
+  --chart-5: #8a8776;
+  --radius: 0.875rem;
+  --sidebar: rgba(255, 255, 255, 0.96);
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #FFD21F;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #FFD21F;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: rgba(26, 26, 26, 0.08);
+  --sidebar-ring: #c9a300;
 }
 
 .dark {
@@ -127,4 +144,79 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Store branding: the colours come from validated hex values set by the store owner. */
+.hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
+.btn-brand {
+  background-color: var(--brand, #FFD21F);
+  color: var(--on-brand, #1a1a1a);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: filter 0.15s, transform 0.15s;
+}
+.btn-brand:hover {
+  filter: brightness(0.94);
+}
+.btn-brand:active {
+  transform: translateY(1px);
+}
+
+/* Wise-style surfaces: forest-green panels with a lime accent; stores swap in their own colour. */
+.bg-dark {
+  background-color: var(--dark, #1a1a1a);
+  color: #fff;
+}
+.text-on-dark-accent {
+  color: var(--on-dark-accent, #FFD21F);
+}
+.bg-brand-wash {
+  background-color: var(--brand-wash, #fff7cf);
+}
+.text-brand-ink {
+  color: var(--brand-ink, #6b5200);
+}
+
+/* The brand's voice: Inter, tight, in sentence case. Arabic falls back to its own face. */
+.display {
+  font-family: var(--theme-heading, var(--font-display), var(--font-arabic), sans-serif);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: #1a1a1a;
+}
+.display-xl {
+  font-size: clamp(2.5rem, 6.2vw, 4.5rem);
+}
+.display-lg {
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+}
+.display-md {
+  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  line-height: 1.06;
+}
+[dir="rtl"] .display,
+html[lang="ar"] .display {
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+h1, h2, h3 { font-family: var(--font-display), var(--font-arabic), sans-serif; }
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3 { font-family: var(--font-arabic), sans-serif; }
+
+/* Soft, layered depth instead of one heavy shadow. */
+.shadow-card { box-shadow: 0 1px 2px rgba(26,26,26,.06), 0 8px 24px -10px rgba(26,26,26,.16); }
+.shadow-lift { box-shadow: 0 2px 4px rgba(26,26,26,.06), 0 18px 40px -14px rgba(26,26,26,.28); }
+.hover-lift:hover { box-shadow: 0 2px 4px rgba(26,26,26,.06), 0 18px 40px -14px rgba(26,26,26,.28); transform: translateY(-2px); }
+
+/* Faint column grid that gives dark panels some texture. */
+.bg-grid-dark {
+  background-image:
+    radial-gradient(520px 320px at 88% 0%, color-mix(in srgb, var(--on-dark-accent, #FFD21F) 22%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 44px);
+}
+
+/* The thin countdown bar of a toast: it drains over the toast's lifetime, and pauses while the pointer is over the toast. */
+@keyframes toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }

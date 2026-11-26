@@ -1,0 +1,246 @@
+"use client";
+
+import { PurchasePixel } from "@/components/marketing/purchase-pixel";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+
+import { EmptyState, PageHeader } from "@/components/layout/page-header";
+import { useCurrentUser } from "@/components/providers/current-user";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { errorMessage } from "@/lib/errors";
+import { ShippingPanel } from "@/components/orders/shipping-panel";
+import { eventLabel, statusLabel } from "@/lib/orders";
+import { statusGuide } from "@/lib/next-steps";
+import {
+  acceptQuote,
+  cancelOrder,
+  getOrder,
+  getOrderQuotes,
+  payOrder,
+} from "@/services/platform.service";
+import type { Order, PartnerQuote } from "@/types/platform";
+import { formatDate, formatDateTime, formatMoney, tr } from "@/lib/i18n";
+import { OrderStatusStrip } from "@/components/orders/status-strip";
+import { BuyAgain, RefundPanel } from "@/components/orders/refund-panel";
+import { OrderMessages } from "@/components/orders/order-messages";
+import { RateOrder } from "@/components/orders/rate-order";
+import { LoadingBlock } from "@/components/ui/loading-block";
+
+export default function OrderDetailPage() {
+  return (
+    <Suspense>
+      <OrderDetail />
+    </Suspense>
+  );
+}
+
+const MAX_CONFIRM_POLLS = 20;
+
+function OrderDetail() {
+  const user = useCurrentUser();
+  const { id } = useParams<{ id: string }>();
+  const checkout = useSearchParams().get("checkout");
+  const [order, setOrder] = useState<Order | null>(null);
+  const [quotes, setQuotes] = useState<PartnerQuote[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [tick, setTick] = useState(0);
+  const [polls, setPolls] = useState(0);
+
+  useEffect(() => {
+    getOrder(id).then(setOrder);
+    getOrderQuotes(id).then(setQuotes).catch(() => setQuotes([]));
+  }, [id, tick]);
+
+  // Back from the payment page: the webhook, not the browser, marks the order paid, so wait for it.
+  const confirming = checkout === "success" && !!order && order.status !== "paid" && polls < MAX_CONFIRM_POLLS && order.status === "partner_selected";
+
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => {
+      setPolls((n) => n + 1);
+      setTick((t) => t + 1);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [confirming, polls]);
+
+  async function pay() {
+    if (!order) return;
+    setError(null);
+    setPaying(true);
+    try {
+      const res = await payOrder(order.id, order.payable_amount ?? Number(order.total_amount));
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;   // stays locked while the payment page opens
+      }
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+    setPaying(false);
+  }
+
+  async function run(action: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await action();
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
+
+  if (!order) return <LoadingBlock />;
+
+  const submitted = quotes.filter((q) => q.status !== "pending");
+  const canChoose = ["pending_quotes", "quotes_received"].includes(order.status);
+  const refunded = order.statuses?.payment === "refunded";
+  const guide = refunded ? "This order was cancelled and refunded." : statusGuide(order.status, !!user?.roles?.includes("customer"), !!order.product?.requires_shipping);
+  const canPay = ["partner_selected", "awaiting_payment"].includes(order.status);
+  const canCancel = ["pending_quotes", "quotes_received", "partner_selected", "awaiting_payment"].includes(order.status);
+
+  return (
+    <div className="max-w-2xl">
+      {order.status === "paid" && user?.roles?.includes("customer") && <PurchasePixel orders={[{ id: order.id, value: order.payable_amount ?? Number(order.total_amount) }]} currency={order.currency} market={order.market} />}
+      <PageHeader
+        title={tr("Order #{id}", { id: order.id })}
+        action={<Badge variant="secondary">{refunded ? tr("Refunded") : statusLabel(order.status)}</Badge>}
+      />
+
+      {guide && (
+        <p role="note" className="mb-6 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm leading-relaxed text-sky-900">
+          <strong className="font-semibold">{tr("What happens next")}: </strong>{tr(guide)}
+        </p>
+      )}
+
+      <div className="mb-6 rounded-lg border p-4 text-sm">
+        <p className="font-semibold">{order.product?.name}</p>
+        <p>{tr("Product")}: {formatMoney(order.product_amount, order.currency)}</p>
+        {Number(order.service_amount) > 0 && <p>{tr("Service")}: {formatMoney(order.service_amount, order.currency)}</p>}
+        <div className="my-2"><OrderStatusStrip statuses={order.statuses} /></div>
+        <p className="mt-1 font-semibold">{tr("Invoice")}: {formatMoney(order.total_amount, order.currency)}</p>
+        {Number(order.discount_amount) > 0 && <p className="text-green-700" data-testid="discount">{tr("Discount")}: −{formatMoney(order.discount_amount ?? 0, order.currency)}</p>}
+        {Number(order.shipping_amount) > 0 && <p data-testid="delivery">{tr("Delivery")}: {formatMoney(order.shipping_amount ?? 0, order.currency)}</p>}
+        {Number(order.service_fee_amount) > 0 && (
+          <p data-testid="platform-fee">{tr("Platform fee ({rate}%)", { rate: Number(order.service_fee_rate) })}: {formatMoney(order.service_fee_amount ?? 0, order.currency)}</p>
+        )}
+        <p className="mt-2"><Link href={`/dashboard/help?order=${order.id}`} className="text-brand-ink underline" data-testid="order-help">{tr("Need help with this order?")}</Link></p>
+        {["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) && <p className="mt-2"><Link href={`/dashboard/orders/${order.id}/receipt`} className="text-brand-ink underline" data-testid="receipt-link">{tr("Receipt")}</Link></p>}
+        <p className="mt-1 text-base font-bold">{tr(["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) ? "Total paid" : "Total to pay")}: {formatMoney(order.payable_amount ?? order.total_amount, order.currency)}</p>
+        {Number(order.tax_rate) > 0 && (
+          <p className="text-muted-foreground">
+            {tr("Includes VAT ({rate}%)", { rate: Number(order.tax_rate) })}: {formatMoney(order.tax_amount ?? 0, order.currency)}
+          </p>
+        )}
+        {order.scheduled_at && order.status !== "cancelled" && (
+          <p className="mt-2">{tr("Appointment")}: {formatDateTime(order.scheduled_at)}</p>
+        )}
+      </div>
+
+      {order.product?.installation && order.product.installation !== "none" && ["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status) && (
+        <div role="note" className={`mb-6 rounded-lg border p-4 text-sm ${order.product.installation === "required" ? "border-amber-300 bg-amber-50 text-amber-900" : "border-sky-200 bg-sky-50 text-sky-900"}`} data-testid="installation-prompt">
+          <p className="font-semibold">{order.product.installation === "required" ? tr("This product needs professional installation") : tr("Want it installed by a professional?")}</p>
+          <p className="mt-1">{tr("Nearby centres send you offers without seeing your details. You choose, and pay on the platform.")}</p>
+          <Link href={`/dashboard/installations/new?product=${order.product.id}`} className="mt-2 inline-block font-semibold underline">{tr("Get installation offers")}</Link>
+        </div>
+      )}
+
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && order.product_id && ["paid", "completed"].includes(order.status) && <BuyAgain productId={order.product_id} quantity={order.quantity} />}
+      {user?.roles?.includes("customer") && order.status === "completed" && order.product_id && <RateOrder productId={order.product_id} />}
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && order.status !== "awaiting_payment" && <OrderMessages orderId={order.id} canFlag />}
+      {user?.roles?.includes("customer") && order.product?.requires_shipping && <RefundPanel orderId={order.id} currency={order.currency} onChange={() => getOrder(id).then(setOrder)} />}
+      <ShippingPanel orderId={order.id} paid={["paid", "appointment_scheduled", "service_in_progress", "completed"].includes(order.status)} />
+
+      {order.warranty && (
+        <div className="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-sm">
+          <p className="font-semibold">{tr("Warranty")}</p>
+          <p>
+            {tr("Valid until {date}", { date: formatDate(order.warranty.ends_at) })}
+          </p>
+        </div>
+      )}
+
+      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+
+      {confirming && (
+        <p className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm">
+          {tr("Confirming your payment… this usually takes a few seconds.")}
+        </p>
+      )}
+      {checkout === "success" && order.status === "partner_selected" && polls >= MAX_CONFIRM_POLLS && (
+        <p className="mb-4 rounded-lg border p-3 text-sm">
+          We have not received the confirmation yet. If you were charged, it will appear here shortly; no need to pay again.
+        </p>
+      )}
+      {checkout === "cancelled" && order.status === "partner_selected" && (
+        <p className="mb-4 rounded-lg border p-3 text-sm">{tr("Payment was cancelled. You can try again below.")}</p>
+      )}
+
+      {/* A seller's product is bought directly: there are no partner quotes to show. */}
+      {order.status !== "cancelled" && (quotes.length > 0 || canChoose) && (
+        <>
+          <h2 className="mb-3 text-xl font-semibold">{tr("Partner quotes")}</h2>
+          {submitted.length === 0 ? (
+            <EmptyState>{tr("Waiting for partners to respond ({n} asked).", { n: quotes.length })}</EmptyState>
+          ) : (
+            <div className="space-y-3">
+              {submitted.map((q) => (
+                <div key={q.id} className="flex items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">{q.partner?.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {[q.partner?.city, q.partner?.country].filter(Boolean).join(", ")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">{q.price}</span>
+                    {q.status === "accepted" ? (
+                      <Badge>{tr("Selected")}</Badge>
+                    ) : q.status === "rejected" ? (
+                      <Badge variant="outline">{tr("Declined")}</Badge>
+                    ) : (
+                      canChoose && <Button size="sm" onClick={() => run(() => acceptQuote(q.id))}>{tr("Accept")}</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="mt-6 flex gap-3">
+        {canPay && (
+          <Button disabled={confirming || paying} aria-busy={paying} onClick={pay}>
+            {paying ? tr("Please wait...") : tr("Pay {amount}", { amount: formatMoney(order.payable_amount ?? order.total_amount, order.currency) })}
+          </Button>
+        )}
+        {canCancel && (
+          <Button variant="outline" onClick={() => run(() => cancelOrder(order.id))}>
+            {tr("Cancel order")}
+          </Button>
+        )}
+      </div>
+
+      {order.events && order.events.length > 0 && (
+        <>
+          <h2 className="mb-3 mt-8 text-xl font-semibold">{tr("Timeline")}</h2>
+          <ol className="space-y-3 border-s ps-4">
+            {order.events.map((ev) => (
+              <li key={ev.id}>
+                <p className="font-medium">{eventLabel(ev)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDateTime(ev.created_at)}
+                  {ev.user ? ` · ${ev.user.name}` : ""}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </div>
+  );
+}

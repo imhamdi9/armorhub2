@@ -5,20 +5,55 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
+    use \App\Models\Concerns\Auditable;
     use SoftDeletes;
 
 
     protected $fillable = [
         'uuid',
         'name',
+        'industry_id',
+        'market',
         'domain',
         'status',
         'settings',
+        'selling_enabled',
+        'installation_enabled',
     ];
+
+/** The market's name in the language being read (Arabic readers get the Arabic name when one was set). */
+public function displayName(?string $locale = null): string
+{
+    $ar = trim((string) ($this->settings['name_ar'] ?? ''));
+
+    return ($locale ?? app()->getLocale()) === 'ar' && $ar !== '' ? $ar : (string) $this->name;
+}
+
+public function industry(): BelongsTo
+{
+    return $this->belongsTo(Industry::class);
+}
+
+/** The industries this market runs (cars, electronics, beauty...). */
+public function industries(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+{
+    return $this->belongsToMany(Industry::class, 'tenant_industries')->withTimestamps();
+}
+
+/** @return list<int> ids of every industry of this market (the single legacy industry counts too) */
+public function industryIds(): array
+{
+    // Asked several times while one page is built: read once per loaded market.
+    return $this->industryIdsMemo ??= collect($this->industries()->pluck('industries.id')->all())->when($this->industry_id, fn ($c) => $c->push($this->industry_id))->unique()->values()->all();
+}
+
+/** @var list<int>|null */
+private ?array $industryIdsMemo = null;
 
 public function companies(): HasMany
 {
@@ -26,6 +61,8 @@ public function companies(): HasMany
 }
     protected $casts = [
         'settings' => 'array',
+        'selling_enabled' => 'boolean',
+        'installation_enabled' => 'boolean',
     ];
 
 

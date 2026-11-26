@@ -1,0 +1,13 @@
+{
+  "id": "P003",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "The price range is fine, but I would be paying an installer I have never met for work I cannot see until it is done. I already have a workshop I trust and I negotiate with them face to face, so I would have to be convinced the partners are better than the people I know.",
+  "objection": "Quotes may take hours or days and I want a price now, and I do not know who these partners are or what happens if the film is badly fitted after the money is held.",
+  "would_change_my_mind": "A partner I can visit in Riyadh before paying, or a recommendation from a workshop I already trust, plus a quick same-day price.",
+  "price_too_cheap": 800,
+  "price_cheap": 1100,
+  "price_expensive": 2100,
+  "price_too_expensive": 2600
+}

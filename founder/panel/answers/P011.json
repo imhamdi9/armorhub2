@@ -1,0 +1,13 @@
+{
+  "id": "P011",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I do not know these partners and I cannot see any real reviews yet. I already have a workshop I have gone to for years and I bargain with them face to face, so I will not hand SAR 1,300 to 2,100 to a name I have never met.",
+  "objection": "Who are these people, and if the film goes on badly I will still be the one standing in the workshop with my car. The money being held helps, but I still have to trust the man who touches my car.",
+  "would_change_my_mind": "A real review from a car owner I know, or my own workshop listed on the app.",
+  "price_too_cheap": 900,
+  "price_cheap": 1200,
+  "price_expensive": 1900,
+  "price_too_expensive": 2300
+}

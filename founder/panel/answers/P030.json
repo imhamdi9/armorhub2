@@ -1,0 +1,13 @@
+{
+  "id": "P030",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I'd want to see a real shop and a real warranty before handing anyone SAR 1,300 or more for film on my M4. The money being held is good, but I still have to trust that the film is genuine and that the partner will honour the warranty when something goes wrong.",
+  "objection": "How do I know the film is genuine and the warranty is honoured, and that a partner who just joined the app will still be around in two years?",
+  "would_change_my_mind": "A verified partner with a known physical shop I can visit, who shows the film brand and a warranty I can claim directly at that shop.",
+  "price_too_cheap": 900,
+  "price_cheap": 1200,
+  "price_expensive": 2000,
+  "price_too_expensive": 2300
+}

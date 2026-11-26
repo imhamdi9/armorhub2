@@ -1,0 +1,13 @@
+{
+  "id": "P010",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "My shop already gets steady work from Instagram and WhatsApp and from people who know us. I don't see why I'd pay 10% of every job to a new app when my current channels work.",
+  "objection": "I'd be giving a cut of every job to a platform, and I'd have to trust strangers sent by an app to pay me on time and not waste my technicians' time.",
+  "would_change_my_mind": "Verified customers who are clearly ready to book, with a real track record of finished jobs and no monthly cost, at a level that clearly brings in work I wouldn't get otherwise.",
+  "price_too_cheap": 150,
+  "price_cheap": 400,
+  "price_expensive": 900,
+  "price_too_expensive": 1500
+}

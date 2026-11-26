@@ -1,0 +1,13 @@
+{
+  "id": "P026",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I don't know any of these partners, and I would rather ask a friend who has had work done than pick a stranger from an app. Right now the first partners are only just being added, so I'd be one of the first to try it.",
+  "objection": "Will they actually come to my area, and can I choose the time? If I'm not sure a real installer will show up when I want, the money being held doesn't help me much.",
+  "would_change_my_mind": "A friend or family member who has used a partner through it and recommends them, or partners confirmed in my own city with a time I can pick.",
+  "price_too_cheap": 800,
+  "price_cheap": 1100,
+  "price_expensive": 2000,
+  "price_too_expensive": 2500
+}

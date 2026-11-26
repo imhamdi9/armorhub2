@@ -1,0 +1,13 @@
+{
+  "id": "P003",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "price",
+  "reason": "I run a real service centre with staff to pay, and my margin on a PPF or tint job is already thin. Taking 10% of every order before I even see the money is a lot, and I have no way of knowing yet whether these customers are worth it.",
+  "objection": "Ten percent off the top on jobs where I'm already fighting for every riyal. I'd be paying them for customers I could partly win with my own Instagram and walk-ins.",
+  "would_change_my_mind": "A lower commission on the first few orders, or a clear record showing these leads close often enough that the 10% pays for itself.",
+  "price_too_cheap": 1,
+  "price_cheap": 4,
+  "price_expensive": 10,
+  "price_too_expensive": 15
+}

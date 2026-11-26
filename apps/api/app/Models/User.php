@@ -9,10 +9,11 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\InstallationCenter;
+use App\Models\Partner;
 
-class User extends Authenticatable
+class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVerifyEmail, \Illuminate\Contracts\Translation\HasLocalePreference
 {
+    use \App\Models\Concerns\Auditable;
     use HasApiTokens;
     use HasFactory;
     use Notifiable;
@@ -20,26 +21,68 @@ class User extends Authenticatable
 
 
     protected $fillable = [
+        'referred_by',
       'name',
       'email',
+        'phone',
       'password',
+      'is_active',
+      'email_verified_at',
       'company_id',
-      'installation_center_id',
+      'partner_id',
+      'department_id',
+      'is_department_head',
       'latitude',
       'longitude',
       'city',
       'country',
       'location_enabled',
     ];
-    
+
+    /** E-mails and notices written about this person use the language they last used. */
+    public function preferredLocale(): ?string
+    {
+        return in_array($this->locale, ['ar', 'en'], true) ? $this->locale : null;
+    }
+
+    /** Mail goes to the address a guest shopper gave, never to their placeholder login. */
+    public function routeNotificationForMail($notification = null): ?string
+    {
+        if ($this->is_guest) {
+            return $this->contact_email;       // none given yet: nothing is sent
+        }
+
+        return $this->email;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $user) {
+            $user->email = mb_strtolower(trim($user->email));
+            $user->email_canonical = \App\Support\Security\EmailPolicy::canonical($user->email);
+        });
+    }
+
+    /** The first industry this user's market runs, if any (kept for code that thinks in one industry). */
+    public function industryId(): ?int
+    {
+        return $this->industryIds()[0] ?? null;
+    }
+
+    /** @return list<int> every industry of this user's market */
+    public function industryIds(): array
+    {
+        return $this->company?->tenant?->industryIds() ?? [];
+    }
+
     public function company(): BelongsTo
     {
     return $this->belongsTo(Company::class);
     }
 
-    public function installationCenter()
+    public function partner()
     {
-    return $this->belongsTo(InstallationCenter::class);
+    return $this->belongsTo(Partner::class);
     }
 
 
@@ -54,6 +97,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'is_department_head' => 'boolean',
         ];
     }
 }

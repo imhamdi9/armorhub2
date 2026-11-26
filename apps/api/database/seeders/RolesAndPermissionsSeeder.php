@@ -26,11 +26,38 @@ class RolesAndPermissionsSeeder extends Seeder
     'vehicle-makes.update',
     'vehicle-makes.delete',
 
-    // Installation Centers
-    'installation-centers.view',
-    'installation-centers.create',
-    'installation-centers.update',
-    'installation-centers.delete',
+    // Partners
+    'partners.view',
+    'partners.create',
+    'partners.update',
+    'partners.delete',
+
+    // Products
+    'products.view',
+    'products.create',
+    'products.update',
+    'products.delete',
+
+    // Tenants / industries
+    'tenants.manage',
+
+    // Staff
+    'users.manage',
+
+    // The payment, shipping and fee settings of one's own market (market managers); the platform-wide ones stay with admins
+    'market.settings',
+    // Running the day-to-day of a market: watching orders and requests, the business numbers (operations agents)
+    'operations.manage',
+    'support.manage',
+    // Looking at the products sellers submit and approving them (the catalogue team)
+    'catalog.review',
+    // The ad connections, campaign results and product feeds (the marketing team)
+    'marketing.manage',
+    // Receiving, counting and shipping the goods ArmorHub stores for sellers in a market
+    'warehouse.manage',
+    // Platform administration (admins only: they get every permission)
+    'admin.panel',
+    'catalog.manage',
 
     // Orders
     'orders.view',
@@ -46,17 +73,23 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Commissions
     'commissions.view',
+    'commissions.pay',
 
     // Dashboard
     'dashboard.view',
 ];
 
 
+        // Permissions that did not exist before this run (a release added them): only those are handed to the default roles below.
+        $added = [];
         foreach ($permissions as $permission) {
 
-            Permission::firstOrCreate([
+            $p = Permission::firstOrCreate([
                 'name' => $permission,
             ]);
+            if ($p->wasRecentlyCreated) {
+                $added[] = $permission;
+            }
 
         }
 
@@ -66,37 +99,117 @@ class RolesAndPermissionsSeeder extends Seeder
             'platform-admin' => $permissions,
 
             'company-owner' => [
+    'market.settings',
+    'warehouse.manage',
     'companies.view',
-    'companies.create',
     'companies.update',
 
     'vehicle-makes.view',
 
+    'products.view',
+    'products.create',
+    'products.update',
+    'products.delete',
+
+    'catalog.manage',
+
+    'partners.view',
+    'partners.create',
+    'partners.update',
+
+    'users.manage',
+
     'orders.view',
+    'orders.update',
+
+    'pricing.calculate',
+
+    'commissions.view',
 
     'dashboard.view',
 ],
 
-'installer-manager' => [
-    'installation-centers.view',
-    'installation-centers.create',
-    'installation-centers.update',
+'partner-manager' => [
+    'partners.view',
+    'partners.create',
+    'partners.update',
+
+    'products.view',
+
+    'users.manage',
 
     'orders.view',
 
     'pricing.calculate',
 
+    'commissions.view',
+
+    'dashboard.view',
+],
+
+// The team of a market's warehouse: receives sellers' cartons, counts stock, packs and ships orders.
+'warehouse-staff' => [
+    'warehouse.manage',
+    'orders.view',
+    'dashboard.view',
+],
+
+// ArmorHub's support agent: answers help requests, looks at problems customers flag and decides returns; sees no money, settings or sellers' accounts.
+'support-agent' => [
+    'support.manage',
+    'orders.view',
+    'dashboard.view',
+],
+
+// ArmorHub's catalogue reviewer: approves or sends back the products sellers submit, in their own market; sees nothing else.
+'catalog-reviewer' => [
+    'catalog.review',
+    'dashboard.view',
+],
+
+// ArmorHub's marketing manager: connects the ad accounts, reads the campaign results and the product feeds; sees nothing else.
+'marketing-manager' => [
+    'marketing.manage',
+    'dashboard.view',
+],
+
+// ArmorHub's operations agent: watches the market's orders, sellers and centres and the business numbers; cannot change settings or money.
+'operations-agent' => [
+    'operations.manage',
+    'orders.view',
+    'orders.update',
+    'partners.view',
+    'partners.update',
+    'companies.view',
+    'products.view',
+    'commissions.view',
     'dashboard.view',
 ],
 
 'technician' => [
-    'installation-centers.view',
+    'partners.view',
 
     'orders.view',
 ],
 
+// A verified business selling its own products inside a marketplace.
+'seller' => [
+    'products.view',
+    'products.create',
+    'products.update',
+    'products.delete',
+
+    'vehicle-makes.view',
+
+    'dashboard.view',
+],
+
 'customer' => [
     'orders.create',
+
+    'payments.create',
+
+    'products.view',
 
     'vehicle-makes.view',
 
@@ -104,14 +217,22 @@ class RolesAndPermissionsSeeder extends Seeder
 ],
 ]; // 
 
+        // The market admin holds every permission except the platform-level ones (markets, platform settings); the data is limited to their market.
+        $roles['company-owner'] = array_values(array_unique(array_merge($roles['company-owner'], array_diff($permissions, ['tenants.manage', 'admin.panel', 'companies.create', 'companies.delete']))));
+
         foreach ($roles as $role => $abilities) {
 
             $newRole = Role::firstOrCreate([
                 'name' => $role,
             ]);
 
-
-            $newRole->syncPermissions($abilities);
+            // What each role may do is edited in the admin panel and kept across deploys: the defaults here are only the starting point of a NEW
+            // role, plus any brand-new permission a release introduces. The platform admin always holds everything.
+            if ($role === 'platform-admin' || $newRole->wasRecentlyCreated) {
+                $newRole->syncPermissions($abilities);
+            } else {
+                $newRole->givePermissionTo(array_values(array_intersect($abilities, $added)));
+            }
 
         }
     }

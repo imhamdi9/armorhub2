@@ -1,0 +1,250 @@
+"use client";
+
+import { CategoryField } from "@/components/products/category-field";
+import { INSTALLATION_LABEL, InstallationField, type InstallationMode } from "@/components/products/installation-field";
+import { PageContentFields } from "@/components/products/page-content-fields";
+import { PageTemplateField } from "@/components/products/page-template-field";
+import { cleanContent, type PageContent } from "@/lib/product-content";
+import { DEFAULT_TEMPLATE, PAGE_TEMPLATES, TEMPLATE_INFO, type PageTemplate } from "@/lib/product-templates";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { EmptyState, PageHeader } from "@/components/layout/page-header";
+import { useCurrentUser } from "@/components/providers/current-user";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { hasRole } from "@/lib/navigation";
+import { bulkSetInstallation, bulkSetPageTemplate, createProduct, getProducts } from "@/services/platform.service";
+import type { Product } from "@/types/platform";
+import { errorMessage } from "@/lib/errors";
+import { categoryLabel } from "@/lib/category";
+import { tr } from "@/lib/i18n";
+import { imageSrc } from "@/lib/surfaces";
+import { LoadingBlock } from "@/components/ui/loading-block";
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export default function ProductsPage() {
+  const user = useCurrentUser();
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  // Every product is written twice: English for the English platform, Arabic for the Arabic one.
+  const [nameAr, setNameAr] = useState("");
+  const [descEn, setDescEn] = useState("");
+  const [descAr, setDescAr] = useState("");
+  const [category, setCategory] = useState("");
+  // A market that runs several industries asks which one the product belongs to; with one there is nothing to ask.
+  const [industryId, setIndustryId] = useState<number | null>(null);
+  const industries = user?.industries ?? [];
+  const [price, setPrice] = useState("");
+  const [installation, setInstallation] = useState<InstallationMode>("none");
+  const [pageTemplate, setPageTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
+  const [content, setContent] = useState<PageContent>({});
+  // Choosing many products to give them all the same installation setting.
+  const [chosen, setChosen] = useState<number[]>([]);
+  const [bulkMode, setBulkMode] = useState<InstallationMode>("optional");
+  const [bulkTemplate, setBulkTemplate] = useState<PageTemplate>(DEFAULT_TEMPLATE);
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const canManage = hasRole(user, "platform-admin", "company-owner", "seller");
+
+  useEffect(() => {
+    getProducts({
+      ...(search ? { search } : {}),
+      ...(canManage ? { include_inactive: 1 } : {}),
+    }).then(setProducts);
+  }, [search, canManage]);
+
+  async function applyBulk() {
+    setBulkMsg(null);
+    try {
+      const r = await bulkSetInstallation(chosen, bulkMode);
+      // Show the new settings first, then say what happened.
+      setProducts(await getProducts({ ...(search ? { search } : {}), ...(canManage ? { include_inactive: 1 } : {}) }));
+      setChosen([]);
+      setBulkMsg(tr("Updated {n} products.", { n: r.updated }) + (r.skipped ? ` ${tr("{n} were skipped because you may not change them.", { n: r.skipped })}` : ""));
+    } catch {
+      setBulkMsg(tr("Could not update the products. Try again."));
+    }
+  }
+
+  async function applyBulkTemplate() {
+    setBulkMsg(null);
+    try {
+      const r = await bulkSetPageTemplate(chosen, bulkTemplate);
+      setChosen([]);
+      setBulkMsg(tr("Updated {n} products.", { n: r.updated }));
+    } catch {
+      setBulkMsg(tr("Could not update the products. Try again."));
+    }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const product = await createProduct({
+        name,
+        name_ar: nameAr,
+        description: descEn,
+        description_ar: descAr,
+        slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
+        category,
+        installation,
+        ...(hasRole(user, "platform-admin", "seller") ? { page_template: pageTemplate, attributes: { page: cleanContent(content) } } : {}),
+        base_price: price,
+        is_active: false,                       // a new product starts as a draft until it has a photo and a description
+        industry_id: industryId ?? (industries.length > 1 ? null : user?.industry?.id ?? industries[0]?.id ?? null),
+      });
+      // A new product can't be ordered until it has prices (and ideally a photo), so go straight to where those are set.
+      router.push(`/dashboard/products/${product.id}?new=1`);
+    } catch (x) {
+      // Say what is wrong (the server's own message), not only that something is.
+      setError(`${tr("Could not save the product. Check the fields and try again.")} ${errorMessage(x)}`.trim());
+    }
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title={tr("Products")}
+        action={canManage && <Button onClick={() => setShowForm((v) => !v)}>{tr("Add product")}</Button>}
+      />
+
+      {showForm && (
+        <form onSubmit={onSubmit} className="mb-6 space-y-4 rounded-lg border p-4">
+          <div>
+            <Label htmlFor="name">{tr("Name in English")}</Label>
+            <Input id="name" required dir="ltr" lang="en" placeholder="Olive oil soap" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="name_ar">{tr("Name in Arabic")}</Label>
+            <Input id="name_ar" required dir="rtl" lang="ar" placeholder="صابون زيت الزيتون" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="desc_en">{tr("Description in English")}</Label>
+            <textarea id="desc_en" required minLength={20} dir="ltr" lang="en" rows={3} className="w-full rounded-lg border px-3 py-2 text-sm" value={descEn} onChange={(e) => setDescEn(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="desc_ar">{tr("Description in Arabic")}</Label>
+            <textarea id="desc_ar" required minLength={20} dir="rtl" lang="ar" rows={3} className="w-full rounded-lg border px-3 py-2 text-sm" value={descAr} onChange={(e) => setDescAr(e.target.value)} />
+          </div>
+          <div>
+            {industries.length > 1 && (
+              <div className="grid gap-1" data-testid="industry-pick">
+                <Label htmlFor="industry">{tr("What kind of product is it?")}</Label>
+                <select id="industry" name="industry" required className="h-10 rounded-[10px] border bg-background px-2 text-sm" value={industryId ?? ""} onChange={(e) => setIndustryId(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">{tr("Choose an industry")}</option>
+                  {industries.map((i) => <option key={i.id} value={i.id}>{tr(i.name)}</option>)}
+                </select>
+              </div>
+            )}
+            <Label htmlFor="category">{tr("Category")}</Label>
+            <CategoryField id="category" value={category} onChange={setCategory} />
+          </div>
+          <InstallationField value={installation} onChange={setInstallation} />
+          {hasRole(user, "platform-admin", "seller") && <PageTemplateField value={pageTemplate} onChange={setPageTemplate} />}
+          {hasRole(user, "platform-admin", "seller") && <PageContentFields template={pageTemplate} value={content} onChange={setContent} />}
+          <div>
+            <Label htmlFor="price">{tr("Base price")}</Label>
+            <Input id="price" type="number" min="0" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <Button type="submit">{tr("Save")}</Button>
+        </form>
+      )}
+
+      <Input
+        className="mb-4 max-w-sm"
+        placeholder={tr("Search products")}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      {canManage && products !== null && products.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm" data-testid="bulk-bar">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" aria-label={tr("Select all products")} checked={chosen.length === products.length} onChange={(e) => setChosen(e.target.checked ? products.map((p) => p.id) : [])} />
+            {chosen.length > 0 ? tr("{n} selected", { n: chosen.length }) : tr("Select all products")}
+          </label>
+          {chosen.length > 0 && (
+            <>
+              <select aria-label={tr("Installation")} className="h-9 rounded-md border border-input bg-background px-2" value={bulkMode} onChange={(e) => setBulkMode(e.target.value as InstallationMode)}>
+                {(Object.keys(INSTALLATION_LABEL) as InstallationMode[]).map((m) => <option key={m} value={m}>{tr(INSTALLATION_LABEL[m])}</option>)}
+              </select>
+              <Button type="button" size="sm" onClick={applyBulk}>{tr("Apply to {n} products", { n: chosen.length })}</Button>
+              {hasRole(user, "platform-admin") && (
+                <span className="flex flex-wrap items-center gap-2 border-s ps-3" data-testid="bulk-template">
+                  <select aria-label={tr("Product page layout")} className="h-9 rounded-md border border-input bg-background px-2" value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value as PageTemplate)}>
+                    {PAGE_TEMPLATES.map((k) => <option key={k} value={k}>{tr(TEMPLATE_INFO[k].name)}</option>)}
+                  </select>
+                  <Button type="button" size="sm" variant="outline" onClick={applyBulkTemplate}>{tr("Set the page layout")}</Button>
+                </span>
+              )}
+            </>
+          )}
+          {bulkMsg && <span role="status" className="text-muted-foreground">{bulkMsg}</span>}
+        </div>
+      )}
+
+      {products === null ? (
+        <LoadingBlock />
+      ) : products.length === 0 ? (
+        <EmptyState>
+          {tr("No products found.")}
+          {canManage && !search && <> <button type="button" onClick={() => setShowForm(true)} className="font-medium underline underline-offset-2">{tr("Add your first product")}</button></>}
+        </EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {products.map((p) => (
+            <div key={p.id} className="flex items-stretch gap-2">
+              {canManage && (
+                <input type="checkbox" className="ms-1 self-center" aria-label={`${tr("Select")} ${p.name}`} checked={chosen.includes(p.id)}
+                  onChange={(e) => setChosen((c) => (e.target.checked ? [...c, p.id] : c.filter((x) => x !== p.id)))} />
+              )}
+            <Link
+              href={`/dashboard/products/${p.id}`}
+              className="block flex-1 rounded-lg border p-4 hover:bg-muted"
+            >
+              <div className="flex items-center gap-3">
+                {p.images?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- the seller's own product photo, as a thumbnail
+                  <img src={imageSrc(p.images[0]) ?? ""} alt="" className="size-12 shrink-0 rounded-lg border object-cover" />
+                ) : (
+                  <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-lg border bg-muted text-xs text-muted-foreground">{p.name.slice(0, 1)}</span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="truncate font-semibold">
+                      {p.name} {p.review_status && p.review_status !== "approved" ? <span className="text-xs text-amber-700" data-testid="review-badge">{tr(p.review_status === "pending" ? "Waiting for review" : p.review_status === "rejected" ? "Sent back" : "Draft")}</span> : !p.is_active && <span className="text-xs text-muted-foreground">{tr("(hidden)")}</span>}
+                    </h2>
+                    <span className="shrink-0 text-sm">{p.base_price}</span>
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {[p.brand, p.category ? categoryLabel(p.category) : null].filter(Boolean).join(" · ") || p.slug}
+                  </p>
+                  {p.requires_shipping && <p className="mt-1 text-xs text-muted-foreground" data-testid="installation-badge">{tr(INSTALLATION_LABEL[(p.installation ?? "none") as InstallationMode])}</p>}
+                  {canManage && p.readiness && !p.readiness.ready && (
+                    <p className="mt-1 text-xs text-muted-foreground" data-testid="readiness-badge">{tr("Listing quality")} {p.readiness.score}% · {tr("{n} to complete", { n: p.readiness.missing })}</p>
+                  )}
+                  {canManage && p.is_active && p.price_rules_count === 0 && (
+                    <p className="mt-1 text-xs font-medium text-amber-700">{tr("Not for sale yet: add a price")}</p>
+                  )}
+                </div>
+              </div>
+            </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

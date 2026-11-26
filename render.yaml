@@ -1,0 +1,103 @@
+# Render Blueprint: free-tier demo deployment (API + web). See FREE-DEPLOY.md.
+# Free services sleep after ~15 minutes idle; the first request then takes about a minute.
+services:
+  - type: web
+    name: armorhub-api
+    runtime: docker
+    plan: free
+    # Same region as the TiDB cluster (Frankfurt) so database calls stay fast. Change both together.
+    region: frankfurt
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: ArmorHub
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      # Self-setup on every boot (the free tier has no shell).
+      - key: RUN_MIGRATIONS
+        value: "true"
+      # Database: any MySQL-compatible server, e.g. TiDB Cloud free.
+      - key: DB_CONNECTION
+        value: mysql
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # First platform admin, created once on first boot.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Locked out of the admin account? Add ADMIN_RESET_PASSWORD=true (with ADMIN_EMAIL and a NEW ADMIN_PASSWORD), redeploy, sign in,
+      # then delete the variable. It sets that account's password again and signs it out everywhere.
+      # Want a filled demo marketplace (4 Egyptian stores, sellers, partners, products with pictures)? Add SEED_EGYPT_DEMO=true and
+      # DEMO_PASSWORD=<a password for the demo logins> to the API service and redeploy. Remove both before real customers arrive.
+      # The two services live on different onrender.com subdomains, so the web app serves the API under
+      # its own /api (proxy) and the session cookie stays first-party. No CORS needed.
+      - key: TRUSTED_PROXIES
+        value: "*"
+      - key: APP_URL
+        sync: false
+      # The web app's public URL, e.g. https://armorhub-web.onrender.com (emailed links, trusted origin).
+      - key: WEB_URL
+        sync: false
+      # Country used by tenants that have not chosen one (sets currency, VAT and phone rules). SA or EG; clear it for a single global currency.
+      - key: PLATFORM_DEFAULT_MARKET
+        value: SA
+      # Where verification documents are kept. "local" is erased when the free instance restarts: for real use, create a
+      # private S3/R2 bucket, then set DOCUMENTS_DISK=s3 plus AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION,
+      # AWS_BUCKET (and AWS_ENDPOINT + AWS_USE_PATH_STYLE_ENDPOINT=true for R2) in the Render dashboard. See SELLERS.md.
+      - key: DOCUMENTS_DISK
+        value: local
+      # Optional: SMTP so password-reset and notification emails are delivered.
+      - key: MAIL_MAILER
+        value: log
+      # Optional: real payments. Set PLATFORM_PAYMENT_GATEWAY=stripe plus the two keys below.
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # DEMO ONLY: no card is charged. Remove once a real payment gateway is integrated.
+      - key: PLATFORM_ALLOW_SIMULATED_PAYMENTS
+        value: "true"
+
+  - type: web
+    name: armorhub-web
+    runtime: docker
+    plan: free
+    # Same region as the TiDB cluster (Frankfurt) so database calls stay fast. Change both together.
+    region: frankfurt
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    envVars:
+      # Public address of this web app, used for sitemap.xml / robots.txt, e.g. https://armorhub-web.onrender.com
+      - key: SITE_URL
+        sync: false
+      # The API's public origin, e.g. https://armorhub-api.onrender.com (baked in at build time;
+      # change it, then redeploy the web service).
+      - key: API_PROXY_TARGET
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        value: /api

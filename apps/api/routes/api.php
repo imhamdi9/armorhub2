@@ -1,227 +1,619 @@
 <?php
 
-use Illuminate\Http\Request;
-
+use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\Admin\OverviewController;
+use App\Http\Controllers\Api\Admin\PaymentProviderController;
+use App\Http\Controllers\Api\Admin\SecurityController;
+use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CompanyController;
-use App\Http\Controllers\Api\FilmController;
-use App\Http\Controllers\Api\VehicleMakeController;
-use App\Http\Controllers\Api\VehicleController;
-use App\Http\Controllers\Api\PricingController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\InstallationCenterController;
-use App\Http\Controllers\Api\InstallationQuoteController;
-use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\CommissionController;
-use App\Http\Controllers\Api\CommissionDistributionController;
 use App\Http\Controllers\Api\CommissionDashboardController;
-use App\Http\Controllers\Api\InstallerOrderController;
+use App\Http\Controllers\Api\CommissionDistributionController;
+use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\IndustryController;
+use App\Http\Controllers\Api\MyItemsController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderLifecycleController;
+use App\Http\Controllers\Api\PartnerJobController;
+use App\Http\Controllers\Api\WarrantyController;
+use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\PublicStorefrontController;
+use App\Http\Controllers\Api\StorefrontController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\PartnerOrderController;
+use App\Http\Controllers\Api\PartnerQuoteController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PricingController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductPriceRuleController;
+use App\Http\Controllers\Api\PaymentWebhookController;
+use App\Http\Controllers\Api\TenantController;
+use App\Modules\IndustryRegistry;
+use Illuminate\Support\Facades\Route;
 
-
-Route::middleware([
-    'auth:sanctum',
-    'role:installer-manager'
-])->group(function () {
-
-    Route::get(
-        '/installer/orders',
-        [InstallerOrderController::class, 'index']
-    );
-
+// Public
+// Public storefront: browse a store and its catalog without an account (read-only, cacheable)
+Route::prefix('public')->middleware('throttle:public')->group(function () {
+    Route::get('/marketplaces', [PublicStorefrontController::class, 'marketplaces']);
+    Route::get('/marketing-config', [\App\Http\Controllers\Api\PublicMarketingController::class, 'show']);
+    Route::get('/feeds/{slug}/{file}', [\App\Http\Controllers\Api\ProductFeedController::class, 'show'])->where('file', '(google|meta|tiktok)(-ar)?\.(xml|csv)');
+    Route::get('/showcase', [PublicStorefrontController::class, 'showcase']);
+    Route::get('/markets', [PublicStorefrontController::class, 'markets']);
+    Route::get('/terms', [PublicStorefrontController::class, 'terms']);
+    Route::get('/media/{name}', [\App\Http\Controllers\Api\MediaReadController::class, 'show']);
+    Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'publicSurface'])->where('key', '[a-z0-9_.]+');
+    Route::get('/storefronts', [PublicStorefrontController::class, 'index']);
+    Route::get('/zones', [PublicStorefrontController::class, 'zones']);
+    Route::get('/category-names', [PublicStorefrontController::class, 'categoryNames'])->middleware('throttle:public');
+    Route::get('/storefronts/{slug}', [PublicStorefrontController::class, 'show']);
+    Route::get('/storefronts/{slug}/products', [PublicStorefrontController::class, 'products']);
+    Route::get('/storefronts/{slug}/suggest', [PublicStorefrontController::class, 'suggest']);
+    Route::get('/storefronts/{slug}/products-by-ids', [PublicStorefrontController::class, 'byIds']);
+    Route::get('/storefronts/{slug}/categories', [PublicStorefrontController::class, 'categories']);
+    Route::get('/storefronts/{slug}/recommendations', [PublicStorefrontController::class, 'recommendations']);
+    Route::get('/storefronts/{slug}/products/{id}', [PublicStorefrontController::class, 'product'])->whereNumber('id');
+    Route::get('/storefronts/{slug}/sellers/{id}', [PublicStorefrontController::class, 'seller'])->whereNumber('id');
 });
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
+// Buying goods without an account: one order, reached by its secret link
+Route::prefix('guest-orders')->group(function () {
+    $g = \App\Http\Controllers\Api\GuestOrderController::class;
+    Route::post('/', [$g, 'store'])->middleware(['throttle:guest-orders', 'idempotent']);
+    Route::get('/{token}', [$g, 'show'])->middleware('throttle:public');
+    Route::post('/{token}/pay', [$g, 'pay'])->middleware(['throttle:guest-orders', 'idempotent']);
+    Route::post('/{token}/cancel', [$g, 'cancel'])->middleware('throttle:guest-orders');
+    Route::get('/{token}/messages', [$g, 'messages'])->middleware('throttle:public');
+    Route::post('/{token}/messages', [$g, 'message'])->middleware('throttle:guest-orders');
+});
 
+Route::get('/signup-challenge', [AuthController::class, 'challenge'])->middleware('throttle:challenge');
+Route::get('/public/invitations/{token}', [\App\Http\Controllers\Api\InvitationController::class, 'show'])->middleware('throttle:30,1');
+Route::post('/public/invitations/{token}/accept', [\App\Http\Controllers\Api\InvitationController::class, 'accept'])->middleware('throttle:register');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+// Shopping without an account: a quiet shopper session (cart, checkout, tracking) that can become a full account later.
+Route::post('/guest-session', [\App\Http\Controllers\Api\GuestSessionController::class, 'start'])->middleware('throttle:guest-orders');
+Route::post('/guest-session/open', [\App\Http\Controllers\Api\GuestSessionController::class, 'open'])->middleware('throttle:10,1');
+Route::post('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'apply'])->middleware('throttle:register');
+Route::post('/partner-applications/{id}/pay-plan', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'payPlan'])->whereNumber('id')->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::get('/auth/social/providers', [\App\Http\Controllers\Api\SocialAuthController::class, 'providers']);
+Route::post('/auth/social', [\App\Http\Controllers\Api\SocialAuthController::class, 'login'])->middleware('throttle:login');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:challenge'])->name('verification.verify');
+// Called by Stripe, authenticated by its signature
+// The sandbox provider's hosted checkout page (test cards): addressed by an unguessable reference.
+Route::prefix('public/sandbox')->group(function () {
+    $sb = \App\Http\Controllers\Api\SandboxCheckoutController::class;
+    Route::get('/{ref}', [$sb, 'show'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:60,1');
+    Route::post('/{ref}/pay', [$sb, 'pay'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:30,1');
+    Route::post('/{ref}/cancel', [$sb, 'cancel'])->where('ref', 'SBX-[A-Z0-9]+')->middleware('throttle:30,1');
+});
+Route::post('/webhooks/shipping/{provider}/{market}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
+Route::post('/webhooks/shipping/{provider}', [\App\Http\Controllers\Api\ShippingWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
+Route::post('/webhooks/{provider}/{market}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->whereNumber('market')->middleware('throttle:webhook');
+Route::post('/webhooks/{provider}', [PaymentWebhookController::class, 'handle'])->where('provider', '[a-z0-9_-]+')->middleware('throttle:webhook');
+
+Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot');
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot');
+
+Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonation.readonly'])->group(function () {
+    Route::post('/impersonation/exit', [\App\Http\Controllers\Api\ImpersonationController::class, 'exit']);
+
+    // Session
     Route::get('/me', [AuthController::class, 'me']);
-
+    Route::put('/guest-session/store', [\App\Http\Controllers\Api\GuestSessionController::class, 'store'])->middleware('throttle:60,1');
+    Route::put('/guest-session/contact', [\App\Http\Controllers\Api\GuestSessionController::class, 'contact'])->middleware('throttle:20,1');
+    Route::post('/guest-session/claim', [\App\Http\Controllers\Api\GuestSessionController::class, 'claim'])->middleware('throttle:5,1');
+    Route::put('/me/location', [AuthController::class, 'updateLocation']);
+    Route::put('/me/profile', [\App\Http\Controllers\Api\ProfileController::class, 'update'])->middleware('throttle:30,1');
+    Route::get('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'preferences']);
+    Route::put('/me/notification-preferences', [\App\Http\Controllers\Api\ProfileController::class, 'savePreferences'])->middleware('throttle:30,1');
+    Route::put('/me/password', [\App\Http\Controllers\Api\ProfileController::class, 'password'])->middleware('throttle:10,1');
+    Route::get('/support', [\App\Http\Controllers\Api\SupportController::class, 'index']);
+    Route::post('/support', [\App\Http\Controllers\Api\SupportController::class, 'store'])->middleware('throttle:5,60');
+    Route::post('/support/{id}/messages', [\App\Http\Controllers\Api\SupportController::class, 'message'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/support/{id}/close', [\App\Http\Controllers\Api\SupportController::class, 'close'])->whereNumber('id');
+    Route::get('/favourites',[\App\Http\Controllers\Api\FavouriteController::class, 'index']);
+    Route::get('/favourites/ids', [\App\Http\Controllers\Api\FavouriteController::class, 'ids']);
+    Route::post('/favourites', [\App\Http\Controllers\Api\FavouriteController::class, 'store'])->middleware('throttle:60,1');
+    Route::delete('/favourites/{productId}', [\App\Http\Controllers\Api\FavouriteController::class, 'destroy'])->whereNumber('productId');
+    Route::get('/addresses',[\App\Http\Controllers\Api\AddressController::class, 'index']);
+    Route::post('/addresses', [\App\Http\Controllers\Api\AddressController::class, 'store'])->middleware('throttle:30,1');
+    Route::put('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'update'])->whereNumber('id');
+    Route::delete('/addresses/{id}', [\App\Http\Controllers\Api\AddressController::class, 'destroy'])->whereNumber('id');
     Route::post('/logout', [AuthController::class, 'logout']);
-    
-    Route::get('/orders', [
-        \App\Http\Controllers\Api\OrderController::class,
-        'index'
-    ]);
+    // The mobile app: where to send this phone's push notifications, and deleting the account from inside the app.
+    Route::post('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store'])->middleware('throttle:30,1');
+    Route::delete('/me/devices', [\App\Http\Controllers\Api\DeviceController::class, 'destroy']);
+    Route::get('/me/export', [\App\Http\Controllers\Api\AccountController::class, 'export'])->middleware('throttle:3,60');
+    Route::delete('/me', [\App\Http\Controllers\Api\AccountController::class, 'destroy'])->middleware('throttle:5,1');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:resend');
 
-    Route::get('/orders/{order}', [
-        \App\Http\Controllers\Api\OrderController::class,
-        'show'
-    ]);
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unread']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
+
+    // Industries and shared catalogs
+    Route::get('/industries', [IndustryController::class, 'index']);
+    Route::get('/catalog/{alias}', [CatalogController::class, 'index']);
+    Route::get('/catalog/{alias}/schema', [CatalogController::class, 'schema']);
+    Route::middleware('permission:catalog.manage')->group(function () {
+        Route::post('/catalog/{alias}', [CatalogController::class, 'store']);
+        Route::put('/catalog/{alias}/{id}', [CatalogController::class, 'update']);
+        Route::delete('/catalog/{alias}/{id}', [CatalogController::class, 'destroy']);
+    });
+
+    // Customer-owned items (property, ...)
+    Route::get('/my-items/{alias}', [MyItemsController::class, 'index']);
+    Route::post('/my-items/{alias}', [MyItemsController::class, 'store']);
+    Route::delete('/my-items/{alias}/{id}', [MyItemsController::class, 'destroy']);
+
+    // Companies
+    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:companies.view');
+    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:companies.create');
+    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:companies.view');
+    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:companies.update');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:companies.delete');
+    Route::get('/companies/{company}/storefront', [StorefrontController::class, 'show'])->middleware('permission:companies.update');
+    Route::put('/companies/{company}/storefront', [StorefrontController::class, 'update'])->middleware('permission:companies.update');
+
+    // A market manager: the payment, shipping and fee settings of THEIR market only (never the platform-wide ones)
+    Route::middleware(['market.scope:own'])->prefix('market')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\MarketSelfController::class, 'show']);
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update']);
+        Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
+        Route::get('/shipping/providers', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'index']);
+        Route::put('/shipping/providers/{key}', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'update']);
+        Route::post('/shipping/providers/{key}/test', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'test']);
+        Route::post('/shipping/active', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'activate']);
+        Route::get('/payments/providers', [PaymentProviderController::class, 'index']);
+        Route::put('/payments/providers/{key}', [PaymentProviderController::class, 'update']);
+        Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
+        Route::post('/payments/active', [PaymentProviderController::class, 'activate']);
+        Route::get('/payments', [PaymentProviderController::class, 'payments']);
+    });
+
+    // Categories and catalogs: the platform admin changes them at once; a market admin only proposes (the change waits for approval).
+    Route::middleware('permission:catalog.manage')->prefix('admin')->group(function () {
+        Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
+        Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
+        Route::put('/categories/{category}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update'])->whereNumber('category');
+        Route::get('/catalog-changes', [\App\Http\Controllers\Api\CatalogChangeController::class, 'index']);
+    });
+    Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::post('/catalog-changes/{id}/approve', [\App\Http\Controllers\Api\CatalogChangeController::class, 'approve'])->whereNumber('id');
+        Route::post('/catalog-changes/{id}/reject', [\App\Http\Controllers\Api\CatalogChangeController::class, 'reject'])->whereNumber('id');
+    });
+
+    // The marketing team (and admins, and a market's own admin for their market): ad connections, results, feeds.
+    Route::middleware('permission:marketing.manage|market.settings')->prefix('admin/marketing')->group(function () {
+        $mk = \App\Http\Controllers\Api\Admin\MarketingController::class;
+        Route::get('/attribution', [$mk, 'attribution']);
+        Route::get('/logs', [$mk, 'logs']);
+        Route::post('/test', [$mk, 'test']);
+        Route::post('/spend/sync', [$mk, 'syncSpend']);
+        Route::get('/markets', [$mk, 'markets']);
+        Route::get('/settings', [$mk, 'settings']);
+        Route::put('/settings', [$mk, 'saveSettings']);
+        Route::delete('/settings/{key}', [$mk, 'resetSetting'])->where('key', '[A-Za-z0-9_.]+');
+    });
+
+    // Disputes, withdrawals, payouts and the audit log: the platform admin for everything, a market admin for their own market only.
+    Route::middleware('permission:market.settings')->prefix('admin')->group(function () {
+        $ia = \App\Http\Controllers\Api\Admin\InstallationAdminController::class;
+        Route::get('/installation-disputes', [$ia, 'disputes']);
+        Route::post('/installation-disputes/{id}/decide', [$ia, 'decide'])->whereNumber('id');
+        Route::post('/installation-requests/{id}/refund-paid', [$ia, 'refundPaid'])->whereNumber('id');
+        Route::get('/centre-withdrawals', [$ia, 'withdrawals']);
+        Route::post('/centre-withdrawals/{id}/pay', [$ia, 'payWithdrawal'])->whereNumber('id');
+        Route::post('/centre-withdrawals/{id}/reject', [$ia, 'rejectWithdrawal'])->whereNumber('id');
+        Route::get('/installation-violations', [$ia, 'violations']);
+        Route::post('/installation-violations/{id}/decide', [$ia, 'decideViolation'])->whereNumber('id');
+        Route::get('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'index']);
+        Route::post('/payouts', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'store']);
+        Route::get('/payout-accounts', [\App\Http\Controllers\Api\Admin\PayoutAccountController::class, 'index']);
+        Route::post('/payout-accounts/{id}/decide', [\App\Http\Controllers\Api\Admin\PayoutAccountController::class, 'decide'])->whereNumber('id');
+        Route::post('/payouts/{id}/paid', [\App\Http\Controllers\Api\Admin\PayoutController::class, 'paid'])->whereNumber('id');
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    });
+
+    // Platform administration (settings, audit log)
+    Route::middleware('permission:admin.panel')->prefix('admin')->group(function () {
+        Route::get('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'index']);
+        Route::get('/countries', [\App\Http\Controllers\Api\Admin\MarketController::class, 'countries']);
+        Route::post('/markets', [\App\Http\Controllers\Api\Admin\MarketController::class, 'store']);
+        Route::get('/markets/{tenant}/admins', [\App\Http\Controllers\Api\Admin\MarketController::class, 'admins'])->whereNumber('tenant');
+        Route::post('/markets/{tenant}/admins', [\App\Http\Controllers\Api\Admin\MarketController::class, 'addAdmin'])->whereNumber('tenant');
+        Route::delete('/markets/{tenant}/admins/{userId}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'removeAdmin'])->whereNumber(['tenant', 'userId']);
+        Route::post('/markets/consolidate', [\App\Http\Controllers\Api\Admin\MarketController::class, 'consolidate']);
+        Route::put('/markets/{tenant}', [\App\Http\Controllers\Api\Admin\MarketController::class, 'update'])->whereNumber('tenant');
+        Route::get('/overview', OverviewController::class);
+        Route::post('/impersonate/{id}', [\App\Http\Controllers\Api\ImpersonationController::class, 'start'])->whereNumber('id')->middleware('throttle:20,1');
+        Route::get('/search', \App\Http\Controllers\Api\Admin\SearchController::class)->middleware('throttle:60,1');
+        Route::get('/export/{kind}', \App\Http\Controllers\Api\Admin\ExportController::class)->middleware('throttle:10,1');
+        Route::get('/system', [\App\Http\Controllers\Api\Admin\SystemController::class, 'show']);
+        Route::post('/system/failed-jobs/{uuid}/retry', [\App\Http\Controllers\Api\Admin\SystemController::class, 'retry']);
+        Route::delete('/system/failed-jobs/{uuid}', [\App\Http\Controllers\Api\Admin\SystemController::class, 'forget']);
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update']);
+        Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->where('key', '[A-Za-z0-9_.]+');
+        Route::get('/shipping/providers', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'index']);
+        Route::put('/shipping/providers/{key}', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'update']);
+        Route::post('/shipping/providers/{key}/test', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'test']);
+        Route::post('/shipping/active', [\App\Http\Controllers\Api\Admin\ShippingProviderController::class, 'activate']);
+        Route::get('/payments/providers', [PaymentProviderController::class, 'index']);
+        Route::put('/payments/providers/{key}', [PaymentProviderController::class, 'update']);
+        Route::post('/payments/providers/{key}/test', [PaymentProviderController::class, 'test']);
+        Route::post('/payments/active', [PaymentProviderController::class, 'activate']);
+        Route::get('/payments', [PaymentProviderController::class, 'payments']);
+        Route::get('/platform/modules', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'modules']);
+        Route::put('/platform/tenants/{tenant}/modules/{module}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'setModule'])->where('module', '[a-z0-9-]+');
+        Route::get('/media', [\App\Http\Controllers\Api\Admin\MediaController::class, 'index']);
+        Route::post('/media', [\App\Http\Controllers\Api\Admin\MediaController::class, 'store'])->middleware('throttle:30,1');
+        Route::get('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index']);
+        Route::post('/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store']);
+        Route::put('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->whereNumber('id');
+        Route::delete('/roles/{id}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->whereNumber('id');
+        Route::get('/surfaces', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'index']);
+        Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'show'])->where('key', '[a-z0-9_.]+');
+        Route::put('/surfaces/{key}', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'save'])->where('key', '[a-z0-9_.]+');
+        Route::post('/surfaces/{key}/publish', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'publish'])->where('key', '[a-z0-9_.]+');
+        Route::get('/surface-publications', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'publications']);
+        Route::post('/surface-publications/{id}/approve', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'approve'])->whereNumber('id');
+        Route::post('/surface-publications/{id}/reject', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'reject'])->whereNumber('id');
+        Route::post('/surface-publications/{id}/cancel', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'cancel'])->whereNumber('id');
+        Route::post('/surfaces/{key}/rollback', [\App\Http\Controllers\Api\Admin\SurfaceController::class, 'rollback'])->where('key', '[a-z0-9_.]+');
+        Route::get('/platform/blueprints', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'index']);
+        Route::get('/platform/blueprints/applications', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'history']);
+        Route::post('/platform/blueprints/{id}/apply', [\App\Http\Controllers\Api\Admin\BlueprintController::class, 'apply'])->where('id', '[a-z0-9.-]+');
+        Route::get('/platform/workflows', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'index']);
+        Route::put('/platform/tenants/{tenant}/workflows/{key}', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'update'])->where('key', '[a-z0-9_.]+');
+        Route::delete('/platform/tenants/{tenant}/workflows/{key}', [\App\Http\Controllers\Api\Admin\WorkflowController::class, 'reset'])->where('key', '[a-z0-9_.]+');
+        Route::get('/platform/events/catalog', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'catalog']);
+        Route::get('/platform/events', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'events']);
+        Route::get('/platform/events/{eventId}', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'event']);
+        Route::post('/platform/events/{eventId}/replay', [\App\Http\Controllers\Api\Admin\PlatformController::class, 'replay']);
+        Route::get('/security', [SecurityController::class, 'overview']);
+        Route::post('/security/revoke-all-sessions', [SecurityController::class, 'revokeAllSessions']);
+    });
+
+    // Staff
+    Route::middleware('permission:users.manage')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::post('/users/{id}/revoke-sessions', [UserController::class, 'revokeSessions']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
+
+    // Tenants (platform admin)
+    Route::middleware('permission:tenants.manage')->group(function () {
+        Route::get('/tenants', [TenantController::class, 'index']);
+        Route::post('/tenants', [TenantController::class, 'store']);
+        Route::put('/tenants/{tenant}', [TenantController::class, 'update']);
+    });
+
+    // Invitations (delegated: each person may only bring in the roles their own area allows) and departments with their heads
+    $iv = \App\Http\Controllers\Api\InvitationController::class;
+    Route::get('/invitations/options', [$iv, 'options']);
+    Route::get('/invitations', [$iv, 'index']);
+    Route::post('/invitations', [$iv, 'store'])->middleware('throttle:30,1');
+    Route::delete('/invitations/{id}', [$iv, 'destroy'])->whereNumber('id');
+    $dp = \App\Http\Controllers\Api\DepartmentController::class;
+    Route::get('/departments', [$dp, 'index']);
+    Route::post('/departments', [$dp, 'store']);
+    Route::post('/departments/open', [$dp, 'open']);
+    Route::put('/departments/{id}', [$dp, 'update'])->whereNumber('id');
+    Route::get('/departments/{id}/members', [$dp, 'members'])->whereNumber('id');
+    Route::put('/departments/{id}/members/{userId}', [$dp, 'updateMember'])->whereNumber(['id', 'userId']);
+    Route::put('/departments/{id}/scope', [$dp, 'updateScope'])->whereNumber('id');
+    Route::delete('/departments/{id}/roles/{roleId}', [$dp, 'deleteRole'])->whereNumber(['id', 'roleId']);
+    Route::get('/departments/{id}/roles', [$dp, 'roles'])->whereNumber('id');
+    Route::post('/departments/{id}/roles', [$dp, 'createRole'])->whereNumber('id');
+    Route::put('/departments/{id}/roles/{roleId}', [$dp, 'updateRole'])->whereNumber(['id', 'roleId']);
+
+    // Warehouse: the market's team receives sellers' cartons, counts stock and ships orders; sellers announce deliveries and see stock.
+    $wh = \App\Http\Controllers\Api\WarehouseController::class;
+    Route::middleware('permission:warehouse.manage')->prefix('warehouse')->group(function () use ($wh) {
+        Route::get('/warehouses', [$wh, 'index']);
+        Route::post('/warehouses', [$wh, 'store']);
+        Route::put('/warehouses/{id}', [$wh, 'update'])->whereNumber('id');
+        Route::get('/stock', [$wh, 'stockList']);
+        Route::post('/stock/adjust', [$wh, 'adjust']);
+        Route::get('/inbound', [$wh, 'inbound']);
+        Route::post('/inbound/{id}/receive', [$wh, 'receive'])->whereNumber('id');
+        Route::get('/orders', [$wh, 'orders']);
+        Route::post('/orders/{id}/ship', [$wh, 'ship'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+    $sf = \App\Http\Controllers\Api\SellerFulfilmentController::class;
+    Route::get('/seller/stock', [$sf, 'stock']);
+    Route::get('/seller/inbound-shipments', [$sf, 'index']);
+    Route::post('/seller/inbound-shipments', [$sf, 'store']);
+    Route::post('/seller/inbound-shipments/{id}/cancel', [$sf, 'cancel'])->whereNumber('id');
+
+    // Products and pricing
+    Route::get('/products', [ProductController::class, 'index'])->middleware('permission:products.view');
+    Route::post('/products/import', [\App\Http\Controllers\Api\ProductImportController::class, 'store'])->middleware(['permission:products.create', 'throttle:10,1']);
+    Route::post('/products/bulk-installation', [ProductController::class, 'bulkInstallation'])->middleware('permission:products.update');
+    Route::post('/products/bulk-page-template', [ProductController::class, 'bulkPageTemplate'])->middleware('permission:products.update');
+    // Reviews: a customer who received a product can rate it; a platform administrator can hide a review.
+    Route::get('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'mine'])->whereNumber('id');
+    Route::post('/products/{id}/review-photos', [\App\Http\Controllers\Api\ProductReviewController::class, 'photo'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/products/{id}/questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'ask'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::get('/products/{id}/questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'mine'])->whereNumber('id');
+    Route::get('/product-questions', [\App\Http\Controllers\Api\ProductQuestionController::class, 'index']);
+    Route::put('/product-questions/{id}/answer', [\App\Http\Controllers\Api\ProductQuestionController::class, 'answer'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::put('/product-questions/{id}/status', [\App\Http\Controllers\Api\ProductQuestionController::class, 'moderate'])->whereNumber('id');
+    Route::post('/products/{id}/review', [\App\Http\Controllers\Api\ProductReviewController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/reviews/{id}/moderate', [\App\Http\Controllers\Api\ProductReviewController::class, 'moderate'])->whereNumber('id');
+    Route::get('/products/categories', [ProductController::class, 'categories'])->middleware('permission:products.view');
+    Route::post('/product-images', [\App\Http\Controllers\Api\ProductImageController::class, 'store'])->middleware(['permission:products.update', 'throttle:30,1']);
+    Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create');
+    Route::get('/products/{product}/readiness', [ProductController::class, 'readiness'])->middleware('permission:products.update');
+    Route::get('/products/{product}', [ProductController::class, 'show'])->middleware('permission:products.view');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update');
+    Route::post('/products/{product}/submit-review', [ProductController::class, 'submitReview'])->middleware(['permission:products.update', 'throttle:30,1']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete');
+    Route::get('/products/{product}/price-rules', [ProductPriceRuleController::class, 'index'])->middleware('permission:products.view');
+    Route::put('/products/{product}/price-rules', [ProductPriceRuleController::class, 'sync'])->middleware('permission:products.update');
+    Route::put('/products/{product}/fitments', [ProductController::class, 'syncFitments'])->middleware('permission:products.update');
+    Route::post('/pricing/calculate', [PricingController::class, 'calculate'])->middleware('permission:pricing.calculate');
+
+    // Partner applications: reviewed by platform admins and the store's owners
+    Route::get('/partner-applications', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'index']);
+    Route::get('/partner-applications/{id}/documents/{documentId}', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'document'])->whereNumber(['id', 'documentId']);
+    Route::post('/partner-applications/{id}/approve', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'approve'])->whereNumber('id');
+    Route::post('/partner-applications/{id}/reject', [\App\Http\Controllers\Api\PartnerApplicationController::class, 'reject'])->whereNumber('id');
+
+    // Partners
+    Route::get('/partners', [PartnerController::class, 'index'])->middleware('permission:partners.view');
+    Route::post('/partners', [PartnerController::class, 'store'])->middleware('permission:partners.create');
+    Route::get('/partners/{partner}', [PartnerController::class, 'show'])->middleware('permission:partners.view');
+    Route::put('/partners/{partner}', [PartnerController::class, 'update'])->middleware('permission:partners.update');
+    Route::delete('/partners/{partner}', [PartnerController::class, 'destroy'])->middleware('permission:partners.delete');
+
+    // Orders, quotes, payments
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'index'])->whereNumber('id');
+    Route::post('/orders/{id}/messages', [\App\Http\Controllers\Api\OrderMessageController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::get('/orders/{order}/invoice.pdf', [\App\Http\Controllers\Api\OrderController::class, 'invoice'])->whereNumber('order')->middleware('throttle:30,1');
+    Route::get('/orders/{id}/refund-request',[\App\Http\Controllers\Api\RefundRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/orders/{id}/refund-photos', [\App\Http\Controllers\Api\RefundRequestController::class, 'photo'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/orders/{id}/return-pickup', [\App\Http\Controllers\Api\RefundRequestController::class, 'pickup'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::post('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
+    Route::post('/orders', [OrderController::class, 'store'])->middleware(['throttle:orders', 'idempotent']);
+    // The cart, and buying it: one purchase (an order group), paid once, one order per line.
+    // The customer's cars.
+    Route::get('/garage', [\App\Http\Controllers\Api\GarageController::class, 'index']);
+    Route::get('/garage/fit/{productId}', [\App\Http\Controllers\Api\GarageController::class, 'fit'])->whereNumber('productId');
+    Route::post('/garage', [\App\Http\Controllers\Api\GarageController::class, 'store'])->middleware('throttle:30,1');
+    Route::put('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'update'])->whereNumber('id');
+    Route::delete('/garage/{id}', [\App\Http\Controllers\Api\GarageController::class, 'destroy'])->whereNumber('id');
+    // Asking for a price and answering with a quote.
+    Route::post('/quote-requests', [\App\Http\Controllers\Api\QuoteRequestController::class, 'store'])->middleware('throttle:20,1');
+    Route::get('/quote-requests', [\App\Http\Controllers\Api\QuoteRequestController::class, 'index']);
+    Route::get('/quote-requests/{id}', [\App\Http\Controllers\Api\QuoteRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/quote-requests/{id}/accept', [\App\Http\Controllers\Api\QuoteRequestController::class, 'accept'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/quote-requests/{id}/close', [\App\Http\Controllers\Api\QuoteRequestController::class, 'close'])->whereNumber('id');
+    Route::middleware('role:seller')->prefix('seller/quote-requests')->group(function () {
+        $q = \App\Http\Controllers\Api\QuoteRequestController::class;
+        Route::get('/', [$q, 'sellerIndex']);
+        Route::post('/{id}/quote', [$q, 'sellerQuote'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}/quote', [$q, 'sellerWithdraw'])->whereNumber('id');
+    });
+    Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'show']);
+    Route::post('/cart/items', [\App\Http\Controllers\Api\CartController::class, 'add'])->middleware('throttle:60,1');
+    Route::put('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'update'])->whereNumber('id');
+    Route::delete('/cart/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->whereNumber('id');
+    Route::post('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'applyPromo'])->middleware('throttle:20,1');
+    Route::delete('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'removePromo']);
+    Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear']);
+    Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'checkout'])->middleware(['throttle:orders', 'idempotent']);
+    Route::get('/order-groups', [\App\Http\Controllers\Api\CheckoutController::class, 'index']);
+    Route::get('/order-groups/{id}', [\App\Http\Controllers\Api\CheckoutController::class, 'show'])->whereNumber('id');
+    Route::post('/order-groups/{id}/payments', [\App\Http\Controllers\Api\CheckoutController::class, 'pay'])->whereNumber('id')->middleware(['permission:payments.create', 'idempotent']);
+    Route::post('/order-groups/{id}/cancel', [\App\Http\Controllers\Api\CheckoutController::class, 'cancel'])->whereNumber('id');
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}/partner-quotes', [PartnerQuoteController::class, 'index']);
+    Route::patch('/partner-quotes/{id}/accept', [PartnerQuoteController::class, 'accept']);
+    Route::post('/orders/{id}/cancel', [OrderLifecycleController::class, 'cancel']);
+    Route::get('/warranties', [WarrantyController::class, 'index']);
+    Route::post('/warranties/{id}/claims', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/warranty-claims', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'index']);
+    Route::put('/warranty-claims/{id}', [\App\Http\Controllers\Api\WarrantyClaimController::class, 'decide'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['permission:payments.create', 'idempotent']);
+
+    Route::middleware('role:platform-admin')->prefix('admin/outbox')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'index']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\Admin\OutboxController::class, 'show'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|catalog-reviewer')->prefix('admin/product-reviews')->group(function () {
+        $pr = \App\Http\Controllers\Api\Admin\ProductReviewController::class;
+        Route::get('/', [$pr, 'index']);
+        Route::post('/{id}/approve', [$pr, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [$pr, 'reject'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/support')->group(function () {
+        $sa = \App\Http\Controllers\Api\Admin\SupportAdminController::class;
+        Route::get('/', [$sa, 'index']);
+        Route::post('/{id}/reply', [$sa, 'reply'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin')->prefix('admin/promo-codes')->group(function () {
+        $pc = \App\Http\Controllers\Api\Admin\PromoCodeController::class;
+        Route::get('/', [$pc, 'index']);
+        Route::post('/', [$pc, 'store']);
+        Route::put('/{id}', [$pc, 'update'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/order-problems')->group(function () {
+        $op = \App\Http\Controllers\Api\Admin\OrderProblemController::class;
+        Route::get('/', [$op, 'index']);
+        Route::post('/{id}/handled', [$op, 'handled'])->whereNumber('id');
+    });
+    Route::middleware('role:platform-admin|support-agent')->prefix('admin/refund-requests')->group(function () {
+        $rq = \App\Http\Controllers\Api\Admin\RefundRequestAdminController::class;
+        Route::get('/', [$rq, 'index']);
+        Route::post('/{id}/approve', [$rq, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [$rq, 'reject'])->whereNumber('id');
+        Route::post('/{id}/collect', [$rq, 'collect'])->whereNumber('id');
+        Route::post('/{id}/inspect', [$rq, 'inspect'])->whereNumber('id');
+    });
+    Route::post('/admin/orders/{id}/goodwill', [\App\Http\Controllers\Api\Admin\GoodwillController::class, 'store'])->whereNumber('id')->middleware(['role:platform-admin|support-agent', 'throttle:30,1']);
+    Route::middleware('role:platform-admin')->prefix('admin/orders')->group(function () {
+        $r =\App\Http\Controllers\Api\Admin\OrderRefundController::class;
+        Route::post('/{id}/refund', [$r, 'refund'])->whereNumber('id');
+        Route::post('/{id}/refund-sent', [$r, 'sent'])->whereNumber('id');
+        Route::post('/{id}/partial-refund', [$r, 'partial'])->whereNumber('id')->middleware('throttle:30,1');
+        Route::post('/{id}/partial-refund-sent', [$r, 'partialSent'])->whereNumber('id');
+        Route::post('/{id}/partial-refund-send', [$r, 'partialSendThrough'])->whereNumber('id');
+        Route::post('/{id}/refund-send', [$r, 'sendThrough'])->whereNumber('id');
+    });
+
+    // The numbers that say whether the business works (platform administrators).
+    Route::middleware('role_or_permission:platform-admin|operations.manage')->get('/admin/kpis', [\App\Http\Controllers\Api\Admin\KpiController::class, 'show']);
+
+    // Where a market is open (platform administrators).
+    Route::middleware('role:platform-admin')->prefix('admin/zones')->group(function () {
+        $z = \App\Http\Controllers\Api\Admin\ZoneController::class;
+        Route::get('/', [$z, 'index']);
+        Route::post('/', [$z, 'store']);
+        Route::get('/demand', [$z, 'demand']);
+        Route::put('/{id}', [$z, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [$z, 'destroy'])->whereNumber('id');
+    });
+
+    // Installation help: customers ask for it; centres answer without ever seeing who asks
+    Route::get('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'index']);
+    Route::post('/installation-requests', [\App\Http\Controllers\Api\InstallationRequestController::class, 'store'])->middleware('throttle:10,60');
+    Route::get('/installation-requests/{id}', [\App\Http\Controllers\Api\InstallationRequestController::class, 'show'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/cancel', [\App\Http\Controllers\Api\InstallationRequestController::class, 'cancel'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/accept', [\App\Http\Controllers\Api\InstallationFlowController::class, 'accept'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/pay', [\App\Http\Controllers\Api\InstallationFlowController::class, 'pay'])->whereNumber('id')->middleware(['throttle:20,1', 'idempotent']);
+    Route::get('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'show'])->whereNumber('id');
+    Route::get('/installation-requests/{id}/slots', [\App\Http\Controllers\Api\InstallationBookingController::class, 'slots'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'book'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::put('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'reschedule'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/installation-requests/{id}/confirm', [\App\Http\Controllers\Api\InstallationFlowController::class, 'confirm'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/review', [\App\Http\Controllers\Api\InstallationFlowController::class, 'review'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/disputes', [\App\Http\Controllers\Api\InstallationFlowController::class, 'dispute'])->whereNumber('id');
+    Route::post('/installation-requests/{id}/evidence', [\App\Http\Controllers\Api\InstallationFlowController::class, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/installation-requests/{id}/report-contact', [\App\Http\Controllers\Api\InstallationFlowController::class, 'reportContact'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/referral', fn (\Illuminate\Http\Request $r) => app(\App\Services\Loyalty::class)->referral($r->user()));
+    Route::get('/loyalty', [\App\Http\Controllers\Api\InstallationFlowController::class, 'loyalty']);
+    Route::get('/installation-files/{id}', [\App\Http\Controllers\Api\InstallationFlowController::class, 'file'])->whereNumber('id');
+    // A centre's own rules, hours, days off and calendar.
+    Route::middleware('role:partner-manager')->prefix('partner')->group(function () {
+        $cs = \App\Http\Controllers\Api\CentreSettingsController::class;
+        Route::get('/settings', [$cs, 'show']);
+        Route::put('/settings', [$cs, 'update']);
+        Route::put('/hours', [$cs, 'hours']);
+        Route::post('/time-off', [$cs, 'addTimeOff'])->middleware('throttle:30,1');
+        Route::delete('/time-off/{id}', [$cs, 'removeTimeOff'])->whereNumber('id');
+        Route::get('/calendar', [$cs, 'calendar']);
+        Route::post('/installation-jobs/{id}/booking/cancel', [$cs, 'cancelBooking'])->whereNumber('id');
+        $ct = \App\Http\Controllers\Api\CentreToolsController::class;
+        Route::get('/price-list', [$ct, 'priceList']);
+        Route::put('/price-list', [$ct, 'savePriceList'])->middleware('throttle:20,1');
+        Route::get('/reviews', [$ct, 'reviews']);
+        Route::post('/reviews/{id}/reply', [$ct, 'reply'])->whereNumber('id')->middleware('throttle:30,1');
+        Route::get('/technicians', [\App\Http\Controllers\Api\WorkOrderController::class, 'technicians']);
+        Route::post('/installation-jobs/{id}/assign', [\App\Http\Controllers\Api\WorkOrderController::class, 'assign'])->whereNumber('id');
+    });
+    Route::middleware('role:partner-manager|technician')->prefix('partner/installation-jobs')->group(function () {
+        $c = \App\Http\Controllers\Api\CentreJobController::class;
+        Route::get('/', [$c, 'index']);
+        Route::get('/{id}', [$c, 'show'])->whereNumber('id');
+        Route::post('/{id}/start', [$c, 'start'])->whereNumber('id');
+        Route::post('/{id}/on-the-way', [\App\Http\Controllers\Api\CentreToolsController::class, 'onTheWay'])->whereNumber('id')->middleware('throttle:20,1');
+        Route::get('/{id}/work-order', [\App\Http\Controllers\Api\WorkOrderController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/materials', [\App\Http\Controllers\Api\WorkOrderController::class, 'addMaterial'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}/materials/{materialId}', [\App\Http\Controllers\Api\WorkOrderController::class, 'removeMaterial'])->whereNumber(['id', 'materialId']);
+        Route::post('/{id}/proof', [$c, 'proof'])->whereNumber('id')->middleware('throttle:30,1');
+        Route::post('/{id}/disputes', [$c, 'dispute'])->whereNumber('id');
+        Route::post('/{id}/evidence', [$c, 'evidence'])->whereNumber('id')->middleware('throttle:30,1');
+    });
+    Route::middleware('role:partner-manager|company-owner')->group(function () {
+        Route::get('/partner/wallet', [\App\Http\Controllers\Api\CentreJobController::class, 'wallet']);
+        Route::post('/partner/wallet/withdrawals', [\App\Http\Controllers\Api\CentreJobController::class, 'withdraw'])->middleware('throttle:10,1');
+    });
+    Route::middleware('role:partner-manager')->group(function () {
+        Route::get('/partner/installation-requests', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'index']);
+        Route::post('/partner/installation-requests/{id}/offer', [\App\Http\Controllers\Api\PartnerInstallationController::class, 'offer'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+
+    // Shipping: staff book and track parcels; customers see tracking on their own orders
+    Route::get('/shipping-providers', [\App\Http\Controllers\Api\ShipmentController::class, 'providers']);
+    Route::get('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'index'])->whereNumber('id');
+    Route::post('/orders/{id}/shipping-rates', [\App\Http\Controllers\Api\ShipmentController::class, 'rates'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/orders/{id}/shipments', [\App\Http\Controllers\Api\ShipmentController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/shipments/{id}/refresh', [\App\Http\Controllers\Api\ShipmentController::class, 'refresh'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/shipments/{id}/reschedule', [\App\Http\Controllers\Api\ShipmentController::class, 'reschedule'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/shipments/{id}/status', [\App\Http\Controllers\Api\ShipmentController::class, 'status'])->whereNumber('id');
+
+    // Published content of non-public editable surfaces (e.g. the dashboard menu names)
+    Route::get('/surfaces/{key}', [\App\Http\Controllers\Api\SurfaceReadController::class, 'signedIn'])->where('key', '[a-z0-9_.]+');
+
+    // Sellers: the orders for their own products, and their earnings
+    Route::middleware('role:seller')->prefix('seller/bundles')->group(function () {
+        $sb = \App\Http\Controllers\Api\SellerBundleController::class;
+        Route::get('/', [$sb, 'index']);
+        Route::post('/', [$sb, 'store'])->middleware('throttle:30,1');
+        Route::put('/{id}', [$sb, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+    Route::middleware('role:seller')->prefix('seller/promo-codes')->group(function () {
+        $sp = \App\Http\Controllers\Api\SellerPromoController::class;
+        Route::get('/', [$sp, 'index']);
+        Route::post('/', [$sp, 'store'])->middleware('throttle:30,1');
+        Route::put('/{id}', [$sp, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+    });
+    Route::get('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'show']);
+    Route::put('/seller/profile', [\App\Http\Controllers\Api\SellerProfileController::class, 'update'])->middleware('throttle:20,1');
+    Route::get('/seller/payout-account', [\App\Http\Controllers\Api\SellerPayoutController::class, 'account']);
+    Route::put('/seller/payout-account', [\App\Http\Controllers\Api\SellerPayoutController::class, 'saveAccount'])->middleware('throttle:10,1');
+    Route::post('/seller/payouts/request', [\App\Http\Controllers\Api\SellerPayoutController::class, 'request'])->middleware('throttle:10,1');
+    Route::get('/seller/earnings', [\App\Http\Controllers\Api\SellerEarningsController::class, 'show']);
+    Route::get('/seller/orders', [\App\Http\Controllers\Api\SellerOrderController::class, 'index']);
+    Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\SellerOrderController::class, 'show'])->whereNumber('id');
+
+    // Partner side: staff work the jobs assigned to their partner
+    Route::middleware('role:partner-manager|technician')->group(function () {
+        Route::get('/partner/jobs', [PartnerJobController::class, 'index']);
+        Route::post('/orders/{id}/schedule', [OrderLifecycleController::class, 'schedule']);
+        Route::post('/orders/{id}/start', [OrderLifecycleController::class, 'start']);
+        Route::post('/orders/{id}/complete', [OrderLifecycleController::class, 'complete']);
+    });
+
+    // Pricing requests: managers only
+    Route::middleware('role:partner-manager')->group(function () {
+        Route::get('/partner/orders', [PartnerOrderController::class, 'index']);
+        Route::patch('/partner-quotes/{id}', [PartnerOrderController::class, 'submitQuote']);
+    });
+
+    // Plans for partners and sellers: see mine, choose, stop renewing. A platform administrator edits the plans.
+    Route::get('/subscription', [\App\Http\Controllers\Api\SubscriptionController::class, 'show']);
+    Route::post('/subscription', [\App\Http\Controllers\Api\SubscriptionController::class, 'choose'])->middleware('throttle:20,1');
+    Route::post('/subscription/cancel', [\App\Http\Controllers\Api\SubscriptionController::class, 'cancel']);
+    Route::get('/admin/subscription-plans', [\App\Http\Controllers\Api\SubscriptionController::class, 'plans'])->middleware('permission:admin.panel');
+    Route::put('/admin/subscription-plans/{id}', [\App\Http\Controllers\Api\SubscriptionController::class, 'update'])->middleware('permission:admin.panel')->whereNumber('id');
+
+    // Commissions
+    Route::get('/commissions', [CommissionController::class, 'index'])->middleware('permission:commissions.view');
+    Route::get('/commissions/{id}', [CommissionController::class, 'show'])->middleware('permission:commissions.view');
+    Route::get('/commission-distributions', [CommissionDistributionController::class, 'index'])->middleware('permission:commissions.view');
+    Route::patch('/commission-distributions/{commissionDistribution}/pay', [CommissionDistributionController::class, 'pay'])->middleware('permission:commissions.pay');
+    Route::get('/dashboard/commissions', [CommissionDashboardController::class, 'commissions'])->middleware('permission:dashboard.view');
+    Route::get('/dashboard/earnings', [CommissionDashboardController::class, 'earnings'])->middleware('permission:dashboard.view');
 });
 
-Route::middleware('auth:sanctum')->get('/me', function (Illuminate\Http\Request $request) {
-    return response()->json($request->user());
-});
-
-Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
-    return $request->user();
-});
-
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.view'
-])->get('/companies', [CompanyController::class, 'index']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.create'
-])->post('/companies', [CompanyController::class, 'store']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.view'
-])->get('/companies/{company}', [CompanyController::class, 'show']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.update'
-])->put('/companies/{company}', [CompanyController::class, 'update']);
-
-Route::middleware([
-    'auth:sanctum',
-    'permission:companies.delete'
-])->delete('/companies/{company}', [CompanyController::class, 'destroy']);
-Route::get('/films', [FilmController::class, 'index'])
-    ->middleware(['auth:sanctum', 'permission:films.view']);
-
-Route::post('/films', [FilmController::class, 'store'])
-    ->middleware(['auth:sanctum', 'permission:films.create']);
-
-Route::get('/films/{film}', [FilmController::class, 'show'])
-    ->middleware(['auth:sanctum', 'permission:films.view']);
-
-Route::put('/films/{film}', [FilmController::class, 'update'])
-    ->middleware(['auth:sanctum', 'permission:films.update']);
-
-Route::delete('/films/{film}', [FilmController::class, 'destroy'])
-    ->middleware(['auth:sanctum', 'permission:films.delete']);
-
-Route::get('/vehicle-makes', [VehicleMakeController::class, 'index'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.view']);
-
-Route::post('/vehicle-makes', [VehicleMakeController::class, 'store'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.create']);
-
-Route::get('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'show'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.view']);
-
-Route::put('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'update'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.update']);
-
-Route::delete('/vehicle-makes/{vehicle_make}', [VehicleMakeController::class, 'destroy'])
-    ->middleware(['auth:sanctum', 'permission:vehicle-makes.delete']);
-    
-Route::middleware([
-    'auth:sanctum',
-    'role:installer-manager'
-])->group(function () {
-
-    Route::patch(
-    '/installation-quotes/{installationQuote}',
-    [InstallerOrderController::class, 'submitQuote']
-);
-
-    Route::apiResource(
-        'installation-centers',
-        InstallationCenterController::class
-    );
-
-});
-
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::post('/orders', [OrderController::class, 'store']);
-
-});
-
-Route::get(
-    '/dashboard/commissions',
-    [CommissionDashboardController::class, 'commissions']
-)->middleware([
-    'auth:sanctum',
-    'permission:dashboard.view'
-]);
-
-
-Route::get(
-    '/commission-distributions',
-    [CommissionDistributionController::class, 'index']
-);
-
-Route::get(
-    '/dashboard/earnings',
-    [CommissionDashboardController::class, 'earnings']
-)->middleware([
-    'auth:sanctum',
-    'permission:dashboard.view'
-]);
-
-Route::get('/commissions', [CommissionController::class, 'index'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:commissions.view'
-    ]);
-
-Route::post(
-    '/orders/{order}/payments',
-    [PaymentController::class, 'store']
-)->middleware([
-    'auth:sanctum',
-    'permission:payments.create'
-]);
-
-Route::get('/commissions/{id}', [CommissionController::class, 'show'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:commissions.view'
-    ]);
-
-Route::get(
-    '/orders/{order}/installation-quotes',
-    [InstallationQuoteController::class, 'index']
-);
-
-Route::get('/installation-centers', [InstallationCenterController::class,'index'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:installation-centers.view'
-    ]);
-
-Route::post('/installation-centers', [InstallationCenterController::class,'store'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:installation-centers.create'
-    ]);
-
-Route::post('/pricing/calculate', [PricingController::class,'calculate'])
-    ->middleware([
-        'auth:sanctum',
-        'permission:pricing.calculate'
-    ]);
-
-Route::patch(
-    '/installation-quotes/{installationQuote}/accept',
-    [InstallationQuoteController::class, 'accept']
-);
-
-Route::get(
-    '/vehicles/makes',
-    [VehicleController::class,'makes']
-);
-
-
-Route::get(
-    '/vehicles/makes/{id}/models',
-    [VehicleController::class,'models']
-);
-
-Route::patch(
-    '/installation-quotes/{installationQuote}',
-    [InstallationQuoteController::class, 'update']
-);
-
-Route::patch(
-    '/commission-distributions/{commissionDistribution}/pay',
-    [CommissionDistributionController::class, 'pay']
-);
+// Industry-specific routes (automotive, ...)
+app(IndustryRegistry::class)->loadRoutes();

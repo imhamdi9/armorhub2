@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"InterV";src:url("file:///D:/armorhub%20cluade/armorhub2/apps/web/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2");font-weight:100 900}
+@font-face{font-family:"NotoAr";src:url("file:///D:/armorhub%20cluade/armorhub2/apps/web/node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-arabic-wght-normal.woff2");font-weight:100 900}
+:root{--navy:#0b1b3a;--blue:#2f6bff;--sky:#8db8ff;--wash:#eaf1ff;--fog:#dce3f1;--slate:#5b6788;--bone:#f6f8fc}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"InterV","NotoAr","Segoe UI",sans-serif;background:#e9edf5;padding:36px;display:flex;gap:28px;align-items:flex-start;width:max-content;color:var(--navy)}
+.wrap{display:flex;flex-direction:column;gap:12px;align-items:center}
+.cap{font-weight:700;font-size:15px}
+.phone{width:390px;height:844px;background:#fff;border-radius:38px;border:8px solid var(--navy);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.status{height:28px;font-size:12px;display:flex;justify-content:space-between;padding:8px 22px 0;font-weight:600}
+/* header: white, our logo + a pill search, like the website */
+.hd{padding:6px 14px 10px;display:flex;flex-direction:column;gap:10px;background:#fff}
+.brand{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.logo svg{width:30px;height:30px}
+.loc{font-size:12px;color:var(--slate);display:flex;gap:4px;align-items:center;background:var(--bone);border:1px solid var(--fog);border-radius:20px;padding:5px 10px}
+.loc b{color:var(--navy)}
+.search{display:flex;align-items:center;gap:10px;border:1.5px solid var(--fog);border-radius:999px;height:46px;padding:0 6px 0 16px;background:var(--bone);color:#7b86a3;font-size:15px}
+.search span{flex:1}.search b{width:36px;height:36px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:#fff;font-size:15px}
+.chips{display:flex;gap:8px;overflow:hidden;padding:2px 14px 12px;background:#fff}
+.chip{white-space:nowrap;border:1.5px solid var(--fog);border-radius:999px;padding:7px 15px;font-size:13px;font-weight:600;background:#fff}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.body{flex:1;overflow:hidden;background:var(--bone)}
+.tabs{height:66px;border-top:1px solid var(--fog);background:#fff;display:flex;justify-content:space-around;align-items:center;font-size:11px;color:var(--slate);font-weight:600;padding-bottom:6px}
+.tabs div{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs .on{color:var(--blue)}.tabs .on svg{fill:var(--wash)}
+/* blocks */
+.hero{margin:6px 14px 4px;border-radius:26px;background:var(--navy);background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px;color:#fff;padding:20px;position:relative;overflow:hidden;height:168px}
+.hero h3{font-size:24px;line-height:1.1;letter-spacing:-.03em;font-weight:800;max-width:200px}
+.hero p{font-size:13px;color:var(--sky);margin-top:8px}
+.hero .go{position:absolute;bottom:18px;left:20px;background:var(--blue);color:#fff;font-weight:700;border-radius:999px;padding:9px 18px;font-size:13px}
+.hero .shield{position:absolute;right:-6px;top:22px;width:128px;height:128px;opacity:.95}
+.sec{margin:14px 0 4px;padding-left:14px}
+.sec h4{font-size:18px;font-weight:800;letter-spacing:-.02em;display:flex;justify-content:space-between;padding-right:14px;margin-bottom:10px}
+.sec h4 a{font-size:13px;color:var(--blue);font-weight:600}
+.row{display:flex;gap:12px;overflow:hidden}
+.pc{width:146px;flex:none;background:#fff;border:1px solid var(--fog);border-radius:22px;padding:8px 8px 12px}
+.img{border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#eef3ff,#dbe7ff);position:relative}
+.pc .img{height:118px}
+.tag{position:absolute;top:8px;left:8px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 8px}
+.pc .n{font-size:13px;line-height:1.3;margin:8px 4px 4px;height:34px;overflow:hidden;font-weight:600}
+.price{font-weight:800;font-size:17px;margin:0 4px;letter-spacing:-.02em}.price small{font-size:11px;font-weight:600;color:var(--slate)}
+.was{font-size:12px;color:#8a94ad;text-decoration:line-through;font-weight:500;margin-left:5px}
+.stars{color:#f1a31c;font-size:12px;letter-spacing:1px}.stars u{color:var(--slate);text-decoration:none;font-size:12px;margin-left:5px;letter-spacing:0}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding-right:14px}
+.cat{text-align:center;font-size:12px;font-weight:600}.cat .img{width:66px;height:66px;border-radius:50%;margin:0 auto 6px;font-size:28px}
+.store{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--fog);border-radius:22px;padding:10px 14px 10px 10px;width:230px;flex:none}
+.store .lg{width:46px;height:46px;border-radius:14px;color:#fff;font-weight:800;font-size:20px;display:grid;place-items:center}
+/* results */
+.bar2{display:flex;justify-content:space-between;align-items:center;padding:4px 14px 10px;font-size:13px;color:var(--slate);background:#fff;border-bottom:1px solid var(--fog)}
+.pill{border:1.5px solid var(--fog);border-radius:999px;padding:6px 12px;font-weight:600;color:var(--navy);font-size:12.5px;background:#fff}
+.item{display:flex;gap:12px;background:#fff;border:1px solid var(--fog);border-radius:24px;padding:10px;margin:10px 14px 0}
+.item .img{width:116px;height:132px;flex:none}
+.item .n{font-size:15px;font-weight:700;line-height:1.25;letter-spacing:-.01em}
+.item .m{font-size:12px;color:var(--slate);margin-top:4px}
+.bigprice{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-top:4px}.bigprice small{font-size:12px;color:var(--slate);font-weight:600}
+.ok{color:#127a4a;font-weight:700;font-size:12.5px;margin-top:3px}
+.save{display:inline-block;background:var(--wash);color:#1c4fd6;font-weight:700;font-size:11.5px;border-radius:999px;padding:3px 9px;margin-top:5px}
+/* buttons: ours */
+.btn{display:block;text-align:center;font-weight:700;border-radius:999px;padding:13px;font-size:15px}
+.b1{background:var(--blue);color:#fff}.b2{background:#fff;border:2px solid var(--navy);color:var(--navy)}
+/* product */
+.gal{background:#fff;height:300px;display:grid;place-items:center;position:relative;margin:0 14px 0;border-radius:26px;border:1px solid var(--fog);background:linear-gradient(135deg,#f4f7ff,#e3ecff)}
+.gal .dots{position:absolute;bottom:12px;display:flex;gap:5px}.gal .dots i{width:7px;height:7px;border-radius:50%;background:#c4d0ea}.gal .dots i:first-child{background:var(--navy);width:20px;border-radius:5px}
+.gal .tag{top:14px;left:14px;font-size:12px;padding:4px 10px}
+.pbox{background:#fff;border:1px solid var(--fog);border-radius:26px;padding:16px;margin:10px 14px 0}
+.pbox h1{font-size:19px;font-weight:800;line-height:1.25;letter-spacing:-.02em}
+.bigp{font-size:32px;font-weight:800;letter-spacing:-.04em;margin:8px 0 2px}.bigp small{font-size:14px;color:var(--slate);font-weight:600}
+.opt{display:flex;gap:8px;margin:12px 0 4px}.opt span{border:1.5px solid var(--fog);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600}.opt .on{border-color:var(--blue);background:var(--wash);color:#1c4fd6}
+.stick{position:absolute;bottom:66px;left:0;right:0;background:#fff;border-top:1px solid var(--fog);padding:10px 14px 12px;display:flex;gap:10px;align-items:center}
+.stick .tot{font-size:12px;color:var(--slate);line-height:1.2}.stick .tot b{display:block;font-size:19px;color:var(--navy);letter-spacing:-.03em}
+.trust{display:flex;gap:6px;margin-top:12px}.trust div{flex:1;background:var(--bone);border:1px solid var(--fog);border-radius:16px;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;color:#33415f}.trust i{display:block;font-style:normal;font-size:18px}
+/* checkout + orders */
+.steps{display:flex;gap:6px;padding:4px 14px 12px;background:#fff}.steps div{flex:1;height:5px;border-radius:5px;background:var(--fog)}.steps .on{background:var(--blue)}
+.stl{display:flex;justify-content:space-between;padding:0 14px 10px;background:#fff;font-size:12px;color:var(--slate);font-weight:600}.stl b{color:var(--navy)}
+.card{background:#fff;border:1px solid var(--fog);border-radius:24px;padding:16px;margin:10px 14px 0}
+.card h5{font-size:15px;font-weight:800;margin-bottom:8px;letter-spacing:-.01em}
+.line{display:flex;justify-content:space-between;font-size:14px;color:#33415f;margin:6px 0}.line.t{font-weight:800;color:var(--navy);font-size:18px;border-top:1px solid var(--fog);padding-top:10px;margin-top:10px;letter-spacing:-.02em}
+.otop{display:flex;justify-content:space-between;font-size:11.5px;color:var(--slate);border-bottom:1px solid var(--fog);padding-bottom:10px;margin-bottom:12px}.otop b{display:block;color:var(--navy);font-size:13px;margin-top:2px}
+.prog{display:flex;gap:4px;margin:8px 0 12px}.prog i{flex:1;height:5px;border-radius:5px;background:var(--fog)}.prog i.d{background:var(--blue)}
+/* rtl */
+.rtl{direction:rtl}.rtl .hero .go{left:auto;right:20px}.rtl .hero .shield{right:auto;left:-6px}.rtl .sec{padding-left:0;padding-right:14px}.rtl .sec h4{padding-right:0;padding-left:14px}.rtl .cats{padding-right:0;padding-left:14px}
+.rtl .pc .tag{left:auto;right:8px}.rtl .was{margin-left:0;margin-right:5px}.rtl .stars u{margin-left:0;margin-right:5px}.rtl .store{padding:10px 10px 10px 14px}
+</style></head><body>
+
+<!-- 1 HOME -->
+<div class="wrap"><div class="cap">1 · Home</div>
+<div class="phone"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd"><div class="brand"><div class="logo"><svg viewBox="0 0 34 34"><rect width="34" height="34" rx="10" fill="#0b1b3a"/><path d="M17 6.5 8.5 9.8v6.2c0 5.3 3.6 8.6 8.5 10.2 4.9-1.6 8.5-4.9 8.5-10.2V9.8L17 6.5Z" fill="#8db8ff"/><path d="m12.8 16.6 3 3 5.4-6" fill="none" stroke="#0b1b3a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>ArmorHub</div><div class="loc">📍 <b>Riyadh</b> ▾</div></div>
+<div class="search"><span>Search products and stores</span><b>⌕</b></div></div>
+<div class="chips"><div class="chip on">All</div><div class="chip">Car protection</div><div class="chip">Tint & film</div><div class="chip">Detailing</div></div>
+<div class="body">
+ <div class="hero"><h3>Protect your ride this season</h3><p>Verified installers near you</p><div class="go">Shop now</div>
+  <svg class="shield" viewBox="0 0 34 34"><path d="M17 3.5 6.5 7.6v7.7c0 6.6 4.5 10.7 10.5 12.7 6-2 10.5-6.100 10.500-12.700V7.600L17 3.500Z" fill="#8db8ff"/><path d="m11.500 16.500 4 4 7-8" fill="none" stroke="#0b1b3a" stroke-width="2.600" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+ <div class="sec"><h4>Shop by category <a>See all</a></h4><div class="cats"><div class="cat"><div class="img">🚗</div>Cars</div><div class="cat"><div class="img">🪟</div>Tint</div><div class="cat"><div class="img">✨</div>Coating</div><div class="cat"><div class="img">🔧</div>Parts</div></div></div>
+ <div class="sec"><h4>Deals for you <a>See all</a></h4><div class="row">
+  <div class="pc"><div class="img">🛡️<span class="tag">Save 20%</span></div><div class="n">Ultimate Plus paint protection film</div><div class="price"><small>SAR</small> 250<span class="was">310</span></div></div>
+  <div class="pc"><div class="img">🪟<span class="tag">Save 15%</span></div><div class="n">Ceramic window tint, 5 year</div><div class="price"><small>SAR</small> 180<span class="was">212</span></div></div>
+  <div class="pc"><div class="img">✨</div><div class="n">Nano coating kit</div><div class="price"><small>SAR</small> 95</div></div></div></div>
+ <div class="sec"><h4>Top rated stores <a>See all</a></h4><div class="row"><div class="store"><div class="lg" style="background:#0f7a63">A</div><div><b>Armor Store</b><div class="stars">★★★★★<u>1,204</u></div></div></div><div class="store"><div class="lg" style="background:#b85a12">N</div><div><b>Nile Shield</b><div class="stars">★★★★☆<u>864</u></div></div></div></div></div>
+</div>
+<div class="tabs"><div class="on"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>Home</div><div><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></svg>Orders</div><div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</div></div></div></div>
+
+<!-- 2 RESULTS -->
+<div class="wrap"><div class="cap">2 · Search results</div>
+<div class="phone"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd"><div class="search"><span style="color:var(--navy)">paint protection film</span><b>⌕</b></div></div>
+<div class="bar2"><span><b style="color:var(--navy)">128</b> results</span><span class="pill">Sort: Featured ▾</span><span class="pill">Filter ⚙</span></div>
+<div class="body" style="padding-bottom:10px">
+ <div class="item"><div class="img" style="font-size:46px">🛡️<span class="tag">Save 20%</span></div><div><div class="n">Ultimate Plus paint protection film</div><div class="stars">★★★★☆<u>312</u></div><div class="bigprice"><small>SAR</small> 250<span class="was">310</span></div><div class="ok">Free delivery</div><div class="m">Armor Store · 5 year warranty</div></div></div>
+ <div class="item"><div class="img" style="font-size:46px">🪟</div><div><div class="n">Ceramic window tint, 5 year warranty</div><div class="stars">★★★★★<u>98</u></div><div class="bigprice"><small>SAR</small> 180</div><div class="save">Installers nearby</div><div class="m">Nile Shield</div></div></div>
+ <div class="item"><div class="img" style="font-size:46px">✨</div><div><div class="n">Nano coating kit for paint and glass</div><div class="stars">★★★★☆<u>41</u></div><div class="bigprice"><small>SAR</small> 95</div><div class="ok">Free delivery</div><div class="m">Gulf Parts</div></div></div>
+</div>
+<div class="tabs"><div class="on"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>Home</div><div><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></svg>Orders</div><div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</div></div></div></div>
+
+<!-- 3 PRODUCT -->
+<div class="wrap"><div class="cap">3 · Product</div>
+<div class="phone"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd" style="flex-direction:row;align-items:center;gap:10px"><div style="font-size:22px">‹</div><div class="search" style="flex:1"><span>Search</span><b>⌕</b></div></div>
+<div class="body" style="padding-bottom:120px">
+ <div class="gal"><span style="font-size:120px">🛡️</span><span class="tag">Save 20%</span><div class="dots"><i></i><i></i><i></i><i></i></div></div>
+ <div class="pbox"><div style="font-size:12px;color:var(--blue);font-weight:700">XPEL · Armor Store</div><h1>Ultimate Plus paint protection film, self-healing</h1>
+  <div class="stars" style="margin-top:6px">★★★★☆ <u>4.4 · 312 ratings</u></div>
+  <div class="bigp"><small>SAR</small> 250<span class="was" style="font-size:15px">310</span></div>
+  <div style="font-size:12px;color:var(--slate)">Includes VAT · A platform fee of 5% is added at payment</div>
+  <div class="opt"><span class="on">Hood</span><span>Front bumper</span><span>Mirrors</span></div>
+  <div class="ok" style="font-size:14px">In stock · Free delivery</div>
+  <div class="trust"><div><i>🔒</i>Secure payment</div><div><i>↩</i>Cancel before you pay</div><div><i>🛡</i>5 year warranty</div></div></div>
+</div>
+<div class="stick"><div class="tot">Total<b>SAR 250</b></div><div class="btn b2" style="flex:1;padding:12px 6px">Add to cart</div><div class="btn b1" style="flex:1.2;padding:12px 6px">Buy now</div></div>
+<div class="tabs"><div class="on"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>Home</div><div><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></svg>Orders</div><div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</div></div></div></div>
+
+<!-- 4 CHECKOUT -->
+<div class="wrap"><div class="cap">4 · Checkout</div>
+<div class="phone"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd" style="flex-direction:row;align-items:center;gap:10px"><div style="font-size:22px">‹</div><div style="font-size:19px;font-weight:800">Checkout</div></div>
+<div class="steps"><div class="on"></div><div></div><div></div></div><div class="stl"><b>Address</b><span>Review</span><span>Pay</span></div>
+<div class="body">
+ <div class="card" style="margin-top:0"><h5>Delivering to Layla</h5><div style="font-size:14px;color:#33415f;line-height:1.55">12 King Road, Al Olaya<br>Riyadh 12211, Saudi Arabia<br>+966 50 123 4567</div><div style="color:var(--blue);font-size:13px;margin-top:8px;font-weight:700">Change address</div></div>
+ <div class="card"><h5>Your item</h5><div style="display:flex;gap:12px;align-items:center"><div class="img" style="width:68px;height:68px;font-size:30px;flex:none">🛡️</div><div style="font-size:14px;font-weight:600">Ultimate Plus paint protection film<div class="price" style="margin:4px 0 0"><small>SAR</small> 250</div></div></div></div>
+ <div class="card"><h5>Order summary</h5><div class="line"><span>Items</span><span>SAR 250.00</span></div><div class="line"><span>Delivery</span><span style="color:#127a4a;font-weight:700">Free</span></div><div class="line"><span>Platform fee (5%)</span><span>SAR 12.50</span></div><div class="line t"><span>Total</span><span>SAR 262.50</span></div></div>
+</div>
+<div class="stick" style="bottom:0;flex-direction:column;gap:6px"><div class="btn b1" style="width:100%">Place order</div><div style="font-size:11px;color:var(--slate)">Card payment opens in the secure browser</div></div></div></div>
+
+<!-- 5 ORDERS -->
+<div class="wrap"><div class="cap">5 · Your orders</div>
+<div class="phone"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd"><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">Your orders</div><div class="search"><span>Search orders</span><b>⌕</b></div></div>
+<div class="chips"><div class="chip on">All</div><div class="chip">In progress</div><div class="chip">Delivered</div><div class="chip">Cancelled</div></div>
+<div class="body">
+ <div class="card" style="margin-top:2px"><div class="otop"><span>Placed<b>12 Nov 2026</b></span><span>Total<b>SAR 262.50</b></span><span>Order<b>#1042</b></span></div>
+  <div class="ok" style="font-size:16px;margin:0">Arriving tomorrow</div><div class="prog"><i class="d"></i><i class="d"></i><i class="d"></i><i></i></div>
+  <div style="display:flex;gap:12px"><div class="img" style="width:80px;height:80px;font-size:34px;flex:none">🛡️</div><div style="flex:1;font-size:14px;font-weight:600">Ultimate Plus paint protection film<div class="btn b1" style="margin-top:10px;padding:9px;font-size:13px">Track order</div></div></div></div>
+ <div class="card"><div class="otop"><span>Placed<b>2 Nov 2026</b></span><span>Total<b>SAR 95.00</b></span><span>Order<b>#1019</b></span></div>
+  <div style="font-size:16px;font-weight:800;margin-bottom:10px">Delivered</div>
+  <div style="display:flex;gap:12px"><div class="img" style="width:80px;height:80px;font-size:34px;flex:none">✨</div><div style="flex:1;font-size:14px;font-weight:600">Nano coating kit<div style="display:flex;gap:8px;margin-top:10px"><div class="btn b1" style="flex:1;padding:9px;font-size:13px">Buy again</div><div class="btn b2" style="flex:1;padding:8px;font-size:13px">Review</div></div></div></div></div>
+</div>
+<div class="tabs"><div><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>Home</div><div class="on"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></svg>Orders</div><div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</div></div></div></div>
+
+<!-- 6 HOME RTL -->
+<div class="wrap"><div class="cap">6 · الرئيسية بالعربية</div>
+<div class="phone rtl"><div class="status" style="direction:ltr"><span>9:41</span><span>5G ▮▮▮</span></div>
+<div class="hd"><div class="brand"><div class="logo"><svg viewBox="0 0 34 34"><rect width="34" height="34" rx="10" fill="#0b1b3a"/><path d="M17 6.5 8.5 9.8v6.2c0 5.3 3.6 8.6 8.5 10.2 4.9-1.6 8.5-4.9 8.5-10.2V9.8L17 6.5Z" fill="#8db8ff"/><path d="m12.8 16.6 3 3 5.4-6" fill="none" stroke="#0b1b3a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>أرمور هب</div><div class="loc">📍 <b>الرياض</b> ▾</div></div>
+<div class="search" style="padding:0 16px 0 6px"><span>ابحث عن منتج أو متجر</span><b>⌕</b></div></div>
+<div class="chips"><div class="chip on">الكل</div><div class="chip">حماية السيارات</div><div class="chip">تظليل</div><div class="chip">تلميع</div></div>
+<div class="body">
+ <div class="hero"><h3>احمِ سيارتك<br>هذا الموسم</h3><p>مُركّبون موثّقون بالقرب منك</p><div class="go">تسوّق الآن</div>
+  <svg class="shield" viewBox="0 0 34 34"><path d="M17 3.5 6.5 7.6v7.7c0 6.6 4.5 10.7 10.5 12.7 6-2 10.5-6.100 10.500-12.700V7.600L17 3.500Z" fill="#8db8ff"/><path d="m11.500 16.500 4 4 7-8" fill="none" stroke="#0b1b3a" stroke-width="2.600" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+ <div class="sec"><h4>تسوّق حسب القسم <a>عرض الكل</a></h4><div class="cats"><div class="cat"><div class="img">🚗</div>سيارات</div><div class="cat"><div class="img">🪟</div>تظليل</div><div class="cat"><div class="img">✨</div>تلميع</div><div class="cat"><div class="img">🔧</div>قطع</div></div></div>
+ <div class="sec"><h4>عروض لك <a>عرض الكل</a></h4><div class="row">
+  <div class="pc"><div class="img">🛡️<span class="tag">وفّر ٢٠٪</span></div><div class="n">فيلم حماية الطلاء Ultimate Plus</div><div class="price"><small>ر.س</small> ٢٥٠<span class="was">٣١٠</span></div></div>
+  <div class="pc"><div class="img">🪟<span class="tag">وفّر ١٥٪</span></div><div class="n">تظليل سيراميك ٥ سنوات</div><div class="price"><small>ر.س</small> ١٨٠<span class="was">٢١٢</span></div></div></div></div>
+</div>
+<div class="tabs"><div class="on"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>الرئيسية</div><div><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></svg>طلباتي</div><div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>حسابي</div></div></div></div>
+</body></html>

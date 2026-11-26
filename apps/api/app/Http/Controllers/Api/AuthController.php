@@ -4,72 +4,258 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\StrongPassword;
+use App\Support\Audit;
+use App\Support\Security\AuthCookie;
+use App\Support\Security\BotGuard;
+use App\Support\Security\EmailPolicy;
+use App\Support\Settings\Settings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    /** Same wording for every bot-ish failure, so a script learns nothing about which check caught it. */
+    private const BOT_MESSAGE = 'We could not create your account. Please reload the page and try again.';
+
+    /** The timing token + captcha settings the signup/forgot-password forms need. */
+    public function challenge(Request $request, BotGuard $bots)
     {
-        $request->validate([
+        return $bots->challenge($request);
+    }
+
+    /** Public signup creates a customer of the chosen company (storefront). */
+    public function register(Request $request, BotGuard $bots, EmailPolicy $emails, Settings $settings)
+    {
+        if (! $settings->bool('platform.registration_open')) {
+            return response()->json(['message' => 'Signups are temporarily closed. Please try again later.'], 403);
+        }
+
+        if (! $bots->passes($request)) {
+            Audit::record('auth.signup_blocked', null, ['reason' => 'bot_check', 'email' => $request->input('email')]);
+
+            return response()->json(['message' => self::BOT_MESSAGE], 422);
+        }
+
+        $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
+            'password' => StrongPassword::rules(confirmed: true),
+            // Either the store the visitor came from (its public address) or a company id.
+            'store' => 'nullable|string|max:60',
+            'company_id' => 'required_without:store|nullable|integer|exists:companies,id',
+            'referral' => 'nullable|string|max:12',
+            'phone' => 'nullable|string|max:30',
+            'city' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
+
+        if (! empty($data['store'])) {
+            $store = app(\App\Services\Storefront\StorefrontService::class)->find($data['store']);
+
+            if (! $store) {
+                throw ValidationException::withMessages(['store' => ['This store was not found.']]);
+            }
+
+            $data['company_id'] = $store->id;
+        }
+
+        if ($emails->isBlocked($data['email'])) {
+            Audit::record('auth.signup_blocked', null, ['reason' => 'email_domain', 'email' => $data['email']]);
+
+            throw ValidationException::withMessages(['email' => ['Please use a permanent email address.']]);
+        }
+
+        // a+1@x.com and a+2@x.com are one mailbox, not two customers.
+        if (User::where('email_canonical', EmailPolicy::canonical($data['email']))->exists()) {
+            throw ValidationException::withMessages(['email' => ['The email has already been taken.']]);
+        }
+
+        // A phone number is checked against the store's country (and stored as +966…/+20…).
+        $phone = null;
+        if (! empty($data['phone'])) {
+            $company = \App\Models\Company::withoutGlobalScopes()->with('tenant')->find($data['company_id']);
+            $market = app(\App\Support\Markets\Markets::class)->forCompany($company);
+            $phone = app(\App\Support\Markets\Markets::class)->phoneFor($company, $data['phone']);
+
+            if (! $phone) {
+                throw ValidationException::withMessages(['phone' => [__('Please enter a valid :market mobile number.', ['market' => $market?->name() ?? ''])]]);
+            }
+        }
+
+        $hasLocation = isset($data['latitude'], $data['longitude']);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $phone,
+            'password' => $data['password'],
+            'company_id' => $data['company_id'],
+            'city' => $data['city'] ?? null,
+            'country' => $data['country'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'location_enabled' => $hasLocation,
+            // A friend's code is remembered; the reward comes only when this customer's first order arrives.
+            'referred_by' => app(\App\Services\Loyalty::class)->owner($data['referral'] ?? null)?->id,
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $user->assignRole('customer');
+        Audit::record('auth.registered', $user, [], $user);
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        if ($emails->verificationRequired()) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return $this->signedIn($request, $user, 201);
     }
 
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        $data = $request->validate([
+            'email' => 'required|email|max:255',
+            'password' => 'required|string|max:255',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', mb_strtolower(trim($data['email'])))->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        // Always do the (slow) password check, even for unknown emails, so response time
+        // cannot be used to discover which emails have accounts.
+        $valid = Hash::check($data['password'], $user?->password ?? $this->dummyHash()) && $user !== null;
+
+        // A partner who has applied but is not approved yet gets a clear answer (only after proving they know the password).
+        if (! $valid && ! $user) {
+            $application = \App\Models\PartnerApplication::where('email_canonical', EmailPolicy::canonical($data['email']))->latest('id')->first();
+
+            if ($application && Hash::check($data['password'], $application->password)) {
+                throw ValidationException::withMessages(['email' => [$application->status === 'rejected'
+                    ? 'Your partner application was not approved.'
+                    : 'Your partner application is still being reviewed. You can sign in as soon as it is approved.']]);
+            }
+        }
+
+        if (! $valid) {
+            Audit::record('auth.login_failed', null, ['email' => mb_strtolower($data['email'])]);
+
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials.'],
             ]);
         }
 
+        if (! $user->is_active) {
+            Audit::record('auth.login_blocked', $user, ['reason' => 'deactivated'], $user);
+
+            throw ValidationException::withMessages([
+                'email' => ['This account has been deactivated.'],
+            ]);
+        }
+
+        Audit::record('auth.login', $user, [], $user);
+
+        return $this->signedIn($request, $user);
+    }
+
+    /** Issues the session: an HttpOnly cookie for browsers, a Bearer token for everything else. */
+    public function signedIn(Request $request, User $user, int $status = 200)
+    {
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
+        // Cap how many devices stay signed in; the oldest sessions are dropped first.
+        $keep = max(1, (int) app(Settings::class)->get('security.max_active_tokens'));
+        $stale = $user->tokens()->orderByDesc('id')->skip($keep)->take(1000)->pluck('id');
+        if ($stale->isNotEmpty()) {
+            $user->tokens()->whereIn('id', $stale)->delete();
+        }
+
+        if (AuthCookie::wanted($request)) {
+            return response()->json(['user' => $user], $status)->withCookie(AuthCookie::make($request, $token));
+        }
+
+        return response()->json(['user' => $user, 'token' => $token], $status);
+    }
+
+    /** A hash with the same cost as real ones, computed once. */
+    private function dummyHash(): string
+    {
+        static $hash = null;
+
+        return $hash ??= Hash::make(bin2hex(random_bytes(16)));
     }
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user()->load('company.tenant');
+        $industries = \App\Models\Industry::whereIn('id', $user->industryIds())->orderBy('name')->get();
+
+        $emails = app(EmailPolicy::class);
+
+        $market = app(\App\Support\Markets\Markets::class)->forCompany($user->company);
+        $registry = app(\App\Modules\IndustryRegistry::class);
+        $describe = fn (\App\Models\Industry $i) => [
+            'id' => $i->id, 'key' => $i->key, 'name' => $i->name,
+            'subjects' => array_keys($i->module()?->subjectModels() ?? []),
+            // The subjects customers keep themselves (their property), as opposed to shared catalogs (vehicle models).
+            'owned_subjects' => collect($i->module()?->subjectModels() ?? [])->filter(fn ($class) => in_array('customer_id', (new $class)->getFillable(), true))->keys()->values()->all(),
+            'targets' => array_keys($i->module()?->targetModels() ?? []),
+            'catalogs' => $i->module() ? $registry->manageableAliases($i->module()) : [],
+        ];
+        $all = $industries->map($describe)->values();
+        // One industry: as before. Several (a country market): one combined description so the menus show everything the market runs.
+        $industry = $all->count() === 1 ? $all[0] : ($all->count() > 1 ? [
+            'id' => null, 'key' => 'multi', 'name' => $user->company?->tenant?->name ?? 'Market',
+            'subjects' => $all->pluck('subjects')->flatten()->unique()->values()->all(),
+            'owned_subjects' => $all->pluck('owned_subjects')->flatten()->unique()->values()->all(),
+            'targets' => $all->pluck('targets')->flatten()->unique()->values()->all(),
+            'catalogs' => $all->pluck('catalogs')->flatten()->unique()->values()->all(),
+        ] : null);
+
+        return response()->json(array_merge($user->toArray(), [
+            'market' => $market?->toArray(),
+            'email_verified' => $user->hasVerifiedEmail(),
+            'email_verification_required' => $emails->verificationRequired() && $user->hasRole('customer') && ! $user->hasVerifiedEmail(),
+            'industry' => $industry,
+            'industries' => $all,
+            'store_slug' => $user->company?->slug,
+            'tenant' => $user->company?->tenant ? ['id' => $user->company->tenant->id, 'name' => $user->company->tenant->name] : null,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+            // Set while a platform administrator is viewing as this person (read-only): the screen shows a banner with a way out.
+            'impersonated_by' => ($by = \App\Http\Middleware\ImpersonationReadOnly::viewedBy($user)) ? User::whereKey($by)->value('name') : null,
+        ]));
+    }
+
+    /** Lets a customer share where they are so nearby partners can be found. */
+    public function updateLocation(Request $request)
+    {
+        $data = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'city' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+        ]);
+
+        $request->user()->update($data + ['location_enabled' => true]);
+
+        return $this->me($request);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
 
-        return response()->json([
-            'message' => 'Logged out successfully',
-        ]);
+        if (method_exists($token, 'delete')) {
+            $token->delete();
+        }
+
+        Audit::record('auth.logout');
+
+        return response()->json(['message' => 'Logged out successfully'])->withCookie(AuthCookie::forget($request));
     }
 
-    public function destroy(Order $order)
+    public function destroy(\App\Models\Order $order)
     {
     abort_unless(
         auth()->user()->hasRole('platform-admin'),

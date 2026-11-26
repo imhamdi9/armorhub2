@@ -1,0 +1,36 @@
+{
+  "business": "ArmorHub, a marketplace of verified service partners (buyer side)",
+  "target": "Car owners and households in Saudi Arabia and Egypt who need a trusted installer or service provider",
+  "where": "Riyadh, Jeddah, Dammam, Cairo, Giza and Alexandria",
+  "age": [22, 58],
+  "segments": [
+    {"name": "Young car owner, first good car", "share": 0.30, "income": [60000, 140000]},
+    {"name": "Family household owner", "share": 0.35, "income": [90000, 220000]},
+    {"name": "Business owner or executive with a premium car", "share": 0.20, "income": [250000, 600000]},
+    {"name": "Budget-conscious buyer", "share": 0.15, "income": [30000, 70000]}
+  ],
+  "behaviours": [
+    {"name": "Asks friends and family first", "share": 0.22, "how": "Trusts a recommendation from someone they know over any website."},
+    {"name": "Compares prices on three or more places", "share": 0.18, "how": "Gets quotes by phone and WhatsApp and picks the cheapest that seems fine."},
+    {"name": "Reads every review", "share": 0.14, "how": "Checks Google ratings and photos before trusting anyone."},
+    {"name": "Loyal to one workshop", "share": 0.14, "how": "Goes to the same place for years and negotiates face to face."},
+    {"name": "Wants convenience and speed", "share": 0.12, "how": "Pays more to avoid hassle, likes apps and clear steps."},
+    {"name": "Afraid of being cheated", "share": 0.12, "how": "Worried about fake products, hidden costs and no warranty."},
+    {"name": "Prefers cash and WhatsApp", "share": 0.08, "how": "Distrusts paying online before the work is done."}
+  ],
+  "objections": [
+    "I do not know these partners and cannot see real reviews yet",
+    "I would rather pay cash or after the work, not online first",
+    "My usual workshop gives me a price on WhatsApp in a minute",
+    "How do I know the film or product is genuine and the warranty is honoured?",
+    "Quotes may take hours or days and I want a price now",
+    "Will they come to my area, and can I choose the time?",
+    "What happens if the work is bad? Who do I complain to?"
+  ],
+  "habits": [
+    "you ask in a family WhatsApp group before spending on your car",
+    "you pay for most things by card or mobile wallet but not for services you cannot see",
+    "you check prices on Instagram and Google Maps first",
+    "you use your phone for almost everything and prefer Arabic"
+  ]
+}

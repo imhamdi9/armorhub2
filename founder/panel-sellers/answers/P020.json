@@ -1,0 +1,13 @@
+{
+  "id": "P020",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I do not want to quote blind against my competitors on price, and I cannot see what the other verified partners will charge before I send mine. Handing over my ID and registration and waiting for a reviewer just to start is one more thing I have to chase in a week that is already full.",
+  "objection": "If I quote without knowing what the others charge, I either lose the job or work for too little, and I have no way to check that from inside the app.",
+  "would_change_my_mind": "Seeing real jobs from businesses like mine in Riyadh or Cairo, with the price visible and the money actually paid out to a seller on time.",
+  "price_too_cheap": 15,
+  "price_cheap": 50,
+  "price_expensive": 150,
+  "price_too_expensive": 250
+}

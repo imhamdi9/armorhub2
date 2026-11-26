@@ -1,0 +1,13 @@
+{
+  "id": "P024",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I would not hand over SAR 1,300 to 2,100 for film on my husband's M4 to a platform I have never heard of, with no reviews and no Google ratings I can check. The escrow and written warranty sound good, but I still don't know who I would complain to if the film lifts at the edges.",
+  "objection": "Who is ArmorHub if the installer does a bad job, and where do I see real customer reviews of these partners before I pay?",
+  "would_change_my_mind": "Verified reviews and Google ratings for the partner shops in my city, plus a named complaint channel with a clear refund process.",
+  "price_too_cheap": 900,
+  "price_cheap": 1300,
+  "price_expensive": 1900,
+  "price_too_expensive": 2300
+}
