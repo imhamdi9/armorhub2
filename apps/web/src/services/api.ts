@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { campaignHeader } from "@/lib/marketing";
+import { forgetShared } from "@/services/shared";
 
 /**
  * Browser sessions use an HttpOnly cookie set by the API: the token is never stored where
@@ -41,6 +42,17 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+// Anything that changes data makes the shared answers old, both when it is sent and when it comes back.
+const changes = (method?: string) => !["get", "head", "options"].includes((method ?? "get").toLowerCase());
+api.interceptors.request.use((config) => {
+  if (changes(config.method)) forgetShared();
+  return config;
+});
+api.interceptors.response.use(
+  (response) => { if (changes(response.config.method)) forgetShared(); return response; },
+  (error) => { if (changes(error?.config?.method)) forgetShared(); return Promise.reject(error); },
+);
 
 // An expired or revoked session sends the visitor back to the sign-in page.
 api.interceptors.response.use(

@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import { shared } from "@/services/shared";
 
 export interface Vehicle { id: number; vehicle_model_id: number; make: string | null; model: string | null; year: number; label: string; nickname: string | null; color: string | null; vin: string | null; is_default: boolean }
 export interface MakeOrModel { id: number; name: string; vehicle_make_id?: number }
@@ -102,7 +103,7 @@ export const bookSlot = async (jobId: number, starts_at: string) => (await api.p
 export const rescheduleSlot = async (jobId: number, starts_at: string) => (await api.put(`/installation-requests/${jobId}/booking`, { starts_at })).data;
 
 export interface Address { id: number; label: string | null; name: string; phone: string; line1: string; line2: string | null; city: string; region: string | null; postal_code: string | null; is_default: boolean }
-export const getAddresses = async () => (await api.get<Address[]>("/addresses")).data;
+export const getAddresses = () => shared("addresses", async () => (await api.get<Address[]>("/addresses")).data);
 export const addAddress = async (body: Partial<Address>) => (await api.post<Address>("/addresses", body)).data;
 export const updateAddress = async (id: number, body: Partial<Address>) => (await api.put<Address>(`/addresses/${id}`, body)).data;
 export const removeAddress = async (id: number) => (await api.delete(`/addresses/${id}`)).data;

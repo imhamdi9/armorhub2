@@ -1,5 +1,6 @@
 import { once } from "@/lib/idempotency";
 import { api } from "@/services/api";
+import { shared } from "@/services/shared";
 
 export interface CartLine {
   id: number;
@@ -73,7 +74,7 @@ export interface DeliveryAddress {
   region?: string;
 }
 
-export const getCart = async () => (await api.get<CartView>("/cart")).data;
+export const getCart = () => shared("cart", async () => (await api.get<CartView>("/cart")).data);
 /** The header's cart count and the "added to cart" panel listen for this. */
 export const CART_CHANGED = "cart-changed";
 const announceCart = <T,>(cart: T): T => { if (typeof window !== "undefined") window.dispatchEvent(new Event(CART_CHANGED)); return cart; };

@@ -109,11 +109,16 @@ export function I18nProvider({ children, gate = true }: { children: React.ReactN
   const locale = useSyncExternalStore(subscribe, readLocale, serverLocale);
   const hydrated = useHydrated();
   // Category names (in both languages) come from the API once; screens that print a category draw again when they arrive.
-  const [namesReady, setNamesReady] = useState(categoryNamesReady());
-  useEffect(() => { if (!namesReady) loadCategoryNames().then((ok) => ok && setNamesReady(true)); }, [namesReady]);
   // The platform's own name (set by its owners) replaces the built-in one in every sentence once it is known.
-  const [brandReady, setBrandReady] = useState(false);
-  useEffect(() => { loadPlatformBrand().then((changed) => changed && setBrandReady(true)); }, []);
+  // Both are waited for together, so the page is redrawn once for them, not once for each.
+  const [loaded, setLoaded] = useState(() => (categoryNamesReady() ? "names" : ""));
+  useEffect(() => {
+    let live = true;
+    Promise.all([categoryNamesReady() ? true : loadCategoryNames(), loadPlatformBrand()]).then(([names, brand]) => {
+      if (live) setLoaded(`${names ? "names" : ""}${brand ? "+brand" : ""}`);
+    });
+    return () => { live = false; };
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", locale);
@@ -138,7 +143,7 @@ export function I18nProvider({ children, gate = true }: { children: React.ReactN
   return (
     <LocaleContext.Provider value={locale}>
       {(hydrated || !gate) && (
-        <div key={`${locale}-${namesReady}-${brandReady}`} className="contents">
+        <div key={`${locale}-${loaded}`} className="contents">
           {children}
         </div>
       )}

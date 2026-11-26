@@ -48,7 +48,7 @@ class MediaLibrary
     public function response(MediaFile $file)
     {
         return $this->disk()->response("media/{$file->name}", $file->name, [
-            'Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'public, max-age=86400',
+            'Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'public, max-age=31536000, immutable',   // a name is never reused for another picture
             'Content-Security-Policy' => "default-src 'none'; sandbox", 'Cross-Origin-Resource-Policy' => 'cross-origin',
         ]);
     }

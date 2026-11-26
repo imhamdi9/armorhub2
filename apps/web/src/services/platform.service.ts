@@ -1,5 +1,6 @@
 import { once } from "@/lib/idempotency";
 import { api } from "@/services/api";
+import { shared } from "@/services/shared";
 import type { Industry } from "@/types/auth";
 import type {
   AppNotification,
@@ -446,8 +447,8 @@ export const updateDepartmentRole = async (id: number, roleId: number, permissio
 export const deleteDepartmentRole = async (id: number, roleId: number) => { await api.delete(`/departments/${id}/roles/${roleId}`); };
 
 /** What the signed-in customer may do on a product's reviews: leave one (if they received it) or edit theirs. */
-export const getMyReview = async (productId: number) =>
-  (await api.get<{ eligible: boolean; review: { rating: number; comment: string | null; status: string; photos?: string[] } | null }>(`/products/${productId}/review`)).data;
+export const getMyReview = (productId: number) =>
+  shared(`review-${productId}`, async () => (await api.get<{ eligible: boolean; review: { rating: number; comment: string | null; status: string; photos?: string[] } | null }>(`/products/${productId}/review`)).data);
 
 export const saveReview = async (productId: number, rating: number, comment: string, photos: string[] = []) =>
   (await api.post<{ rating: number; comment: string | null; photos: string[] }>(`/products/${productId}/review`, { rating, comment, photos })).data;

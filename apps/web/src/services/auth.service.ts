@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import { shared } from "@/services/shared";
 import type { LoginRequest, LoginResponse } from "@/types/auth";
 
 export async function login(data: LoginRequest) {
@@ -7,11 +8,8 @@ export async function login(data: LoginRequest) {
   return response.data;
 }
 
-export async function me() {
-  const response = await api.get("/me");
+export const me = () => shared("me", async () => (await api.get("/me")).data);
 
-  return response.data;
-}
 export async function register(data: {
   name: string;
   email: string;
@@ -86,18 +84,10 @@ export interface PlanPayment { application_id: number; token: string; plan: stri
 export const payApplicationPlan = async (p: PlanPayment) => (await api.post<{ paid: boolean }>(`/partner-applications/${p.application_id}/pay-plan`, { token: p.token })).data;
 
 /** The open stores a business can apply to (public). */
-export async function getOpenStores() {
-  const { data } = await api.get<{ stores: { name: string; slug: string; market: string | null; selling_enabled?: boolean; installation_enabled?: boolean }[] }>("/public/storefronts");
-
-  return data.stores;
-}
+export const getOpenStores = () => shared("stores", async () => (await api.get<{ stores: { name: string; slug: string; market: string | null; selling_enabled?: boolean; installation_enabled?: boolean }[] }>("/public/storefronts")).data.stores);
 
 /** Marketplaces (a country's platform, e.g. "ArmorHub Egypt") that new sellers can join. */
-export async function getMarketplaces() {
-  const { data } = await api.get<{ marketplaces: { key: string; name: string; industry: string | null; industries?: string[]; market: string | null; country?: string | null; currency?: string | null }[] }>("/public/marketplaces");
-
-  return data.marketplaces;
-}
+export const getMarketplaces = () => shared("marketplaces", async () => (await api.get<{ marketplaces: { key: string; name: string; industry: string | null; industries?: string[]; market: string | null; country?: string | null; currency?: string | null }[] }>("/public/marketplaces")).data.marketplaces);
 
 /** The live terms a partner sees before joining: the commission, how it is shared, and how many requests and partners there are right now. */
 export interface PublicTerms {
