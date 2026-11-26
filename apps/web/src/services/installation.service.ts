@@ -1,3 +1,4 @@
+import { once } from "@/lib/idempotency";
 import { api } from "@/services/api";
 
 export type InstallationStatus =
@@ -42,7 +43,8 @@ export const getInstallation = async (id: number | string) => (await api.get<Cus
 export const createInstallation = async (body: Record<string, unknown>) => (await api.post<CustomerJob>("/installation-requests", body)).data;
 export const cancelInstallation = async (id: number) => (await api.post<CustomerJob>(`/installation-requests/${id}/cancel`)).data;
 export const acceptOffer = async (id: number, body: { offer_id: number; accept_terms: boolean; use_points?: number }) => (await api.post<CustomerJob>(`/installation-requests/${id}/accept`, body)).data;
-export const payInstallation = async (id: number) => (await api.post<{ status: string; checkout_url?: string; request: CustomerJob }>(`/installation-requests/${id}/pay`)).data;
+export const payInstallation = async (id: number) =>
+  once(`pay-installation-${id}`, null, async (key) => (await api.post<{ status: string; checkout_url?: string; request: CustomerJob }>(`/installation-requests/${id}/pay`, undefined, key)).data);
 export const confirmInstallation = async (id: number) => (await api.post<CustomerJob>(`/installation-requests/${id}/confirm`)).data;
 export const reviewInstallation = async (id: number, body: { rating: number; comment?: string }) => (await api.post<CustomerJob>(`/installation-requests/${id}/review`, body)).data;
 export const disputeInstallation = async (id: number, body: { type: string; description: string }) => (await api.post<CustomerJob>(`/installation-requests/${id}/disputes`, body)).data;

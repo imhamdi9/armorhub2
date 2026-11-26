@@ -17,9 +17,16 @@ class PaymentWebhookHandler
     {
         match ($event->type) {
             'paid' => $this->paid($provider, $event),
-            'expired' => Payment::withoutGlobalScopes()
-                ->where('transaction_id', $event->reference)->where('status', 'pending')->update(['status' => 'expired']),
+            'expired' => $this->expired($event),
         };
+    }
+
+    private function expired(PaymentEvent $event): void
+    {
+        if ($event->orderId !== null) {
+            PaymentManager::forget($event->orderId);
+        }
+        Payment::withoutGlobalScopes()->where('transaction_id', $event->reference)->where('status', 'pending')->update(['status' => 'expired']);
     }
 
     private function paid(string $provider, PaymentEvent $event): void

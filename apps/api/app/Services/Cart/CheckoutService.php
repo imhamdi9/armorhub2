@@ -66,6 +66,11 @@ class CheckoutService
         $extras = ['delivery_speed' => $speed, 'preferred_day' => $choices['preferred_day'] ?? null, 'gift_note' => ($choices['gift_note'] ?? null) ?: null];
 
         return DB::transaction(function () use ($user, $company, $lines, $ship, $cart, $express, $extras, $choices) {
+            // One cart becomes one purchase: a second request arriving at the same moment waits here, then finds the cart already bought.
+            \App\Models\Cart::whereKey($cart->id)->lockForUpdate()->first();
+            if ($cart->items()->count() !== count($lines)) {
+                throw ValidationException::withMessages(['cart' => ['Your cart is empty.']]);
+            }
             // The last unit can only be sold once: lock the products and look again, now that nobody else can be taking them at the same moment.
             \App\Models\Product::withoutGlobalScopes()->whereIn('id', collect($lines)->pluck('product.id'))->orderBy('id')->lockForUpdate()->get();
             foreach ($lines as $l) {

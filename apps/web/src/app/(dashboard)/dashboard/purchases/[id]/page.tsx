@@ -19,6 +19,7 @@ export default function PurchasePage() {
   const { id } = useParams<{ id: string }>();
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
 
   const load = useCallback(() => getPurchase(id).then(setPurchase).catch((e) => setError(errorMessage(e))), [id]);
   useEffect(() => { void load(); }, [load]);
@@ -26,13 +27,15 @@ export default function PurchasePage() {
   async function pay() {
     if (!purchase) return;
     setError(null);
+    setPaying(true);
     try {
       const res = await payPurchase(purchase.id);
-      if (res.checkout_url) { window.location.href = res.checkout_url; return; }
+      if (res.checkout_url) { window.location.href = res.checkout_url; return; }   // stays locked while the payment page opens
       setPurchase(res.group);
     } catch (e) {
       setError(errorMessage(e));
     }
+    setPaying(false);
   }
 
   async function cancel() {
@@ -77,8 +80,8 @@ export default function PurchasePage() {
       {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}
       {purchase.status === "awaiting_payment" && (
         <div className="mt-4 flex gap-3">
-          <Button onClick={pay}>{tr("Pay {amount}", { amount: formatMoney(purchase.payable_amount, purchase.currency) })}</Button>
-          <Button variant="outline" onClick={cancel}>{tr("Cancel purchase")}</Button>
+          <Button disabled={paying} aria-busy={paying} onClick={pay}>{paying ? tr("Please wait...") : tr("Pay {amount}", { amount: formatMoney(purchase.payable_amount, purchase.currency) })}</Button>
+          <Button variant="outline" disabled={paying} onClick={cancel}>{tr("Cancel purchase")}</Button>
         </div>
       )}
     </div>

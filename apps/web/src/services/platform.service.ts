@@ -1,3 +1,4 @@
+import { once } from "@/lib/idempotency";
 import { api } from "@/services/api";
 import type { Industry } from "@/types/auth";
 import type {
@@ -81,7 +82,7 @@ export interface NewOrder {
 }
 
 export const createOrder = async (data: NewOrder) =>
-  (await api.post<{ order: Order; partner_quotes: number }>("/orders", data)).data;
+  once("order", data, async (key) => (await api.post<{ order: Order; partner_quotes: number }>("/orders", data, key)).data);
 
 export const calculatePrice = async (data: {
   product_id: number;
@@ -97,10 +98,10 @@ export const acceptQuote = async (quoteId: number) =>
 
 /** Instant gateways answer "Payment completed"; hosted ones return a `checkout_url` to send the customer to. */
 export const payOrder = async (orderId: number, amount: number | string) =>
-  (await api.post<{ message: string; checkout_url?: string }>(`/orders/${orderId}/payments`, {
+  once(`pay-order-${orderId}`, String(amount), async (key) => (await api.post<{ message: string; checkout_url?: string }>(`/orders/${orderId}/payments`, {
     amount,
     payment_method: "card",
-  })).data;
+  }, key)).data);
 
 export const getPartnerRequests = async () =>
   (await api.get<PartnerQuote[]>("/partner/orders")).data;

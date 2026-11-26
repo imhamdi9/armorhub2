@@ -45,6 +45,7 @@ function OrderDetail() {
   const [order, setOrder] = useState<Order | null>(null);
   const [quotes, setQuotes] = useState<PartnerQuote[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
   const [tick, setTick] = useState(0);
   const [polls, setPolls] = useState(0);
 
@@ -68,16 +69,18 @@ function OrderDetail() {
   async function pay() {
     if (!order) return;
     setError(null);
+    setPaying(true);
     try {
       const res = await payOrder(order.id, order.payable_amount ?? Number(order.total_amount));
       if (res.checkout_url) {
         window.location.href = res.checkout_url;
-        return;
+        return;   // stays locked while the payment page opens
       }
       setTick((t) => t + 1);
     } catch (e) {
       setError(errorMessage(e));
     }
+    setPaying(false);
   }
 
   async function run(action: () => Promise<unknown>) {
@@ -211,8 +214,8 @@ function OrderDetail() {
 
       <div className="mt-6 flex gap-3">
         {canPay && (
-          <Button disabled={confirming} onClick={pay}>
-            {tr("Pay {amount}", { amount: formatMoney(order.payable_amount ?? order.total_amount, order.currency) })}
+          <Button disabled={confirming || paying} aria-busy={paying} onClick={pay}>
+            {paying ? tr("Please wait...") : tr("Pay {amount}", { amount: formatMoney(order.payable_amount ?? order.total_amount, order.currency) })}
           </Button>
         )}
         {canCancel && (

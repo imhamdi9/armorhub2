@@ -124,7 +124,7 @@ class InstallationJobs
         }
 
         if ($charge['status'] === 'redirect') {
-            InstallationPayment::create(['request_id' => $r->id, 'amount' => $r->pay_amount, 'currency' => $r->currency, 'provider' => $charge['provider'] ?? null, 'transaction_id' => $charge['transaction_id'], 'status' => 'pending']);
+            InstallationPayment::updateOrCreate(['request_id' => $r->id, 'transaction_id' => $charge['transaction_id']], ['amount' => $r->pay_amount, 'currency' => $r->currency, 'provider' => $charge['provider'] ?? null, 'status' => 'pending']);
 
             return ['status' => 'redirect', 'checkout_url' => $charge['url']];
         }

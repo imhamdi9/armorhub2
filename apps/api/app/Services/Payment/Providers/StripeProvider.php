@@ -118,7 +118,7 @@ class StripeProvider implements PaymentProvider
                 ? new PaymentEvent('paid', (string) ($object['id'] ?? ''), isset($object['metadata']['order_id']) ? (int) $object['metadata']['order_id'] : null,
                     isset($object['amount_total']) ? (int) $object['amount_total'] : null, $object['currency'] ?? null)
                 : null,
-            'checkout.session.expired' => new PaymentEvent('expired', (string) ($object['id'] ?? '')),
+            'checkout.session.expired' => new PaymentEvent('expired', (string) ($object['id'] ?? ''), isset($object['metadata']['order_id']) ? (int) $object['metadata']['order_id'] : null),
             default => null,
         };
     }

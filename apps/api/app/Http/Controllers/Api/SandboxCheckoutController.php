@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SandboxCharge;
 use App\Services\Payment\Money;
 use App\Services\Payment\PaymentEvent;
+use App\Services\Payment\PaymentManager;
 use App\Services\Payment\PaymentProviders;
 use App\Services\Payment\PaymentWebhookHandler;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ class SandboxCheckoutController extends Controller
             $charge->update(['last_error' => $error]);
             if ($charge->attempts >= self::MAX_ATTEMPTS) {
                 $charge->update(['status' => 'cancelled']);
+                PaymentManager::forget((int) $charge->payment_id);
             }
 
             return response()->json(['status' => $charge->status === 'cancelled' ? 'cancelled' : 'declined', 'message' => $error, 'return_url' => $charge->return_url], 422);
@@ -67,6 +69,7 @@ class SandboxCheckoutController extends Controller
         $charge = $this->charge($ref, $providers);
         if ($charge->status === 'pending') {
             $charge->update(['status' => 'cancelled']);
+            PaymentManager::forget((int) $charge->payment_id);
         }
 
         return ['status' => $charge->status, 'return_url' => $charge->return_url];

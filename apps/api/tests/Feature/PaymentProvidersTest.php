@@ -289,6 +289,7 @@ class PaymentProvidersTest extends TestCase
             Http::response(['data' => ['pay_url' => 'https://ok.example']]),                   // no payment id
             Http::response(['error' => 'nope'], 500),
         ] as $reply) {
+            \App\Services\Payment\PaymentManager::forget($id);   // each reply is judged on a fresh attempt, not the page already opened
             Http::swap(new \Illuminate\Http\Client\Factory());
             Http::fake([self::GATEWAY => $reply]);
             $this->postJson("/api/orders/{$id}/payments", ['amount' => 1200])->assertStatus(402)->assertJsonPath('message', 'The payment could not be started.');

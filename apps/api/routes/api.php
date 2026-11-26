@@ -63,9 +63,9 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
 // Buying goods without an account: one order, reached by its secret link
 Route::prefix('guest-orders')->group(function () {
     $g = \App\Http\Controllers\Api\GuestOrderController::class;
-    Route::post('/', [$g, 'store'])->middleware('throttle:guest-orders');
+    Route::post('/', [$g, 'store'])->middleware(['throttle:guest-orders', 'idempotent']);
     Route::get('/{token}', [$g, 'show'])->middleware('throttle:public');
-    Route::post('/{token}/pay', [$g, 'pay'])->middleware('throttle:guest-orders');
+    Route::post('/{token}/pay', [$g, 'pay'])->middleware(['throttle:guest-orders', 'idempotent']);
     Route::post('/{token}/cancel', [$g, 'cancel'])->middleware('throttle:guest-orders');
     Route::get('/{token}/messages', [$g, 'messages'])->middleware('throttle:public');
     Route::post('/{token}/messages', [$g, 'message'])->middleware('throttle:guest-orders');
@@ -392,7 +392,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonatio
     Route::post('/orders/{id}/return-pickup', [\App\Http\Controllers\Api\RefundRequestController::class, 'pickup'])->whereNumber('id')->middleware('throttle:10,1');
     Route::post('/orders/{id}/refund-request', [\App\Http\Controllers\Api\RefundRequestController::class, 'store'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/orders/waiting-for-verification', [OrderController::class, 'waitingForVerification']);
-    Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
+    Route::post('/orders', [OrderController::class, 'store'])->middleware(['throttle:orders', 'idempotent']);
     // The cart, and buying it: one purchase (an order group), paid once, one order per line.
     // The customer's cars.
     Route::get('/garage', [\App\Http\Controllers\Api\GarageController::class, 'index']);
@@ -419,7 +419,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonatio
     Route::post('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'applyPromo'])->middleware('throttle:20,1');
     Route::delete('/cart/promo', [\App\Http\Controllers\Api\CartController::class, 'removePromo']);
     Route::delete('/cart', [\App\Http\Controllers\Api\CartController::class, 'clear']);
-    Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'checkout'])->middleware('throttle:orders');
+    Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'checkout'])->middleware(['throttle:orders', 'idempotent']);
     Route::get('/order-groups', [\App\Http\Controllers\Api\CheckoutController::class, 'index']);
     Route::get('/order-groups/{id}', [\App\Http\Controllers\Api\CheckoutController::class, 'show'])->whereNumber('id');
     Route::post('/order-groups/{id}/payments', [\App\Http\Controllers\Api\CheckoutController::class, 'pay'])->whereNumber('id')->middleware(['permission:payments.create', 'idempotent']);
@@ -498,7 +498,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', 'market.scope', 'impersonatio
     Route::get('/installation-requests/{id}', [\App\Http\Controllers\Api\InstallationRequestController::class, 'show'])->whereNumber('id');
     Route::post('/installation-requests/{id}/cancel', [\App\Http\Controllers\Api\InstallationRequestController::class, 'cancel'])->whereNumber('id');
     Route::post('/installation-requests/{id}/accept', [\App\Http\Controllers\Api\InstallationFlowController::class, 'accept'])->whereNumber('id');
-    Route::post('/installation-requests/{id}/pay', [\App\Http\Controllers\Api\InstallationFlowController::class, 'pay'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::post('/installation-requests/{id}/pay', [\App\Http\Controllers\Api\InstallationFlowController::class, 'pay'])->whereNumber('id')->middleware(['throttle:20,1', 'idempotent']);
     Route::get('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'show'])->whereNumber('id');
     Route::get('/installation-requests/{id}/slots', [\App\Http\Controllers\Api\InstallationBookingController::class, 'slots'])->whereNumber('id');
     Route::post('/installation-requests/{id}/booking', [\App\Http\Controllers\Api\InstallationBookingController::class, 'book'])->whereNumber('id')->middleware('throttle:20,1');

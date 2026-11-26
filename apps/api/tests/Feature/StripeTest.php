@@ -162,7 +162,7 @@ class StripeTest extends TestCase
         $id = $this->readyOrder();
         $this->checkout($id, 'cs_old')->assertStatus(202);
 
-        $this->webhook(['type' => 'checkout.session.expired', 'data' => ['object' => ['id' => 'cs_old']]])->assertOk();
+        $this->webhook(['type' => 'checkout.session.expired', 'data' => ['object' => ['id' => 'cs_old', 'metadata' => ['order_id' => (string) $id]]]])->assertOk();
         $this->assertSame('expired', Payment::withoutGlobalScopes()->where('transaction_id', 'cs_old')->value('status'));
 
         $this->checkout($id, 'cs_new')->assertStatus(202);

@@ -175,8 +175,8 @@ class GuestOrderController extends Controller
         }
 
         if ($charge['status'] === 'redirect') {
-            Payment::create(['company_id' => $order->company_id, 'order_id' => $order->id, 'amount' => $order->payable_amount, 'currency' => $order->currency,
-                'payment_method' => $request->input('payment_method'), 'status' => 'pending', 'provider' => $charge['provider'] ?? null, 'transaction_id' => $charge['transaction_id']]);
+            Payment::updateOrCreate(['order_id' => $order->id, 'transaction_id' => $charge['transaction_id']], ['company_id' => $order->company_id, 'amount' => $order->payable_amount, 'currency' => $order->currency,
+                'payment_method' => $request->input('payment_method'), 'status' => 'pending', 'provider' => $charge['provider'] ?? null]);
 
             return response()->json(['message' => 'Continue to the payment page.', 'checkout_url' => $charge['url']], 202);
         }

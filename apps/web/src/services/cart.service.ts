@@ -1,3 +1,4 @@
+import { once } from "@/lib/idempotency";
 import { api } from "@/services/api";
 
 export interface CartLine {
@@ -83,10 +84,15 @@ export const setCartQuantity = async (itemId: number, quantity: number) => annou
 export const removeCartItem = async (itemId: number) => announceCart((await api.delete<CartView>(`/cart/items/${itemId}`)).data);
 
 export interface DeliveryChoices { delivery_speed?: "standard" | "express"; preferred_day?: string; gift_note?: string; use_points?: number }
-export const checkoutCart = async (address: DeliveryAddress, choices: DeliveryChoices = {}) => (await api.post<Purchase>("/checkout", { shipping_address: address, ...choices })).data;
+/** `contents` says what is in the cart, so a changed cart is never answered with an earlier purchase. */
+export const checkoutCart = async (address: DeliveryAddress, choices: DeliveryChoices = {}, contents = "") => {
+  const body = { shipping_address: address, ...choices };
+  return once("checkout", [body, contents], async (key) => (await api.post<Purchase>("/checkout", body, key)).data);
+};
 export const getPurchases = async () => (await api.get<Purchase[]>("/order-groups")).data;
 export const getPurchase = async (id: number | string) => (await api.get<Purchase>(`/order-groups/${id}`)).data;
-export const payPurchase = async (id: number, method: "card" | "wallet" | "cod" = "card") => (await api.post<{ status: string; checkout_url?: string; group: Purchase }>(`/order-groups/${id}/payments`, { payment_method: method })).data;
+export const payPurchase = async (id: number, method: "card" | "wallet" | "cod" = "card") =>
+  once(`pay-purchase-${id}`, method, async (key) => (await api.post<{ status: string; checkout_url?: string; group: Purchase }>(`/order-groups/${id}/payments`, { payment_method: method }, key)).data);
 export const cancelPurchase = async (id: number) => (await api.post<Purchase>(`/order-groups/${id}/cancel`)).data;
 
 export const applyPromo = async (code: string) => (await api.post<CartView>("/cart/promo", { code })).data;

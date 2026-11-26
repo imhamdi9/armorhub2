@@ -84,7 +84,8 @@ export function CartScreen({ slug }: { slug?: string }) {
     setFields({});
     try {
       if (user?.is_guest) await setGuestContact(email, form.name);
-      const purchase = await checkoutCart(form, { delivery_speed: speed, ...(day ? { preferred_day: day } : {}), ...(gift.trim() ? { gift_note: gift.trim() } : {}), ...(usePoints && cart?.points?.max_use ? { use_points: cart.points.max_use } : {}) });
+      const purchase = await checkoutCart(form, { delivery_speed: speed, ...(day ? { preferred_day: day } : {}), ...(gift.trim() ? { gift_note: gift.trim() } : {}), ...(usePoints && cart?.points?.max_use ? { use_points: cart.points.max_use } : {}) },
+        (cart?.items ?? []).map((l) => `${l.id}x${l.quantity}`).join(","));
       try { localStorage.setItem("last-address", JSON.stringify(form)); } catch { /* storage unavailable */ }
       if (saveIt && !saved.some((a) => a.line1 === form.line1 && a.city === form.city)) addAddress({ ...form, label: null }).catch(() => {});
       const paid = await payPurchase(purchase.id, cart && !cart.cod_available && payMethod === "cod" ? "card" : payMethod);

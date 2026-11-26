@@ -59,15 +59,13 @@ class PaymentController extends Controller
 
         // Hosted checkout: remember the attempt; the webhook completes it.
         if ($charge['status'] === 'redirect') {
-            Payment::create([
+            Payment::updateOrCreate(['order_id' => $order->id, 'transaction_id' => $charge['transaction_id']], [
                 'company_id' => $order->company_id,
-                'order_id' => $order->id,
                 'amount' => $order->payable_amount,
                 'currency' => $order->currency,
                 'payment_method' => $data['payment_method'] ?? null,
                 'status' => 'pending',
                 'provider' => $charge['provider'] ?? null,
-                'transaction_id' => $charge['transaction_id'],
             ]);
 
             return response()->json(['message' => 'Continue to the payment page.', 'checkout_url' => $charge['url']], 202);

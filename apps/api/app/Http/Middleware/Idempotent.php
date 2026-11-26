@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,6 +15,18 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class Idempotent
 {
+    private const PER_ATTEMPT = ['signup_token', 'captcha_token', 'website'];
+
+    /** @param array{fingerprint: string, status: int, body: string, type: string} $saved */
+    private function replay(array $saved, string $fingerprint): Response
+    {
+        if ($saved['fingerprint'] !== $fingerprint) {
+            return response()->json(['message' => 'This Idempotency-Key was already used with a different request.'], 422);
+        }
+
+        return response($saved['body'], $saved['status'], ['Content-Type' => $saved['type'], 'Idempotent-Replayed' => 'true']);
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $key = (string) $request->header('Idempotency-Key', '');
@@ -25,14 +38,12 @@ class Idempotent
         }
 
         $scope = 'idem:'.sha1(($request->user()?->id ?? 'guest').'|'.$request->method().'|'.$request->path().'|'.$key);
-        $fingerprint = sha1($request->getContent());
+        // The human-check answers are new on every attempt; they are not part of what is being asked for.
+        $asked = $request->isJson() ? Arr::except((array) $request->json()->all(), self::PER_ATTEMPT) : null;
+        $fingerprint = sha1($asked === null ? $request->getContent() : (string) json_encode($asked));
 
         if ($saved = Cache::get($scope)) {
-            if ($saved['fingerprint'] !== $fingerprint) {
-                return response()->json(['message' => 'This Idempotency-Key was already used with a different request.'], 422);
-            }
-
-            return response($saved['body'], $saved['status'], ['Content-Type' => $saved['type'], 'Idempotent-Replayed' => 'true']);
+            return $this->replay($saved, $fingerprint);
         }
 
         if (! Cache::add($scope.':lock', 1, 60)) {
@@ -40,6 +51,11 @@ class Idempotent
         }
 
         try {
+            // The first request may have finished between the look above and taking the lock.
+            if ($saved = Cache::get($scope)) {
+                return $this->replay($saved, $fingerprint);
+            }
+
             $response = $next($request);
             if ($response->getStatusCode() < 500) {
                 Cache::put($scope, ['fingerprint' => $fingerprint, 'status' => $response->getStatusCode(), 'body' => $response->getContent(), 'type' => $response->headers->get('Content-Type', 'application/json')], now()->addDay());
