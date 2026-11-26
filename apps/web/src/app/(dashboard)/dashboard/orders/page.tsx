@@ -44,7 +44,7 @@ export default function OrdersPage() {
       <PageHeader
         title={tr("Orders")}
         action={
-          hasRole(user, "customer") && (
+          hasRole(user, "customer") && !user?.is_guest && (
             <Link href="/dashboard/orders/new" className="rounded-lg bg-black px-4 py-2 text-white hover:opacity-90">
               {tr("New order")}
             </Link>
@@ -72,7 +72,7 @@ export default function OrdersPage() {
       ) : result.data.length === 0 ? (
         <EmptyState>
           {tr("No orders found.")}
-          {!status && user?.roles?.includes("customer") && <> <Link href="/dashboard/orders/new" className="font-medium underline underline-offset-2">{tr("Place your first order")}</Link></>}
+          {!status && user?.roles?.includes("customer") && !user.is_guest && <> <Link href="/dashboard/orders/new" className="font-medium underline underline-offset-2">{tr("Place your first order")}</Link></>}
         </EmptyState>
       ) : (
         <>

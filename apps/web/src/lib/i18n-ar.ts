@@ -3013,5 +3013,6 @@ export const AR: Record<string, string> = {
   "Continue": "متابعة",
   "Continue to see your order on this device.": "تابع لعرض طلبك على هذا الجهاز.",
   "This link no longer works. Use the one in our latest e-mail.": "هذا الرابط لم يعد يعمل. استخدم الرابط في أحدث رسالة منا.",
+  "You are shopping without an account. After signing out, only the link in our e-mails brings you back, and a cart you have not ordered is lost. Sign out?": "أنت تتسوق بلا حساب. بعد تسجيل الخروج لا يعيدك إلا الرابط في رسائلنا، وتضيع السلة التي لم تطلبها. هل تريد الخروج؟",
 };
 

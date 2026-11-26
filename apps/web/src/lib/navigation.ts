@@ -70,10 +70,22 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
  * screens only show for the roles that can use them.
  */
 export function buildNavigation(user: User | null): NavItem[] {
+  if (user?.is_guest) return guestNavigation(user);
   const items = buildNavigationFor(user);
   if (user && !items.some((i) => i.href === "/dashboard/account")) items.push({ title: "Account", href: "/dashboard/account", icon: "users" });
 
   return items;
+}
+
+/** A shopper without an account sees only what a purchase needs: their orders, cart, saved goods, the warranties that came with them, and the store. */
+function guestNavigation(user: User): NavItem[] {
+  return [
+    { title: "Orders", href: "/dashboard/orders", icon: "orders" },
+    { title: "Cart", href: "/dashboard/cart", icon: "orders" },
+    { title: "Favourites", href: "/dashboard/favourites", icon: "products" },
+    { title: "Warranties", href: "/dashboard/warranties", icon: "warranties" },
+    { title: "Shop", href: user.store_slug ? `/s/${user.store_slug}/products` : "/", icon: "products" },
+  ];
 }
 
 function buildNavigationFor(user: User | null): NavItem[] {

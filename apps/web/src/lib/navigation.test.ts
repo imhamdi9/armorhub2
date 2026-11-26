@@ -135,3 +135,13 @@ describe("buildNavigation", () => {
     expect(titles(auto).some((t) => t.startsWith("My "))).toBe(false);
   });
 });
+
+describe("a guest shopper", () => {
+  it("sees only what a purchase needs", () => {
+    expect(titles({ ...user(["customer"]), is_guest: true })).toEqual(["Orders", "Cart", "Favourites", "Warranties", "Shop"]);
+  });
+
+  it("gets the full customer menu once they create an account", () => {
+    expect(titles({ ...user(["customer"]), is_guest: false })).toContain("Account");
+  });
+});

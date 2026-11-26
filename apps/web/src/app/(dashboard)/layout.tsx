@@ -87,8 +87,10 @@ function LogoutButton() {
   return (
     <button
       onClick={async () => {
+        // A guest has no password to come back with: say what signing out costs before doing it.
+        if (user?.is_guest && !window.confirm(tr("You are shopping without an account. After signing out, only the link in our e-mails brings you back, and a cart you have not ordered is lost. Sign out?"))) return;
         await logout().catch(() => undefined);
-        router.replace("/login");
+        router.replace(user?.is_guest ? "/" : "/login");
       }}
       className="whitespace-nowrap rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-obsidian transition hover:bg-fog"
     >
